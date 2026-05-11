@@ -424,7 +424,7 @@ ${brandedCard ? `
 <p class="qr-hint">Kartu QR siap — download lalu kirim ke WhatsApp member atau cetak</p>` : ""}
 
 <div class="btns">
-  <a href="/admin/qr/${kode}?tk=${tk}" class="btn btn-dl" download="QR-${kode}.png">⬇ Download QR</a>
+  <a href="/admin/qr/${kode}?tk=${tk}" class="btn btn-dl" download="QR-${kode}.svg">⬇ Download Kartu QR</a>
   <a href="https://wa.me/?text=${encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu. Scan QR ini tiap kali mau main: ' + scanUrl)}"
      target="_blank" class="btn btn-wa">Kirim WA</a>
   <a href="/admin/tambah?tk=${tk}" class="btn btn-w">＋ Tambah lagi</a>
