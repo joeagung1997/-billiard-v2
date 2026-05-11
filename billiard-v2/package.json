@@ -11,8 +11,7 @@
   "dependencies": {
     "express": "^4.18.2",
     "node-cron": "^3.0.3",
-    "qrcode": "^1.5.3",
-    "jimp": "^0.22.12"
+    "qrcode": "^1.5.3"
   },
   "engines": {
     "node": "18.x"
