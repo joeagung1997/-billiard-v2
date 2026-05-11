@@ -351,8 +351,8 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   dlEl.href  = dlUrl;
   dlEl.setAttribute("download", `QR-${kode}.png`);
 
-  // shareUrl pakai /member/:kode agar WA preview punya gambar QR
-  const shareUrl = scanUrl.replace('/scan?id=', '/member/');
+  // shareUrl pakai /member/:kode, paksa HTTPS agar WA mau crawl thumbnail
+  const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu. Scan QR ini tiap kali mau main ya! ' + shareUrl);
   document.getElementById("modalWa").href = `https://wa.me/?text=${msg}`;
 
