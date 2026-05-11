@@ -16,16 +16,17 @@ export const qrDataUrl = async (text, size) =>
 export const qrBuffer = async (text, size) =>
   QRCode.toBuffer(text, { ...QR_OPTIONS, type: "png", width: size ?? 400 });
 
-export const buildScanUrl = (req, kode) => {
-  // Railway pakai reverse proxy — gunakan x-forwarded-proto untuk dapat https
-  const proto = req.get("x-forwarded-proto") || req.protocol;
-  return proto + "://" + req.get("host") + "/scan?id=" + kode;
+const getProto = (req) => {
+  const host = req.get('host') || '';
+  if (host.includes('railway.app')) return 'https';
+  const fwd = req.get('x-forwarded-proto');
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.protocol;
 };
-
-export const buildBaseUrl = (req) => {
-  const proto = req.get("x-forwarded-proto") || req.protocol;
-  return proto + "://" + req.get("host");
-};
+export const buildScanUrl = (req, kode) =>
+  getProto(req) + '://' + req.get('host') + '/scan?id=' + kode;
+export const buildBaseUrl = (req) =>
+  getProto(req) + '://' + req.get('host');
 
 // ── Escape karakter SVG ───────────────────────────────────────
 const escSvg = (s) =>
