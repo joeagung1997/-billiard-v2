@@ -15,7 +15,7 @@
 
 import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
-import { buildScanUrl }       from "../utils/qr.js";
+import { buildScanUrl, buildBaseUrl } from "../utils/qr.js";
 import { CONFIG }             from "../config.js";
 import QRCode                 from "qrcode";
 
@@ -29,7 +29,7 @@ router.get("/member/:kode", (req, res) => {
 
   if (!member) return res.redirect("/scan?id=" + kode);
 
-  const base     = req.protocol + "://" + req.get("host");
+  const base     = buildBaseUrl(req);
   const scanUrl  = base + "/scan?id=" + kode;
   const ogImgUrl = base + "/og-image/" + kode;
   const title    = CONFIG.NAMA_ARENA + " — " + member.nama;
