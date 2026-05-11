@@ -334,15 +334,24 @@ let _modalUrl = "";
 
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
-  document.getElementById("modalImg").src    = imgUrl;
-  document.getElementById("modalName").textContent = nama;
-  document.getElementById("modalKode").textContent = kode;
+
+  // Tampilkan branded card SVG — lebih informatif dari thumbnail biasa
+  const modalImg = document.getElementById("modalImg");
+  modalImg.src              = `/admin/qr-card/${kode}?tk=${TK}`;
+  modalImg.style.width      = "100%";
+  modalImg.style.height     = "auto";
+  modalImg.style.borderRadius = "16px";
+  modalImg.removeAttribute("width");
+  modalImg.removeAttribute("height");
+
+  document.getElementById("modalName").textContent = "";  // nama sudah ada di kartu
+  document.getElementById("modalKode").textContent = "";  // kode sudah ada di kartu
 
   const dlEl = document.getElementById("modalDl");
   dlEl.href  = dlUrl;
   dlEl.setAttribute("download", `QR-${kode}.png`);
 
-  const msg = encodeURIComponent(`Halo ${nama}! Ini QR Code member kamu: ${scanUrl}`);
+  const msg = encodeURIComponent(`Halo ${nama}! Ini QR Code member billiard kamu.\nScan QR ini tiap kali mau main: ${scanUrl}`);
   document.getElementById("modalWa").href = `https://wa.me/?text=${msg}`;
 
   document.getElementById("modalOverlay").classList.add("open");
