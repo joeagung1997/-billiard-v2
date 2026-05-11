@@ -1,0 +1,19 @@
+{
+  "name": "billiard-member-system",
+  "version": "2.0.0",
+  "description": "Sistem member billiard Warpat Jombang",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
