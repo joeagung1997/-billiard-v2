@@ -385,43 +385,48 @@ function validateForm() {
 
 // ── Tambah member sukses ──────────────────────────────────────
 
-export const addMemberSuccess = ({ tk, kode, nama, telepon, scanUrl, qrData, req }) => `
+export const addMemberSuccess = ({ tk, kode, nama, telepon, scanUrl, brandedCard }) => `
 <!DOCTYPE html><html lang="id"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Member Terdaftar — ${CONFIG.NAMA_ARENA}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#080e18;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  .card{background:#0d1829;border:1px solid #1e2d45;border-radius:20px;padding:28px 22px;max-width:400px;width:100%;text-align:center}
-  .ic{width:52px;height:52px;border-radius:50%;background:#14532d;border:2px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px}
-  h1{font-size:19px;font-weight:700;color:#22c55e;margin-bottom:3px}
-  .nm{font-size:21px;font-weight:700;color:#e8edf5;margin-bottom:4px}
-  .tp{font-size:13px;color:#4a5e78;margin-bottom:16px;font-family:monospace}
-  .kode-box{background:#0a1a0f;border:1.5px solid #22c55e;border-radius:12px;padding:10px 16px;margin-bottom:16px}
-  .kode-lbl{font-size:10px;color:#22c55e;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
-  .kode-val{font-family:monospace;font-size:22px;font-weight:700;color:#22c55e}
-  .qr-wrap{background:#fff;border-radius:14px;padding:12px;display:inline-block;margin-bottom:12px}
+  .wrap{max-width:440px;width:100%;text-align:center}
+  .header{margin-bottom:16px}
+  .ic{width:48px;height:48px;border-radius:50%;background:#14532d;border:2px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 10px}
+  h1{font-size:18px;font-weight:700;color:#22c55e;margin-bottom:3px}
+  .nm{font-size:20px;font-weight:700;color:#e8edf5;margin-bottom:3px}
+  .tp{font-size:13px;color:#4a5e78;font-family:monospace}
+  /* Kartu QR branded */
+  .qr-card-wrap{margin:16px 0;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+  .qr-card-wrap img{display:block;width:100%;height:auto}
   .qr-hint{font-size:11px;color:#334155;margin-bottom:16px}
   .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   .btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;text-decoration:none}
   .btn-dl{background:#22c55e;color:#fff}
+  .btn-wa{background:#25d366;color:#fff}
   .btn-b{background:#2563eb;color:#fff}
   .btn-w{background:#1e2d45;color:#94a3b8}
 </style>
-</head><body><div class="card">
-<div class="ic">✓</div>
-<h1>Member Terdaftar!</h1>
-<div class="nm">${nama}</div>
-<div class="tp">${telepon}</div>
-<div class="kode-box">
-  <div class="kode-lbl">Kode Member</div>
-  <div class="kode-val">${kode}</div>
+</head><body><div class="wrap">
+<div class="header">
+  <div class="ic">✓</div>
+  <h1>Member Terdaftar!</h1>
+  <div class="nm">${nama}</div>
+  <div class="tp">${telepon}</div>
 </div>
-${qrData ? `
-<div class="qr-wrap"><img src="${qrData}" width="200" height="200" alt="QR ${kode}"></div>
-<div class="qr-hint">QR siap dipakai — scan untuk cek, atau download untuk cetak</div>` : ""}
+
+${brandedCard ? `
+<div class="qr-card-wrap">
+  <img src="${brandedCard.encoded}" alt="QR Card ${kode}">
+</div>
+<p class="qr-hint">Kartu QR siap — download lalu kirim ke WhatsApp member atau cetak</p>` : ""}
+
 <div class="btns">
   <a href="/admin/qr/${kode}?tk=${tk}" class="btn btn-dl" download="QR-${kode}.png">⬇ Download QR</a>
+  <a href="https://wa.me/?text=${encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu. Scan QR ini tiap kali mau main: ' + scanUrl)}"
+     target="_blank" class="btn btn-wa">Kirim WA</a>
   <a href="/admin/tambah?tk=${tk}" class="btn btn-w">＋ Tambah lagi</a>
   <a href="/admin?tk=${tk}" class="btn btn-b">Dashboard</a>
 </div>
