@@ -47,10 +47,10 @@ async function makeBrandedPng(scanUrl, nama, kode) {
     + '<circle cx="52" cy="65" r="4" fill="#333" opacity=".5"/>'
     // Nama arena
     + '<text x="100" y="60"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
     + ' font-size="30" font-weight="700" fill="#ffffff">' + esc(arena) + '</text>'
     + '<text x="100" y="90"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
     + ' font-size="14" fill="#86efac" letter-spacing="3" font-weight="600">MEMBER CARD</text>'
     // QR area
     + '<rect x="152" y="147" width="504" height="504" rx="20" fill="#000" opacity=".3"/>'
@@ -63,21 +63,32 @@ async function makeBrandedPng(scanUrl, nama, kode) {
     // Member info
     + '<line x1="80" y1="668" x2="720" y2="668" stroke="#1e3a30" stroke-width="1.5"/>'
     + '<text x="400" y="708"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
     + ' font-size="28" font-weight="700" fill="#e8edf5" text-anchor="middle">' + esc(namaDisplay) + '</text>'
     + '<text x="400" y="744"'
-    + ' font-family="Courier New,Courier,monospace"'
+    + ' font-family="DejaVu Sans Mono,Liberation Mono,monospace"'
     + ' font-size="18" fill="#22c55e" text-anchor="middle" letter-spacing="3">' + esc(kode) + '</text>'
     // Footer
-    + '<rect x="0" y="768" width="800" height="32" fill="#0a1422"/>'
-    + '<text x="400" y="789"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="13" fill="#2a4a40" text-anchor="middle">Scan QR ini untuk check-in</text>'
+    // Footer dengan instruksi dan tagline
+    + '<rect x="0" y="760" width="800" height="40" fill="#071210"/>'
+    + '<text x="400" y="778"'
+    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
+    + ' font-size="14" fill="#22c55e" text-anchor="middle" font-weight="600">'
+    + 'Tunjukkan ke kasir setiap mau main billiard</text>'
+    + '<text x="400" y="796"'
+    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
+    + ' font-size="11" fill="#1e3a30" text-anchor="middle">'
+    + '10x main = 1x GRATIS · ' + esc(CONFIG.NAMA_ARENA) + '</text>'
     + '</svg>';
 
   // 3. Convert SVG → PNG via sharp
+  // sharp butuh font tersedia di system untuk render teks
+  // Liberation Sans tersedia di Railway (Ubuntu/Debian base)
   const sharp = (await import("sharp")).default;
-  const pngBuf = await sharp(Buffer.from(svg, "utf8"))
+  const pngBuf = await sharp(Buffer.from(svg, "utf8"), {
+    density: 96,  // DPI untuk render SVG
+  })
+    .resize(800, 800)
     .png()
     .toBuffer();
 
