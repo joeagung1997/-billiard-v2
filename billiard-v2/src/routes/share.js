@@ -19,81 +19,103 @@ const esc = (s) => String(s ?? "")
 
 // ── Helper: buat branded PNG 800x800 ─────────────────────────
 async function makeBrandedPng(scanUrl, nama, kode) {
-  // 1. Generate QR PNG kecil
+  const sharp = (await import("sharp")).default;
+
+  const W = 800, H = 800;
+
+  // 1. Generate QR PNG
   const qrBuf = await QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
-    type: "png", width: 500, margin: 2,
+    type: "png", width: 520, margin: 2,
     color: { dark: "#000000", light: "#ffffff" },
   });
-  const qrB64 = "data:image/png;base64," + qrBuf.toString("base64");
 
-  const namaDisplay = nama.length > 20 ? nama.slice(0, 18) + "..." : nama;
-  const arena = CONFIG.NAMA_ARENA;
+  // 2. Buat frame warna solid pakai sharp — tidak butuh font sama sekali
+  // Layout: header hijau 120px | QR 560px | footer 120px = 800px total
 
-  // 2. Buat SVG branded 800x800
-  const svg = '<?xml version="1.0" encoding="UTF-8"?>'
-    + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-    + ' width="800" height="800" viewBox="0 0 800 800">'
-    + '<rect width="800" height="800" fill="#0d1b2e"/>'
-    + '<circle cx="800" cy="800" r="350" fill="#0a1f1a" opacity=".4"/>'
-    + '<circle cx="0" cy="0" r="200" fill="#0a1a0f" opacity=".25"/>'
-    // Header
-    + '<rect x="0" y="0" width="800" height="130" fill="#14532d"/>'
-    + '<rect x="0" y="127" width="800" height="4" fill="#22c55e" opacity=".8"/>'
-    + '<rect x="0" y="127" width="100" height="4" fill="#22c55e"/>'
-    // Icon billiard
-    + '<circle cx="52" cy="65" r="34" fill="#111" stroke="#22c55e" stroke-width="2.5"/>'
-    + '<circle cx="42" cy="55" r="10" fill="#fff" opacity=".9"/>'
-    + '<circle cx="52" cy="65" r="4" fill="#333" opacity=".5"/>'
-    // Nama arena
-    + '<text x="100" y="60"'
-    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
-    + ' font-size="30" font-weight="700" fill="#ffffff">' + esc(arena) + '</text>'
-    + '<text x="100" y="90"'
-    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
-    + ' font-size="14" fill="#86efac" letter-spacing="3" font-weight="600">MEMBER CARD</text>'
-    // QR area
-    + '<rect x="152" y="147" width="504" height="504" rx="20" fill="#000" opacity=".3"/>'
-    + '<rect x="148" y="143" width="504" height="504" rx="20" fill="#ffffff"/>'
-    + '<image href="' + qrB64 + '" x="154" y="149" width="492" height="492"/>'
-    // Logo center
-    + '<rect x="376" y="371" width="48" height="48" rx="8" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>'
-    + '<circle cx="400" cy="395" r="17" fill="#0d1b2e" stroke="#22c55e" stroke-width="2"/>'
-    + '<circle cx="393" cy="388" r="5" fill="#fff" opacity=".85"/>'
-    // Member info
-    + '<line x1="80" y1="668" x2="720" y2="668" stroke="#1e3a30" stroke-width="1.5"/>'
-    + '<text x="400" y="708"'
-    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
-    + ' font-size="28" font-weight="700" fill="#e8edf5" text-anchor="middle">' + esc(namaDisplay) + '</text>'
-    + '<text x="400" y="744"'
-    + ' font-family="DejaVu Sans Mono,Liberation Mono,monospace"'
-    + ' font-size="18" fill="#22c55e" text-anchor="middle" letter-spacing="3">' + esc(kode) + '</text>'
-    // Footer
-    // Footer dengan instruksi dan tagline
-    + '<rect x="0" y="760" width="800" height="40" fill="#071210"/>'
-    + '<text x="400" y="778"'
-    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
-    + ' font-size="14" fill="#22c55e" text-anchor="middle" font-weight="600">'
-    + 'Tunjukkan ke kasir setiap mau main billiard</text>'
-    + '<text x="400" y="796"'
-    + ' font-family="Poppins,DejaVu Sans,Liberation Sans,sans-serif"'
-    + ' font-size="11" fill="#1e3a30" text-anchor="middle">'
-    + '10x main = 1x GRATIS · ' + esc(CONFIG.NAMA_ARENA) + '</text>'
-    + '</svg>';
+  // Header hijau gelap 800x120
+  const header = await sharp({
+    create: { width: W, height: 120, channels: 4,
+      background: { r: 20, g: 83, b: 45, alpha: 1 } }
+  }).png().toBuffer();
 
-  // 3. Convert SVG → PNG via sharp
-  // sharp butuh font tersedia di system untuk render teks
-  // Liberation Sans tersedia di Railway (Ubuntu/Debian base)
-  const sharp = (await import("sharp")).default;
-  const pngBuf = await sharp(Buffer.from(svg, "utf8"), {
-    density: 96,  // DPI untuk render SVG
-  })
-    .resize(800, 800)
-    .png()
-    .toBuffer();
+  // Aksen garis bawah header (hijau terang 4px)
+  const accent = await sharp({
+    create: { width: W, height: 4, channels: 4,
+      background: { r: 34, g: 197, b: 94, alpha: 1 } }
+  }).png().toBuffer();
 
-  return pngBuf;
+  // QR area background putih 560x560
+  const qrCard = await sharp({
+    create: { width: 560, height: 560, channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 } }
+  }).composite([{
+    input: await sharp(qrBuf).resize(536, 536).toBuffer(),
+    top: 12, left: 12,
+  }]).png().toBuffer();
+
+  // Member info area 800x116 (navy gelap)
+  const infoBar = await sharp({
+    create: { width: W, height: 116, channels: 4,
+      background: { r: 13, g: 27, b: 46, alpha: 1 } }
+  }).png().toBuffer();
+
+  // Divider tipis hijau 800x2
+  const divider = await sharp({
+    create: { width: W, height: 2, channels: 4,
+      background: { r: 30, g: 58, b: 48, alpha: 1 } }
+  }).png().toBuffer();
+
+  // Footer 800x4 aksen bawah
+  const footer = await sharp({
+    create: { width: W, height: 4, channels: 4,
+      background: { r: 34, g: 197, b: 94, alpha: 0.6 } }
+  }).png().toBuffer();
+
+  // 3. SVG HANYA untuk teks — dengan font DejaVu yang pasti ada di Railway
+  // Tidak ada shape/background — hanya teks di atas transparent
+  const namaDisplay = nama.length > 22 ? nama.slice(0, 20) + "..." : nama;
+  const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  const textSvg = Buffer.from([
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">',
+    // Nama arena di header
+    '<text x="110" y="64" font-family="DejaVu Sans,sans-serif"',
+    ' font-size="32" font-weight="bold" fill="#ffffff">' + esc(CONFIG.NAMA_ARENA) + '</text>',
+    '<text x="110" y="96" font-family="DejaVu Sans,sans-serif"',
+    ' font-size="16" fill="#86efac" letter-spacing="4">MEMBER CARD</text>',
+    // Nama member di info bar
+    '<text x="400" y="718" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
+    ' font-size="30" font-weight="bold" fill="#e8edf5">' + esc(namaDisplay) + '</text>',
+    // Kode member
+    '<text x="400" y="754" font-family="DejaVu Sans Mono,monospace" text-anchor="middle"',
+    ' font-size="20" fill="#22c55e" letter-spacing="4">' + esc(kode) + '</text>',
+    // Footer teks
+    '<text x="400" y="786" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
+    ' font-size="14" fill="#22c55e">Tunjukkan ke kasir setiap mau main</text>',
+    '<text x="400" y="800" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
+    ' font-size="11" fill="#4a7060">10x kunjungan = 1x GRATIS | ' + esc(CONFIG.NAMA_ARENA) + '</text>',
+    '</svg>',
+  ].join('\n'), "utf8");
+
+  // 4. Composite semua layer
+  const result = await sharp({
+    create: { width: W, height: H, channels: 4,
+      background: { r: 13, g: 27, b: 46, alpha: 1 } }
+  }).composite([
+    { input: header,  top: 0,   left: 0 },
+    { input: accent,  top: 116, left: 0 },
+    { input: qrCard,  top: 124, left: 120 },
+    { input: divider, top: 688, left: 0 },
+    { input: infoBar, top: 690, left: 0 },
+    { input: footer,  top: 796, left: 0 },
+    // Teks di atas semua layer
+    { input: textSvg, top: 0,   left: 0 },
+  ]).png().toBuffer();
+
+  return result;
 }
+
 
 // ── GET /member/:kode — halaman OG untuk WA crawler ──────────
 router.get("/member/:kode", (req, res) => {
