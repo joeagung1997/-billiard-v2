@@ -375,9 +375,11 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard
       + '<p class="qr-hint">Kartu QR siap — download lalu kirim ke WhatsApp member atau cetak</p>'
     : '';
 
+  // shareUrl pakai /member/:kode agar WA preview ada gambar QR
+  const shareUrl = scanUrl.replace('/scan?id=', '/member/');
   const waMsg = encodeURIComponent(
-    'Halo ' + nama + '! Ini kartu member billiard kamu. '
-    + 'Scan QR ini tiap kali mau main: ' + scanUrl
+    'Halo ' + nama + '! Ini kartu member ' + CONFIG.NAMA_ARENA + '. '
+    + 'Scan QR ini tiap kali mau main ya! ' + shareUrl
   );
 
   return docHead('Member Terdaftar')
