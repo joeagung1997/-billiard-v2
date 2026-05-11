@@ -376,7 +376,8 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard
     : '';
 
   // shareUrl pakai /member/:kode agar WA preview ada gambar QR
-  const shareUrl = scanUrl.replace('/scan?id=', '/member/');
+  // Paksa HTTPS agar thumbnail muncul di WA (WA tidak crawl HTTP)
+  const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const waMsg = encodeURIComponent(
     'Halo ' + nama + '! Ini kartu member ' + CONFIG.NAMA_ARENA + '. '
     + 'Scan QR ini tiap kali mau main ya! ' + shareUrl
