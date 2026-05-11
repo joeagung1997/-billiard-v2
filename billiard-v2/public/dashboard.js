@@ -166,7 +166,6 @@ const renderMemberRow = (m) => {
     <td>
       <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
         <a href="${dlUrl}" class="tbl-btn tbl-btn-blue" download="QR-${m.kode}.svg">⬇ QR</a>
-        <button onclick="copyUrl('${scanUrl}',this)" class="tbl-btn tbl-btn-blue">Copy</button>
         ${waShareBtn}
         ${klaimBtn}
         <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="tbl-btn">Edit</a>
