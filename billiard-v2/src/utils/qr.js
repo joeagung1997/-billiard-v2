@@ -156,3 +156,122 @@ export const brandedQrCard = async ({ text, nama, kode }) => {
     dataBase64: b64,
   };
 };
+
+// ── OG Image untuk WA preview (1200x630 landscape) ───────────
+// WA, FB, Telegram butuh gambar landscape 1200x630 (rasio ~1.91:1)
+// Menampilkan: nama arena, nama member, kode, dan QR di kanan
+export const ogImageSvg = async ({ text, nama, kode }) => {
+  // QR kecil untuk embed
+  const qrPng = await QRCode.toDataURL(text, {
+    ...QR_OPTIONS,
+    type:   "image/png",
+    width:  320,
+    margin: 1,
+  });
+
+  const W     = 1200;
+  const H     = 630;
+  const ARENA = escSvg(CONFIG.NAMA_ARENA);
+  const NAMA  = escSvg(nama.length > 28 ? nama.slice(0, 26) + "..." : nama);
+  const KODE  = escSvg(kode);
+
+  const svg = '<?xml version="1.0" encoding="UTF-8"?>'
+    + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+    + ' width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">'
+
+    + '<defs>'
+    + '<linearGradient id="ogBg" x1="0" y1="0" x2="1" y2="1">'
+    + '<stop offset="0%" stop-color="#0a1628"/>'
+    + '<stop offset="100%" stop-color="#050d1a"/>'
+    + '</linearGradient>'
+    + '<linearGradient id="ogAccent" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0%" stop-color="#14532d"/>'
+    + '<stop offset="100%" stop-color="#166534"/>'
+    + '</linearGradient>'
+    + '<clipPath id="ogClip"><rect width="' + W + '" height="' + H + '"/></clipPath>'
+    + '<clipPath id="qrClip"><rect x="780" y="80" width="360" height="470" rx="20"/></clipPath>'
+    + '</defs>'
+
+    + '<g clip-path="url(#ogClip)">'
+
+    // Background
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#ogBg)"/>'
+
+    // Dekorasi lingkaran kanan bawah
+    + '<circle cx="1200" cy="630" r="400" fill="#0d2a1e" opacity=".4"/>'
+    + '<circle cx="1200" cy="630" r="250" fill="#14532d" opacity=".2"/>'
+
+    // Dekorasi kiri atas
+    + '<circle cx="0" cy="0" r="300" fill="#0a1f1a" opacity=".3"/>'
+
+    // Strip hijau kiri
+    + '<rect x="0" y="0" width="8" height="' + H + '" fill="url(#ogAccent)"/>'
+
+    // ── Sisi kiri — teks ──────────────────────────────────
+    // Icon billiard (shape SVG)
+    + '<circle cx="80" cy="90" r="40" fill="#111" stroke="#22c55e" stroke-width="3"/>'
+    + '<circle cx="66" cy="76" r="12" fill="#fff" opacity=".9"/>'
+    + '<circle cx="80" cy="90" r="5" fill="#333" opacity=".5"/>'
+
+    // Nama arena
+    + '<text x="140" y="78"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="32" font-weight="700" fill="#ffffff">' + ARENA + '</text>'
+
+    // Label MEMBER CARD
+    + '<text x="140" y="108"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="16" fill="#86efac" letter-spacing="4" font-weight="600">MEMBER CARD</text>'
+
+    // Garis divider
+    + '<rect x="60" y="160" width="620" height="2" fill="#1e3a30"/>'
+
+    // Label NAMA
+    + '<text x="60" y="230"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="18" fill="#4a7060" letter-spacing="3" font-weight="700">NAMA MEMBER</text>'
+
+    // Nama member — besar
+    + '<text x="60" y="305"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="64" font-weight="700" fill="#e8edf5">' + NAMA + '</text>'
+
+    // Kode member
+    + '<text x="60" y="370"'
+    + ' font-family="Courier New,Courier,monospace"'
+    + ' font-size="28" fill="#22c55e" letter-spacing="4" font-weight="600">' + KODE + '</text>'
+
+    // Divider kedua
+    + '<rect x="60" y="420" width="620" height="2" fill="#1e3a30"/>'
+
+    // Instruksi
+    + '<text x="60" y="470"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="22" fill="#4a7060">Scan QR untuk check-in di ' + ARENA + '</text>'
+
+    // ── Sisi kanan — QR ──────────────────────────────────
+    // Shadow QR
+    + '<rect x="790" y="90" width="360" height="450" rx="20" fill="#000" opacity=".3"/>'
+    // White card QR
+    + '<rect x="780" y="80" width="360" height="450" rx="20" fill="#ffffff"/>'
+    // QR image
+    + '<image href="' + qrPng + '" x="790" y="90" width="340" height="340"'
+    + ' clip-path="url(#qrClip)"/>'
+    // Logo center QR
+    + '<rect x="942" y="222" width="56" height="56" rx="10" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>'
+    + '<circle cx="970" cy="250" r="20" fill="#0d1b2e" stroke="#22c55e" stroke-width="2"/>'
+    + '<circle cx="962" cy="242" r="6" fill="#fff" opacity=".85"/>'
+    // Label di bawah QR
+    + '<text x="960" y="466"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
+    + ' font-size="16" fill="#64748b" text-anchor="middle" letter-spacing="1">Scan untuk check-in</text>'
+    + '<text x="960" y="490"'
+    + ' font-family="Courier New,Courier,monospace"'
+    + ' font-size="18" fill="#22c55e" text-anchor="middle" letter-spacing="2" font-weight="600">' + KODE + '</text>'
+
+    + '</g>'
+    + '</svg>';
+
+  const b64 = Buffer.from(svg, "utf8").toString("base64");
+  return { svg, b64 };
+};
