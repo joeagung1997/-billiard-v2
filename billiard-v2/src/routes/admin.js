@@ -10,7 +10,7 @@ import {
   generateKode, formatTanggalPendek, formatTanggalBulan,
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
 } from "../utils/format.js";
-import { qrDataUrl, buildScanUrl } from "../utils/qr.js";
+import { brandedQrCard, qrDataUrl, buildScanUrl } from "../utils/qr.js";
 import { adminLoginPage, adminDashboard, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
 
 const router = Router();
@@ -61,10 +61,26 @@ router.get("/tambah", requireAdmin, async (req, res) => {
   db.members.push(newMember);
   writeDB(db);
 
-  const scanUrl  = buildScanUrl(req, kode);
-  const qrData   = await qrDataUrl(scanUrl).catch(() => "");
+  const scanUrl = buildScanUrl(req, kode);
 
-  res.send(addMemberSuccess({ tk, kode, nama, telepon, scanUrl, qrData, req }));
+  // Generate branded card — log error agar tidak silent fail
+  let brandedCard = null;
+  try {
+    brandedCard = await brandedQrCard({ text: scanUrl, nama, kode });
+    console.log("[QR] Branded card OK untuk " + kode);
+  } catch (err) {
+    console.error("[QR] brandedQrCard gagal untuk " + kode + ":", err.message);
+    // Fallback: QR polos sebagai base64
+    try {
+      const qrB64 = await qrDataUrl(scanUrl, 300);
+      brandedCard = { encoded: qrB64 };
+      console.log("[QR] Fallback QR polos OK untuk " + kode);
+    } catch (err2) {
+      console.error("[QR] Fallback juga gagal:", err2.message);
+    }
+  }
+
+  res.send(addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard }));
 });
 
 // ── GET /admin/edit ───────────────────────────────────────────
