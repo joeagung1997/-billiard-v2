@@ -4,6 +4,7 @@
 // sudah di-inject server sebagai variabel global di HTML
 
 "use strict";
+const CONFIG_ARENA = document.title.replace(" — Admin", "") || "Billiard";
 
 // ── Theme ─────────────────────────────────────────────────────
 const THEME_KEY = "warpat_admin_theme";
@@ -93,18 +94,31 @@ const renderLog = ({ nama, aksi, detail, tgl }) => {
 const renderMemberRow = (m) => {
   const pct      = Math.round((m.totalMain ?? 0) / BATAS * 100);
   const isGratis = m.status === "GRATIS";
-  const scanUrl  = `${HOST}/scan?id=${m.kode}`;
-  const dlUrl    = `/admin/qr/${m.kode}?tk=${TK}`;
-  const imgUrl   = `/admin/qr-img/${m.kode}?tk=${TK}`;
-  const waNum    = (m.telepon ?? "").replace(/[^0-9]/g, "");
+  const baseUrl  = (HOST || '').replace('http://', 'https://');
+  const scanUrl  = baseUrl + '/scan?id=' + m.kode;
+  const shareUrl = baseUrl + '/member/' + m.kode;
+  const dlUrl    = '/admin/qr/' + m.kode + '?tk=' + TK;
+  const imgUrl   = '/admin/qr-img/' + m.kode + '?tk=' + TK;
+  const waNum    = (m.telepon ?? '').replace(/[^0-9]/g, '');
 
+  // Ikon WA kecil → buka chat ke nomor member
   const waIcon = waNum
-    ? `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener"
-         title="Chat WA ${esc(m.nama)}"
-         style="display:inline-flex;align-items:center;justify-content:center;
-                width:22px;height:22px;background:#25d366;border-radius:50%;
-                flex-shrink:0;text-decoration:none">${WA_SVG}</a>`
-    : "";
+    ? '<a href="https://wa.me/' + waNum + '" target="_blank" rel="noopener"'
+      + ' title="Chat WA ' + esc(m.nama) + '"'
+      + ' style="display:inline-flex;align-items:center;justify-content:center;'
+      + 'width:22px;height:22px;background:#25d366;border-radius:50%;'
+      + 'flex-shrink:0;text-decoration:none">' + WA_SVG + '</a>'
+    : '';
+
+  // Tombol Kirim QR → share URL /member/ yang ada thumbnail preview WA
+  const waShareMsg = encodeURIComponent(
+    'Halo ' + m.nama + '! Ini kartu member billiard kamu.\n'
+    + 'Tunjukkan QR ini ke kasir tiap mau main: ' + shareUrl
+  );
+  const waShareBtn = '<a href="https://wa.me/?text=' + waShareMsg + '"'
+    + ' target="_blank" rel="noopener" class="tbl-btn"'
+    + ' style="background:#25d366;color:#fff;border-color:#25d366;display:inline-flex;align-items:center;gap:3px">'
+    + WA_SVG + ' QR</a>';
 
   const progressHtml = isGratis
     ? `<span class="badge badge-green">🎁 GRATIS</span>`
@@ -153,6 +167,7 @@ const renderMemberRow = (m) => {
       <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
         <a href="${dlUrl}" class="tbl-btn tbl-btn-blue" download="QR-${m.kode}.svg">⬇ QR</a>
         <button onclick="copyUrl('${scanUrl}',this)" class="tbl-btn tbl-btn-blue">Copy</button>
+        ${waShareBtn}
         ${klaimBtn}
         <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="tbl-btn">Edit</a>
         <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
@@ -351,9 +366,8 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   dlEl.href  = dlUrl;
   dlEl.setAttribute("download", `QR-${kode}.png`);
 
-  // shareUrl pakai /member/:kode, paksa HTTPS agar WA mau crawl thumbnail
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
-  const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu. Scan QR ini tiap kali mau main ya! ' + shareUrl);
+  const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
   document.getElementById("modalWa").href = `https://wa.me/?text=${msg}`;
 
   document.getElementById("modalOverlay").classList.add("open");
