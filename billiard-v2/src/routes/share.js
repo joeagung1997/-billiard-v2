@@ -16,7 +16,7 @@ const router = Router();
 // Cloudinary render teks langsung via URL — tidak butuh font di server
 function makeCloudinaryUrl(nama, kode) {
   const CLOUD = "dlxazwdbu";
-  const BASE  = "billiard-bg_kcp5iu";   // public_id dari Cloudinary
+  const BASE  = "billiard-bg_k0I8pg";   // public_id dari Cloudinary
 
   const enc = (t) => encodeURIComponent(String(t ?? ""))
     .replace(/,/g, "%2C").replace(/\//g, "%2F");
