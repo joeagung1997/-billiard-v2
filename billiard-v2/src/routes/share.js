@@ -18,57 +18,61 @@ const esc = (s) => String(s ?? "")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // ── Helper: buat branded PNG 800x800 ─────────────────────────
-// Pakai sharp composite saja — NO teks, NO font, NO ImageMagick
-// QR dengan warna custom + frame branded yang visually unik
+// Pure sharp + SVG shapes — zero text, zero font dependency
 async function makeBrandedPng(scanUrl, nama, kode) {
   const sharp = (await import("sharp")).default;
 
   const W = 800, H = 800;
 
-  // 1. QR dengan warna dark navy (bukan hitam polos)
-  //    Ini yang buat QR terlihat unik dan branded
+  // 1. QR dengan warna navy (branded, bukan hitam polos)
   const qrBuf = await QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
     type: "png", width: 520, margin: 2,
-    color: { dark: "#0d1b2e", light: "#ffffff" },
+    color: { dark: "#0d2137", light: "#ffffff" },
   });
 
-  // 2. QR kedua — lebih kecil dengan warna hijau untuk logo center
-  const qrSmallBuf = await QRCode.toBuffer(scanUrl, {
-    errorCorrectionLevel: "H",
-    type: "png", width: 60, margin: 0,
-    color: { dark: "#14532d", light: "#ffffff" },
-  });
+  // 2. Semua elemen sebagai SVG shapes (BUKAN text) atau sharp buffers
+  // SVG shapes pasti render — tidak butuh font
 
-  // 3. Semua layer pakai sharp create + composite
-  //    Layout: header 120px | QR area 560px | info 80px | footer 40px = 800px
+  // Header hijau dengan pola dekorasi
+  const headerSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="120">'
+    // Background
+    + '<rect width="800" height="120" fill="#14532d"/>'
+    // Pola garis diagonal dekorasi
+    + '<line x1="600" y1="0" x2="800" y2="120" stroke="#ffffff" stroke-width="1" opacity=".06"/>'
+    + '<line x1="650" y1="0" x2="800" y2="60"  stroke="#ffffff" stroke-width="1" opacity=".04"/>'
+    + '<line x1="680" y1="0" x2="800" y2="40"  stroke="#ffffff" stroke-width="1" opacity=".03"/>'
+    // Icon billiard
+    + '<circle cx="52" cy="60" r="36" fill="#0a1a0f" stroke="#22c55e" stroke-width="2.5"/>'
+    + '<circle cx="52" cy="60" r="25" fill="#111"/>'
+    + '<circle cx="42" cy="50" r="10" fill="#fff" opacity=".92"/>'
+    + '<circle cx="52" cy="60" r="5"  fill="#333" opacity=".7"/>'
+    + '<rect x="18" y="55" width="68" height="9" fill="#22c55e" opacity=".4" rx="3"/>'
+    // 3 titik dekorasi kanan
+    + '<circle cx="720" cy="30" r="5" fill="#22c55e" opacity=".4"/>'
+    + '<circle cx="740" cy="50" r="3" fill="#22c55e" opacity=".3"/>'
+    + '<circle cx="760" cy="25" r="4" fill="#22c55e" opacity=".25"/>'
+    // Bar nama arena — blok hijau tua (pengganti teks)
+    + '<rect x="100" y="32" width="480" height="28" rx="4" fill="#0d3320" opacity=".6"/>'
+    + '<rect x="100" y="32" width="380" height="28" rx="4" fill="#0f4030" opacity=".5"/>'
+    // Dots menyerupai teks (hint nama)
+    + '<rect x="108" y="40" width="8"  height="12" rx="2" fill="#86efac" opacity=".7"/>'
+    + '<rect x="122" y="40" width="60" height="12" rx="2" fill="#86efac" opacity=".5"/>'
+    + '<rect x="188" y="40" width="8"  height="12" rx="2" fill="#86efac" opacity=".7"/>'
+    + '<rect x="202" y="40" width="50" height="12" rx="2" fill="#86efac" opacity=".5"/>'
+    + '<rect x="258" y="40" width="8"  height="12" rx="2" fill="#86efac" opacity=".7"/>'
+    // Bar sub label
+    + '<rect x="100" y="72" width="160" height="14" rx="3" fill="#22c55e" opacity=".3"/>'
+    + '<rect x="108" y="76" width="120" height="6"  rx="2" fill="#86efac" opacity=".4"/>'
+    + '</svg>'
+  );
 
-  // Header hijau gelap
-  const hdrBuf = await sharp({
-    create: { width: W, height: 120, channels: 4,
-      background: { r: 20, g: 83, b: 45, alpha: 1 } }
-  }).png().toBuffer();
-
-  // Aksen garis hijau terang bawah header
-  const accentBuf = await sharp({
-    create: { width: W, height: 5, channels: 4,
-      background: { r: 34, g: 197, b: 94, alpha: 1 } }
-  }).png().toBuffer();
-
-  // Aksen kiri (lebih terang)
-  const accentLeftBuf = await sharp({
-    create: { width: 90, height: 5, channels: 4,
-      background: { r: 134, g: 239, b: 172, alpha: 1 } }
-  }).png().toBuffer();
-
-  // Icon billiard — SVG shape (bukan teks/emoji)
-  const ballSvg = Buffer.from(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">'
-    + '<circle cx="40" cy="40" r="38" fill="#0a1a0f" stroke="#22c55e" stroke-width="3"/>'
-    + '<circle cx="40" cy="40" r="27" fill="#111"/>'
-    + '<circle cx="30" cy="30" r="11" fill="#fff" opacity=".92"/>'
-    + '<circle cx="40" cy="40" r="5"  fill="#333" opacity=".7"/>'
-    + '<rect x="8" y="36" width="64" height="9" fill="#22c55e" opacity=".45" rx="3"/>'
+  // Aksen garis bawah header
+  const accentSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="5">'
+    + '<rect width="800" height="5" fill="#22c55e" opacity=".7"/>'
+    + '<rect width="100" height="5" fill="#86efac"/>'
     + '</svg>'
   );
 
@@ -80,69 +84,64 @@ async function makeBrandedPng(scanUrl, nama, kode) {
     { input: await sharp(qrBuf).resize(520, 520).toBuffer(), top: 12, left: 12 }
   ]).png().toBuffer();
 
-  // Logo billiard center di QR (overlay kecil)
-  const logoCenterSvg = Buffer.from(
+  // Logo billiard center
+  const logoSvg = Buffer.from(
     '<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52">'
-    + '<rect width="52" height="52" rx="8" fill="#fff" stroke="#e5e7eb" stroke-width="1.5"/>'
+    + '<rect width="52" height="52" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1.5"/>'
     + '<circle cx="26" cy="26" r="18" fill="#0d1b2e" stroke="#22c55e" stroke-width="2.5"/>'
     + '<circle cx="19" cy="19" r="6"  fill="#fff" opacity=".88"/>'
-    + '<rect x="8" y="23" width="36" height="5" fill="#22c55e" opacity=".4" rx="2"/>'
+    + '<rect x="10" y="23" width="32" height="5" fill="#22c55e" opacity=".45" rx="2"/>'
     + '</svg>'
   );
 
-  // Info bar navy
-  const infoBuf = await sharp({
-    create: { width: W, height: 84, channels: 4,
-      background: { r: 10, g: 23, b: 40, alpha: 1 } }
-  }).png().toBuffer();
-
-  // Divider
-  const divBuf = await sharp({
-    create: { width: 680, height: 2, channels: 4,
-      background: { r: 30, g: 58, b: 48, alpha: 1 } }
-  }).png().toBuffer();
+  // Info area bawah QR — navy dengan stripe hijau dekoratif
+  const infoSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="126">'
+    + '<rect width="800" height="126" fill="#0a1728"/>'
+    // Divider tipis
+    + '<rect width="680" height="2" x="60" fill="#1e3a30"/>'
+    // Blok visual nama (pengganti teks) — lebih rapi
+    + '<rect x="100" y="20" width="600" height="36" rx="6" fill="#0f2035" opacity=".8"/>'
+    + '<rect x="108" y="28" width="10" height="20" rx="3" fill="#e8edf5" opacity=".5"/>'
+    + '<rect x="124" y="28" width="180" height="20" rx="3" fill="#e8edf5" opacity=".4"/>'
+    + '<rect x="312" y="28" width="10" height="20" rx="3" fill="#e8edf5" opacity=".3"/>'
+    + '<rect x="328" y="28" width="120" height="20" rx="3" fill="#e8edf5" opacity=".35"/>'
+    // Blok kode member
+    + '<rect x="220" y="68" width="360" height="26" rx="5" fill="#0d3320" opacity=".8"/>'
+    + '<rect x="228" y="74" width="40" height="14" rx="3" fill="#22c55e" opacity=".5"/>'
+    + '<rect x="276" y="74" width="8"  height="14" rx="2" fill="#22c55e" opacity=".4"/>'
+    + '<rect x="292" y="74" width="60" height="14" rx="3" fill="#22c55e" opacity=".45"/>'
+    + '<rect x="360" y="74" width="8"  height="14" rx="2" fill="#22c55e" opacity=".4"/>'
+    + '<rect x="376" y="74" width="40" height="14" rx="3" fill="#22c55e" opacity=".5"/>'
+    + '<rect x="424" y="74" width="8"  height="14" rx="2" fill="#22c55e" opacity=".3"/>'
+    + '<rect x="440" y="74" width="30" height="14" rx="3" fill="#22c55e" opacity=".4"/>'
+    + '</svg>'
+  );
 
   // Footer
-  const footerBuf = await sharp({
-    create: { width: W, height: 42, channels: 4,
-      background: { r: 7, g: 18, b: 16, alpha: 1 } }
-  }).png().toBuffer();
+  const footerSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="42">'
+    + '<rect width="800" height="42" fill="#071210"/>'
+    // Visual bar footer
+    + '<rect x="60"  y="14" width="280" height="8" rx="4" fill="#22c55e" opacity=".25"/>'
+    + '<rect x="460" y="14" width="280" height="8" rx="4" fill="#22c55e" opacity=".2"/>'
+    + '<rect x="340" y="12" width="120" height="12" rx="4" fill="#22c55e" opacity=".35"/>'
+    // Aksen bawah
+    + '<rect x="0" y="39" width="800" height="3" fill="#22c55e" opacity=".4"/>'
+    + '</svg>'
+  );
 
-  // Footer accent line
-  const footAccentBuf = await sharp({
-    create: { width: W, height: 3, channels: 4,
-      background: { r: 34, g: 197, b: 94, alpha: 0.5 } }
-  }).png().toBuffer();
-
-  // Nama bar — strip navy untuk area nama (visual placeholder)
-  const namaBarBuf = await sharp({
-    create: { width: 500, height: 32, channels: 4,
-      background: { r: 20, g: 35, b: 58, alpha: 1 } }
-  }).png().toBuffer();
-
-  // Kode bar — strip hijau gelap
-  const kodeBarBuf = await sharp({
-    create: { width: 280, height: 22, channels: 4,
-      background: { r: 14, g: 53, b: 45, alpha: 1 } }
-  }).png().toBuffer();
-
-  // 4. Composite semua layer
+  // 3. Composite semua
   const result = await sharp({
     create: { width: W, height: H, channels: 4,
       background: { r: 13, g: 27, b: 46, alpha: 1 } }
   }).composite([
-    { input: hdrBuf,       top: 0,   left: 0 },
-    { input: accentBuf,    top: 117, left: 0 },
-    { input: accentLeftBuf,top: 117, left: 0 },
-    { input: ballSvg,      top: 20,  left: 18 },    // icon billiard
-    { input: qrCardBuf,    top: 128, left: 128 },   // QR white card
-    { input: logoCenterSvg,top: 374, left: 374 },   // logo center QR
-    { input: divBuf,       top: 678, left: 60 },
-    { input: infoBuf,      top: 680, left: 0 },
-    { input: namaBarBuf,   top: 690, left: 150 },   // nama placeholder
-    { input: kodeBarBuf,   top: 728, left: 260 },   // kode placeholder
-    { input: footerBuf,    top: 758, left: 0 },
-    { input: footAccentBuf,top: 797, left: 0 },
+    { input: headerSvg,  top: 0,   left: 0 },
+    { input: accentSvg,  top: 117, left: 0 },
+    { input: qrCardBuf,  top: 128, left: 128 },
+    { input: logoSvg,    top: 374, left: 374 },
+    { input: infoSvg,    top: 672, left: 0 },
+    { input: footerSvg,  top: 758, left: 0 },
   ]).png().toBuffer();
 
   return result;
