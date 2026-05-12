@@ -26,13 +26,20 @@ function makeCloudinaryUrl(nama, kode) {
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
 
+  // Posisi teks disesuaikan dengan layout baru:
+  // Header 120px (y_30-y_90), Footer 120px dari bawah (y_30-y_90)
   const tr = [
     "w_800,h_800,c_fill",
-    "l_text:DejaVu%20Sans_30_bold:" + arena + ",co_white,g_north_west,x_100,y_44",
-    "l_text:DejaVu%20Sans_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north_west,x_100,y_86",
-    "l_text:DejaVu%20Sans_28_bold:" + namaDisp + ",co_rgb:e8edf5,g_south,y_110",
-    "l_text:DejaVu%20Sans_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_74",
-    "l_text:DejaVu%20Sans_13:" + footer + ",co_rgb:22c55e,g_south,y_30",
+    // Nama arena — di tengah header (y=60 dari atas)
+    "l_text:DejaVu%20Sans_32_bold:" + arena + ",co_white,g_north,y_30",
+    // Label MEMBER CARD kecil
+    "l_text:DejaVu%20Sans_13:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_78",
+    // Nama member — di footer, tengah (y=50 dari bawah)
+    "l_text:DejaVu%20Sans_30_bold:" + namaDisp + ",co_rgb:e8edf5,g_south,y_80",
+    // Kode member
+    "l_text:DejaVu%20Sans_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_44",
+    // Footer instruksi
+    "l_text:DejaVu%20Sans_12:" + footer + ",co_rgb:86efac,g_south,y_18",
   ].join("/");
 
   return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BASE;
@@ -49,33 +56,36 @@ const esc = (s) => String(s ?? "")
 async function makeBrandedPng(scanUrl, nama, kode) {
   const sharp = (await import("sharp")).default;
 
-  // QR dengan warna navy branded
+  // QR 540x540 warna navy
   const qrBuf = await QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
-    type: "png", width: 600, margin: 3,
+    type: "png", width: 540, margin: 2,
     color: { dark: "#0d2137", light: "#ffffff" },
   });
 
-  // Tambah padding warna hijau gelap di sekeliling QR
-  // Top: 100px (header hijau), Bottom: 100px, Left/Right: 100px
-  const result = await sharp(qrBuf)
-    .resize(600, 600)
-    .extend({
-      top:    100,
-      bottom: 100,
-      left:   100,
-      right:  100,
-      background: { r: 14, g: 53, b: 45, alpha: 1 },  // hijau billiard
-    })
-    .extend({
-      top:    6,
-      bottom: 6,
-      left:   6,
-      right:  6,
-      background: { r: 34, g: 197, b: 94, alpha: 1 },  // aksen hijau terang
-    })
-    .png()
-    .toBuffer();
+  // Canvas 800x800 dengan ruang header/footer untuk teks Cloudinary:
+  // 120px atas = area nama arena (hijau gelap)
+  // 560px tengah = QR putih
+  // 120px bawah = area nama member + kode (hijau gelap)
+  const result = await sharp({
+    create: { width: 800, height: 800, channels: 4,
+      background: { r: 14, g: 53, b: 45, alpha: 1 } }
+  }).composite([
+    // Area QR putih
+    { input: await sharp({ create: { width: 560, height: 560, channels: 4,
+        background: { r: 255, g: 255, b: 255, alpha: 1 } }
+      }).png().toBuffer(), top: 120, left: 120 },
+    // QR di dalam area putih
+    { input: await sharp(qrBuf).toBuffer(), top: 130, left: 130 },
+    // Garis aksen hijau bawah header
+    { input: await sharp({ create: { width: 800, height: 4, channels: 4,
+        background: { r: 34, g: 197, b: 94, alpha: 1 } }
+      }).png().toBuffer(), top: 118, left: 0 },
+    // Garis aksen hijau atas footer
+    { input: await sharp({ create: { width: 800, height: 4, channels: 4,
+        background: { r: 34, g: 197, b: 94, alpha: 1 } }
+      }).png().toBuffer(), top: 678, left: 0 },
+  ]).png().toBuffer();
 
   return result;
 }
