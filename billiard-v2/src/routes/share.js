@@ -12,6 +12,32 @@ import QRCode                 from "qrcode";
 
 const router = Router();
 
+// ── Cloudinary URL dengan overlay teks ───────────────────────
+// Cloudinary render teks langsung via URL — tidak butuh font di server
+function makeCloudinaryUrl(nama, kode) {
+  const CLOUD = "dlxazwdbu";
+  const BASE  = "billiard-bg";
+
+  const enc = (t) => encodeURIComponent(String(t ?? ""))
+    .replace(/,/g, "%2C").replace(/\//g, "%2F");
+
+  const arena    = enc(CONFIG.NAMA_ARENA);
+  const namaDisp = enc(nama.length > 20 ? nama.slice(0, 18) + "..." : nama);
+  const kodeDisp = enc(kode);
+  const footer   = enc("Tunjukkan ke kasir setiap mau main");
+
+  const tr = [
+    "w_800,h_800,c_fill",
+    "l_text:DejaVu%20Sans_30_bold:" + arena + ",co_white,g_north_west,x_100,y_44",
+    "l_text:DejaVu%20Sans_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north_west,x_100,y_86",
+    "l_text:DejaVu%20Sans_28_bold:" + namaDisp + ",co_rgb:e8edf5,g_south,y_110",
+    "l_text:DejaVu%20Sans_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_74",
+    "l_text:DejaVu%20Sans_13:" + footer + ",co_rgb:22c55e,g_south,y_30",
+  ].join("/");
+
+  return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BASE;
+}
+
 // ── Helper: escape SVG ────────────────────────────────────────
 const esc = (s) => String(s ?? "")
   .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -102,41 +128,31 @@ router.get("/member/:kode", (req, res) => {
 });
 
 // ── GET /og-image/:kode — branded PNG untuk WA thumbnail ─────
-// WAJIB return image/png — WA tidak mau SVG
+// Redirect ke Cloudinary yang handle overlay teks
 router.get("/og-image/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
   const db     = readDB();
   const member = findMember(db.members, kode);
   if (!member) return res.status(404).end();
 
+  // Cek apakah billiard-bg sudah diupload ke Cloudinary
+  // Jika ya: redirect ke Cloudinary URL dengan overlay teks
+  // Jika tidak: fallback ke QR PNG dari server
+  const cdnUrl = makeCloudinaryUrl(member.nama, kode);
+
   try {
-    const scanUrl = buildScanUrl(req, kode);
-    console.log("[OG] Generate branded PNG untuk " + kode);
-
-    const pngBuf = await makeBrandedPng(scanUrl, member.nama, kode);
-
-    res
-      .status(200)
-      .setHeader("Content-Type", "image/png")
-      .setHeader("Content-Length", pngBuf.length)
-      .setHeader("Cache-Control", "public, max-age=3600")
-      .setHeader("Access-Control-Allow-Origin", "*")
-      .end(pngBuf);
-
-    console.log("[OG] PNG branded OK:", pngBuf.length, "bytes");
+    // Fetch Cloudinary untuk cek apakah base image ada
+    // Redirect 302 agar WA fetch langsung dari Cloudinary
+    res.redirect(302, cdnUrl);
+    console.log("[OG] Redirect ke Cloudinary:", cdnUrl.slice(0, 80));
   } catch (err) {
-    console.error("[OG] sharp gagal:", err.message, "| fallback ke QR polos");
-    // Fallback ke QR PNG polos kalau sharp belum tersedia
+    // Fallback ke QR lokal
     try {
       const scanUrl = buildScanUrl(req, kode);
-      const pngBuf  = await QRCode.toBuffer(scanUrl, {
-        type: "png", width: 600, margin: 3,
-        color: { dark: "#000000", light: "#ffffff" },
-      });
+      const pngBuf  = await makeBrandedPng(scanUrl, member.nama, kode);
       res.setHeader("Content-Type", "image/png")
          .setHeader("Cache-Control", "public, max-age=3600")
          .end(pngBuf);
-      console.log("[OG] Fallback QR polos OK");
     } catch (err2) {
       res.status(500).end();
     }
