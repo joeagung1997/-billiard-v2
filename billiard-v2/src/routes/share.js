@@ -18,187 +18,134 @@ const esc = (s) => String(s ?? "")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // ── Helper: buat branded PNG 800x800 ─────────────────────────
-// Pakai ImageMagick (tersedia di Railway) — render teks dengan font TTF
+// Pakai sharp composite saja — NO teks, NO font, NO ImageMagick
+// QR dengan warna custom + frame branded yang visually unik
 async function makeBrandedPng(scanUrl, nama, kode) {
-  const { execFile } = await import("child_process");
-  const { promisify } = await import("util");
-  const { writeFile, readFile, unlink } = await import("fs/promises");
-  const { tmpdir } = await import("os");
-  const path = await import("path");
-  const execFileAsync = promisify(execFile);
   const sharp = (await import("sharp")).default;
 
   const W = 800, H = 800;
-  const namaDisplay = nama.length > 20 ? nama.slice(0, 18) + "..." : nama;
-  const arena = CONFIG.NAMA_ARENA;
 
-  const FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
-  const FONT_REG  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
-  const FONT_MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf";
-
-  // Generate QR PNG → simpan ke tmp file
+  // 1. QR dengan warna dark navy (bukan hitam polos)
+  //    Ini yang buat QR terlihat unik dan branded
   const qrBuf = await QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
-    type: "png", width: 504, margin: 2,
-    color: { dark: "#000000", light: "#ffffff" },
+    type: "png", width: 520, margin: 2,
+    color: { dark: "#0d1b2e", light: "#ffffff" },
   });
 
-  const tmpId   = Date.now() + "_" + Math.random().toString(36).slice(2);
-  const qrPath  = path.join(tmpdir(), "qr_" + tmpId + ".png");
-  const outPath = path.join(tmpdir(), "og_" + tmpId + ".png");
+  // 2. QR kedua — lebih kecil dengan warna hijau untuk logo center
+  const qrSmallBuf = await QRCode.toBuffer(scanUrl, {
+    errorCorrectionLevel: "H",
+    type: "png", width: 60, margin: 0,
+    color: { dark: "#14532d", light: "#ffffff" },
+  });
 
-  await writeFile(qrPath, qrBuf);
+  // 3. Semua layer pakai sharp create + composite
+  //    Layout: header 120px | QR area 560px | info 80px | footer 40px = 800px
 
-  try {
-    // ImageMagick composite command
-    const args = [
-      // Canvas 800x800 background navy
-      "-size", "800x800", "xc:#0d1b2e",
+  // Header hijau gelap
+  const hdrBuf = await sharp({
+    create: { width: W, height: 120, channels: 4,
+      background: { r: 20, g: 83, b: 45, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Dekorasi lingkaran kanan bawah
-      "-fill", "#0a1f1a", "-stroke", "none",
-      "-draw", "circle 800,800 800,480",
+  // Aksen garis hijau terang bawah header
+  const accentBuf = await sharp({
+    create: { width: W, height: 5, channels: 4,
+      background: { r: 34, g: 197, b: 94, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Header hijau
-      "-fill", "#14532d",
-      "-draw", "rectangle 0,0 800,120",
+  // Aksen kiri (lebih terang)
+  const accentLeftBuf = await sharp({
+    create: { width: 90, height: 5, channels: 4,
+      background: { r: 134, g: 239, b: 172, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Aksen garis bawah header
-      "-fill", "#22c55e",
-      "-draw", "rectangle 0,117 800,121",
-      "-draw", "rectangle 0,117 90,121",
+  // Icon billiard — SVG shape (bukan teks/emoji)
+  const ballSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">'
+    + '<circle cx="40" cy="40" r="38" fill="#0a1a0f" stroke="#22c55e" stroke-width="3"/>'
+    + '<circle cx="40" cy="40" r="27" fill="#111"/>'
+    + '<circle cx="30" cy="30" r="11" fill="#fff" opacity=".92"/>'
+    + '<circle cx="40" cy="40" r="5"  fill="#333" opacity=".7"/>'
+    + '<rect x="8" y="36" width="64" height="9" fill="#22c55e" opacity=".45" rx="3"/>'
+    + '</svg>'
+  );
 
-      // Icon billiard — bola
-      "-fill", "#0a1a0f", "-stroke", "#22c55e", "-strokewidth", "2",
-      "-draw", "circle 52,60 52,87",
-      "-fill", "#111111", "-stroke", "none",
-      "-draw", "circle 52,60 52,81",
-      "-fill", "#ffffff",
-      "-draw", "circle 43,51 43,59",
-      "-fill", "#333333",
-      "-draw", "circle 52,60 52,64",
-      // Strip bola
-      "-fill", "#22c55e", "-alpha", "set",
-      "-draw", "rectangle 22,55 82,62",
+  // White card untuk QR
+  const qrCardBuf = await sharp({
+    create: { width: 544, height: 544, channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 } }
+  }).composite([
+    { input: await sharp(qrBuf).resize(520, 520).toBuffer(), top: 12, left: 12 }
+  ]).png().toBuffer();
 
-      // Nama arena
-      "-font", FONT_BOLD, "-pointsize", "30",
-      "-fill", "#ffffff",
-      "-annotate", "+100+68", arena,
+  // Logo billiard center di QR (overlay kecil)
+  const logoCenterSvg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52">'
+    + '<rect width="52" height="52" rx="8" fill="#fff" stroke="#e5e7eb" stroke-width="1.5"/>'
+    + '<circle cx="26" cy="26" r="18" fill="#0d1b2e" stroke="#22c55e" stroke-width="2.5"/>'
+    + '<circle cx="19" cy="19" r="6"  fill="#fff" opacity=".88"/>'
+    + '<rect x="8" y="23" width="36" height="5" fill="#22c55e" opacity=".4" rx="2"/>'
+    + '</svg>'
+  );
 
-      // Label MEMBER CARD
-      "-font", FONT_REG, "-pointsize", "14",
-      "-fill", "#86efac",
-      "-annotate", "+100+92", "MEMBER CARD",
+  // Info bar navy
+  const infoBuf = await sharp({
+    create: { width: W, height: 84, channels: 4,
+      background: { r: 10, g: 23, b: 40, alpha: 1 } }
+  }).png().toBuffer();
 
-      // QR white card background
-      "-fill", "#ffffff", "-stroke", "#e5e7eb", "-strokewidth", "1",
-      "-draw", "roundrectangle 138,126 662,650 14,14",
+  // Divider
+  const divBuf = await sharp({
+    create: { width: 680, height: 2, channels: 4,
+      background: { r: 30, g: 58, b: 48, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Composite QR image
-      qrPath, "-geometry", "+148+136", "-composite",
+  // Footer
+  const footerBuf = await sharp({
+    create: { width: W, height: 42, channels: 4,
+      background: { r: 7, g: 18, b: 16, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Logo center QR
-      "-fill", "#0d1b2e", "-stroke", "#22c55e", "-strokewidth", "2",
-      "-draw", "circle 400,388 400,373",
-      "-fill", "#ffffff", "-stroke", "none",
-      "-draw", "circle 392,380 392,385",
+  // Footer accent line
+  const footAccentBuf = await sharp({
+    create: { width: W, height: 3, channels: 4,
+      background: { r: 34, g: 197, b: 94, alpha: 0.5 } }
+  }).png().toBuffer();
 
-      // Divider
-      "-fill", "#1e3a30",
-      "-draw", "rectangle 60,668 740,670",
+  // Nama bar — strip navy untuk area nama (visual placeholder)
+  const namaBarBuf = await sharp({
+    create: { width: 500, height: 32, channels: 4,
+      background: { r: 20, g: 35, b: 58, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Nama member
-      "-font", FONT_BOLD, "-pointsize", "28",
-      "-fill", "#e8edf5",
-      "-gravity", "None",
-      "-annotate", "+0+710", namaDisplay,
+  // Kode bar — strip hijau gelap
+  const kodeBarBuf = await sharp({
+    create: { width: 280, height: 22, channels: 4,
+      background: { r: 14, g: 53, b: 45, alpha: 1 } }
+  }).png().toBuffer();
 
-      // Kode member
-      "-font", FONT_MONO, "-pointsize", "18",
-      "-fill", "#22c55e",
-      "-annotate", "+0+746", kode,
+  // 4. Composite semua layer
+  const result = await sharp({
+    create: { width: W, height: H, channels: 4,
+      background: { r: 13, g: 27, b: 46, alpha: 1 } }
+  }).composite([
+    { input: hdrBuf,       top: 0,   left: 0 },
+    { input: accentBuf,    top: 117, left: 0 },
+    { input: accentLeftBuf,top: 117, left: 0 },
+    { input: ballSvg,      top: 20,  left: 18 },    // icon billiard
+    { input: qrCardBuf,    top: 128, left: 128 },   // QR white card
+    { input: logoCenterSvg,top: 374, left: 374 },   // logo center QR
+    { input: divBuf,       top: 678, left: 60 },
+    { input: infoBuf,      top: 680, left: 0 },
+    { input: namaBarBuf,   top: 690, left: 150 },   // nama placeholder
+    { input: kodeBarBuf,   top: 728, left: 260 },   // kode placeholder
+    { input: footerBuf,    top: 758, left: 0 },
+    { input: footAccentBuf,top: 797, left: 0 },
+  ]).png().toBuffer();
 
-      // Footer background
-      "-fill", "#071210",
-      "-draw", "rectangle 0,758 800,800",
-
-      // Footer teks
-      "-font", FONT_BOLD, "-pointsize", "14",
-      "-fill", "#22c55e",
-      "-annotate", "+0+778", "Tunjukkan ke kasir setiap mau main billiard",
-
-      "-font", FONT_REG, "-pointsize", "12",
-      "-fill", "#4a7060",
-      "-annotate", "+0+796", "10x kunjungan = 1x GRATIS  |  " + arena,
-
-      outPath,
-    ];
-
-    // Untuk teks tengah (nama & kode), pakai gravity center
-    // Kita split jadi 2 pass: background + QR dulu, lalu teks overlay
-    const args1 = [
-      "-size", "800x800", "xc:#0d1b2e",
-      // Dekorasi
-      "-fill", "#0a1f1a", "-stroke", "none",
-      "-draw", "circle 800,800 800,480",
-      // Header
-      "-fill", "#14532d",
-      "-draw", "rectangle 0,0 800,120",
-      "-fill", "#22c55e",
-      "-draw", "rectangle 0,117 800,121",
-      "-draw", "rectangle 0,117 90,121",
-      // Icon billiard
-      "-fill", "#111111", "-stroke", "#22c55e", "-strokewidth", "2.5",
-      "-draw", "circle 52,60 52,88",
-      "-fill", "#0d0d0d", "-stroke", "none",
-      "-draw", "circle 52,60 52,82",
-      "-fill", "#ffffff",
-      "-draw", "circle 43,51 43,60",
-      "-fill", "#333",
-      "-draw", "circle 52,60 52,64",
-      // QR white card
-      "-fill", "#ffffff", "-stroke", "none",
-      "-draw", "roundrectangle 138,126 662,650 14,14",
-      // QR
-      qrPath, "-geometry", "+148+136", "-composite",
-      // Logo center
-      "-fill", "#0d1b2e", "-stroke", "#22c55e", "-strokewidth", "2",
-      "-draw", "circle 400,388 400,374",
-      "-fill", "#ffffff", "-stroke", "none",
-      "-draw", "circle 392,381 392,386",
-      // Divider
-      "-fill", "#1e3a30",
-      "-draw", "rectangle 60,668 740,670",
-      // Footer background
-      "-fill", "#071210",
-      "-draw", "rectangle 0,758 800,800",
-      // Teks header kiri
-      "-font", FONT_BOLD, "-pointsize", "30", "-fill", "#ffffff",
-      "-annotate", "+100+68", arena,
-      "-font", FONT_REG, "-pointsize", "14", "-fill", "#86efac",
-      "-annotate", "+100+92", "MEMBER CARD",
-      // Teks footer
-      "-font", FONT_BOLD, "-pointsize", "13", "-fill", "#22c55e",
-      "-gravity", "South", "-annotate", "+0+26", "Tunjukkan ke kasir setiap mau main billiard",
-      "-font", FONT_REG, "-pointsize", "11", "-fill", "#4a7060",
-      "-gravity", "South", "-annotate", "+0+8", "10x kunjungan = 1x GRATIS  |  " + arena,
-      // Teks center (nama & kode)
-      "-font", FONT_BOLD, "-pointsize", "28", "-fill", "#e8edf5",
-      "-gravity", "Center", "-annotate", "+0+130", namaDisplay,
-      "-font", FONT_MONO, "-pointsize", "18", "-fill", "#22c55e",
-      "-gravity", "Center", "-annotate", "+0+170", kode,
-      outPath,
-    ];
-
-    await execFileAsync("convert", args1);
-    const pngBuf = await readFile(outPath);
-    return pngBuf;
-  } finally {
-    // Cleanup tmp files
-    await unlink(qrPath).catch(() => {});
-    await unlink(outPath).catch(() => {});
-  }
+  return result;
 }
 
 
