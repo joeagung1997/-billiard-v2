@@ -18,102 +18,123 @@ const esc = (s) => String(s ?? "")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // ── Helper: buat branded PNG 800x800 ─────────────────────────
+// Pakai sharp composite — teks via SVG dengan font path langsung
+// sehingga tidak perlu font terinstall di sistem Railway
 async function makeBrandedPng(scanUrl, nama, kode) {
   const sharp = (await import("sharp")).default;
+  const fs    = (await import("fs")).default;
 
   const W = 800, H = 800;
+  const namaDisplay = nama.length > 22 ? nama.slice(0, 20) + "..." : nama;
 
-  // 1. Generate QR PNG
+  // Font paths langsung — tidak perlu fc-config
+  const FONT_BOLD    = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+  const FONT_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+  const FONT_MONO    = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf";
+
+  // Encode font ke base64 untuk embed di SVG @font-face
+  const toB64Font = (path) => {
+    try {
+      return "data:font/truetype;base64," + fs.readFileSync(path).toString("base64");
+    } catch { return null; }
+  };
+
+  const boldB64    = toB64Font(FONT_BOLD);
+  const regularB64 = toB64Font(FONT_REGULAR);
+  const monoB64    = toB64Font(FONT_MONO);
+
+  // Generate QR PNG
   const qrBuf = await QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
     type: "png", width: 520, margin: 2,
     color: { dark: "#000000", light: "#ffffff" },
   });
+  const qrB64 = "data:image/png;base64," + qrBuf.toString("base64");
 
-  // 2. Buat frame warna solid pakai sharp — tidak butuh font sama sekali
-  // Layout: header hijau 120px | QR 560px | footer 120px = 800px total
+  // SVG lengkap dengan @font-face embedded — teks pasti render
+  const fontFace = [
+    boldB64    ? "@font-face{font-family:'DJ';font-weight:700;src:url('" + boldB64 + "') format('truetype');}" : "",
+    regularB64 ? "@font-face{font-family:'DJ';font-weight:400;src:url('" + regularB64 + "') format('truetype');}" : "",
+    monoB64    ? "@font-face{font-family:'DJM';font-weight:700;src:url('" + monoB64 + "') format('truetype');}" : "",
+  ].join('');
 
-  // Header hijau gelap 800x120
-  const header = await sharp({
-    create: { width: W, height: 120, channels: 4,
-      background: { r: 20, g: 83, b: 45, alpha: 1 } }
-  }).png().toBuffer();
+  const svg = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"',
+    ' width="800" height="800" viewBox="0 0 800 800">',
+    '<defs><style>' + fontFace + '</style></defs>',
 
-  // Aksen garis bawah header (hijau terang 4px)
-  const accent = await sharp({
-    create: { width: W, height: 4, channels: 4,
-      background: { r: 34, g: 197, b: 94, alpha: 1 } }
-  }).png().toBuffer();
+    // Background
+    '<rect width="800" height="800" fill="#0d1b2e"/>',
+    '<circle cx="800" cy="800" r="350" fill="#0a1f1a" opacity=".35"/>',
+    '<circle cx="0" cy="0" r="180" fill="#0a1a0f" opacity=".2"/>',
 
-  // QR area background putih 560x560
-  const qrCard = await sharp({
-    create: { width: 560, height: 560, channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 } }
-  }).composite([{
-    input: await sharp(qrBuf).resize(536, 536).toBuffer(),
-    top: 12, left: 12,
-  }]).png().toBuffer();
+    // Header
+    '<rect x="0" y="0" width="800" height="120" fill="#14532d"/>',
+    '<rect x="0" y="117" width="800" height="4" fill="#22c55e" opacity=".8"/>',
+    '<rect x="0" y="117" width="100" height="4" fill="#22c55e"/>',
 
-  // Member info area 800x116 (navy gelap)
-  const infoBar = await sharp({
-    create: { width: W, height: 116, channels: 4,
-      background: { r: 13, g: 27, b: 46, alpha: 1 } }
-  }).png().toBuffer();
+    // Icon billiard (shape SVG — bukan emoji, pasti render)
+    '<circle cx="52" cy="60" r="32" fill="#0a1a0f" stroke="#22c55e" stroke-width="2.5"/>',
+    '<circle cx="52" cy="60" r="22" fill="#111111"/>',
+    '<circle cx="43" cy="51" r="9"  fill="#ffffff" opacity=".92"/>',
+    '<circle cx="52" cy="60" r="4"  fill="#333333" opacity=".6"/>',
 
-  // Divider tipis hijau 800x2
-  const divider = await sharp({
-    create: { width: W, height: 2, channels: 4,
-      background: { r: 30, g: 58, b: 48, alpha: 1 } }
-  }).png().toBuffer();
+    // Strip warna bola billiard
+    '<rect x="20" y="55" width="64" height="10" fill="#22c55e" opacity=".5" rx="2"/>',
 
-  // Footer 800x4 aksen bawah
-  const footer = await sharp({
-    create: { width: W, height: 4, channels: 4,
-      background: { r: 34, g: 197, b: 94, alpha: 0.6 } }
-  }).png().toBuffer();
+    // Nama arena
+    '<text x="100" y="58"',
+    ' font-family="DJ,DejaVu Sans,sans-serif" font-weight="700"',
+    ' font-size="30" fill="#ffffff">' + esc(CONFIG.NAMA_ARENA) + '</text>',
+    '<text x="100" y="88"',
+    ' font-family="DJ,DejaVu Sans,sans-serif" font-weight="400"',
+    ' font-size="15" fill="#86efac" letter-spacing="3">MEMBER CARD</text>',
 
-  // 3. SVG HANYA untuk teks — dengan font DejaVu yang pasti ada di Railway
-  // Tidak ada shape/background — hanya teks di atas transparent
-  const namaDisplay = nama.length > 22 ? nama.slice(0, 20) + "..." : nama;
-  const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    // QR area — white card
+    '<rect x="142" y="130" width="516" height="516" rx="16" fill="#000000" opacity=".3"/>',
+    '<rect x="138" y="126" width="524" height="524" rx="16" fill="#ffffff"/>',
+    '<image href="' + qrB64 + '" x="148" y="136" width="504" height="504"/>',
 
-  const textSvg = Buffer.from([
-    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">',
-    // Nama arena di header
-    '<text x="110" y="64" font-family="DejaVu Sans,sans-serif"',
-    ' font-size="32" font-weight="bold" fill="#ffffff">' + esc(CONFIG.NAMA_ARENA) + '</text>',
-    '<text x="110" y="96" font-family="DejaVu Sans,sans-serif"',
-    ' font-size="16" fill="#86efac" letter-spacing="4">MEMBER CARD</text>',
-    // Nama member di info bar
-    '<text x="400" y="718" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
-    ' font-size="30" font-weight="bold" fill="#e8edf5">' + esc(namaDisplay) + '</text>',
+    // Logo center billiard di tengah QR
+    '<rect x="378" y="368" width="44" height="44" rx="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.5"/>',
+    '<circle cx="400" cy="390" r="16" fill="#0d1b2e" stroke="#22c55e" stroke-width="2"/>',
+    '<circle cx="393" cy="383" r="5"  fill="#ffffff" opacity=".85"/>',
+
+    // Divider
+    '<line x1="60" y1="666" x2="740" y2="666" stroke="#1e3a30" stroke-width="1.5"/>',
+
+    // Nama member
+    '<text x="400" y="706"',
+    ' font-family="DJ,DejaVu Sans,sans-serif" font-weight="700"',
+    ' font-size="30" fill="#e8edf5" text-anchor="middle">' + esc(namaDisplay) + '</text>',
+
     // Kode member
-    '<text x="400" y="754" font-family="DejaVu Sans Mono,monospace" text-anchor="middle"',
-    ' font-size="20" fill="#22c55e" letter-spacing="4">' + esc(kode) + '</text>',
+    '<text x="400" y="742"',
+    ' font-family="DJM,DejaVu Sans Mono,monospace" font-weight="700"',
+    ' font-size="19" fill="#22c55e" text-anchor="middle" letter-spacing="4">' + esc(kode) + '</text>',
+
+    // Footer background
+    '<rect x="0" y="760" width="800" height="40" fill="#071210"/>',
+
     // Footer teks
-    '<text x="400" y="786" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
-    ' font-size="14" fill="#22c55e">Tunjukkan ke kasir setiap mau main</text>',
-    '<text x="400" y="800" font-family="DejaVu Sans,sans-serif" text-anchor="middle"',
-    ' font-size="11" fill="#4a7060">10x kunjungan = 1x GRATIS | ' + esc(CONFIG.NAMA_ARENA) + '</text>',
+    '<text x="400" y="779"',
+    ' font-family="DJ,DejaVu Sans,sans-serif" font-weight="700"',
+    ' font-size="14" fill="#22c55e" text-anchor="middle">Tunjukkan ke kasir setiap mau main billiard</text>',
+    '<text x="400" y="796"',
+    ' font-family="DJ,DejaVu Sans,sans-serif" font-weight="400"',
+    ' font-size="12" fill="#4a7060" text-anchor="middle">10x kunjungan = 1x GRATIS  ·  ' + esc(CONFIG.NAMA_ARENA) + '</text>',
+
     '</svg>',
-  ].join('\n'), "utf8");
+  ].join('\n');
 
-  // 4. Composite semua layer
-  const result = await sharp({
-    create: { width: W, height: H, channels: 4,
-      background: { r: 13, g: 27, b: 46, alpha: 1 } }
-  }).composite([
-    { input: header,  top: 0,   left: 0 },
-    { input: accent,  top: 116, left: 0 },
-    { input: qrCard,  top: 124, left: 120 },
-    { input: divider, top: 688, left: 0 },
-    { input: infoBar, top: 690, left: 0 },
-    { input: footer,  top: 796, left: 0 },
-    // Teks di atas semua layer
-    { input: textSvg, top: 0,   left: 0 },
-  ]).png().toBuffer();
+  // Convert SVG → PNG via sharp dengan density tinggi
+  const pngBuf = await sharp(Buffer.from(svg, "utf8"), { density: 150 })
+    .resize(800, 800)
+    .png()
+    .toBuffer();
 
-  return result;
+  return pngBuf;
 }
 
 
