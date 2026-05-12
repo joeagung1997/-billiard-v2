@@ -140,22 +140,27 @@ router.get("/og-image/:kode", async (req, res) => {
   // Jika tidak: fallback ke QR PNG dari server
   const cdnUrl = makeCloudinaryUrl(member.nama, kode);
 
+  // Cek Cloudinary dulu — jika base image ada, redirect ke sana
+  // Jika tidak, serve QR PNG lokal sebagai fallback
   try {
-    // Fetch Cloudinary untuk cek apakah base image ada
-    // Redirect 302 agar WA fetch langsung dari Cloudinary
+    const https = (await import("https")).default;
+    await new Promise((resolve, reject) => {
+      https.get(cdnUrl, (r) => {
+        if (r.statusCode === 200) resolve();
+        else reject(new Error("CDN " + r.statusCode));
+      }).on("error", reject);
+    });
+    // Cloudinary OK — redirect
     res.redirect(302, cdnUrl);
-    console.log("[OG] Redirect ke Cloudinary:", cdnUrl.slice(0, 80));
-  } catch (err) {
-    // Fallback ke QR lokal
-    try {
-      const scanUrl = buildScanUrl(req, kode);
-      const pngBuf  = await makeBrandedPng(scanUrl, member.nama, kode);
-      res.setHeader("Content-Type", "image/png")
-         .setHeader("Cache-Control", "public, max-age=3600")
-         .end(pngBuf);
-    } catch (err2) {
-      res.status(500).end();
-    }
+    console.log("[OG] Cloudinary redirect OK");
+  } catch {
+    // Fallback: serve QR PNG lokal
+    const scanUrl = buildScanUrl(req, kode);
+    const pngBuf  = await makeBrandedPng(scanUrl, member.nama, kode);
+    res.setHeader("Content-Type", "image/png")
+       .setHeader("Cache-Control", "public, max-age=3600")
+       .end(pngBuf);
+    console.log("[OG] Fallback QR lokal OK");
   }
 });
 
