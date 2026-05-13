@@ -16,7 +16,7 @@ const router = Router();
 // Cloudinary render teks langsung via URL — tidak butuh font di server
 function makeCloudinaryUrl(nama, kode) {
   const CLOUD = "dlxazwdbu";
-  const BASE  = "billiard-bg_k0I8pg";   // public_id dari Cloudinary
+  const BASE  = "billiard-bg_k0l8pg";   // public_id dari Cloudinary
 
   const enc = (t) => encodeURIComponent(String(t ?? ""))
     .replace(/,/g, "%2C").replace(/\//g, "%2F");
@@ -26,20 +26,20 @@ function makeCloudinaryUrl(nama, kode) {
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
 
-  // Posisi teks disesuaikan dengan layout baru:
-  // Header 120px (y_30-y_90), Footer 120px dari bawah (y_30-y_90)
+  // Font: Arial pasti tersedia di Cloudinary
+  // Posisi: header 120px atas, footer 120px bawah
   const tr = [
     "w_800,h_800,c_fill",
-    // Nama arena — di tengah header (y=60 dari atas)
-    "l_text:DejaVu%20Sans_32_bold:" + arena + ",co_white,g_north,y_30",
-    // Label MEMBER CARD kecil
-    "l_text:DejaVu%20Sans_13:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_78",
-    // Nama member — di footer, tengah (y=50 dari bawah)
-    "l_text:DejaVu%20Sans_30_bold:" + namaDisp + ",co_rgb:e8edf5,g_south,y_80",
+    // Nama arena di header
+    "l_text:Arial_34_bold:" + arena + ",co_white,g_north,y_32",
+    // Label kecil
+    "l_text:Arial_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_80",
+    // Nama member di footer
+    "l_text:Arial_32_bold:" + namaDisp + ",co_rgb:ffffff,g_south,y_78",
     // Kode member
-    "l_text:DejaVu%20Sans_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_44",
-    // Footer instruksi
-    "l_text:DejaVu%20Sans_12:" + footer + ",co_rgb:86efac,g_south,y_18",
+    "l_text:Arial_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_42",
+    // Instruksi footer
+    "l_text:Arial_13:" + footer + ",co_rgb:86efac,g_south,y_16",
   ].join("/");
 
   return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BASE;
