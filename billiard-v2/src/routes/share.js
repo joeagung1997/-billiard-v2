@@ -3,7 +3,7 @@
 
 import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
-import { buildScanUrl, buildBaseUrl } from "../utils/qr.js";
+import { buildScanUrl, buildBaseUrl, brandedQrCard } from "../utils/qr.js";
 import { CONFIG }             from "../config.js";
 import QRCode                 from "qrcode";
 
@@ -114,8 +114,8 @@ router.get("/qr-only/:kode", async (req, res) => {
   }
 });
 
-// ── GET /member/:kode — halaman OG untuk WA crawler ──────────
-router.get("/member/:kode", (req, res) => {
+// ── GET /member/:kode — halaman OG untuk WA crawler + preview QR ─
+router.get("/member/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
   const db     = readDB();
   const member = findMember(db.members, kode);
@@ -128,13 +128,19 @@ router.get("/member/:kode", (req, res) => {
   const desc     = "Kartu member " + CONFIG.NAMA_ARENA
     + ". Tunjukkan QR ini ke kasir untuk check-in. Kode: " + kode;
 
+  const card = await brandedQrCard({
+    text: scanUrl,
+    nama: member.nama,
+    kode,
+  });
+
   res.status(200).setHeader("Content-Type", "text/html; charset=utf-8").send(
     '<!DOCTYPE html>'
     + '<html prefix="og: http://ogp.me/ns#" lang="id"><head>'
     + '<meta charset="UTF-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<meta property="og:type"             content="website">'
-    + '<meta property="og:url"              content="' + scanUrl + '">'
+    + '<meta property="og:url"              content="' + base + '/member/' + kode + '">'
     + '<meta property="og:title"            content="' + title + '">'
     + '<meta property="og:description"      content="' + desc + '">'
     + '<meta property="og:image"            content="' + ogImgUrl + '">'
@@ -149,13 +155,54 @@ router.get("/member/:kode", (req, res) => {
     + '<meta name="twitter:description"     content="' + desc + '">'
     + '<meta name="twitter:image"           content="' + ogImgUrl + '">'
     + '<title>' + title + '</title>'
-    + '</head><body style="margin:0;background:#070d18;display:flex;align-items:center;'
-    + 'justify-content:center;min-height:100vh;font-family:sans-serif">'
-    + '<div style="text-align:center;padding:20px">'
-    + '<p style="color:#4a5e78;font-size:14px">Mengalihkan ke halaman check-in...</p>'
-    + '<p style="margin-top:12px"><a href="' + scanUrl + '" style="color:#22c55e;font-size:13px">'
-    + 'Klik di sini jika tidak otomatis</a></p></div>'
-    + '<script>setTimeout(function(){window.location.href="' + scanUrl + '"},100);</script>'
+    + '<style>'
+    + '*{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{background:#070d18;min-height:100vh;display:flex;flex-direction:column;'
+    + 'align-items:center;justify-content:center;padding:24px 16px;'
+    + 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}'
+    + '.arena-tag{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;'
+    + 'color:#22c55e;margin-bottom:6px}'
+    + '.instruction{font-size:13px;color:#4a6a80;margin-bottom:20px;text-align:center;line-height:1.6}'
+    + '.card-wrap{position:relative;cursor:pointer}'
+    + '.card-wrap img{width:100%;max-width:360px;height:auto;border-radius:20px;'
+    + 'box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(34,197,94,.15)}'
+    + '.tap-hint{margin-top:14px;font-size:11px;color:#2a4a40;text-align:center;letter-spacing:.06em}'
+    + '.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);'
+    + 'z-index:100;align-items:center;justify-content:center;padding:16px}'
+    + '.modal-overlay.open{display:flex}'
+    + '.modal-inner{position:relative;max-width:420px;width:100%}'
+    + '.modal-inner img{width:100%;border-radius:20px;box-shadow:0 12px 48px rgba(0,0,0,.8)}'
+    + '.modal-close{position:absolute;top:-14px;right:-14px;width:36px;height:36px;'
+    + 'background:#1e2d45;border:1.5px solid #22c55e33;border-radius:50%;'
+    + 'display:flex;align-items:center;justify-content:center;cursor:pointer;'
+    + 'color:#94a3b8;font-size:18px;font-weight:300;line-height:1}'
+    + '.modal-label{text-align:center;margin-top:14px;font-size:12px;color:#4a6a80;'
+    + 'font-family:monospace;letter-spacing:.12em}'
+    + '</style>'
+    + '</head>'
+    + '<body>'
+    + '<div class="arena-tag">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<p class="instruction">Tunjukkan kartu ini ke kasir<br>untuk check-in billiard.</p>'
+    + '<div class="card-wrap" id="cardWrap" onclick="openModal()">'
+    + '<img src="' + card.encoded + '" alt="Kartu Member ' + member.nama + '">'
+    + '</div>'
+    + '<p class="tap-hint">Ketuk untuk memperbesar</p>'
+
+    + '<div class="modal-overlay" id="modal" onclick="closeModal()">'
+    + '<div class="modal-inner" onclick="event.stopPropagation()">'
+    + '<div class="modal-close" onclick="closeModal()">&#x2715;</div>'
+    + '<img src="' + card.encoded + '" alt="QR ' + member.nama + '">'
+    + '<div class="modal-label">' + kode + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + '<script>'
+    + 'function openModal(){document.getElementById("modal").classList.add("open");'
+    + 'document.body.style.overflow="hidden"}'
+    + 'function closeModal(){document.getElementById("modal").classList.remove("open");'
+    + 'document.body.style.overflow=""}'
+    + 'document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal()})'
+    + '</script>'
     + '</body></html>'
   );
 });
