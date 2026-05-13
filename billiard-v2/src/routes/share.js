@@ -57,7 +57,7 @@ export async function uploadQrToCloudinary(kode, qrBuf) {
 // ── Cloudinary URL dengan overlay QR + teks ──────────────────
 function makeCloudinaryUrl(kode, nama) {
   const CLOUD = "dlxazwdbu";
-  const BG    = "billiard-bg-blank_yxh1p5";
+  const BG    = "billiard-bg-v2_bs9hyz";
   // QR disimpan di Cloudinary dengan public_id: qr_[kode]
   const QR_ID = "qr_" + kode.toLowerCase().replace(/-/g, "_");
 
