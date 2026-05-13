@@ -13,31 +13,69 @@ const router = Router();
 // Background: billiard-bg_k0l8pg (template hijau gelap di Cloudinary)
 // QR: di-fetch dari /qr-only/:kode Railway — berbeda tiap member
 // Teks: overlay via Cloudinary transformation
-function makeCloudinaryUrl(kode, nama, baseUrl) {
-  const CLOUD = "dlxazwdbu";
-  const BG    = "billiard-bg_k0l8pg";
+// ── Upload QR ke Cloudinary saat member dibuat ───────────────
+export async function uploadQrToCloudinary(kode, qrBuf) {
+  const CLOUD  = "dlxazwdbu";
+  const KEY    = process.env.CLOUDINARY_KEY    ?? "";
+  const SECRET = process.env.CLOUDINARY_SECRET ?? "";
+  if (!KEY || !SECRET) {
+    console.log("[CDN] CLOUDINARY_KEY/SECRET belum di-set");
+    return false;
+  }
+  try {
+    const { createHash } = await import("crypto");
+    const publicId  = "qr_" + kode.toLowerCase().replace(/-/g, "_");
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const str       = "overwrite=true&public_id=" + publicId + "&timestamp=" + timestamp + SECRET;
+    const signature = createHash("sha1").update(str).digest("hex");
 
-  // Encode teks untuk Cloudinary URL
-  const enc = (t) => encodeURIComponent(String(t ?? ""))
-    .replace(/,/g, "%2C");
+    const form = new FormData();
+    form.append("file",      new Blob([qrBuf], { type: "image/png" }), "qr.png");
+    form.append("api_key",   KEY);
+    form.append("timestamp", timestamp);
+    form.append("public_id", publicId);
+    form.append("overwrite", "true");
+    form.append("signature", signature);
+
+    const resp = await fetch(
+      "https://api.cloudinary.com/v1_1/" + CLOUD + "/image/upload",
+      { method: "POST", body: form }
+    );
+    const data = await resp.json();
+    if (data.public_id) {
+      console.log("[CDN] QR uploaded:", data.public_id);
+      return true;
+    }
+    console.error("[CDN] Upload gagal:", JSON.stringify(data).slice(0, 120));
+    return false;
+  } catch (err) {
+    console.error("[CDN] Upload error:", err.message);
+    return false;
+  }
+}
+
+// ── Cloudinary URL dengan overlay QR + teks ──────────────────
+function makeCloudinaryUrl(kode, nama) {
+  const CLOUD = "dlxazwdbu";
+  const BG    = "billiard-bg-blank_yxh1p5";
+  // QR disimpan di Cloudinary dengan public_id: qr_[kode]
+  const QR_ID = "qr_" + kode.toLowerCase().replace(/-/g, "_");
+
+  const enc = (t) => encodeURIComponent(String(t ?? "")).replace(/,/g, "%2C");
 
   const arena    = enc(CONFIG.NAMA_ARENA);
   const namaDisp = enc(nama.length > 20 ? nama.slice(0, 18) + "..." : nama);
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
 
-  // Cloudinary l_fetch butuh URL di-encode sebagai base64
-  const qrUrl   = baseUrl + "/qr-only/" + kode;
-  const qrB64   = Buffer.from(qrUrl).toString("base64");
-
   const tr = [
     "w_800,h_800,c_fill",
-    // Fetch QR dari Railway — base64 encoded URL
-    "l_fetch:" + qrB64 + ",w_520,h_520,g_center,y_-40,fl_layer_apply",
-    // Header teks
+    // QR dari Cloudinary storage — overlay ke area putih
+    "l_" + QR_ID + ",w_520,h_520,g_center,y_-40,fl_layer_apply",
+    // Teks header
     "l_text:Arial_34_bold:" + arena + ",co_white,g_north,y_32",
     "l_text:Arial_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_80",
-    // Footer teks
+    // Teks footer
     "l_text:Arial_32_bold:" + namaDisp + ",co_rgb:ffffff,g_south,y_78",
     "l_text:Arial_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_42",
     "l_text:Arial_13:" + footer + ",co_rgb:86efac,g_south,y_16",
@@ -45,6 +83,7 @@ function makeCloudinaryUrl(kode, nama, baseUrl) {
 
   return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BG;
 }
+
 
 // ── Helper: QR PNG polos (untuk Cloudinary fetch + fallback) ──
 async function makeQrPng(scanUrl) {
@@ -129,8 +168,7 @@ router.get("/og-image/:kode", async (req, res) => {
   const member = findMember(db.members, kode);
   if (!member) return res.status(404).end();
 
-  const base   = buildBaseUrl(req);
-  const cdnUrl = makeCloudinaryUrl(kode, member.nama, base);
+  const cdnUrl = makeCloudinaryUrl(kode, member.nama);
 
   console.log("[OG] Redirect Cloudinary untuk " + kode);
   res.redirect(302, cdnUrl);
