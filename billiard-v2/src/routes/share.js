@@ -1,8 +1,5 @@
 // src/routes/share.js
-// ── Route publik: WA thumbnail via Open Graph ─────────────────
-//
-// WA HANYA support og:image yang return image/png atau image/jpeg
-// Solusi: buat SVG branded → convert ke PNG via sharp
+// ── Route publik: WA thumbnail via Open Graph + Cloudinary ────
 
 import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
@@ -12,84 +9,70 @@ import QRCode                 from "qrcode";
 
 const router = Router();
 
-// ── Cloudinary URL dengan overlay teks ───────────────────────
-// Cloudinary render teks langsung via URL — tidak butuh font di server
-function makeCloudinaryUrl(nama, kode) {
+// ── Cloudinary URL dinamis per member ────────────────────────
+// Background: billiard-bg_k0l8pg (template hijau gelap di Cloudinary)
+// QR: di-fetch dari /qr-only/:kode Railway — berbeda tiap member
+// Teks: overlay via Cloudinary transformation
+function makeCloudinaryUrl(kode, nama, baseUrl) {
   const CLOUD = "dlxazwdbu";
-  const BASE  = "billiard-bg_k0l8pg";   // public_id dari Cloudinary
+  const BG    = "billiard-bg_k0l8pg";
 
+  // Encode teks untuk Cloudinary URL
   const enc = (t) => encodeURIComponent(String(t ?? ""))
-    .replace(/,/g, "%2C").replace(/\//g, "%2F");
+    .replace(/,/g, "%2C");
 
   const arena    = enc(CONFIG.NAMA_ARENA);
   const namaDisp = enc(nama.length > 20 ? nama.slice(0, 18) + "..." : nama);
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
 
-  // Font: Arial pasti tersedia di Cloudinary
-  // Posisi: header 120px atas, footer 120px bawah
+  // QR PNG di-fetch dari Railway — unik per member
+  const qrFetch  = encodeURIComponent(baseUrl + "/qr-only/" + kode);
+
   const tr = [
     "w_800,h_800,c_fill",
-    // Nama arena di header
+    // Fetch QR dari Railway overlay ke tengah
+    "l_fetch:" + qrFetch + ",w_520,h_520,g_center,y_-40,fl_layer_apply",
+    // Header teks
     "l_text:Arial_34_bold:" + arena + ",co_white,g_north,y_32",
-    // Label kecil
     "l_text:Arial_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_80",
-    // Nama member di footer
+    // Footer teks
     "l_text:Arial_32_bold:" + namaDisp + ",co_rgb:ffffff,g_south,y_78",
-    // Kode member
     "l_text:Arial_18:" + kodeDisp + ",co_rgb:22c55e,g_south,y_42",
-    // Instruksi footer
     "l_text:Arial_13:" + footer + ",co_rgb:86efac,g_south,y_16",
   ].join("/");
 
-  return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BASE;
+  return "https://res.cloudinary.com/" + CLOUD + "/image/upload/" + tr + "/" + BG;
 }
 
-// ── Helper: escape SVG ────────────────────────────────────────
-const esc = (s) => String(s ?? "")
-  .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-// ── Helper: buat QR PNG dengan frame warna solid ─────────────
-// Tidak ada teks, tidak ada font — hanya warna dan QR
-// QR dengan warna navy + border hijau = branded tapi simple
-async function makeBrandedPng(scanUrl, nama, kode) {
-  const sharp = (await import("sharp")).default;
-
-  // QR 540x540 warna navy
-  const qrBuf = await QRCode.toBuffer(scanUrl, {
+// ── Helper: QR PNG polos (untuk Cloudinary fetch + fallback) ──
+async function makeQrPng(scanUrl) {
+  return QRCode.toBuffer(scanUrl, {
     errorCorrectionLevel: "H",
-    type: "png", width: 540, margin: 2,
+    type: "png", width: 520, margin: 2,
     color: { dark: "#0d2137", light: "#ffffff" },
   });
-
-  // Canvas 800x800 dengan ruang header/footer untuk teks Cloudinary:
-  // 120px atas = area nama arena (hijau gelap)
-  // 560px tengah = QR putih
-  // 120px bawah = area nama member + kode (hijau gelap)
-  const result = await sharp({
-    create: { width: 800, height: 800, channels: 4,
-      background: { r: 14, g: 53, b: 45, alpha: 1 } }
-  }).composite([
-    // Area QR putih
-    { input: await sharp({ create: { width: 560, height: 560, channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 } }
-      }).png().toBuffer(), top: 120, left: 120 },
-    // QR di dalam area putih
-    { input: await sharp(qrBuf).toBuffer(), top: 130, left: 130 },
-    // Garis aksen hijau bawah header
-    { input: await sharp({ create: { width: 800, height: 4, channels: 4,
-        background: { r: 34, g: 197, b: 94, alpha: 1 } }
-      }).png().toBuffer(), top: 118, left: 0 },
-    // Garis aksen hijau atas footer
-    { input: await sharp({ create: { width: 800, height: 4, channels: 4,
-        background: { r: 34, g: 197, b: 94, alpha: 1 } }
-      }).png().toBuffer(), top: 678, left: 0 },
-  ]).png().toBuffer();
-
-  return result;
 }
 
+// ── GET /qr-only/:kode — QR PNG murni untuk Cloudinary fetch ─
+// Cloudinary akan fetch URL ini untuk overlay ke background
+router.get("/qr-only/:kode", async (req, res) => {
+  const kode = req.params.kode.toUpperCase();
+  const { members } = readDB();
+  const member = findMember(members, kode);
+  if (!member) return res.status(404).end();
+
+  try {
+    const scanUrl = buildScanUrl(req, kode);
+    const png     = await makeQrPng(scanUrl);
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.end(png);
+  } catch {
+    res.status(500).end();
+  }
+});
 
 // ── GET /member/:kode — halaman OG untuk WA crawler ──────────
 router.get("/member/:kode", (req, res) => {
@@ -137,41 +120,19 @@ router.get("/member/:kode", (req, res) => {
   );
 });
 
-// ── GET /og-image/:kode — branded PNG untuk WA thumbnail ─────
-// Redirect ke Cloudinary yang handle overlay teks
+// ── GET /og-image/:kode — PNG untuk WA thumbnail ─────────────
+// Redirect ke Cloudinary yang render gambar dengan teks + QR dinamis
 router.get("/og-image/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
   const db     = readDB();
   const member = findMember(db.members, kode);
   if (!member) return res.status(404).end();
 
-  // Cek apakah billiard-bg sudah diupload ke Cloudinary
-  // Jika ya: redirect ke Cloudinary URL dengan overlay teks
-  // Jika tidak: fallback ke QR PNG dari server
-  const cdnUrl = makeCloudinaryUrl(member.nama, kode);
+  const base   = buildBaseUrl(req);
+  const cdnUrl = makeCloudinaryUrl(kode, member.nama, base);
 
-  // Cek Cloudinary dulu — jika base image ada, redirect ke sana
-  // Jika tidak, serve QR PNG lokal sebagai fallback
-  try {
-    const https = (await import("https")).default;
-    await new Promise((resolve, reject) => {
-      https.get(cdnUrl, (r) => {
-        if (r.statusCode === 200) resolve();
-        else reject(new Error("CDN " + r.statusCode));
-      }).on("error", reject);
-    });
-    // Cloudinary OK — redirect
-    res.redirect(302, cdnUrl);
-    console.log("[OG] Cloudinary redirect OK");
-  } catch {
-    // Fallback: serve QR PNG lokal
-    const scanUrl = buildScanUrl(req, kode);
-    const pngBuf  = await makeBrandedPng(scanUrl, member.nama, kode);
-    res.setHeader("Content-Type", "image/png")
-       .setHeader("Cache-Control", "public, max-age=3600")
-       .end(pngBuf);
-    console.log("[OG] Fallback QR lokal OK");
-  }
+  console.log("[OG] Redirect Cloudinary untuk " + kode);
+  res.redirect(302, cdnUrl);
 });
 
 // ── GET /og-debug/:kode — debug ───────────────────────────────
@@ -180,15 +141,19 @@ router.get("/og-debug/:kode", (req, res) => {
   const db     = readDB();
   const member = findMember(db.members, kode);
   const base   = buildBaseUrl(req);
+  const cdnUrl = member ? makeCloudinaryUrl(kode, member.nama, base) : "N/A";
+
   res.send(
     '<html><head><meta charset="UTF-8"><title>OG Debug</title></head>'
     + '<body style="background:#070d18;color:#e8edf5;font-family:sans-serif;padding:20px">'
     + '<h2 style="color:#22c55e;margin-bottom:12px">OG Debug — ' + kode + '</h2>'
-    + '<p style="color:#8496b0;font-size:13px;margin-bottom:6px">Member: '
+    + '<p style="color:#8496b0;font-size:13px">Member: '
     + (member ? '<strong>' + member.nama + '</strong>' : '<span style="color:#ef4444">NOT FOUND</span>') + '</p>'
     + '<p style="color:#8496b0;font-size:13px;margin:12px 0 4px">URL share WA:</p>'
-    + '<code style="color:#22c55e;font-size:12px">' + base + '/member/' + kode + '</code>'
-    + '<p style="color:#8496b0;font-size:13px;margin:16px 0 6px">Preview gambar (harus branded PNG):</p>'
+    + '<code style="color:#22c55e;font-size:11px;word-break:break-all">' + base + '/member/' + kode + '</code>'
+    + '<p style="color:#8496b0;font-size:13px;margin:12px 0 4px">Cloudinary URL:</p>'
+    + '<code style="color:#3b82f6;font-size:10px;word-break:break-all">' + cdnUrl + '</code>'
+    + '<p style="color:#8496b0;font-size:13px;margin:16px 0 6px">Preview (harus branded dengan nama member):</p>'
     + '<img src="/og-image/' + kode + '" style="max-width:400px;border-radius:8px;border:2px solid #1e2d45">'
     + '</body></html>'
   );
