@@ -26,13 +26,14 @@ function makeCloudinaryUrl(kode, nama, baseUrl) {
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
 
-  // QR PNG di-fetch dari Railway — unik per member
-  const qrFetch  = encodeURIComponent(baseUrl + "/qr-only/" + kode);
+  // Cloudinary l_fetch butuh URL di-encode sebagai base64
+  const qrUrl   = baseUrl + "/qr-only/" + kode;
+  const qrB64   = Buffer.from(qrUrl).toString("base64");
 
   const tr = [
     "w_800,h_800,c_fill",
-    // Fetch QR dari Railway overlay ke tengah
-    "l_fetch:" + qrFetch + ",w_520,h_520,g_center,y_-40,fl_layer_apply",
+    // Fetch QR dari Railway — base64 encoded URL
+    "l_fetch:" + qrB64 + ",w_520,h_520,g_center,y_-40,fl_layer_apply",
     // Header teks
     "l_text:Arial_34_bold:" + arena + ",co_white,g_north,y_32",
     "l_text:Arial_14:" + enc("MEMBER CARD") + ",co_rgb:86efac,g_north,y_80",
