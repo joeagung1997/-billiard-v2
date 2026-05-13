@@ -10,7 +10,8 @@ import {
   generateKode, formatTanggalPendek, formatTanggalBulan,
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
 } from "../utils/format.js";
-import { brandedQrCard, qrDataUrl, buildScanUrl } from "../utils/qr.js";
+import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
+import { uploadQrToCloudinary } from "./share.js";
 import { adminLoginPage, adminDashboard, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
 
 const router = Router();
@@ -63,21 +64,23 @@ router.get("/tambah", requireAdmin, async (req, res) => {
 
   const scanUrl = buildScanUrl(req, kode);
 
-  // Generate branded card — log error agar tidak silent fail
+  // Upload QR ke Cloudinary untuk WA preview
+  try {
+    const qrBuf = await qrBuffer(scanUrl, 520);
+    await uploadQrToCloudinary(kode, qrBuf);
+  } catch (err) {
+    console.error("[CDN] Upload QR gagal:", err.message);
+  }
+
+  // Generate branded card untuk halaman sukses
   let brandedCard = null;
   try {
     brandedCard = await brandedQrCard({ text: scanUrl, nama, kode });
-    console.log("[QR] Branded card OK untuk " + kode);
   } catch (err) {
-    console.error("[QR] brandedQrCard gagal untuk " + kode + ":", err.message);
-    // Fallback: QR polos sebagai base64
     try {
       const qrB64 = await qrDataUrl(scanUrl, 300);
       brandedCard = { encoded: qrB64 };
-      console.log("[QR] Fallback QR polos OK untuk " + kode);
-    } catch (err2) {
-      console.error("[QR] Fallback juga gagal:", err2.message);
-    }
+    } catch (_) {}
   }
 
   res.send(addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard }));
@@ -128,6 +131,28 @@ router.get("/klaim", requireAdmin, (req, res) => {
     writeDB(db);
   }
   res.redirect(`/admin?tk=${tk}`);
+});
+
+// ── GET /admin/sync-qr — upload semua QR member ke Cloudinary ─
+router.get("/sync-qr", requireAdmin, async (req, res) => {
+  const { tk } = res.locals;
+  const db = readDB();
+  let ok = 0, fail = 0;
+
+  for (const m of db.members) {
+    try {
+      const scanUrl = buildScanUrl(req, m.kode);
+      const qrBuf   = await qrBuffer(scanUrl, 520);
+      const success = await uploadQrToCloudinary(m.kode, qrBuf);
+      if (success) ok++; else fail++;
+    } catch (err) {
+      console.error("[SYNC] Gagal", m.kode, err.message);
+      fail++;
+    }
+  }
+
+  res.send("Sync selesai: " + ok + " berhasil, " + fail + " gagal. "
+    + "<a href='/admin?tk=" + tk + "'>Kembali</a>");
 });
 
 // ── GET /admin/reset ──────────────────────────────────────────
