@@ -235,6 +235,56 @@ export function adminDashboard({ db, log, token, req }) {
     '.modal-btn-copy { background:var(--accent); color:#fff; }',
     '.modal-btn-wa   { background:#25d366; color:#fff; }',
     '.toast { position:fixed; bottom:var(--sp-5); left:50%; transform:translateX(-50%); background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.3); border-radius:var(--r-md); padding:var(--sp-2) var(--sp-5); font-size:var(--fs-sm); font-weight:var(--fw-b); display:none; z-index:200; white-space:nowrap; pointer-events:none; }',
+
+    // ── Mobile card layout ────────────────────────────────────
+    '.mc { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden; transition:border-color .15s; }',
+    '.mc.hadir { border-color:rgba(34,197,94,.25); }',
+    '.mc-top { display:flex; align-items:center; gap:10px; padding:12px; }',
+    '.mc-qr { width:58px; height:58px; border-radius:10px; background:#fff; padding:3px; cursor:pointer; flex-shrink:0; object-fit:cover; transition:transform .15s; touch-action:manipulation; }',
+    '.mc-qr:active { transform:scale(.95); }',
+    '.mc-body { flex:1; min-width:0; }',
+    '.mc-name { font-size:15px; font-weight:600; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
+    '.mc-kode { font-size:11px; color:var(--green); font-family:monospace; letter-spacing:.05em; margin-top:1px; }',
+    '.mc-prog { display:flex; align-items:center; gap:6px; margin-top:6px; }',
+    '.mc-prog-track { flex:1; height:5px; background:var(--border2); border-radius:99px; overflow:hidden; }',
+    '.mc-prog-fill { height:100%; border-radius:99px; background:var(--green); }',
+    '.mc-prog-txt { font-size:10px; color:var(--txt3); white-space:nowrap; flex-shrink:0; }',
+    '.mc-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; }',
+    '.mc-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }',
+    '.mc-btm { display:flex; gap:6px; padding:8px 12px; border-top:1px solid var(--border); background:var(--surface2); flex-wrap:wrap; }',
+    '.mc-btn { display:inline-flex; align-items:center; gap:4px; padding:7px 13px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border2); background:var(--surface); color:var(--txt2); text-decoration:none; white-space:nowrap; touch-action:manipulation; }',
+    '.mc-btn:active { opacity:.75; }',
+    '.mc-btn-qr   { background:var(--green-bg); color:var(--green); border-color:rgba(34,197,94,.3); }',
+    '.mc-btn-wa   { background:#25d366; color:#fff; border-color:#25d366; }',
+    '.mc-btn-gold { color:var(--gold); border-color:rgba(245,158,11,.3); background:var(--gold-bg); }',
+    '.mc-btn-red  { color:var(--red); border-color:rgba(239,68,68,.25); background:var(--red-bg); }',
+    '.mc-empty { text-align:center; padding:32px 16px; color:var(--txt3); font-size:13px; }',
+
+    // ── Responsive ────────────────────────────────────────────
+    // Desktop: table visible, mobile-list hidden
+    '@media (min-width:641px) { #mobile-list { display:none !important; } }',
+    // Mobile: table hidden, mobile-list visible; layout fixes
+    '@media (max-width:640px) {',
+    '  .table-wrap { display:none; }',
+    '  .pg-wrap { display:none; }',
+    '  .topbar-label { display:none; }',
+    '  .topbar { padding:8px 12px; }',
+    '  .page { padding:10px; padding-bottom:60px; }',
+    '  .stats { gap:6px; }',
+    '  .stat-card { padding:10px 12px; }',
+    '  .stat-num { font-size:22px; }',
+    '  .tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }',
+    '  .tab-btn { padding:10px 6px; font-size:11px; min-width:74px; }',
+    '  .action-bar { gap:6px; }',
+    '  .btn-primary { padding:9px 12px; font-size:12px; }',
+    '  .btn-secondary { padding:9px 10px; font-size:12px; }',
+    '  .filter-bar { flex-direction:column; gap:6px; }',
+    '  .search-wrap { min-width:unset; width:100%; }',
+    '  .search-input { width:100%; }',
+    '  .sel { width:100%; }',
+    '  .filter-bar .sel:last-child { display:none; }',
+    '  .sec-label { margin-top:12px; }',
+    '}',
   ].join('');
 
   return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
@@ -300,6 +350,8 @@ export function adminDashboard({ db, log, token, req }) {
     + '</div>'
     + '<div class="pg-wrap" id="member-pg"></div>'
     + '</div>'
+    // Mobile card list — hanya tampil di layar ≤640px (CSS mengatur ini)
+    + '<div id="mobile-list" style="margin-top:8px"></div>'
 
     + '</main>'
 

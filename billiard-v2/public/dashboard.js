@@ -177,6 +177,71 @@ const renderMemberRow = (m) => {
   </tr>`;
 };
 
+// ── Mobile member card ────────────────────────────────────────
+const renderMemberCard = (m) => {
+  const isGratis = m.status === "GRATIS";
+  const pct      = Math.min(Math.round((m.totalMain ?? 0) / BATAS * 100), 100);
+  const baseUrl  = (HOST || "").replace("http://", "https://");
+  const scanUrl  = (HOST || "") + "/scan?id=" + m.kode;
+  const shareUrl = baseUrl + "/member/" + m.kode;
+  const imgUrl   = "/admin/qr-img/" + m.kode + "?tk=" + TK;
+  const dlUrl    = "/admin/qr/" + m.kode + "?tk=" + TK;
+  const safeNama = m.nama.replace(/'/g, "\\'");
+  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}')`;
+  const waNum    = (m.telepon ?? "").replace(/[^0-9]/g, "");
+  const waShareMsg = encodeURIComponent(
+    "Halo " + m.nama + "! Ini kartu member billiard kamu.\n"
+    + "Tunjukkan QR ini ke kasir tiap mau main: " + shareUrl
+  );
+
+  const statusBadge = m.sudahScan
+    ? `<span class="badge badge-green" style="font-size:10px">✓ Hadir</span>`
+    : "";
+  const gratisBadge = isGratis
+    ? `<span class="badge badge-gold" style="font-size:10px">🎁 Reward</span>`
+    : "";
+
+  const klaimBtn = isGratis
+    ? `<a href="/admin/klaim?tk=${TK}&kode=${m.kode}"
+          onclick="return confirm('Tandai reward sudah diklaim?')"
+          class="mc-btn mc-btn-gold">🎁 Klaim</a>`
+    : "";
+
+  const waBtn = waNum
+    ? `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" class="mc-btn mc-btn-wa">WA</a>`
+    : "";
+
+  const waShareBtn = `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener"
+      class="mc-btn mc-btn-wa">📤 Kirim QR</a>`;
+
+  return `<div class="mc ${m.sudahScan ? "hadir" : ""}">
+    <div class="mc-top">
+      <img src="${imgUrl}" alt="QR" class="mc-qr" loading="lazy" onclick="${qrClick}">
+      <div class="mc-body">
+        <div class="mc-name">${esc(m.nama)}</div>
+        <div class="mc-kode">${esc(m.kode)}</div>
+        <div class="mc-prog">
+          <div class="mc-prog-track"><div class="mc-prog-fill" style="width:${pct}%"></div></div>
+          <span class="mc-prog-txt">${m.totalMain}/${BATAS}</span>
+        </div>
+        <div class="mc-badges">${statusBadge}${gratisBadge}</div>
+      </div>
+      <div class="mc-right">
+        <button onclick="${qrClick}" class="mc-btn mc-btn-qr" style="padding:8px 14px;font-size:18px">QR</button>
+      </div>
+    </div>
+    <div class="mc-btm">
+      ${waShareBtn}
+      ${waBtn}
+      ${klaimBtn}
+      <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="mc-btn">Edit</a>
+      <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
+         onclick="return confirm('Hapus member ${safeNama}?')"
+         class="mc-btn mc-btn-red">Hapus</a>
+    </div>
+  </div>`;
+};
+
 // ── Simple list dengan "Lihat semua" button ───────────────────
 const initSimpleList = (data, listId, btnId, renderFn) => {
   const listEl = document.getElementById(listId);
@@ -230,6 +295,16 @@ const renderMemberTable = () => {
   } else {
     tbody.innerHTML       = slice.map(renderMemberRow).join("");
     emptyEl.style.display = "none";
+  }
+
+  // Mobile card list
+  const mobileList = document.getElementById("mobile-list");
+  if (mobileList) {
+    if (total === 0) {
+      mobileList.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--txt3);font-size:13px">Tidak ada member yang cocok</div>`;
+    } else {
+      mobileList.innerHTML = slice.map(renderMemberCard).join("");
+    }
   }
 
   // Badge jumlah
