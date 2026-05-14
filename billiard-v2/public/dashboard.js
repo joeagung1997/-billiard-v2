@@ -275,7 +275,7 @@ const initSimpleList = (data, listId, btnId, renderFn) => {
 
 // ── Member tabel pagination ───────────────────────────────────
 const memberState = {
-  filtered: [...DATA_MEMBER],
+  filtered: Array.isArray(DATA_MEMBER) ? [...DATA_MEMBER] : [],
   page:     1,
   perPage:  10,
 };
@@ -477,7 +477,7 @@ Object.assign(window, {
 });
 
 // ── Init ───────────────────────────────────────────────────────
-initSimpleList(DATA_SCAN, "scan-list", "scan-showbtn", renderScan);
-initSimpleList(DATA_LB,   "lb-list",   "lb-showbtn",   renderLb);
-initSimpleList(DATA_LOG,  "log-list",  "log-showbtn",  renderLog);
-renderMemberTable();
+initSimpleList(DATA_SCAN || [], "scan-list", "scan-showbtn", renderScan);
+initSimpleList(DATA_LB   || [], "lb-list",   "lb-showbtn",   renderLb);
+initSimpleList(DATA_LOG  || [], "log-list",  "log-showbtn",  renderLog);
+if (document.getElementById('tbody')) renderMemberTable();

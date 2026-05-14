@@ -12,7 +12,7 @@ import {
 } from "../utils/format.js";
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
 import { uploadQrToCloudinary } from "./share.js";
-import { adminLoginPage, adminDashboard, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
+import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
 
 const router = Router();
 
@@ -39,6 +39,13 @@ router.post("/login", (req, res) => {
   if (pin !== CONFIG.ADMIN_PIN) return res.redirect("/admin?err=1");
   const token = createToken(pin);
   res.redirect(`/admin?tk=${token}`);
+});
+
+// ── GET /admin/members — member management page ───────────────
+router.get("/members", requireAdmin, (req, res) => {
+  const db    = readDB();
+  const token = res.locals.tk;
+  res.send(memberPage({ db, token, req }));
 });
 
 // ── GET /admin/tambah ─────────────────────────────────────────

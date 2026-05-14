@@ -199,7 +199,7 @@ export function adminLoginPage(showError) {
     + '</body></html>';
 }
 
-// ── Dashboard ─────────────────────────────────────────────────
+// ── Dashboard helpers (shared between adminDashboard & memberPage) ───────────
 
 // ── Format Rupiah (server-side) ───────────────────────────────
 function rpFmt(n) {
@@ -210,163 +210,9 @@ function rpFmt(n) {
   return 'Rp ' + parts.join('.');
 }
 
-export function adminDashboard({ db, log, transaksi = [], token, req }) {
-  const { members } = db;
-
-  const stats = {
-    total:  members.length,
-    scan:   members.filter((m) => m.sudahScanHariIni).length,
-    reward: members.filter((m) => m.status === 'GRATIS').length,
-    aktif:  members.filter((m) => m.totalMain > 0).length,
-  };
-
-  const hostBase  = req.protocol + '://' + req.get('host');
-
-  // Bulan options — string biasa
-  const bulanOpts = getBulanOptions()
-    .map((o) => '<option value="' + o.val + '"' + (o.selected ? ' selected' : '') + '>' + o.lbl + '</option>')
-    .join('');
-
-  // Data JSON untuk JS client
-  const dataScan = members
-    .filter((m) => m.sudahScanHariIni && m.tanggalScanTerakhir)
-    .sort((a, b) => new Date(b.tanggalScanTerakhir) - new Date(a.tanggalScanTerakhir))
-    .map(({ nama, kode, tanggalScanTerakhir }) => ({
-      nama, kode,
-      jam: new Date(tanggalScanTerakhir).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
-    }));
-
-  const dataLb = [...members]
-    .map((m) => ({
-      nama: m.nama, kode: m.kode,
-      total:  (m.totalMain ?? 0) + (m.totalGratis ?? 0) * CONFIG.BATAS_MAIN,
-      reward: m.totalGratis ?? 0,
-    }))
-    .sort((a, b) => b.total - a.total);
-
-  const dataLog = log.map(({ nama, aksi, detail, ts }) => ({
-    nama, aksi, detail: detail ?? '',
-    tgl: new Date(ts).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
-  }));
-
-  const dataMember = members.map((m) => {
-    const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
-    return {
-      kode:        m.kode,
-      nama:        m.nama,
-      telepon:     m.telepon ?? '',
-      totalMain:   m.totalMain ?? 0,
-      totalGratis: m.totalGratis ?? 0,
-      status:      m.status ?? '-',
-      sudahScan:   m.sudahScanHariIni ?? false,
-      tglDaftar:   m.tanggalDaftar    ? formatTanggalPendek(m.tanggalDaftar)   : '—',
-      tglTerakhir: m.tanggalScanTerakhir ? formatTanggalBulan(m.tanggalScanTerakhir) : '—',
-      bulanScan:   d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
-    };
-  });
-
-  const now = new Date().toLocaleString('id-ID', {
-    weekday: 'short', day: 'numeric', month: 'short',
-    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
-  });
-
-  // ── Ringkasan keuangan ────────────────────────────────────────
-  const nowWib      = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-  const curBulan    = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
-  const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
-  const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan));
-  const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
-  const pengeluaranBulan = trxBulan.filter((t) => t.jenis === 'pengeluaran').reduce((s, t) => s + (t.jumlah ?? 0), 0);
-  const saldoBulan       = pemasukanBulan - pengeluaranBulan;
-  const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr);
-  const pemasukanHariIni = trxHariIni.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
-
-  // ── Trend kunjungan 7 hari ────────────────────────────────────
-  const trendDays = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(nowWib);
-    d.setDate(d.getDate() - i);
-    const ymd = d.getFullYear() + '-'
-      + String(d.getMonth() + 1).padStart(2, '0') + '-'
-      + String(d.getDate()).padStart(2, '0');
-    const lbl = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
-    const isToday = (i === 0);
-    const count = log.filter((l) => {
-      if (l.aksi !== 'SCAN') return false;
-      const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-      const lymd = ld.getFullYear() + '-'
-        + String(ld.getMonth() + 1).padStart(2, '0') + '-'
-        + String(ld.getDate()).padStart(2, '0');
-      return lymd === ymd;
-    }).length;
-    trendDays.push({ ymd, lbl, count, isToday });
-  }
-  const maxCount = Math.max(...trendDays.map((d) => d.count), 1);
-
-  // Build trend bar chart HTML (pure CSS)
-  const trendBars = trendDays.map(function(d) {
-    const pct     = Math.round((d.count / maxCount) * 100);
-    const barH    = Math.max(pct, d.count > 0 ? 4 : 0);
-    const color   = d.isToday ? 'var(--accent)' : 'var(--green)';
-    const opacity = d.isToday ? '1' : '0.6';
-    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">'
-      + '<div style="font-size:10px;font-weight:700;color:' + (d.count > 0 ? 'var(--txt2)' : 'var(--txt3)') + '">'
-      + (d.count > 0 ? d.count : '') + '</div>'
-      + '<div style="width:100%;display:flex;align-items:flex-end;height:56px">'
-      + '<div style="width:100%;height:' + barH + '%;background:' + color + ';opacity:' + opacity + ';'
-      + 'border-radius:4px 4px 0 0;transition:height .3s;min-height:' + (d.count > 0 ? '3px' : '0') + '">'
-      + '</div>'
-      + '</div>'
-      + '<div style="font-size:9px;color:' + (d.isToday ? 'var(--accent)' : 'var(--txt3)') + ';'
-      + 'font-weight:' + (d.isToday ? '700' : '400') + ';text-align:center;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%">'
-      + d.lbl + '</div>'
-      + '</div>';
-  }).join('');
-
-  // ── Ringkasan keuangan HTML ───────────────────────────────────
-  const keuanganMiniHtml = '<div class="mini-fin-card">'
-    + '<div class="mini-fin-header">'
-    + '<span class="mini-fin-title">💰 Keuangan Bulan Ini</span>'
-    + '<a href="/keuangan" class="mini-fin-link">Lihat detail →</a>'
-    + '</div>'
-    + '<div class="mini-fin-body">'
-    + '<div class="mini-fin-item">'
-    + '<div class="mini-fin-lbl">Pemasukan</div>'
-    + '<div class="mini-fin-val" style="color:var(--green)">' + rpFmt(pemasukanBulan) + '</div>'
-    + '</div>'
-    + '<div class="mini-fin-divider"></div>'
-    + '<div class="mini-fin-item">'
-    + '<div class="mini-fin-lbl">Pengeluaran</div>'
-    + '<div class="mini-fin-val" style="color:var(--red)">' + rpFmt(pengeluaranBulan) + '</div>'
-    + '</div>'
-    + '<div class="mini-fin-divider"></div>'
-    + '<div class="mini-fin-item">'
-    + '<div class="mini-fin-lbl">Saldo</div>'
-    + '<div class="mini-fin-val" style="color:' + (saldoBulan >= 0 ? 'var(--txt)' : 'var(--red)') + '">'
-    + rpFmt(saldoBulan) + '</div>'
-    + '</div>'
-    + '<div class="mini-fin-divider"></div>'
-    + '<div class="mini-fin-item">'
-    + '<div class="mini-fin-lbl">Hari ini</div>'
-    + '<div class="mini-fin-val" style="color:var(--accent)">' + rpFmt(pemasukanHariIni) + '</div>'
-    + '</div>'
-    + '</div>'
-    + '</div>';
-
-  // ── Trend chart HTML ──────────────────────────────────────────
-  const totalScan7 = trendDays.reduce((s, d) => s + d.count, 0);
-  const trendHtml = '<div class="trend-card">'
-    + '<div class="trend-header">'
-    + '<div>'
-    + '<div class="trend-title">📈 Trend Kunjungan</div>'
-    + '<div class="trend-sub">7 hari terakhir · total <strong>' + totalScan7 + '</strong> kunjungan</div>'
-    + '</div>'
-    + '</div>'
-    + '<div class="trend-bars">' + trendBars + '</div>'
-    + '</div>';
-
-  // CSS dashboard — string array join, tidak ada template literal
-  const css = [
+// ── buildAdminCss — shared CSS for all admin dashboard pages ─────────────────
+function buildAdminCss() {
+  return [
     '*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }',
     ':root {',
     '  --ff: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;',
@@ -406,6 +252,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     '.nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; color:var(--txt2); font-size:var(--fs-sm); font-weight:var(--fw-b); text-decoration:none; cursor:pointer; border:none; background:transparent; font-family:var(--ff); width:100%; transition:background .12s, color .12s; }',
     '.nav-item:hover { background:var(--surface2); color:var(--txt); }',
     '.nav-item.active { background:rgba(59,130,246,.1); color:var(--accent); font-weight:600; }',
+    '.nav-item.active.nav-green { background:var(--green-bg); color:var(--green); }',
     '.nav-icon { font-size:15px; width:22px; text-align:center; flex-shrink:0; }',
     '.nav-green:hover { background:var(--green-bg); color:var(--green); }',
     '.nav-gold:hover { background:var(--gold-bg); color:var(--gold); }',
@@ -550,9 +397,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     '.mc-empty { text-align:center; padding:32px 16px; color:var(--txt3); font-size:13px; }',
 
     // ── Responsive ────────────────────────────────────────────
-    // Desktop: table visible, mobile-list hidden
     '@media (min-width:641px) { #mobile-list { display:none !important; } }',
-    // Mobile: table hidden, mobile-list visible; layout fixes
     '@media (max-width:640px) {',
     '  .table-wrap { display:none; }',
     '  .pg-wrap { display:none; }',
@@ -581,35 +426,32 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     '  .topbar { display:none; }',
     '}',
   ].join('');
+}
 
-  return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
-    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<style>' + css + '</style>'
-    + '</head><body>'
+// ── buildSidebar — shared sidebar HTML ───────────────────────────────────────
+function buildSidebar(token, activePage, now) {
+  const dashClass    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
+  const membersClass = 'nav-item nav-green' + (activePage === 'members' ? ' active' : '');
 
-    + '<div class="layout">'
-
-    // ── Sidebar (desktop only) ──────────────────────────────
-    + '<aside class="sidebar">'
+  return '<aside class="sidebar">'
     + '<div class="sb-brand">'
     + '<div class="sb-brand-icon">🎱</div>'
     + '<div><div class="sb-brand-name">' + CONFIG.NAMA_ARENA + '</div>'
     + '<div class="sb-brand-sub">Admin Panel</div></div>'
     + '</div>'
-
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Menu</div>'
-    + '<a href="/admin?tk=' + token + '" class="nav-item active">'
+    + '<a href="/admin?tk=' + token + '" class="' + dashClass + '">'
     + '<span class="nav-icon">🏠</span> Dashboard'
+    + '</a>'
+    + '<a href="/admin/members?tk=' + token + '" class="' + membersClass + '">'
+    + '<span class="nav-icon">👥</span> Kelola Member'
     + '</a>'
     + '<a href="/keuangan" class="nav-item nav-gold">'
     + '<span class="nav-icon">💰</span> Keuangan'
     + '</a>'
     + '</div>'
-
     + '<div class="sb-divider"></div>'
-
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Aksi</div>'
     + '<a href="/admin/reset?tk=' + token + '" class="nav-item nav-red"'
@@ -617,12 +459,191 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<span class="nav-icon">↺</span> Reset Harian'
     + '</a>'
     + '</div>'
-
     + '<div class="sb-footer">'
     + '<span class="sb-time">' + now + '</span>'
     + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
     + '</div>'
-    + '</aside>'
+    + '</aside>';
+}
+
+// ── buildBottomNav — shared bottom nav HTML ───────────────────────────────────
+function buildBottomNav(token, activePage) {
+  const dashActive    = activePage === 'dashboard' ? ' active' : '';
+  const membersActive = activePage === 'members'   ? ' active' : '';
+
+  return '<nav class="bottom-nav">'
+    + '<a href="/admin?tk=' + token + '" class="bn-item' + dashActive + '">'
+    + '<span class="bn-icon">🏠</span>Home'
+    + '</a>'
+    + '<a href="/admin/members?tk=' + token + '" class="bn-item bn-green' + membersActive + '">'
+    + '<span class="bn-icon">👥</span>Member'
+    + '</a>'
+    + '<a href="/keuangan" class="bn-item">'
+    + '<span class="bn-icon">💰</span>Keuangan'
+    + '</a>'
+    + '<a href="/admin/reset?tk=' + token + '" class="bn-item bn-red"'
+    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
+    + '<span class="bn-icon">↺</span>Reset'
+    + '</a>'
+    + '</nav>';
+}
+
+// ── buildModal — shared modal overlay HTML ────────────────────────────────────
+function buildModal() {
+  return '<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this){closeModal()}">'
+    + '<div class="modal-box"><button class="modal-close" onclick="closeModal()">✕</button>'
+    + '<div class="modal-qr-wrap"><img id="modalImg" src="" alt="QR"></div>'
+    + '<div class="modal-name" id="modalName"></div>'
+    + '<div class="modal-kode" id="modalKode"></div>'
+    + '<div class="modal-btns">'
+    + '<a id="modalDl" class="modal-btn modal-btn-dl" download>⬇ Download</a>'
+    + '<button class="modal-btn modal-btn-copy" onclick="copyModal()">Copy URL</button>'
+    + '<a id="modalWa" class="modal-btn modal-btn-wa" target="_blank" rel="noopener">' + WA_SVG + ' WhatsApp</a>'
+    + '</div></div></div>';
+}
+
+export function adminDashboard({ db, log, transaksi = [], token, req }) {
+  const { members } = db;
+
+  const stats = {
+    total:  members.length,
+    scan:   members.filter((m) => m.sudahScanHariIni).length,
+    reward: members.filter((m) => m.status === 'GRATIS').length,
+    aktif:  members.filter((m) => m.totalMain > 0).length,
+  };
+
+  const hostBase  = req.protocol + '://' + req.get('host');
+
+  // Data JSON untuk JS client
+  const dataScan = members
+    .filter((m) => m.sudahScanHariIni && m.tanggalScanTerakhir)
+    .sort((a, b) => new Date(b.tanggalScanTerakhir) - new Date(a.tanggalScanTerakhir))
+    .map(({ nama, kode, tanggalScanTerakhir }) => ({
+      nama, kode,
+      jam: new Date(tanggalScanTerakhir).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
+    }));
+
+  const dataLb = [...members]
+    .map((m) => ({
+      nama: m.nama, kode: m.kode,
+      total:  (m.totalMain ?? 0) + (m.totalGratis ?? 0) * CONFIG.BATAS_MAIN,
+      reward: m.totalGratis ?? 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const dataLog = log.map(({ nama, aksi, detail, ts }) => ({
+    nama, aksi, detail: detail ?? '',
+    tgl: new Date(ts).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
+  }));
+
+  const now = new Date().toLocaleString('id-ID', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+  });
+
+  // ── Ringkasan keuangan ────────────────────────────────────────
+  const nowWib      = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const curBulan    = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
+  const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
+  const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan));
+  const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+  const pengeluaranBulan = trxBulan.filter((t) => t.jenis === 'pengeluaran').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+  const saldoBulan       = pemasukanBulan - pengeluaranBulan;
+  const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr);
+  const pemasukanHariIni = trxHariIni.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+
+  // ── Trend kunjungan 7 hari ────────────────────────────────────
+  const trendDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(nowWib);
+    d.setDate(d.getDate() - i);
+    const ymd = d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+    const lbl = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
+    const isToday = (i === 0);
+    const count = log.filter((l) => {
+      if (l.aksi !== 'SCAN') return false;
+      const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const lymd = ld.getFullYear() + '-'
+        + String(ld.getMonth() + 1).padStart(2, '0') + '-'
+        + String(ld.getDate()).padStart(2, '0');
+      return lymd === ymd;
+    }).length;
+    trendDays.push({ ymd, lbl, count, isToday });
+  }
+  const maxCount = Math.max(...trendDays.map((d) => d.count), 1);
+
+  // Build trend bar chart HTML (pure CSS)
+  const trendBars = trendDays.map(function(d) {
+    const pct     = Math.round((d.count / maxCount) * 100);
+    const barH    = Math.max(pct, d.count > 0 ? 4 : 0);
+    const color   = d.isToday ? 'var(--accent)' : 'var(--green)';
+    const opacity = d.isToday ? '1' : '0.6';
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">'
+      + '<div style="font-size:10px;font-weight:700;color:' + (d.count > 0 ? 'var(--txt2)' : 'var(--txt3)') + '">'
+      + (d.count > 0 ? d.count : '') + '</div>'
+      + '<div style="width:100%;display:flex;align-items:flex-end;height:56px">'
+      + '<div style="width:100%;height:' + barH + '%;background:' + color + ';opacity:' + opacity + ';'
+      + 'border-radius:4px 4px 0 0;transition:height .3s;min-height:' + (d.count > 0 ? '3px' : '0') + '">'
+      + '</div>'
+      + '</div>'
+      + '<div style="font-size:9px;color:' + (d.isToday ? 'var(--accent)' : 'var(--txt3)') + ';'
+      + 'font-weight:' + (d.isToday ? '700' : '400') + ';text-align:center;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%">'
+      + d.lbl + '</div>'
+      + '</div>';
+  }).join('');
+
+  // ── Ringkasan keuangan HTML ───────────────────────────────────
+  const keuanganMiniHtml = '<div class="mini-fin-card">'
+    + '<div class="mini-fin-header">'
+    + '<span class="mini-fin-title">💰 Keuangan Bulan Ini</span>'
+    + '<a href="/keuangan" class="mini-fin-link">Lihat detail →</a>'
+    + '</div>'
+    + '<div class="mini-fin-body">'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Pemasukan</div>'
+    + '<div class="mini-fin-val" style="color:var(--green)">' + rpFmt(pemasukanBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Pengeluaran</div>'
+    + '<div class="mini-fin-val" style="color:var(--red)">' + rpFmt(pengeluaranBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Saldo</div>'
+    + '<div class="mini-fin-val" style="color:' + (saldoBulan >= 0 ? 'var(--txt)' : 'var(--red)') + '">'
+    + rpFmt(saldoBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Hari ini</div>'
+    + '<div class="mini-fin-val" style="color:var(--accent)">' + rpFmt(pemasukanHariIni) + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+
+  // ── Trend chart HTML ──────────────────────────────────────────
+  const totalScan7 = trendDays.reduce((s, d) => s + d.count, 0);
+  const trendHtml = '<div class="trend-card">'
+    + '<div class="trend-header">'
+    + '<div>'
+    + '<div class="trend-title">📈 Trend Kunjungan</div>'
+    + '<div class="trend-sub">7 hari terakhir · total <strong>' + totalScan7 + '</strong> kunjungan</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="trend-bars">' + trendBars + '</div>'
+    + '</div>';
+
+  return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<style>' + buildAdminCss() + '</style>'
+    + '</head><body>'
+
+    + '<div class="layout">'
+    + buildSidebar(token, 'dashboard', now)
 
     // ── Main wrap ───────────────────────────────────────────
     + '<div class="main-wrap">'
@@ -659,6 +680,81 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div id="tab-log" class="tab-body"><div id="log-list"></div><button id="log-showbtn" class="show-all-btn" style="display:none"></button></div>'
     + '</div>'
 
+    + '</main>'
+    + '</div>'
+    + '</div>'
+
+    + buildBottomNav(token, 'dashboard')
+    + buildModal()
+
+    + '<div class="toast" id="toast">✓ Disalin!</div>'
+
+    + '<script>'
+    + 'const DATA_SCAN   = ' + JSON.stringify(dataScan)   + ';'
+    + 'const DATA_LB     = ' + JSON.stringify(dataLb)     + ';'
+    + 'const DATA_LOG    = ' + JSON.stringify(dataLog)    + ';'
+    + 'const DATA_MEMBER = [];'
+    + 'const TK          = ' + JSON.stringify(token)      + ';'
+    + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
+    + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
+    + '</script>'
+    + '<script src="/dashboard.js"></script>'
+    + '</body></html>';
+}
+
+// ── Kelola Member page ────────────────────────────────────────
+
+export function memberPage({ db, token, req }) {
+  const { members } = db;
+  const hostBase = req.protocol + '://' + req.get('host');
+
+  const dataMember = members.map((m) => {
+    const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
+    return {
+      kode:        m.kode,
+      nama:        m.nama,
+      telepon:     m.telepon ?? '',
+      totalMain:   m.totalMain ?? 0,
+      totalGratis: m.totalGratis ?? 0,
+      status:      m.status ?? '-',
+      sudahScan:   m.sudahScanHariIni ?? false,
+      tglDaftar:   m.tanggalDaftar    ? formatTanggalPendek(m.tanggalDaftar)   : '—',
+      tglTerakhir: m.tanggalScanTerakhir ? formatTanggalBulan(m.tanggalScanTerakhir) : '—',
+      bulanScan:   d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
+    };
+  });
+
+  const bulanOpts = getBulanOptions()
+    .map((o) => '<option value="' + o.val + '"' + (o.selected ? ' selected' : '') + '>' + o.lbl + '</option>')
+    .join('');
+
+  const now = new Date().toLocaleString('id-ID', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+  });
+
+  return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<style>' + buildAdminCss() + '</style>'
+    + '</head><body>'
+
+    + '<div class="layout">'
+    + buildSidebar(token, 'members', now)
+
+    + '<div class="main-wrap">'
+
+    + '<header class="topbar">'
+    + '<div class="topbar-brand"><span style="font-size:20px">🎱</span>'
+    + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="topbar-label">Kelola Member</div></div></div>'
+    + '<div class="topbar-right">'
+    + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
+    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
+    + '</div></header>'
+
+    + '<main class="page">'
+
     + '<div class="sec-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
     + '<span>Kelola Member</span>'
     + '<div style="display:flex;align-items:center;gap:8px">'
@@ -685,46 +781,22 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '</div>'
     + '<div class="pg-wrap" id="member-pg"></div>'
     + '</div>'
-    // Mobile card list — hanya tampil di layar ≤640px (CSS mengatur ini)
+
     + '<div id="mobile-list" style="margin-top:8px"></div>'
 
     + '</main>'
     + '</div>'
-    // ── end .main-wrap
     + '</div>'
-    // ── end .layout
 
-    // ── Bottom nav (mobile only) ────────────────────────────
-    + '<nav class="bottom-nav">'
-    + '<a href="/admin?tk=' + token + '" class="bn-item active">'
-    + '<span class="bn-icon">🏠</span>Home'
-    + '</a>'
-    + '<a href="/keuangan" class="bn-item">'
-    + '<span class="bn-icon">💰</span>Keuangan'
-    + '</a>'
-    + '<a href="/admin/reset?tk=' + token + '" class="bn-item bn-red"'
-    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
-    + '<span class="bn-icon">↺</span>Reset'
-    + '</a>'
-    + '</nav>'
-
-    + '<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this){closeModal()}">'
-    + '<div class="modal-box"><button class="modal-close" onclick="closeModal()">✕</button>'
-    + '<div class="modal-qr-wrap"><img id="modalImg" src="" alt="QR"></div>'
-    + '<div class="modal-name" id="modalName"></div>'
-    + '<div class="modal-kode" id="modalKode"></div>'
-    + '<div class="modal-btns">'
-    + '<a id="modalDl" class="modal-btn modal-btn-dl" download>⬇ Download</a>'
-    + '<button class="modal-btn modal-btn-copy" onclick="copyModal()">Copy URL</button>'
-    + '<a id="modalWa" class="modal-btn modal-btn-wa" target="_blank" rel="noopener">' + WA_SVG + ' WhatsApp</a>'
-    + '</div></div></div>'
+    + buildBottomNav(token, 'members')
+    + buildModal()
 
     + '<div class="toast" id="toast">✓ Disalin!</div>'
 
     + '<script>'
-    + 'const DATA_SCAN   = ' + JSON.stringify(dataScan)   + ';'
-    + 'const DATA_LB     = ' + JSON.stringify(dataLb)     + ';'
-    + 'const DATA_LOG    = ' + JSON.stringify(dataLog)    + ';'
+    + 'const DATA_SCAN   = [];'
+    + 'const DATA_LB     = [];'
+    + 'const DATA_LOG    = [];'
     + 'const DATA_MEMBER = ' + JSON.stringify(dataMember) + ';'
     + 'const TK          = ' + JSON.stringify(token)      + ';'
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
