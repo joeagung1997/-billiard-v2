@@ -201,7 +201,16 @@ export function adminLoginPage(showError) {
 
 // ── Dashboard ─────────────────────────────────────────────────
 
-export function adminDashboard({ db, log, token, req }) {
+// ── Format Rupiah (server-side) ───────────────────────────────
+function rpFmt(n) {
+  const abs = Math.abs(Math.round(Number(n) || 0));
+  const s   = String(abs);
+  const parts = [];
+  for (let i = s.length; i > 0; i -= 3) parts.unshift(s.slice(Math.max(0, i - 3), i));
+  return 'Rp ' + parts.join('.');
+}
+
+export function adminDashboard({ db, log, transaksi = [], token, req }) {
   const { members } = db;
 
   const stats = {
@@ -260,6 +269,101 @@ export function adminDashboard({ db, log, token, req }) {
     weekday: 'short', day: 'numeric', month: 'short',
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
   });
+
+  // ── Ringkasan keuangan ────────────────────────────────────────
+  const nowWib      = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const curBulan    = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
+  const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
+  const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan));
+  const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+  const pengeluaranBulan = trxBulan.filter((t) => t.jenis === 'pengeluaran').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+  const saldoBulan       = pemasukanBulan - pengeluaranBulan;
+  const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr);
+  const pemasukanHariIni = trxHariIni.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
+
+  // ── Trend kunjungan 7 hari ────────────────────────────────────
+  const trendDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(nowWib);
+    d.setDate(d.getDate() - i);
+    const ymd = d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+    const lbl = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
+    const isToday = (i === 0);
+    const count = log.filter((l) => {
+      if (l.aksi !== 'SCAN') return false;
+      const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const lymd = ld.getFullYear() + '-'
+        + String(ld.getMonth() + 1).padStart(2, '0') + '-'
+        + String(ld.getDate()).padStart(2, '0');
+      return lymd === ymd;
+    }).length;
+    trendDays.push({ ymd, lbl, count, isToday });
+  }
+  const maxCount = Math.max(...trendDays.map((d) => d.count), 1);
+
+  // Build trend bar chart HTML (pure CSS)
+  const trendBars = trendDays.map(function(d) {
+    const pct     = Math.round((d.count / maxCount) * 100);
+    const barH    = Math.max(pct, d.count > 0 ? 4 : 0);
+    const color   = d.isToday ? 'var(--accent)' : 'var(--green)';
+    const opacity = d.isToday ? '1' : '0.6';
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">'
+      + '<div style="font-size:10px;font-weight:700;color:' + (d.count > 0 ? 'var(--txt2)' : 'var(--txt3)') + '">'
+      + (d.count > 0 ? d.count : '') + '</div>'
+      + '<div style="width:100%;display:flex;align-items:flex-end;height:56px">'
+      + '<div style="width:100%;height:' + barH + '%;background:' + color + ';opacity:' + opacity + ';'
+      + 'border-radius:4px 4px 0 0;transition:height .3s;min-height:' + (d.count > 0 ? '3px' : '0') + '">'
+      + '</div>'
+      + '</div>'
+      + '<div style="font-size:9px;color:' + (d.isToday ? 'var(--accent)' : 'var(--txt3)') + ';'
+      + 'font-weight:' + (d.isToday ? '700' : '400') + ';text-align:center;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%">'
+      + d.lbl + '</div>'
+      + '</div>';
+  }).join('');
+
+  // ── Ringkasan keuangan HTML ───────────────────────────────────
+  const keuanganMiniHtml = '<div class="mini-fin-card">'
+    + '<div class="mini-fin-header">'
+    + '<span class="mini-fin-title">💰 Keuangan Bulan Ini</span>'
+    + '<a href="/keuangan" class="mini-fin-link">Lihat detail →</a>'
+    + '</div>'
+    + '<div class="mini-fin-body">'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Pemasukan</div>'
+    + '<div class="mini-fin-val" style="color:var(--green)">' + rpFmt(pemasukanBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Pengeluaran</div>'
+    + '<div class="mini-fin-val" style="color:var(--red)">' + rpFmt(pengeluaranBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Saldo</div>'
+    + '<div class="mini-fin-val" style="color:' + (saldoBulan >= 0 ? 'var(--txt)' : 'var(--red)') + '">'
+    + rpFmt(saldoBulan) + '</div>'
+    + '</div>'
+    + '<div class="mini-fin-divider"></div>'
+    + '<div class="mini-fin-item">'
+    + '<div class="mini-fin-lbl">Hari ini</div>'
+    + '<div class="mini-fin-val" style="color:var(--accent)">' + rpFmt(pemasukanHariIni) + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+
+  // ── Trend chart HTML ──────────────────────────────────────────
+  const totalScan7 = trendDays.reduce((s, d) => s + d.count, 0);
+  const trendHtml = '<div class="trend-card">'
+    + '<div class="trend-header">'
+    + '<div>'
+    + '<div class="trend-title">📈 Trend Kunjungan</div>'
+    + '<div class="trend-sub">7 hari terakhir · total <strong>' + totalScan7 + '</strong> kunjungan</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="trend-bars">' + trendBars + '</div>'
+    + '</div>';
 
   // CSS dashboard — string array join, tidak ada template literal
   const css = [
@@ -400,6 +504,27 @@ export function adminDashboard({ db, log, token, req }) {
     '.modal-btn-wa   { background:#25d366; color:#fff; }',
     '.toast { position:fixed; bottom:var(--sp-5); left:50%; transform:translateX(-50%); background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.3); border-radius:var(--r-md); padding:var(--sp-2) var(--sp-5); font-size:var(--fs-sm); font-weight:var(--fw-b); display:none; z-index:200; white-space:nowrap; pointer-events:none; }',
 
+    // ── Keuangan mini card ────────────────────────────────────
+    '.mini-fin-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px 16px; margin-bottom:var(--sp-4); }',
+    '.mini-fin-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }',
+    '.mini-fin-title { font-size:var(--fs-sm); font-weight:var(--fw-bk); color:var(--txt); }',
+    '.mini-fin-link { font-size:var(--fs-xs); color:var(--accent); text-decoration:none; }',
+    '.mini-fin-link:hover { text-decoration:underline; }',
+    '.mini-fin-body { display:flex; align-items:stretch; gap:0; }',
+    '.mini-fin-item { flex:1; min-width:0; padding:0 12px; text-align:center; }',
+    '.mini-fin-item:first-child { padding-left:0; }',
+    '.mini-fin-item:last-child { padding-right:0; }',
+    '.mini-fin-lbl { font-size:var(--fs-xs); color:var(--txt3); margin-bottom:4px; white-space:nowrap; }',
+    '.mini-fin-val { font-size:var(--fs-sm); font-weight:var(--fw-bk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
+    '.mini-fin-divider { width:1px; background:var(--border); flex-shrink:0; }',
+
+    // ── Trend chart card ──────────────────────────────────────
+    '.trend-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px 16px; margin-bottom:var(--sp-4); }',
+    '.trend-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; }',
+    '.trend-title { font-size:var(--fs-sm); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:2px; }',
+    '.trend-sub { font-size:var(--fs-xs); color:var(--txt3); }',
+    '.trend-bars { display:flex; gap:4px; align-items:flex-end; }',
+
     // ── Mobile card layout ────────────────────────────────────
     '.mc { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden; transition:border-color .15s; }',
     '.mc.hadir { border-color:rgba(34,197,94,.25); }',
@@ -447,6 +572,10 @@ export function adminDashboard({ db, log, token, req }) {
     '  .sec-label { margin-top:12px; }',
     '  .sidebar { display:none; }',
     '  .bottom-nav { display:flex; }',
+    '  .mini-fin-item { padding:0 6px; }',
+    '  .mini-fin-val { font-size:10px; }',
+    '  .mini-fin-lbl { font-size:9px; }',
+    '  .trend-card { padding:12px; }',
     '}',
     '@media (min-width:641px) {',
     '  .topbar { display:none; }',
@@ -515,6 +644,9 @@ export function adminDashboard({ db, log, token, req }) {
     + '<div class="stat-card"><div style="font-size:18px;margin-bottom:4px">🎁</div><div class="stat-num">' + stats.reward + '</div><div class="stat-lbl">Reward pending</div></div>'
     + '<div class="stat-card"><div style="font-size:18px;margin-bottom:4px">🔥</div><div class="stat-num">' + stats.aktif + '</div><div class="stat-lbl">Aktif bulan ini</div></div>'
     + '</div>'
+
+    + keuanganMiniHtml
+    + trendHtml
 
     + '<div class="card" style="margin-bottom:var(--sp-4)">'
     + '<div class="tabs-wrap">'

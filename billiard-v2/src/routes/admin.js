@@ -2,7 +2,7 @@
 // ── Routes: /admin/* ──────────────────────────────────────────
 
 import { Router }   from "express";
-import { readDB, writeDB, readLog, createMember, findMemberIndex } from "../utils/db.js";
+import { readDB, writeDB, readLog, readTransaksi, createMember, findMemberIndex } from "../utils/db.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
@@ -25,11 +25,12 @@ router.get("/", (req, res) => {
     return res.send(adminLoginPage(!!req.query.err));
   }
 
-  const token = tk || createToken(pin);
-  const db    = readDB();
-  const log   = readLog();
+  const token     = tk || createToken(pin);
+  const db        = readDB();
+  const log       = readLog();
+  const transaksi = readTransaksi();
 
-  res.send(adminDashboard({ db, log, token, req }));
+  res.send(adminDashboard({ db, log, transaksi, token, req }));
 });
 
 // ── POST /admin/login ─────────────────────────────────────────
