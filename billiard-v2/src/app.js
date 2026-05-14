@@ -53,30 +53,33 @@ app.use((req, res) => {
   }));
 });
 
-// ── Cron: reset scan harian jam 02.00 WIB (19.00 UTC) ────────
-cron.schedule("0 19 * * *", async () => {
-  try {
-    await resetScanHarian();
-    console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Reset harian selesai.`);
-  } catch (err) {
-    console.error("[CRON] Reset harian gagal:", err.message);
-  }
-}, { timezone: "UTC" });
+// ── Local dev: cron + server ──────────────────────────────────
+if (!process.env.VERCEL) {
+  cron.schedule("0 19 * * *", async () => {
+    try {
+      await resetScanHarian();
+      console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Reset harian selesai.`);
+    } catch (err) {
+      console.error("[CRON] Reset harian gagal:", err.message);
+    }
+  }, { timezone: "UTC" });
 
-// ── Init DB lalu start server ─────────────────────────────────
-initDB()
-  .then(() => {
-    app.listen(CONFIG.PORT, () => {
-      console.log(`\n${"=".repeat(44)}`);
-      console.log(` ${CONFIG.NAMA_ARENA}`);
-      console.log(`${"=".repeat(44)}`);
-      console.log(` Port    : ${CONFIG.PORT}`);
-      console.log(` DB      : PostgreSQL`);
-      console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
-      console.log(`${"=".repeat(44)}\n`);
+  initDB()
+    .then(() => {
+      app.listen(CONFIG.PORT, () => {
+        console.log(`\n${"=".repeat(44)}`);
+        console.log(` ${CONFIG.NAMA_ARENA}`);
+        console.log(`${"=".repeat(44)}`);
+        console.log(` Port    : ${CONFIG.PORT}`);
+        console.log(` DB      : PostgreSQL`);
+        console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
+        console.log(`${"=".repeat(44)}\n`);
+      });
+    })
+    .catch((err) => {
+      console.error("[FATAL] Gagal koneksi database:", err.message);
+      process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error("[FATAL] Gagal koneksi database:", err.message);
-    process.exit(1);
-  });
+}
+
+export default app;
