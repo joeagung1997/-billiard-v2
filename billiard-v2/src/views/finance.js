@@ -279,7 +279,27 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter })
     return "<option value=\"" + val + "\"" + (val === bFilter ? " selected" : "") + ">" + lbl + "</option>";
   }).join("");
 
-  // Rows
+  // Total by date
+  const byDate = {};
+  filtered.forEach((t) => {
+    if (!byDate[t.tanggal]) byDate[t.tanggal] = { masuk: 0, keluar: 0 };
+    if (t.jenis === "pemasukan")   byDate[t.tanggal].masuk  += t.jumlah;
+    if (t.jenis === "pengeluaran") byDate[t.tanggal].keluar += t.jumlah;
+  });
+  const dateRows = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).map((tgl) => {
+    const d   = byDate[tgl];
+    const sal = d.masuk - d.keluar;
+    const tglDisp = new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    return "<tr>"
+      + "<td style=\"white-space:nowrap;font-weight:600\">" + tglDisp + "</td>"
+      + "<td style=\"color:var(--green);font-weight:700\">" + rp(d.masuk) + "</td>"
+      + "<td style=\"color:var(--red);font-weight:700\">" + rp(d.keluar) + "</td>"
+      + "<td style=\"font-weight:700;color:" + (sal >= 0 ? "var(--green)" : "var(--red)") + "\">"
+      + (sal < 0 ? "−" : "") + rp(Math.abs(sal)) + "</td>"
+      + "</tr>";
+  }).join("") || "<tr><td colspan=\"4\" class=\"empty-state\">Belum ada data</td></tr>";
+
+  // Rows transaksi
   const rows = sorted.length > 0
     ? sorted.map((t) => {
         const isIn    = t.jenis === "pemasukan";
@@ -287,21 +307,18 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter })
         const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
           day: "numeric", month: "short", year: "numeric",
         });
+        const jamDisp = t.jam ? " <span style=\"color:var(--txt3);font-size:11px\">" + t.jam + "</span>" : "";
         return "<tr>"
-          + "<td style=\"white-space:nowrap\">" + tglDisp + "</td>"
+          + "<td style=\"white-space:nowrap\">" + tglDisp + jamDisp + "</td>"
           + "<td><span class=\"badge " + (isIn ? "badge-green" : "badge-red") + "\">"
           + (isIn ? "↑ Masuk" : "↓ Keluar") + "</span></td>"
-          + "<td><span style=\"font-size:13px\">" + (isSiang ? "☀️ Siang" : "🌙 Malam") + "</span></td>"
+          + "<td><span style=\"font-size:12px\">" + (isSiang ? "☀️ Siang" : "🌙 Malam") + "</span></td>"
           + "<td>" + escHtml(t.kategori) + "</td>"
-          + "<td style=\"max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\""
+          + "<td style=\"max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\""
           + " title=\"" + escHtml(t.keterangan) + "\">" + escHtml(t.keterangan || "—") + "</td>"
           + "<td style=\"font-weight:700;color:" + (isIn ? "var(--green)" : "var(--red)") + ";white-space:nowrap\">"
           + (isIn ? "+" : "−") + rp(t.jumlah) + "</td>"
-          + "<td style=\"white-space:nowrap\">"
-          + "<a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"tbl-btn\" style=\"margin-right:4px\">Edit</a>"
-          + "<a href=\"/keuangan/hapus?id=" + t.id + "&ftk=" + token
-          + "\" class=\"tbl-btn tbl-btn-red\" onclick=\"return confirm('Hapus transaksi ini?')\">Hapus</a>"
-          + "</td>"
+          + "<td><a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"tbl-btn\">Edit</a></td>"
           + "</tr>";
       }).join("")
     : "<tr><td colspan=\"7\" class=\"empty-state\">Belum ada transaksi</td></tr>";
@@ -353,7 +370,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter })
 
     + "<div class=\"action-bar\">"
     + "<a href=\"/keuangan/tambah?ftk=" + token + "\" class=\"btn-primary\">＋ Tambah Transaksi</a>"
+    + "<a href=\"/keuangan/kategori?ftk=" + token + "\" class=\"btn-secondary\">⚙ Kategori</a>"
     + "</div>"
+
+    // Total by date
+    + "<div class=\"sec-label\">Total per Tanggal — " + bulanLabel + "</div>"
+    + "<div class=\"card\" style=\"margin-bottom:16px\"><div class=\"table-wrap\">"
+    + "<table><thead><tr>"
+    + "<th>Tanggal</th><th>Pemasukan</th><th>Pengeluaran</th><th>Saldo Hari</th>"
+    + "</tr></thead><tbody>" + dateRows + "</tbody></table>"
+    + "</div></div>"
 
     + "<div class=\"filter-bar\">"
     + "<select class=\"sel\" onchange=\"applyFilter()\" id=\"fBulan\">" + bulanOpts + "</select>"
@@ -399,12 +425,19 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter })
 }
 
 // ── Form tambah transaksi ─────────────────────────────────────
-export function financeFormPage(token) {
-  const today = new Date().toISOString().slice(0, 10);
+export function financeFormPage(token, kategoriList = []) {
+  const today   = new Date().toISOString().slice(0, 10);
+  const nowTime = new Date().toTimeString().slice(0, 5);
+
+  const grpIn  = kategoriList.filter((k) => k.jenis === "pemasukan")
+    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
+  const grpOut = kategoriList.filter((k) => k.jenis === "pengeluaran")
+    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
 
   return docHead("Tambah Transaksi")
     + "<style>" + CSS
-    + "body { display:flex; align-items:flex-start; justify-content:center; padding:20px; }"
+    + "body{display:flex;align-items:flex-start;justify-content:center;padding:20px}"
+    + ".time-date{display:grid;grid-template-columns:1fr auto;gap:8px}"
     + "</style></head><body data-theme=\"dark\">"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
     + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
@@ -414,7 +447,7 @@ export function financeFormPage(token) {
     + "<form action=\"/keuangan/tambah\" method=\"post\" id=\"frm\">"
     + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
 
-    // Jenis toggle
+    // Jenis
     + "<div class=\"fw\"><label>Jenis</label>"
     + "<div class=\"jenis-toggle\">"
     + "<div class=\"jenis-btn active-in\" id=\"btnIn\" onclick=\"setJenis('pemasukan')\">↑ Pemasukan</div>"
@@ -432,77 +465,66 @@ export function financeFormPage(token) {
     + "<input type=\"hidden\" name=\"waktu\" id=\"waktu\" value=\"siang\">"
     + "</div>"
 
-    // Tanggal
-    + "<div class=\"fw\"><label>Tanggal</label>"
-    + "<input type=\"date\" name=\"tanggal\" value=\"" + today + "\" required></div>"
+    // Tanggal + Jam
+    + "<div class=\"fw\"><label>Tanggal &amp; Jam</label>"
+    + "<div class=\"time-date\">"
+    + "<input type=\"date\" name=\"tanggal\" value=\"" + today + "\" required>"
+    + "<input type=\"time\" name=\"jam\" value=\"" + nowTime + "\" style=\"width:110px\">"
+    + "</div></div>"
 
     // Kategori
     + "<div class=\"fw\"><label>Kategori</label>"
     + "<select name=\"kategori\" class=\"inp\" id=\"kategori\">"
-    + "<optgroup label=\"Pemasukan\" id=\"grpIn\">"
-    + "<option>Sewa Meja</option><option>Makanan / Minuman</option>"
-    + "<option>Turnamen</option><option>Registrasi Member</option><option>Lain-lain</option>"
-    + "</optgroup>"
-    + "<optgroup label=\"Pengeluaran\" id=\"grpOut\" style=\"display:none\">"
-    + "<option>Listrik / Air</option><option>Gaji / Honor</option>"
-    + "<option>Stok / Perlengkapan</option><option>Perawatan</option>"
-    + "<option>Operasional</option><option>Lain-lain</option>"
-    + "</optgroup>"
+    + "<optgroup label=\"Pemasukan\" id=\"grpIn\">" + grpIn + "</optgroup>"
+    + "<optgroup label=\"Pengeluaran\" id=\"grpOut\" style=\"display:none\">" + grpOut + "</optgroup>"
     + "</select></div>"
 
     // Keterangan
     + "<div class=\"fw\"><label>Keterangan</label>"
     + "<input type=\"text\" name=\"keterangan\" placeholder=\"contoh: Meja 2 — 3 jam\" autocomplete=\"off\"></div>"
 
-    // Jumlah
+    // Jumlah (auto-format)
     + "<div class=\"fw\"><label>Jumlah (Rp)</label>"
-    + "<input type=\"number\" name=\"jumlah\" placeholder=\"0\" min=\"1\" required"
-    + " oninput=\"previewRp(this.value)\">"
-    + "<div id=\"rpPreview\" style=\"font-size:12px;color:var(--txt3);margin-top:4px\"></div>"
+    + "<input type=\"text\" name=\"jumlah\" id=\"jumlahDisp\" inputmode=\"numeric\""
+    + " placeholder=\"0\" autocomplete=\"off\" oninput=\"fmtJumlah(this)\" required>"
     + "</div>"
 
     + "<button class=\"btn-submit\" type=\"submit\">Simpan Transaksi</button>"
     + "</form></div>"
 
     + "<script>"
+    + "function fmtJumlah(el){"
+    + "var raw=el.value.replace(/\\D/g,'');"
+    + "el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
+    + "}"
     + "function setWaktu(w){"
     + "document.getElementById('waktu').value=w;"
-    + "const isSiang=w==='siang';"
-    + "document.getElementById('btnSiang').className='jenis-btn'+(isSiang?' active-in':'');"
-    + "document.getElementById('btnMalam').className='jenis-btn'+(!isSiang?' active-in':'');"
+    + "var s=w==='siang';"
+    + "document.getElementById('btnSiang').className='jenis-btn'+(s?' active-in':'');"
+    + "document.getElementById('btnMalam').className='jenis-btn'+(!s?' active-in':'');"
     + "}"
-
     + "function setJenis(j){"
     + "document.getElementById('jenis').value=j;"
-    + "const isIn=j==='pemasukan';"
+    + "var isIn=j==='pemasukan';"
     + "document.getElementById('btnIn').className='jenis-btn'+(isIn?' active-in':'');"
     + "document.getElementById('btnOut').className='jenis-btn'+(!isIn?' active-out':'');"
     + "document.getElementById('grpIn').style.display=isIn?'':'none';"
     + "document.getElementById('grpOut').style.display=isIn?'none':'';"
-    + "const sel=document.getElementById('kategori');"
-    + "sel.selectedIndex=0;}"
-
-    + "function previewRp(v){"
-    + "const n=parseInt(v)||0;"
-    + "if(n>0){"
-    + "const s=String(n),parts=[];"
-    + "for(let i=s.length;i>0;i-=3)parts.unshift(s.slice(Math.max(0,i-3),i));"
-    + "document.getElementById('rpPreview').textContent='Rp\\u00a0'+parts.join('.');"
-    + "}else document.getElementById('rpPreview').textContent='';}"
+    + "document.getElementById('kategori').selectedIndex=0;}"
     + "</script>"
     + "</body></html>";
 }
 
 // ── Form edit transaksi ───────────────────────────────────────
-export function financeEditPage(token, t) {
+export function financeEditPage(token, t, kategoriList = []) {
   const isIn    = t.jenis === "pemasukan";
   const isSiang = (t.waktu ?? "siang") === "siang";
 
-  const kategoriOptsIn  = ["Sewa Meja","Makanan / Minuman","Turnamen","Registrasi Member","Lain-lain"];
-  const kategoriOptsOut = ["Listrik / Air","Gaji / Honor","Stok / Perlengkapan","Perawatan","Operasional","Lain-lain"];
-
   const makeOpts = (list, selected) =>
-    list.map((o) => "<option" + (o === selected ? " selected" : "") + ">" + o + "</option>").join("");
+    list.map((k) => "<option" + (k.nama === selected ? " selected" : "") + ">" + escHtml(k.nama) + "</option>").join("");
+
+  const grpIn  = makeOpts(kategoriList.filter((k) => k.jenis === "pemasukan"),  isIn  ? t.kategori : "");
+  const grpOut = makeOpts(kategoriList.filter((k) => k.jenis === "pengeluaran"), !isIn ? t.kategori : "");
 
   return docHead("Edit Transaksi")
     + "<style>" + CSS
@@ -535,57 +557,120 @@ export function financeEditPage(token, t) {
     + "<input type=\"hidden\" name=\"waktu\" id=\"waktu\" value=\"" + (t.waktu ?? "siang") + "\">"
     + "</div>"
 
-    // Tanggal
-    + "<div class=\"fw\"><label>Tanggal</label>"
-    + "<input type=\"date\" name=\"tanggal\" value=\"" + t.tanggal + "\" required></div>"
+    // Tanggal + Jam
+    + "<div class=\"fw\"><label>Tanggal &amp; Jam</label>"
+    + "<div style=\"display:grid;grid-template-columns:1fr auto;gap:8px\">"
+    + "<input type=\"date\" name=\"tanggal\" value=\"" + t.tanggal + "\" required>"
+    + "<input type=\"time\" name=\"jam\" value=\"" + (t.jam ?? "") + "\" style=\"width:110px\">"
+    + "</div></div>"
 
     // Kategori
     + "<div class=\"fw\"><label>Kategori</label>"
     + "<select name=\"kategori\" class=\"inp\" id=\"kategori\">"
     + "<optgroup label=\"Pemasukan\" id=\"grpIn\"" + (!isIn ? " style=\"display:none\"" : "") + ">"
-    + makeOpts(kategoriOptsIn, isIn ? t.kategori : "")
-    + "</optgroup>"
+    + grpIn + "</optgroup>"
     + "<optgroup label=\"Pengeluaran\" id=\"grpOut\"" + (isIn ? " style=\"display:none\"" : "") + ">"
-    + makeOpts(kategoriOptsOut, !isIn ? t.kategori : "")
-    + "</optgroup>"
+    + grpOut + "</optgroup>"
     + "</select></div>"
 
     // Keterangan
     + "<div class=\"fw\"><label>Keterangan</label>"
     + "<input type=\"text\" name=\"keterangan\" value=\"" + escHtml(t.keterangan) + "\" autocomplete=\"off\"></div>"
 
-    // Jumlah
+    // Jumlah (auto-format)
     + "<div class=\"fw\"><label>Jumlah (Rp)</label>"
-    + "<input type=\"number\" name=\"jumlah\" value=\"" + t.jumlah + "\" min=\"1\" required"
-    + " oninput=\"previewRp(this.value)\">"
-    + "<div id=\"rpPreview\" style=\"font-size:12px;color:var(--txt3);margin-top:4px\">" + rp(t.jumlah) + "</div>"
+    + "<input type=\"text\" name=\"jumlah\" id=\"jumlahDisp\" inputmode=\"numeric\""
+    + " value=\"" + String(t.jumlah).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "\""
+    + " autocomplete=\"off\" oninput=\"fmtJumlah(this)\" required>"
     + "</div>"
 
     + "<button class=\"btn-submit\" type=\"submit\">Simpan Perubahan</button>"
     + "</form></div>"
 
     + "<script>"
+    + "function fmtJumlah(el){"
+    + "var raw=el.value.replace(/\\D/g,'');"
+    + "el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
+    + "}"
     + "function setWaktu(w){"
     + "document.getElementById('waktu').value=w;"
-    + "const isSiang=w==='siang';"
-    + "document.getElementById('btnSiang').className='jenis-btn'+(isSiang?' active-in':'');"
-    + "document.getElementById('btnMalam').className='jenis-btn'+(!isSiang?' active-in':'');"
+    + "var s=w==='siang';"
+    + "document.getElementById('btnSiang').className='jenis-btn'+(s?' active-in':'');"
+    + "document.getElementById('btnMalam').className='jenis-btn'+(!s?' active-in':'');"
     + "}"
     + "function setJenis(j){"
     + "document.getElementById('jenis').value=j;"
-    + "const isIn=j==='pemasukan';"
+    + "var isIn=j==='pemasukan';"
     + "document.getElementById('btnIn').className='jenis-btn'+(isIn?' active-in':'');"
     + "document.getElementById('btnOut').className='jenis-btn'+(!isIn?' active-out':'');"
     + "document.getElementById('grpIn').style.display=isIn?'':'none';"
     + "document.getElementById('grpOut').style.display=isIn?'none':'';"
     + "document.getElementById('kategori').selectedIndex=0;}"
-    + "function previewRp(v){"
-    + "const n=parseInt(v)||0;"
-    + "if(n>0){"
-    + "const s=String(n),parts=[];"
-    + "for(let i=s.length;i>0;i-=3)parts.unshift(s.slice(Math.max(0,i-3),i));"
-    + "document.getElementById('rpPreview').textContent='Rp '+parts.join('.');"
-    + "}else document.getElementById('rpPreview').textContent='';}"
     + "</script>"
+    + "</body></html>";
+}
+
+// ── Halaman kelola kategori ───────────────────────────────────
+export function financeKategoriPage(token, kategoriList = [], showErr = false) {
+  const errHtml = showErr
+    ? "<div style=\"background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px\">Kategori sudah ada atau tidak valid.</div>"
+    : "";
+
+  const makeRows = (list) => list.length > 0
+    ? list.map((k) =>
+        "<tr><td>" + escHtml(k.nama) + "</td>"
+        + "<td><a href=\"/keuangan/kategori/hapus?id=" + k.id + "&ftk=" + token
+        + "\" class=\"tbl-btn tbl-btn-red\" onclick=\"return confirm('Hapus kategori ini?')\">Hapus</a></td></tr>"
+      ).join("")
+    : "<tr><td colspan=\"2\" class=\"empty-state\">Belum ada kategori</td></tr>";
+
+  const inList  = kategoriList.filter((k) => k.jenis === "pemasukan");
+  const outList = kategoriList.filter((k) => k.jenis === "pengeluaran");
+
+  return docHead("Kelola Kategori")
+    + "<style>" + CSS
+    + "body{padding:20px;max-width:680px;margin:0 auto}"
+    + ".two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}"
+    + "@media(max-width:540px){.two-col{grid-template-columns:1fr}}"
+    + "</style></head><body data-theme=\"dark\">"
+    + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"display:inline-flex;margin-bottom:16px\">← Kembali ke Keuangan</a>"
+    + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Kelola Kategori</h1>"
+    + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Tambah atau hapus kategori transaksi</p>"
+    + errHtml
+
+    // Form tambah kategori
+    + "<div class=\"card\" style=\"padding:16px;margin-bottom:20px\">"
+    + "<div class=\"sec-label\" style=\"margin-top:0\">Tambah Kategori Baru</div>"
+    + "<form action=\"/keuangan/kategori/tambah\" method=\"post\" style=\"display:flex;gap:8px;flex-wrap:wrap;margin-top:10px\">"
+    + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+    + "<input type=\"text\" name=\"nama\" placeholder=\"Nama kategori\" required"
+    + " style=\"flex:1;min-width:160px;padding:9px 12px;background:#0a1422;border:1.5px solid #1e3a5f;border-radius:8px;font-size:13px;color:var(--txt);outline:none\">"
+    + "<select name=\"jenis\" class=\"inp\" style=\"width:150px\">"
+    + "<option value=\"pemasukan\">↑ Pemasukan</option>"
+    + "<option value=\"pengeluaran\">↓ Pengeluaran</option>"
+    + "</select>"
+    + "<button type=\"submit\" class=\"btn-primary\">Tambah</button>"
+    + "</form></div>"
+
+    // List kategori
+    + "<div class=\"two-col\">"
+
+    // Pemasukan
+    + "<div>"
+    + "<div class=\"sec-label\" style=\"color:var(--green)\">↑ Pemasukan (" + inList.length + ")</div>"
+    + "<div class=\"card\"><div class=\"table-wrap\">"
+    + "<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead>"
+    + "<tbody>" + makeRows(inList) + "</tbody></table>"
+    + "</div></div></div>"
+
+    // Pengeluaran
+    + "<div>"
+    + "<div class=\"sec-label\" style=\"color:var(--red)\">↓ Pengeluaran (" + outList.length + ")</div>"
+    + "<div class=\"card\"><div class=\"table-wrap\">"
+    + "<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead>"
+    + "<tbody>" + makeRows(outList) + "</tbody></table>"
+    + "</div></div></div>"
+
+    + "</div>"
     + "</body></html>";
 }

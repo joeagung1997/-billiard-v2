@@ -3,6 +3,22 @@
 
 import { query } from "./postgres.js";
 
+const DEFAULT_KATEGORI = [
+  // Pemasukan
+  { nama: "Sewa Meja",           jenis: "pemasukan"   },
+  { nama: "Makanan / Minuman",   jenis: "pemasukan"   },
+  { nama: "Turnamen",            jenis: "pemasukan"   },
+  { nama: "Registrasi Member",   jenis: "pemasukan"   },
+  { nama: "Lain-lain",           jenis: "pemasukan"   },
+  // Pengeluaran
+  { nama: "Listrik / Air",       jenis: "pengeluaran" },
+  { nama: "Gaji / Honor",        jenis: "pengeluaran" },
+  { nama: "Stok / Perlengkapan", jenis: "pengeluaran" },
+  { nama: "Perawatan",           jenis: "pengeluaran" },
+  { nama: "Operasional",         jenis: "pengeluaran" },
+  { nama: "Lain-lain",           jenis: "pengeluaran" },
+];
+
 export const runMigrations = async () => {
   // ── Tabel members ───────────────────────────────────────────
   await query(`
@@ -45,14 +61,31 @@ export const runMigrations = async () => {
     )
   `);
 
-  // ── Tambah kolom waktu ke transaksi (idempotent) ───────────
+  // ── Tabel kategori keuangan ─────────────────────────────────
   await query(`
-    ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'
+    CREATE TABLE IF NOT EXISTS kategori (
+      id    SERIAL PRIMARY KEY,
+      nama  TEXT NOT NULL,
+      jenis TEXT NOT NULL,
+      UNIQUE(nama, jenis)
+    )
   `);
 
+  // ── Kolom tambahan (idempotent) ─────────────────────────────
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'`);
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);
+
+  // ── Insert default kategori (skip jika sudah ada) ──────────
+  for (const k of DEFAULT_KATEGORI) {
+    await query(
+      `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
+      [k.nama, k.jenis]
+    );
+  }
+
   // ── Index untuk performa query ──────────────────────────────
-  await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts    ON logs (ts DESC)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_logs_aksi  ON logs (aksi)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts           ON logs      (ts DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_logs_aksi         ON logs      (aksi)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_transaksi_tanggal ON transaksi (tanggal DESC)`);
 
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");

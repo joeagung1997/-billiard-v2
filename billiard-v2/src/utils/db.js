@@ -28,6 +28,7 @@ const rowToMember = (row) => ({
 const rowToTransaksi = (row) => ({
   id:         row.id,
   tanggal:    row.tanggal,
+  jam:        row.jam         ?? "",
   jenis:      row.jenis,
   waktu:      row.waktu       ?? "siang",
   kategori:   row.kategori    ?? "",
@@ -138,11 +139,11 @@ export const readTransaksi = async () => {
 
 export const appendTransaksi = async (item) => {
   await query(
-    `INSERT INTO transaksi (id, tanggal, jenis, waktu, kategori, keterangan, jumlah, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, keterangan, jumlah, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
-      item.id, item.tanggal, item.jenis,
-      item.waktu ?? "siang",
+      item.id, item.tanggal, item.jam ?? "",
+      item.jenis, item.waktu ?? "siang",
       item.kategori ?? "", item.keterangan ?? "",
       item.jumlah, item.createdAt ?? new Date().toISOString(),
     ]
@@ -151,16 +152,31 @@ export const appendTransaksi = async (item) => {
 
 export const updateTransaksi = async (item) => {
   await query(
-    `UPDATE transaksi SET tanggal=$1, jenis=$2, waktu=$3, kategori=$4, keterangan=$5, jumlah=$6
-     WHERE id=$7`,
+    `UPDATE transaksi SET tanggal=$1, jam=$2, jenis=$3, waktu=$4, kategori=$5, keterangan=$6, jumlah=$7
+     WHERE id=$8`,
     [
-      item.tanggal, item.jenis, item.waktu ?? "siang",
+      item.tanggal, item.jam ?? "",
+      item.jenis, item.waktu ?? "siang",
       item.kategori ?? "", item.keterangan ?? "",
       item.jumlah, item.id,
     ]
   );
 };
 
-export const hapusTransaksi = async (id) => {
-  await query("DELETE FROM transaksi WHERE id = $1", [id]);
+// ── Kategori ──────────────────────────────────────────────────
+
+export const readKategori = async () => {
+  const res = await query("SELECT * FROM kategori ORDER BY jenis, nama");
+  return res.rows;
+};
+
+export const addKategori = async (nama, jenis) => {
+  await query(
+    `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
+    [nama.trim(), jenis]
+  );
+};
+
+export const deleteKategori = async (id) => {
+  await query("DELETE FROM kategori WHERE id = $1", [id]);
 };
