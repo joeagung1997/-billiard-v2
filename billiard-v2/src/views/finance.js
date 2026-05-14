@@ -141,33 +141,105 @@ const CSS = [
 // ── Login page ────────────────────────────────────────────────
 export function financeLoginPage(showErr) {
   const errHtml = showErr
-    ? "<div style=\"background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);"
-      + "border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px\">PIN salah. Coba lagi.</div>"
+    ? "<div class=\"err-msg\"><span>⚠ PIN salah. Silakan coba lagi.</span></div>"
     : "";
 
-  return docHead("Keuangan")
-    + "<style>"
-    + CSS
-    + "body { display:flex; align-items:center; justify-content:center; padding:20px; }"
-    + ".card { max-width:320px; padding:32px 24px; text-align:center; border-radius:20px; }"
-    + "input[type=password] { width:100%; padding:14px; background:#0d1b2e; border:1.5px solid rgba(255,255,255,.12);"
-    + "  border-radius:12px; font-size:28px; text-align:center; letter-spacing:.5em; color:var(--txt);"
-    + "  outline:none; font-family:monospace; margin-bottom:12px; }"
-    + "input[type=password]:focus { border-color:var(--accent); }"
-    + ".btn-login { width:100%; background:var(--accent); color:#fff; border:none; border-radius:12px;"
-    + "  padding:14px; font-size:15px; font-weight:700; cursor:pointer; }"
-    + "</style></head><body><div class=\"card\">"
-    + "<div style=\"font-size:36px;margin-bottom:12px\">💰</div>"
-    + "<div style=\"font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;"
-    + "color:var(--green);margin-bottom:8px\">" + CONFIG.NAMA_ARENA + "</div>"
-    + "<h1 style=\"font-size:20px;font-weight:700;color:var(--txt);margin-bottom:4px\">Laporan Keuangan</h1>"
-    + "<p style=\"font-size:13px;color:var(--txt3);margin-bottom:20px\">Masukkan PIN untuk mengakses</p>"
-    + errHtml
-    + "<form action=\"/keuangan/login\" method=\"post\">"
-    + "<input type=\"password\" name=\"pin\" placeholder=\"••••\" maxlength=\"8\" autofocus autocomplete=\"off\">"
-    + "<button class=\"btn-login\" type=\"submit\">Masuk</button>"
-    + "</form>"
-    + "</div></body></html>";
+  const loginCss = [
+    "*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }",
+    "body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;",
+    "  background:#050b15; min-height:100vh;",
+    "  display:flex; align-items:center; justify-content:center; padding:20px; overflow:hidden; }",
+    ".bg-glow { position:fixed; inset:0; pointer-events:none; z-index:0; }",
+    ".bg-glow::before { content:''; position:absolute; top:-15%; left:50%; transform:translateX(-50%);",
+    "  width:640px; height:640px;",
+    "  background:radial-gradient(circle,rgba(34,197,94,.1) 0%,transparent 68%); border-radius:50%; }",
+    ".bg-glow::after { content:''; position:absolute; bottom:-10%; right:-10%;",
+    "  width:420px; height:420px;",
+    "  background:radial-gradient(circle,rgba(37,99,235,.07) 0%,transparent 70%); border-radius:50%; }",
+    ".card { position:relative; z-index:1;",
+    "  background:linear-gradient(150deg,#0e1b2e 0%,#090f1c 100%);",
+    "  border:1px solid rgba(255,255,255,.07); border-radius:26px;",
+    "  padding:36px 28px 28px; width:100%; max-width:340px; text-align:center;",
+    "  box-shadow:0 40px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.05);",
+    "  animation:cardIn .45s cubic-bezier(.16,1,.3,1) both; }",
+    "@keyframes cardIn { from{opacity:0;transform:translateY(28px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }",
+    ".icon-box { width:68px; height:68px; margin:0 auto 18px;",
+    "  background:linear-gradient(135deg,#0f3a20,#071c0e);",
+    "  border:1px solid rgba(34,197,94,.22); border-radius:20px;",
+    "  display:flex; align-items:center; justify-content:center; font-size:30px;",
+    "  box-shadow:0 8px 28px rgba(34,197,94,.18); }",
+    ".arena-lbl { font-size:10px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#22c55e; margin-bottom:7px; }",
+    "h1 { font-size:22px; font-weight:700; color:#e8edf5; margin-bottom:4px; }",
+    ".sub { font-size:13px; color:#4a5e78; margin-bottom:26px; }",
+    ".pin-dots { display:flex; justify-content:center; gap:11px; margin-bottom:24px; }",
+    ".dot { width:13px; height:13px; border-radius:50%;",
+    "  background:#162030; border:2px solid #253a58;",
+    "  transition:all .15s cubic-bezier(.34,1.56,.64,1); }",
+    ".dot.filled { background:#22c55e; border-color:#22c55e; transform:scale(1.18);",
+    "  box-shadow:0 0 10px rgba(34,197,94,.55); }",
+    ".err-msg { background:rgba(239,68,68,.1); color:#f87171;",
+    "  border:1px solid rgba(239,68,68,.2); border-radius:10px;",
+    "  padding:10px 12px; font-size:12px; font-weight:500; margin-bottom:18px;",
+    "  animation:shake .45s cubic-bezier(.36,.07,.19,.97); }",
+    "@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }",
+    ".numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }",
+    ".np-btn { background:#0f1e30; border:1px solid #1c3352; border-radius:14px; color:#e8edf5;",
+    "  font-size:20px; font-weight:600; padding:17px 10px; cursor:pointer;",
+    "  transition:background .12s,transform .1s;",
+    "  font-family:inherit; touch-action:manipulation; user-select:none; line-height:1; }",
+    ".np-btn:hover { background:#162840; border-color:#2a4a74; }",
+    ".np-btn:active { transform:scale(.9); opacity:.8; }",
+    ".del-btn { color:#475569; font-size:16px; }",
+    ".go-btn { background:linear-gradient(135deg,#16a34a,#15803d); border-color:#22c55e; color:#fff;",
+    "  box-shadow:0 4px 18px rgba(34,197,94,.28); font-size:18px; }",
+    ".go-btn:hover { background:linear-gradient(135deg,#22c55e,#16a34a); }",
+    ".login-footer { margin-top:22px; font-size:11px; color:#253040; }",
+    "#pinInput { display:none; }",
+  ].join("");
+
+  const script = [
+    "var _pin='',MAX=6;",
+    "function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}",
+    "function del(){_pin=_pin.slice(0,-1);upd();}",
+    "function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById('d'+i);if(d)d.classList.toggle('filled',i<_pin.length);}}",
+    "function go(){if(!_pin.length)return;document.getElementById('pi').value=_pin;document.getElementById('pf').submit();}",
+    "document.addEventListener('keydown',function(e){if(e.key>='0'&&e.key<='9')press(e.key);else if(e.key==='Backspace')del();else if(e.key==='Enter')go();});",
+  ].join("");
+
+  const dots = [0,1,2,3,4,5].map(function(i){ return "<div class=\"dot\" id=\"d" + i + "\"></div>"; }).join("");
+
+  return docHead("Keuangan Login")
+    + "<style>" + loginCss + "</style>"
+    + "</head><body>"
+    + "<div class=\"bg-glow\"></div>"
+    + "<div class=\"card\">"
+    +   "<div class=\"icon-box\">💰</div>"
+    +   "<div class=\"arena-lbl\">" + CONFIG.NAMA_ARENA + "</div>"
+    +   "<h1>Laporan Keuangan</h1>"
+    +   "<p class=\"sub\">Masukkan PIN untuk akses</p>"
+    +   errHtml
+    +   "<div class=\"pin-dots\">" + dots + "</div>"
+    +   "<div class=\"numpad\">"
+    +     "<button class=\"np-btn\" onclick=\"press('1')\">1</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('2')\">2</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('3')\">3</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('4')\">4</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('5')\">5</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('6')\">6</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('7')\">7</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('8')\">8</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('9')\">9</button>"
+    +     "<button class=\"np-btn del-btn\" onclick=\"del()\">⌫</button>"
+    +     "<button class=\"np-btn\" onclick=\"press('0')\">0</button>"
+    +     "<button class=\"np-btn go-btn\" onclick=\"go()\">→</button>"
+    +   "</div>"
+    +   "<form id=\"pf\" action=\"/keuangan/login\" method=\"post\">"
+    +     "<input type=\"hidden\" name=\"pin\" id=\"pi\">"
+    +   "</form>"
+    +   "<div class=\"login-footer\">Gunakan keyboard atau tap angka di atas</div>"
+    + "</div>"
+    + "<script>" + script + "<\/script>"
+    + "</body></html>";
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
