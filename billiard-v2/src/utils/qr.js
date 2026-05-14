@@ -37,262 +37,261 @@ const escSvg = (s) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-// ── Branded QR Card (modern redesign) ────────────────────────
-// Dark glassmorphism card — gradient mesh background, glow accent,
-// pill badge, progress dots, clean typography. Zero backtick, zero emoji.
+// ── Branded QR Card v3 — "Obsidian" ─────────────────────────
+// Ultra-dark premium card. Top accent stripe, aurora bloom,
+// clean QR (no overlay), pill progress, strong type hierarchy.
+// Zero backtick, zero emoji in SVG.
 export const brandedQrCard = async ({ text, nama, kode, totalMain = 0, sudahScanHariIni = false }) => {
-  // 1. QR PNG — dark modules agar kontras dengan panel putih
+  // 1. QR PNG — hitam pekat agar maksimal kontras di putih
   const qrPng = await QRCode.toDataURL(text, {
     errorCorrectionLevel: "H",
     type:   "image/png",
-    width:  280,
+    width:  300,
     margin: 1,
-    color:  { dark: "#0a0f1a", light: "#ffffff" },
+    color:  { dark: "#020810", light: "#ffffff" },
   });
 
-  // 2. Konstanta layout
+  // 2. Layout constants
   const W    = 400;
-  const H    = 660;
-  const CX   = W / 2;
-  const DOTS = CONFIG.BATAS_MAIN;
+  const H    = 620;
+  const CX   = W / 2;                  // 200
+  const DOTS = CONFIG.BATAS_MAIN;      // biasanya 10
+
   const ARENA = escSvg(CONFIG.NAMA_ARENA);
   const NAMA  = escSvg(nama.length > 22 ? nama.slice(0, 20) + "…" : nama);
   const KODE  = escSvg(kode);
 
-  // 3. Hitung posisi dot progress
-  const dotR     = DOTS <= 10 ? 12 : DOTS <= 12 ? 10 : 8;
-  const margin   = 28;
-  const available= W - 2 * margin;
-  const spacing  = available / DOTS;          // center-to-center
-  const dotStartX= margin + spacing / 2;      // center dot pertama
-  const dotY     = 576;
+  // 3. Progress pills (rounded rect, tanpa angka — lebih clean)
+  const PW = 26, PH = 13, PRX = 7;           // pill dimensions
+  const PGAP = 8;                              // gap antar pill
+  const totalPW = DOTS * PW + (DOTS - 1) * PGAP;
+  const pillX0  = Math.round((W - totalPW) / 2); // x pill pertama
+  const pillTopY = 534;                        // y top edge pills
 
-  // Build dots SVG string
-  let dotsSvg = "";
+  let pillsSvg = "";
   for (let i = 0; i < DOTS; i++) {
-    const cx     = Math.round(dotStartX + i * spacing);
+    const px     = pillX0 + i * (PW + PGAP);
     const n      = i + 1;
     const isFree = n === DOTS;
     const isDone = n <= totalMain;
 
-    let fill, stroke, textFill, label;
-    if (isFree && isDone) {
-      fill = "#854d0e"; stroke = "#ca8a04"; textFill = "#fef08a"; label = "FREE";
-    } else if (isFree) {
-      fill = "#120d00"; stroke = "#ca8a0444"; textFill = "#4a3510"; label = "FREE";
-    } else if (isDone) {
-      fill = "#166534"; stroke = "#22c55e"; textFill = "#bbf7d0"; label = String(n);
-    } else {
-      fill = "#081510"; stroke = "#1a3020"; textFill = "#1e4030"; label = String(n);
-    }
+    let fill, stroke;
+    if      (isFree && isDone) { fill = "#78350f"; stroke = "#f59e0b"; }
+    else if (isFree)           { fill = "#0c0800"; stroke = "#3a2000"; }
+    else if (isDone)           { fill = "#052e16"; stroke = "#10b981"; }
+    else                       { fill = "#040d0b"; stroke = "#0d2018"; }
 
-    dotsSvg += '<circle cx="' + cx + '" cy="' + dotY + '" r="' + dotR + '"'
+    pillsSvg += '<rect x="' + px + '" y="' + pillTopY
+      + '" width="' + PW + '" height="' + PH + '" rx="' + PRX + '"'
       + ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>';
-    dotsSvg += '<text x="' + cx + '" y="' + (dotY + (isFree ? 3 : 4)) + '"'
-      + ' font-family="-apple-system,sans-serif"'
-      + ' font-size="' + (isFree ? "6" : "8") + '" font-weight="700"'
-      + ' fill="' + textFill + '" text-anchor="middle">' + label + '</text>';
+
+    // Label FREE di pill terakhir (hanya jika belum done — biar terlihat)
+    if (isFree && !isDone) {
+      pillsSvg += '<text x="' + (px + PW / 2) + '" y="' + (pillTopY + PH / 2 + 3) + '"'
+        + ' font-family="Arial,sans-serif" font-size="5" font-weight="800"'
+        + ' fill="#b45309" text-anchor="middle">FREE</text>';
+    }
   }
 
-  // Teks progress
-  const sisa      = Math.max(0, DOTS - 1 - totalMain);  // -1 karena slot FREE
-  const persen    = Math.min(Math.round(totalMain / (DOTS - 1) * 100), 100);
-  const barWidth  = Math.round((W - 56) * persen / 100);
-  const progText  = totalMain === 0
+  // 4. Progress text
+  const sisa     = Math.max(0, DOTS - 1 - totalMain);
+  const persen   = Math.min(Math.round(totalMain / (DOTS - 1) * 100), 100);
+  const progText = totalMain === 0
     ? "Belum ada check-in bulan ini"
     : totalMain >= DOTS - 1
-      ? "Selamat! Kamu dapat sesi GRATIS!"
-      : String(totalMain) + " dari " + String(DOTS - 1) + " sesi  ·  " + String(sisa) + " lagi untuk gratis";
+      ? "Selamat—kamu dapat sesi GRATIS!"
+      : String(totalMain) + " / " + String(DOTS - 1)
+        + " sesi · " + String(sisa) + " lagi untuk gratis";
 
-  // 4. SVG
+  // 5. Bar width (px) — untuk smooth progress bar
+  const BAR_X = 32, BAR_W = W - 64, BAR_H = 4;
+  const barFill = Math.round(BAR_W * persen / 100);
+
+  // 6. SVG string
   const svg = '<?xml version="1.0" encoding="UTF-8"?>'
     + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
     + ' width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">'
 
-    // ── defs ──────────────────────────────────────────────────
+    // ── DEFS ──────────────────────────────────────────────────
     + '<defs>'
 
-    // Background gradient — deep navy ke hitam
-    + '<linearGradient id="bgGrad" x1="0" y1="0" x2="0.5" y2="1">'
-    + '<stop offset="0%"   stop-color="#080f1c"/>'
-    + '<stop offset="100%" stop-color="#020609"/>'
+    // BG diagonal gradient — very dark navy to pure black
+    + '<linearGradient id="bg" x1="0" y1="0" x2=".6" y2="1">'
+    + '<stop offset="0%"   stop-color="#080d1e"/>'
+    + '<stop offset="60%"  stop-color="#050912"/>'
+    + '<stop offset="100%" stop-color="#020508"/>'
     + '</linearGradient>'
 
-    // Glow blob hijau — kiri atas
-    + '<radialGradient id="blob1" cx="0%" cy="0%" r="70%">'
-    + '<stop offset="0%"   stop-color="#16a34a" stop-opacity=".18"/>'
-    + '<stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>'
+    // Aurora bloom — emerald radial, top-center
+    + '<radialGradient id="aurora" cx="50%" cy="0%" r="65%" fx="50%" fy="0%">'
+    + '<stop offset="0%"   stop-color="#059669" stop-opacity=".22"/>'
+    + '<stop offset="60%"  stop-color="#047857" stop-opacity=".06"/>'
+    + '<stop offset="100%" stop-color="#047857" stop-opacity="0"/>'
     + '</radialGradient>'
 
-    // Glow blob biru — kanan bawah
-    + '<radialGradient id="blob2" cx="100%" cy="100%" r="60%">'
-    + '<stop offset="0%"   stop-color="#0ea5e9" stop-opacity=".10"/>'
-    + '<stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>'
-    + '</radialGradient>'
+    // Top accent stripe gradient (cyan → emerald → cyan)
+    + '<linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0%"   stop-color="#06b6d4" stop-opacity=".6"/>'
+    + '<stop offset="40%"  stop-color="#10b981" stop-opacity="1"/>'
+    + '<stop offset="100%" stop-color="#06b6d4" stop-opacity=".4"/>'
+    + '</linearGradient>'
 
-    // Gradient aksen header pill
+    // Header pill gradient
     + '<linearGradient id="pillGrad" x1="0" y1="0" x2="1" y2="0">'
-    + '<stop offset="0%"   stop-color="#16a34a"/>'
-    + '<stop offset="100%" stop-color="#0d9488"/>'
+    + '<stop offset="0%"   stop-color="#065f46"/>'
+    + '<stop offset="100%" stop-color="#0e7490"/>'
     + '</linearGradient>'
 
-    // Gradient border kartu — glow hijau
-    + '<linearGradient id="borderGrad" x1="0" y1="0" x2="0" y2="1">'
-    + '<stop offset="0%"   stop-color="#22c55e" stop-opacity=".5"/>'
-    + '<stop offset="50%"  stop-color="#0ea5e9" stop-opacity=".25"/>'
-    + '<stop offset="100%" stop-color="#22c55e" stop-opacity=".15"/>'
+    // Progress bar gradient
+    + '<linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0%"   stop-color="#10b981"/>'
+    + '<stop offset="100%" stop-color="#06b6d4"/>'
     + '</linearGradient>'
 
-    // Glass panel QR
-    + '<linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">'
-    + '<stop offset="0%"   stop-color="#ffffff" stop-opacity=".06"/>'
-    + '<stop offset="100%" stop-color="#ffffff" stop-opacity=".02"/>'
+    // Card outer border gradient
+    + '<linearGradient id="bdGrad" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%"   stop-color="#10b981" stop-opacity=".55"/>'
+    + '<stop offset="50%"  stop-color="#06b6d4" stop-opacity=".2"/>'
+    + '<stop offset="100%" stop-color="#10b981" stop-opacity=".1"/>'
     + '</linearGradient>'
 
-    // Clip card
-    + '<clipPath id="cardClip"><rect width="' + W + '" height="' + H + '" rx="28"/></clipPath>'
+    // Clip card shape
+    + '<clipPath id="cc"><rect width="' + W + '" height="' + H + '" rx="24"/></clipPath>'
 
-    // Filter glow QR border
-    + '<filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">'
-    + '<feGaussianBlur stdDeviation="4" result="blur"/>'
-    + '<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
+    // Soft glow filter for QR border
+    + '<filter id="qrGlow" x="-8%" y="-8%" width="116%" height="116%">'
+    + '<feGaussianBlur stdDeviation="3" result="b"/>'
+    + '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'
     + '</filter>'
 
     + '</defs>'
 
-    // ── Background ────────────────────────────────────────────
-    + '<g clip-path="url(#cardClip)">'
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#bgGrad)"/>'
+    // ── BACKGROUND ────────────────────────────────────────────
+    + '<g clip-path="url(#cc)">'
 
-    // Blob glow kiri atas
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#blob1)"/>'
-    // Blob glow kanan bawah
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#blob2)"/>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#bg)"/>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#aurora)"/>'
 
-    // Pola titik halus (dot grid) — dekoratif
-    + '<pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">'
-    + '<circle cx="1" cy="1" r="0.8" fill="#ffffff" opacity=".04"/>'
-    + '</pattern>'
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#dots)"/>'
+    // Subtle diagonal lines texture (low opacity)
+    + '<line x1="0"   y1="160" x2="160" y2="0"   stroke="#ffffff" stroke-width=".4" opacity=".025"/>'
+    + '<line x1="0"   y1="260" x2="260" y2="0"   stroke="#ffffff" stroke-width=".4" opacity=".018"/>'
+    + '<line x1="0"   y1="360" x2="360" y2="0"   stroke="#ffffff" stroke-width=".4" opacity=".012"/>'
+    + '<line x1="40"  y1="' + H + '" x2="' + W + '" y2="' + (H - 360) + '"'
+    + ' stroke="#ffffff" stroke-width=".4" opacity=".018"/>'
+    + '<line x1="140" y1="' + H + '" x2="' + W + '" y2="' + (H - 260) + '"'
+    + ' stroke="#ffffff" stroke-width=".4" opacity=".012"/>'
 
-    // ── Header ────────────────────────────────────────────────
-    // Icon billiard — lingkaran solid gelap
-    + '<circle cx="44" cy="52" r="24" fill="#0d1f12" stroke="#22c55e33" stroke-width="1.5"/>'
-    // Highlight dalam bola
-    + '<circle cx="37" cy="45" r="7" fill="#ffffff" opacity=".8"/>'
-    + '<circle cx="44" cy="52" r="3" fill="#111" opacity=".5"/>'
-    // Ring luar tipis
-    + '<circle cx="44" cy="52" r="24" fill="none" stroke="#22c55e" stroke-width="1" opacity=".4"/>'
+    // ── TOP ACCENT STRIPE (3px) ────────────────────────────────
+    + '<rect x="0" y="0" width="' + W + '" height="3" fill="url(#stripe)"/>'
 
-    // Nama arena
-    + '<text x="80" y="44"'
+    // ── HEADER (y: 18-82) ─────────────────────────────────────
+    // Billiard ball icon — minimalist concentric rings
+    + '<circle cx="40" cy="50" r="22" fill="#071a0f" stroke="#10b981" stroke-width="1.5" opacity=".9"/>'
+    + '<circle cx="40" cy="50" r="14" fill="none" stroke="#10b981" stroke-width=".6" opacity=".35"/>'
+    + '<circle cx="33" cy="43" r="6"  fill="#ffffff" opacity=".75"/>'
+    + '<circle cx="40" cy="50" r="2.5" fill="#0a1a10" opacity=".6"/>'
+
+    // Arena name — large, bold
+    + '<text x="74" y="43"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="21" font-weight="800" fill="#f1f5f9" letter-spacing=".3">' + ARENA + '</text>'
+    + ' font-size="20" font-weight="800" fill="#f0fdf4" letter-spacing=".2">' + ARENA + '</text>'
 
-    // Pill badge "MEMBER CARD"
-    + '<rect x="80" y="54" width="102" height="18" rx="9" fill="url(#pillGrad)" opacity=".85"/>'
-    + '<text x="131" y="67"'
+    // MEMBER CARD pill
+    + '<rect x="74" y="51" width="98" height="17" rx="8.5" fill="url(#pillGrad)" opacity=".9"/>'
+    + '<text x="123" y="63.5"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle"'
-    + ' letter-spacing="2">MEMBER CARD</text>'
+    + ' font-size="8.5" font-weight="700" fill="#a7f3d0" text-anchor="middle"'
+    + ' letter-spacing="2.2">MEMBER CARD</text>'
 
-    // Garis pemisah tipis
-    + '<line x1="24" y1="92" x2="376" y2="92" stroke="#ffffff" stroke-width=".5" opacity=".06"/>'
+    // Header divider
+    + '<line x1="20" y1="82" x2="380" y2="82" stroke="#10b981" stroke-width=".5" opacity=".12"/>'
 
-    // ── Panel QR (glass card) ─────────────────────────────────
-    // Shadow bawah
-    + '<rect x="44" y="116" width="312" height="312" rx="22" fill="#000000" opacity=".45"/>'
-    // Glass panel
-    + '<rect x="40" y="112" width="320" height="312" rx="22" fill="url(#glassGrad)"/>'
-    // Border glow
-    + '<rect x="40" y="112" width="320" height="312" rx="22"'
-    + ' fill="none" stroke="#22c55e" stroke-width="1" opacity=".2"'
-    + ' filter="url(#glowGreen)"/>'
-    // White inner QR background — lebih kecil dari panel
-    + '<rect x="52" y="124" width="296" height="288" rx="16" fill="#ffffff"/>'
-    // QR image
-    + '<image href="' + qrPng + '" x="60" y="132" width="280" height="272"/>'
+    // ── QR PANEL ─────────────────────────────────────────────
+    // Drop shadow
+    + '<rect x="44" y="102" width="312" height="312" rx="20" fill="#000" opacity=".35"/>'
+    // White QR card
+    + '<rect x="40" y="98" width="320" height="312" rx="20" fill="#ffffff"/>'
+    // Subtle inner border
+    + '<rect x="40" y="98" width="320" height="312" rx="20"'
+    + ' fill="none" stroke="#10b981" stroke-width="1.2" opacity=".18" filter="url(#qrGlow)"/>'
+    // Accent top edge pada QR card (thin colored bar at top of white card)
+    + '<rect x="40" y="98" width="320" height="4" rx="2" fill="url(#stripe)" opacity=".5"/>'
+    // QR image — centered dalam white card, no center overlay
+    + '<image href="' + qrPng + '" x="50" y="106" width="300" height="300"/>'
 
-    // Logo center QR — "mata" billiard
-    + '<rect x="182" y="254" width="36" height="36" rx="7" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>'
-    + '<circle cx="200" cy="272" r="13" fill="#080f1c" stroke="#22c55e" stroke-width="1.5"/>'
-    + '<circle cx="194" cy="266" r="4" fill="#ffffff" opacity=".85"/>'
+    // ── INFO SECTION ──────────────────────────────────────────
+    // Top info divider
+    + '<line x1="20" y1="424" x2="380" y2="424" stroke="#ffffff" stroke-width=".5" opacity=".05"/>'
 
-    // ── Info section ──────────────────────────────────────────
-    // Divider
-    + '<line x1="24" y1="436" x2="376" y2="436" stroke="#ffffff" stroke-width=".5" opacity=".06"/>'
-
-    // Label NAMA — caps kecil
-    + '<text x="' + CX + '" y="456"'
+    // Nama member — besar, bold
+    + '<text x="' + CX + '" y="455"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="9" font-weight="700" fill="#4d7c6a" text-anchor="middle"'
-    + ' letter-spacing="3">NAMA MEMBER</text>'
-
-    // Nama member
-    + '<text x="' + CX + '" y="480"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="22" font-weight="800" fill="#f1f5f9" text-anchor="middle"'
+    + ' font-size="24" font-weight="800" fill="#f8fafc" text-anchor="middle"'
     + ' letter-spacing=".2">' + NAMA + '</text>'
 
-    // Pill kode — background gelap (y=488, h=26, bottom=514)
-    + '<rect x="' + (CX - 76) + '" y="488" width="152" height="26" rx="13"'
-    + ' fill="#0d2218" stroke="#22c55e" stroke-width="1"/>'
-    + '<text x="' + CX + '" y="506"'
+    // Kode pill — kecil & sharp
+    + '<rect x="' + (CX - 70) + '" y="463" width="140" height="24" rx="12"'
+    + ' fill="#041a10" stroke="#10b981" stroke-width="1.2" opacity=".9"/>'
+    + '<text x="' + CX + '" y="479"'
     + ' font-family="\'Courier New\',Courier,monospace"'
-    + ' font-size="12" font-weight="700" fill="#4ade80" text-anchor="middle"'
-    + ' letter-spacing="3">' + KODE + '</text>'
+    + ' font-size="11.5" font-weight="700" fill="#34d399" text-anchor="middle"'
+    + ' letter-spacing="3.5">' + KODE + '</text>'
 
-    // ── Progress section ──────────────────────────────────────
-    // Divider (setelah kode pill bottom=514)
-    + '<line x1="24" y1="526" x2="376" y2="526" stroke="#ffffff" stroke-width=".5" opacity=".06"/>'
+    // ── PROGRESS SECTION ─────────────────────────────────────
+    // Section divider
+    + '<line x1="20" y1="502" x2="380" y2="502" stroke="#ffffff" stroke-width=".5" opacity=".05"/>'
 
-    // Label "PROGRESS BULAN INI"
-    + '<text x="' + CX + '" y="546"'
+    // Label kiri + fraksi kanan
+    + '<text x="' + BAR_X + '" y="520"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="9" font-weight="700" fill="#4d7c6a" text-anchor="middle"'
-    + ' letter-spacing="3">PROGRESS BULAN INI</text>'
+    + ' font-size="9" font-weight="700" fill="#134e4a" letter-spacing="2">SESI BULAN INI</text>'
+    + '<text x="' + (W - BAR_X) + '" y="520"'
+    + ' font-family="\'Courier New\',Courier,monospace"'
+    + ' font-size="9" font-weight="700" fill="#10b981" text-anchor="end">'
+    + String(totalMain) + ' / ' + String(DOTS - 1) + '</text>'
 
-    // Bar background
-    + '<rect x="28" y="554" width="' + (W - 56) + '" height="5" rx="3" fill="#0a1f14"/>'
-    // Bar fill
-    + '<rect x="28" y="554" width="' + barWidth + '" height="5" rx="3" fill="#22c55e" opacity=".8"/>'
+    // Smooth progress bar
+    + '<rect x="' + BAR_X + '" y="526" width="' + BAR_W + '" height="' + BAR_H + '" rx="2" fill="#071a12"/>'
+    + (barFill > 0
+      ? '<rect x="' + BAR_X + '" y="526" width="' + barFill + '" height="' + BAR_H + '" rx="2" fill="url(#barGrad)"/>'
+      : '')
 
-    // Dots row (dotY=576 dideklarasikan di atas — tepat setelah bar)
-    + dotsSvg
+    // Pill progress indicators
+    + pillsSvg
 
-    // Teks progress
-    + '<text x="' + CX + '" y="604"'
+    // Progress info text
+    + '<text x="' + CX + '" y="562"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="11" fill="' + (totalMain >= DOTS - 1 ? "#fbbf24" : "#4a7060") + '"'
+    + ' font-size="11" fill="' + (totalMain >= DOTS - 1 ? "#fbbf24" : "#1e5c4a") + '"'
     + ' text-anchor="middle" font-weight="' + (totalMain >= DOTS - 1 ? "700" : "400") + '">'
     + escSvg(progText) + '</text>'
 
-    // Badge "Sudah check-in hari ini" — muncul jika sudahScanHariIni
+    // Badge "sudah check-in hari ini"
     + (sudahScanHariIni
-      ? '<rect x="' + (CX - 88) + '" y="614" width="176" height="20" rx="10"'
-        + ' fill="#0d2218" stroke="#22c55e44" stroke-width="1"/>'
-        + '<text x="' + CX + '" y="628"'
+      ? '<rect x="' + (CX - 84) + '" y="572" width="168" height="19" rx="9.5"'
+        + ' fill="#042f23" stroke="#10b981" stroke-width="1" opacity=".85"/>'
+        + '<text x="' + CX + '" y="585"'
         + ' font-family="-apple-system,sans-serif" font-size="9" font-weight="600"'
-        + ' fill="#4ade80" text-anchor="middle" letter-spacing="1">'
-        + 'Sudah check-in hari ini</text>'
+        + ' fill="#34d399" text-anchor="middle" letter-spacing=".8">'
+        + '✓ Sudah check-in hari ini</text>'
       : '')
 
-    // Footer instruksi
-    + '<line x1="24" y1="648" x2="376" y2="648" stroke="#ffffff" stroke-width=".5" opacity=".04"/>'
-    + '<text x="' + CX + '" y="660"'
+    // ── FOOTER ────────────────────────────────────────────────
+    + '<line x1="20" y1="600" x2="380" y2="600" stroke="#ffffff" stroke-width=".5" opacity=".04"/>'
+    + '<text x="' + CX + '" y="613"'
     + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
-    + ' font-size="10" fill="#1e4033" text-anchor="middle"'
-    + ' letter-spacing="1.5">Scan QR ini untuk check-in</text>'
+    + ' font-size="9.5" fill="#0d3a28" text-anchor="middle" letter-spacing="1.2">'
+    + 'Tunjukkan QR ini ke kasir untuk check-in</text>'
 
     + '</g>'
 
-    // ── Border kartu luar — gradient glow ─────────────────────
-    + '<rect x="1" y="1" width="398" height="658" rx="27"'
-    + ' fill="none" stroke="url(#borderGrad)" stroke-width="1.5"/>'
+    // ── OUTER BORDER (gradient glow) ──────────────────────────
+    + '<rect x="1" y="1" width="398" height="618" rx="23"'
+    + ' fill="none" stroke="url(#bdGrad)" stroke-width="1.5"/>'
 
     + '</svg>';
 
-  // 5. Encode base64
+  // 7. Encode base64
   const b64 = Buffer.from(svg, "utf8").toString("base64");
   return {
     svg,
