@@ -60,6 +60,29 @@ export const appendLog = (kode, nama, aksi, detail = "") => {
 
 // ── Member helpers ────────────────────────────────────────────
 
+// ── Finance helpers ───────────────────────────────────────────
+
+export const readTransaksi = () => {
+  try { return readDB().transaksi ?? []; }
+  catch { return []; }
+};
+
+export const appendTransaksi = (item) => {
+  const db = readDB();
+  if (!db.transaksi) db.transaksi = [];
+  db.transaksi.unshift(item);
+  writeDB(db);
+};
+
+export const hapusTransaksi = (id) => {
+  const db = readDB();
+  if (!db.transaksi) return;
+  db.transaksi = db.transaksi.filter((t) => t.id !== id);
+  writeDB(db);
+};
+
+// ── Member helpers ────────────────────────────────────────────
+
 export const findMember = (members, kode) =>
   members.find((m) => m.kode.toUpperCase() === kode.toUpperCase()) ?? null;
 

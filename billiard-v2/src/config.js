@@ -9,8 +9,9 @@ export const CONFIG = Object.freeze({
   NAMA_ARENA: process.env.NAMA_ARENA           ?? "Warpat Jombang",
   BATAS_MAIN: parseInt(process.env.BATAS_MAIN) || 10,
   BATAS_HARI: parseInt(process.env.BATAS_HARI) || 30,
-  ADMIN_PIN:  process.env.ADMIN_PIN            ?? "1234",
-  KASIR_PIN:  process.env.KASIR_PIN            ?? "5678",
+  ADMIN_PIN:    process.env.ADMIN_PIN            ?? "1234",
+  KASIR_PIN:    process.env.KASIR_PIN            ?? "5678",
+  FINANCE_PIN:  process.env.FINANCE_PIN          ?? "2024",
   KODE_PREFIX:process.env.KODE_PREFIX          ?? "JMB",
 
   // Path database — pakai Railway Volume jika ada

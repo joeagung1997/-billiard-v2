@@ -278,6 +278,7 @@ export function adminDashboard({ db, log, token, req }) {
     + '</div>'
     + '<div class="action-bar">'
     + '<a href="/admin/tambah?tk=' + token + '" class="btn-primary">＋ Tambah Member</a>'
+    + '<a href="/keuangan" class="btn-secondary" style="color:var(--green);border-color:var(--green-bg)">💰 Keuangan</a>'
     + '<a href="/admin/reset?tk=' + token + '" class="btn-secondary" onclick="return confirm(\'Reset scan harian semua member?\')">↺ Reset Harian</a>'
     + '</div>'
 

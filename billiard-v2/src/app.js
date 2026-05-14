@@ -12,6 +12,7 @@ import scanRouter     from "./routes/scan.js";
 import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
 import shareRouter    from "./routes/share.js";
+import financeRouter  from "./routes/finance.js";
 import { resultPage } from "./views/member.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -29,6 +30,7 @@ initDB();
 app.use("/", scanRouter);
 app.use("/admin", adminRouter);
 app.use("/admin", qrRouter);
+app.use("/keuangan", financeRouter);
 app.use("/", shareRouter);
 
 // ── Home ──────────────────────────────────────────────────────
