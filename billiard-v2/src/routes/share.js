@@ -132,6 +132,8 @@ router.get("/member/:kode", async (req, res) => {
     text: scanUrl,
     nama: member.nama,
     kode,
+    totalMain:        member.totalMain        ?? 0,
+    sudahScanHariIni: member.sudahScanHariIni ?? false,
   });
 
   res.status(200).setHeader("Content-Type", "text/html; charset=utf-8").send(
