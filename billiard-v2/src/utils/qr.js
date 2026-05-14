@@ -37,127 +37,180 @@ const escSvg = (s) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-// ── Branded QR Card ───────────────────────────────────────────
-// Generate kartu SVG bertema billiard dengan QR embedded sebagai PNG base64.
-// Tidak ada emoji di dalam SVG — diganti shape SVG murni agar kompatibel
-// di semua browser dan environment render.
+// ── Branded QR Card (modern redesign) ────────────────────────
+// Dark glassmorphism card — gradient mesh background, glow accent,
+// pill badge, clean typography. Zero backtick, zero emoji.
 export const brandedQrCard = async ({ text, nama, kode }) => {
-  // 1. Generate QR sebagai PNG base64
+  // 1. QR PNG — dark modules agar kontras dengan panel putih
   const qrPng = await QRCode.toDataURL(text, {
-    ...QR_OPTIONS,
-    type:  "image/png",
-    width: 280,
+    errorCorrectionLevel: "H",
+    type:   "image/png",
+    width:  280,
     margin: 1,
+    color:  { dark: "#0a0f1a", light: "#ffffff" },
   });
 
-  // 2. Hitung semua nilai sebelum masuk ke string SVG
-  const W      = 400;
-  const H      = 530;
-  const W2     = W - 2;
-  const H2     = H - 2;
-  const WH     = W / 2;         // center X = 200
-  const ARENA  = escSvg(CONFIG.NAMA_ARENA);
-  const NAMA   = escSvg(nama.length > 22 ? nama.slice(0, 20) + "…" : nama);
-  const KODE   = escSvg(kode);
+  // 2. Konstanta layout
+  const W   = 400;
+  const H   = 580;
+  const CX  = W / 2;          // 200 — center X
+  const ARENA = escSvg(CONFIG.NAMA_ARENA);
+  const NAMA  = escSvg(nama.length > 22 ? nama.slice(0, 20) + "…" : nama);
+  const KODE  = escSvg(kode);
 
-  // 3. Bangun SVG dengan string concatenation — zero backtick
+  // 3. SVG
   const svg = '<?xml version="1.0" encoding="UTF-8"?>'
     + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
     + ' width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">'
 
+    // ── defs ──────────────────────────────────────────────────
     + '<defs>'
-    + '<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
-    + '<stop offset="0%" stop-color="#0d1b2e"/>'
-    + '<stop offset="100%" stop-color="#050d1a"/>'
+
+    // Background gradient — deep navy ke hitam
+    + '<linearGradient id="bgGrad" x1="0" y1="0" x2="0.5" y2="1">'
+    + '<stop offset="0%"   stop-color="#080f1c"/>'
+    + '<stop offset="100%" stop-color="#020609"/>'
     + '</linearGradient>'
-    + '<linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0">'
-    + '<stop offset="0%" stop-color="#14532d"/>'
-    + '<stop offset="100%" stop-color="#15803d"/>'
+
+    // Glow blob hijau — kiri atas
+    + '<radialGradient id="blob1" cx="0%" cy="0%" r="70%">'
+    + '<stop offset="0%"   stop-color="#16a34a" stop-opacity=".18"/>'
+    + '<stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>'
+    + '</radialGradient>'
+
+    // Glow blob biru — kanan bawah
+    + '<radialGradient id="blob2" cx="100%" cy="100%" r="60%">'
+    + '<stop offset="0%"   stop-color="#0ea5e9" stop-opacity=".10"/>'
+    + '<stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>'
+    + '</radialGradient>'
+
+    // Gradient aksen header pill
+    + '<linearGradient id="pillGrad" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0%"   stop-color="#16a34a"/>'
+    + '<stop offset="100%" stop-color="#0d9488"/>'
     + '</linearGradient>'
-    + '<clipPath id="cc"><rect width="' + W + '" height="' + H + '" rx="24"/></clipPath>'
+
+    // Gradient border kartu — glow hijau
+    + '<linearGradient id="borderGrad" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%"   stop-color="#22c55e" stop-opacity=".5"/>'
+    + '<stop offset="50%"  stop-color="#0ea5e9" stop-opacity=".25"/>'
+    + '<stop offset="100%" stop-color="#22c55e" stop-opacity=".15"/>'
+    + '</linearGradient>'
+
+    // Glass panel QR
+    + '<linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%"   stop-color="#ffffff" stop-opacity=".06"/>'
+    + '<stop offset="100%" stop-color="#ffffff" stop-opacity=".02"/>'
+    + '</linearGradient>'
+
+    // Clip card
+    + '<clipPath id="cardClip"><rect width="' + W + '" height="' + H + '" rx="28"/></clipPath>'
+
+    // Filter glow QR border
+    + '<filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">'
+    + '<feGaussianBlur stdDeviation="4" result="blur"/>'
+    + '<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
+    + '</filter>'
+
     + '</defs>'
 
-    + '<g clip-path="url(#cc)">'
+    // ── Background ────────────────────────────────────────────
+    + '<g clip-path="url(#cardClip)">'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#bgGrad)"/>'
 
-    // Background
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#bg)"/>'
+    // Blob glow kiri atas
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#blob1)"/>'
+    // Blob glow kanan bawah
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#blob2)"/>'
 
-    // Dekorasi lingkaran
-    + '<circle cx="' + W + '" cy="' + H + '" r="200" fill="#0a1f1a" opacity=".35"/>'
-    + '<circle cx="' + W + '" cy="' + H + '" r="120" fill="#0d2a1e" opacity=".30"/>'
-    + '<circle cx="0" cy="0" r="100" fill="#0a1a0f" opacity=".25"/>'
+    // Pola titik halus (dot grid) — dekoratif
+    + '<pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">'
+    + '<circle cx="1" cy="1" r="0.8" fill="#ffffff" opacity=".04"/>'
+    + '</pattern>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#dots)"/>'
 
-    // Header
-    + '<rect x="0" y="0" width="' + W + '" height="116" fill="url(#hdr)"/>'
-
-    // Ikon billiard — lingkaran + titik (pengganti emoji 🎱)
-    + '<circle cx="44" cy="64" r="26" fill="#111" stroke="#22c55e" stroke-width="2"/>'
-    + '<circle cx="36" cy="56" r="8" fill="#fff" opacity=".9"/>'
-    + '<circle cx="44" cy="64" r="3" fill="#333" opacity=".5"/>'
+    // ── Header ────────────────────────────────────────────────
+    // Icon billiard — lingkaran solid gelap
+    + '<circle cx="44" cy="52" r="24" fill="#0d1f12" stroke="#22c55e33" stroke-width="1.5"/>'
+    // Highlight dalam bola
+    + '<circle cx="37" cy="45" r="7" fill="#ffffff" opacity=".8"/>'
+    + '<circle cx="44" cy="52" r="3" fill="#111" opacity=".5"/>'
+    // Ring luar tipis
+    + '<circle cx="44" cy="52" r="24" fill="none" stroke="#22c55e" stroke-width="1" opacity=".4"/>'
 
     // Nama arena
-    + '<text x="80" y="50"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="20" font-weight="700" fill="#ffffff">' + ARENA + '</text>'
+    + '<text x="80" y="44"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
+    + ' font-size="21" font-weight="800" fill="#f1f5f9" letter-spacing=".3">' + ARENA + '</text>'
 
-    // Label MEMBER CARD
-    + '<text x="80" y="72"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="11" fill="#86efac" letter-spacing="3" font-weight="600">MEMBER CARD</text>'
+    // Pill badge "MEMBER CARD"
+    + '<rect x="80" y="54" width="102" height="18" rx="9" fill="url(#pillGrad)" opacity=".85"/>'
+    + '<text x="131" y="67"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
+    + ' font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle"'
+    + ' letter-spacing="2">MEMBER CARD</text>'
 
-    // Aksen bawah header
-    + '<rect x="0" y="113" width="' + W + '" height="3" fill="#22c55e" opacity=".5"/>'
-    + '<rect x="0" y="113" width="80" height="3" fill="#22c55e" opacity=".9"/>'
+    // Garis pemisah tipis
+    + '<line x1="24" y1="92" x2="376" y2="92" stroke="#ffffff" stroke-width=".5" opacity=".06"/>'
 
-    // QR area — shadow
-    + '<rect x="58" y="142" width="284" height="284" rx="18" fill="#000" opacity=".4"/>'
-    // QR area — white card
-    + '<rect x="56" y="138" width="288" height="288" rx="18" fill="#ffffff"/>'
-    // QR image embedded
-    + '<image href="' + qrPng + '" x="60" y="142" width="280" height="280"/>'
+    // ── Panel QR (glass card) ─────────────────────────────────
+    // Shadow bawah
+    + '<rect x="44" y="116" width="312" height="312" rx="22" fill="#000000" opacity=".45"/>'
+    // Glass panel
+    + '<rect x="40" y="112" width="320" height="312" rx="22" fill="url(#glassGrad)"/>'
+    // Border glow
+    + '<rect x="40" y="112" width="320" height="312" rx="22"'
+    + ' fill="none" stroke="#22c55e" stroke-width="1" opacity=".2"'
+    + ' filter="url(#glowGreen)"/>'
+    // White inner QR background — lebih kecil dari panel
+    + '<rect x="52" y="124" width="296" height="288" rx="16" fill="#ffffff"/>'
+    // QR image
+    + '<image href="' + qrPng + '" x="60" y="132" width="280" height="272"/>'
 
-    // Logo center overlay — lingkaran billiard kecil
-    + '<rect x="178" y="258" width="44" height="44" rx="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>'
-    + '<circle cx="200" cy="280" r="16" fill="#0d1b2e" stroke="#22c55e" stroke-width="1.5"/>'
-    + '<circle cx="194" cy="274" r="5" fill="#fff" opacity=".85"/>'
+    // Logo center QR — "mata" billiard
+    + '<rect x="182" y="254" width="36" height="36" rx="7" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>'
+    + '<circle cx="200" cy="272" r="13" fill="#080f1c" stroke="#22c55e" stroke-width="1.5"/>'
+    + '<circle cx="194" cy="266" r="4" fill="#ffffff" opacity=".85"/>'
 
-    // Divider
-    + '<line x1="40" y1="446" x2="360" y2="446" stroke="#1e3a30" stroke-width="1"/>'
+    // ── Info section ──────────────────────────────────────────
+    // Divider gradient
+    + '<line x1="24" y1="446" x2="376" y2="446" stroke="#ffffff" stroke-width=".5" opacity=".06"/>'
 
-    // Label NAMA MEMBER
-    + '<text x="' + WH + '" y="468"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="10" fill="#4a7060" text-anchor="middle"'
-    + ' letter-spacing="2.5" font-weight="700">NAMA MEMBER</text>'
+    // Label NAMA — caps kecil
+    + '<text x="' + CX + '" y="472"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
+    + ' font-size="9" font-weight="700" fill="#4d7c6a" text-anchor="middle"'
+    + ' letter-spacing="3">NAMA MEMBER</text>'
 
     // Nama member
-    + '<text x="' + WH + '" y="492"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="20" font-weight="700" fill="#e8edf5"'
-    + ' text-anchor="middle">' + NAMA + '</text>'
+    + '<text x="' + CX + '" y="500"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
+    + ' font-size="22" font-weight="800" fill="#f1f5f9" text-anchor="middle"'
+    + ' letter-spacing=".2">' + NAMA + '</text>'
 
-    // Kode member
-    + '<text x="' + WH + '" y="513"'
-    + ' font-family="Courier New,Courier,monospace"'
-    + ' font-size="13" fill="#22c55e" text-anchor="middle"'
-    + ' letter-spacing="2.5" font-weight="600">' + KODE + '</text>'
+    // Pill kode — background gelap
+    + '<rect x="' + (CX - 76) + '" y="512" width="152" height="26" rx="13"'
+    + ' fill="#0d2218" stroke="#22c55e" stroke-width="1" opacity="1"/>'
+    + '<text x="' + CX + '" y="530"'
+    + ' font-family="\'Courier New\',Courier,monospace"'
+    + ' font-size="12" font-weight="700" fill="#4ade80" text-anchor="middle"'
+    + ' letter-spacing="3">' + KODE + '</text>'
 
-    // Footer
-    + '<rect x="0" y="523" width="' + W + '" height="7" fill="#0a1422"/>'
-    + '<text x="' + WH + '" y="528"'
-    + ' font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"'
-    + ' font-size="10" fill="#2a4a40" text-anchor="middle"'
+    // Instruksi bawah
+    + '<text x="' + CX + '" y="562"'
+    + ' font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif"'
+    + ' font-size="10" fill="#1e4033" text-anchor="middle"'
     + ' letter-spacing="1.5">Scan QR ini untuk check-in</text>'
 
     + '</g>'
 
-    // Border kartu
-    + '<rect x="1" y="1" width="' + W2 + '" height="' + H2 + '" rx="23"'
-    + ' fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".25"/>'
+    // ── Border kartu luar — gradient glow ─────────────────────
+    + '<rect x="1" y="1" width="398" height="578" rx="27"'
+    + ' fill="none" stroke="url(#borderGrad)" stroke-width="1.5"/>'
 
     + '</svg>';
 
-  // 4. Encode ke base64 — aman di-embed sebagai img src
+  // 4. Encode base64
   const b64 = Buffer.from(svg, "utf8").toString("base64");
   return {
     svg,
