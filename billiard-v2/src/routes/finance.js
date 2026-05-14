@@ -2,11 +2,11 @@
 // ── Routes: /keuangan (pemasukan & pengeluaran) ───────────────
 
 import { Router }                                          from "express";
-import { readTransaksi, appendTransaksi, hapusTransaksi } from "../utils/db.js";
+import { readTransaksi, appendTransaksi, updateTransaksi, hapusTransaksi } from "../utils/db.js";
 import { requireFinance }                                  from "../middleware/auth.js";
 import { verifyToken, createToken }                        from "../utils/session.js";
 import { CONFIG }                                          from "../config.js";
-import { financeLoginPage, financeDashboard, financeFormPage } from "../views/finance.js";
+import { financeLoginPage, financeDashboard, financeFormPage, financeEditPage } from "../views/finance.js";
 
 const router = Router();
 
@@ -63,6 +63,7 @@ router.post("/tambah", requireFinance, async (req, res) => {
       id:         Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       tanggal:    tanggal.slice(0, 10),     // YYYY-MM-DD
       jenis,
+      waktu:      ["siang","malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
       kategori:   (kategori ?? "").trim(),
       keterangan: (keterangan ?? "").trim().slice(0, 200),
       jumlah:     jumlahNum,
@@ -74,6 +75,48 @@ router.post("/tambah", requireFinance, async (req, res) => {
   } catch (err) {
     console.error("[FINANCE] tambah error:", err.message);
     res.redirect("/keuangan/tambah?ftk=" + res.locals.ftk + "&err=1");
+  }
+});
+
+// ── GET /keuangan/edit — form edit transaksi ──────────────────
+router.get("/edit", requireFinance, async (req, res) => {
+  const id = (req.query.id ?? "").trim();
+  if (!id) return res.redirect("/keuangan?ftk=" + res.locals.ftk);
+
+  try {
+    const semua = await readTransaksi();
+    const t     = semua.find((x) => x.id === id);
+    if (!t) return res.redirect("/keuangan?ftk=" + res.locals.ftk);
+    res.send(financeEditPage(res.locals.ftk, t));
+  } catch (err) {
+    console.error("[FINANCE] edit GET error:", err.message);
+    res.redirect("/keuangan?ftk=" + res.locals.ftk);
+  }
+});
+
+// ── POST /keuangan/edit — simpan perubahan transaksi ──────────
+router.post("/edit", requireFinance, async (req, res) => {
+  const { id, jenis, tanggal, kategori, keterangan, jumlah } = req.body;
+  const jumlahNum = parseInt(jumlah) || 0;
+
+  if (!id || !jenis || !tanggal || !kategori || jumlahNum <= 0) {
+    return res.redirect("/keuangan?ftk=" + res.locals.ftk);
+  }
+
+  try {
+    await updateTransaksi({
+      id,
+      tanggal:    tanggal.slice(0, 10),
+      jenis,
+      waktu:      ["siang","malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
+      kategori:   (kategori ?? "").trim(),
+      keterangan: (keterangan ?? "").trim().slice(0, 200),
+      jumlah:     jumlahNum,
+    });
+    res.redirect("/keuangan?ftk=" + res.locals.ftk);
+  } catch (err) {
+    console.error("[FINANCE] edit POST error:", err.message);
+    res.redirect("/keuangan?ftk=" + res.locals.ftk);
   }
 });
 

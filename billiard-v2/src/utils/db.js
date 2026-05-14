@@ -29,6 +29,7 @@ const rowToTransaksi = (row) => ({
   id:         row.id,
   tanggal:    row.tanggal,
   jenis:      row.jenis,
+  waktu:      row.waktu       ?? "siang",
   kategori:   row.kategori    ?? "",
   keterangan: row.keterangan  ?? "",
   jumlah:     Number(row.jumlah),
@@ -137,12 +138,25 @@ export const readTransaksi = async () => {
 
 export const appendTransaksi = async (item) => {
   await query(
-    `INSERT INTO transaksi (id, tanggal, jenis, kategori, keterangan, jumlah, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    `INSERT INTO transaksi (id, tanggal, jenis, waktu, kategori, keterangan, jumlah, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
     [
       item.id, item.tanggal, item.jenis,
+      item.waktu ?? "siang",
       item.kategori ?? "", item.keterangan ?? "",
       item.jumlah, item.createdAt ?? new Date().toISOString(),
+    ]
+  );
+};
+
+export const updateTransaksi = async (item) => {
+  await query(
+    `UPDATE transaksi SET tanggal=$1, jenis=$2, waktu=$3, kategori=$4, keterangan=$5, jumlah=$6
+     WHERE id=$7`,
+    [
+      item.tanggal, item.jenis, item.waktu ?? "siang",
+      item.kategori ?? "", item.keterangan ?? "",
+      item.jumlah, item.id,
     ]
   );
 };

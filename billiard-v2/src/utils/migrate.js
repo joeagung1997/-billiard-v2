@@ -45,6 +45,11 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Tambah kolom waktu ke transaksi (idempotent) ───────────
+  await query(`
+    ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'
+  `);
+
   // ── Index untuk performa query ──────────────────────────────
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts    ON logs (ts DESC)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_aksi  ON logs (aksi)`);
