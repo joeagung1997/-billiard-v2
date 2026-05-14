@@ -283,15 +283,50 @@ export function adminDashboard({ db, log, token, req }) {
     '  --txt:#0d1117; --txt2:#556070; --txt3:#94a3b8;',
     '}',
     'body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); background:var(--bg); min-height:100vh; -webkit-font-smoothing:antialiased; }',
+
+    // ── Layout ──────────────────────────────────────────────
+    '.layout { display:flex; min-height:100vh; }',
+    '.main-wrap { flex:1; min-width:0; display:flex; flex-direction:column; }',
+
+    // ── Sidebar ─────────────────────────────────────────────
+    '.sidebar { width:240px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); min-height:100vh; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; overflow-y:auto; z-index:60; }',
+    '.sb-brand { display:flex; align-items:center; gap:10px; padding:18px 14px 14px; border-bottom:1px solid var(--border); }',
+    '.sb-brand-icon { width:38px; height:38px; background:linear-gradient(135deg,#1a3c72,#0e2245); border:1px solid rgba(59,130,246,.22); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }',
+    '.sb-brand-name { font-size:var(--fs-base); font-weight:var(--fw-bk); color:var(--txt); line-height:1.2; }',
+    '.sb-brand-sub { font-size:var(--fs-xs); color:var(--txt3); margin-top:2px; }',
+    '.sb-section { padding:10px 10px 4px; }',
+    '.sb-lbl { font-size:10px; font-weight:var(--fw-bk); letter-spacing:.1em; text-transform:uppercase; color:var(--txt3); padding:0 4px; margin-bottom:4px; }',
+    '.sb-divider { height:1px; background:var(--border); margin:8px 14px; }',
+    '.sb-footer { margin-top:auto; padding:12px 14px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px; }',
+    '.sb-time { font-size:10px; color:var(--txt3); line-height:1.4; }',
+    '.nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; color:var(--txt2); font-size:var(--fs-sm); font-weight:var(--fw-b); text-decoration:none; cursor:pointer; border:none; background:transparent; font-family:var(--ff); width:100%; transition:background .12s, color .12s; }',
+    '.nav-item:hover { background:var(--surface2); color:var(--txt); }',
+    '.nav-item.active { background:rgba(59,130,246,.1); color:var(--accent); font-weight:600; }',
+    '.nav-icon { font-size:15px; width:22px; text-align:center; flex-shrink:0; }',
+    '.nav-green:hover { background:var(--green-bg); color:var(--green); }',
+    '.nav-gold:hover { background:var(--gold-bg); color:var(--gold); }',
+    '.nav-red:hover { background:var(--red-bg); color:var(--red); }',
+
+    // ── Topbar (mobile only) ─────────────────────────────────
     '.topbar { position:sticky; top:0; z-index:50; background:var(--surface); border-bottom:1px solid var(--border); padding:var(--sp-3) var(--sp-4); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }',
     '.topbar-brand { display:flex; align-items:center; gap:var(--sp-3); }',
     '.topbar-name { font-size:var(--fs-md); font-weight:var(--fw-bk); color:var(--txt); }',
     '.topbar-label { font-size:var(--fs-xs); color:var(--txt3); margin-top:1px; }',
     '.topbar-right { display:flex; align-items:center; gap:var(--sp-2); }',
     '.theme-btn { background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r-sm); padding:5px var(--sp-2); font-size:var(--fs-sm); color:var(--txt2); cursor:pointer; }',
-    '.page { padding:var(--sp-4); padding-bottom:60px; max-width:960px; margin:0 auto; }',
+
+    // ── Bottom nav (mobile only) ─────────────────────────────
+    '.bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); z-index:100; padding:4px 0; }',
+    '.bn-item { display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; padding:6px 4px; color:var(--txt3); font-size:10px; font-weight:600; text-decoration:none; cursor:pointer; border:none; background:transparent; font-family:var(--ff); touch-action:manipulation; }',
+    '.bn-item.active, .bn-item:hover { color:var(--accent); }',
+    '.bn-green.active, .bn-green:hover { color:var(--green); }',
+    '.bn-red:hover { color:var(--red); }',
+    '.bn-icon { font-size:18px; line-height:1; }',
+
+    // ── Page ─────────────────────────────────────────────────
+    '.page { padding:var(--sp-4); padding-bottom:60px; max-width:900px; }',
     '.sec-label { font-size:var(--fs-xs); font-weight:var(--fw-b); letter-spacing:.08em; text-transform:uppercase; color:var(--txt3); margin-bottom:var(--sp-2); margin-top:var(--sp-5); }',
-    '.stats { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--sp-2); margin-bottom:var(--sp-4); }',
+    '.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp-2); margin-bottom:var(--sp-4); }',
     '.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-3) var(--sp-4); }',
     '.stat-num { font-size:var(--fs-2xl); font-weight:var(--fw-bk); color:var(--txt); line-height:1; }',
     '.stat-lbl { font-size:var(--fs-xs); color:var(--txt2); margin-top:3px; }',
@@ -312,9 +347,6 @@ export function adminDashboard({ db, log, token, req }) {
     '.badge-blue  { background:rgba(59,130,246,.12); color:var(--accent); }',
     '.show-all-btn { display:block; width:100%; padding:var(--sp-3); border:none; border-top:1px solid var(--border); background:var(--surface2); color:var(--accent); font-size:var(--fs-sm); font-weight:var(--fw-b); cursor:pointer; }',
     '.show-all-btn:hover { background:var(--surface); }',
-    '.action-bar { display:flex; gap:var(--sp-2); flex-wrap:wrap; margin-bottom:var(--sp-3); }',
-    '.btn-primary { display:inline-flex; align-items:center; gap:var(--sp-1); background:var(--accent); color:#fff; border:none; border-radius:var(--r-md); padding:var(--sp-2) var(--sp-4); font-size:var(--fs-base); font-weight:var(--fw-bk); text-decoration:none; cursor:pointer; }',
-    '.btn-secondary { display:inline-flex; align-items:center; gap:var(--sp-1); background:var(--surface2); color:var(--txt2); border:1px solid var(--border2); border-radius:var(--r-md); padding:var(--sp-2) var(--sp-3); font-size:var(--fs-base); font-weight:var(--fw-b); text-decoration:none; cursor:pointer; }',
     '.filter-bar { display:flex; gap:var(--sp-2); margin-bottom:var(--sp-2); flex-wrap:wrap; align-items:center; }',
     '.search-wrap { position:relative; flex:1; min-width:160px; }',
     '.search-input { width:100%; padding:var(--sp-2) var(--sp-3) var(--sp-2) 34px; background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-md); color:var(--txt); font-size:var(--fs-base); outline:none; font-family:var(--ff); }',
@@ -399,21 +431,23 @@ export function adminDashboard({ db, log, token, req }) {
     '  .pg-wrap { display:none; }',
     '  .topbar-label { display:none; }',
     '  .topbar { padding:8px 12px; }',
-    '  .page { padding:10px; padding-bottom:60px; }',
-    '  .stats { gap:6px; }',
+    '  .page { padding:10px; padding-bottom:80px; }',
+    '  .stats { grid-template-columns:repeat(2,1fr); gap:6px; }',
     '  .stat-card { padding:10px 12px; }',
     '  .stat-num { font-size:22px; }',
     '  .tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }',
     '  .tab-btn { padding:10px 6px; font-size:11px; min-width:74px; }',
-    '  .action-bar { gap:6px; }',
-    '  .btn-primary { padding:9px 12px; font-size:12px; }',
-    '  .btn-secondary { padding:9px 10px; font-size:12px; }',
     '  .filter-bar { flex-direction:column; gap:6px; }',
     '  .search-wrap { min-width:unset; width:100%; }',
     '  .search-input { width:100%; }',
     '  .sel { width:100%; }',
     '  .filter-bar .sel:last-child { display:none; }',
     '  .sec-label { margin-top:12px; }',
+    '  .sidebar { display:none; }',
+    '  .bottom-nav { display:flex; }',
+    '}',
+    '@media (min-width:641px) {',
+    '  .topbar { display:none; }',
     '}',
   ].join('');
 
@@ -423,13 +457,55 @@ export function adminDashboard({ db, log, token, req }) {
     + '<style>' + css + '</style>'
     + '</head><body>'
 
+    + '<div class="layout">'
+
+    // ── Sidebar (desktop only) ──────────────────────────────
+    + '<aside class="sidebar">'
+    + '<div class="sb-brand">'
+    + '<div class="sb-brand-icon">🎱</div>'
+    + '<div><div class="sb-brand-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="sb-brand-sub">Admin Panel</div></div>'
+    + '</div>'
+
+    + '<div class="sb-section">'
+    + '<div class="sb-lbl">Menu</div>'
+    + '<a href="/admin?tk=' + token + '" class="nav-item active">'
+    + '<span class="nav-icon">🏠</span> Dashboard'
+    + '</a>'
+    + '<a href="/admin/tambah?tk=' + token + '" class="nav-item nav-green">'
+    + '<span class="nav-icon">➕</span> Tambah Member'
+    + '</a>'
+    + '<a href="/keuangan" class="nav-item nav-gold">'
+    + '<span class="nav-icon">💰</span> Keuangan'
+    + '</a>'
+    + '</div>'
+
+    + '<div class="sb-divider"></div>'
+
+    + '<div class="sb-section">'
+    + '<div class="sb-lbl">Aksi</div>'
+    + '<a href="/admin/reset?tk=' + token + '" class="nav-item nav-red"'
+    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
+    + '<span class="nav-icon">↺</span> Reset Harian'
+    + '</a>'
+    + '</div>'
+
+    + '<div class="sb-footer">'
+    + '<span class="sb-time">' + now + '</span>'
+    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
+    + '</div>'
+    + '</aside>'
+
+    // ── Main wrap ───────────────────────────────────────────
+    + '<div class="main-wrap">'
+
     + '<header class="topbar">'
     + '<div class="topbar-brand"><span style="font-size:20px">🎱</span>'
     + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
     + '<div class="topbar-label">Admin Dashboard</div></div></div>'
     + '<div class="topbar-right">'
     + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>'
+    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
     + '</div></header>'
 
     + '<main class="page">'
@@ -456,11 +532,6 @@ export function adminDashboard({ db, log, token, req }) {
     + '<span>Kelola Member</span>'
     + '<span id="member-badge" class="filter-badge" style="display:none"></span>'
     + '</div>'
-    + '<div class="action-bar">'
-    + '<a href="/admin/tambah?tk=' + token + '" class="btn-primary">＋ Tambah Member</a>'
-    + '<a href="/keuangan" class="btn-secondary" style="color:var(--green);border-color:var(--green-bg)">💰 Keuangan</a>'
-    + '<a href="/admin/reset?tk=' + token + '" class="btn-secondary" onclick="return confirm(\'Reset scan harian semua member?\')">↺ Reset Harian</a>'
-    + '</div>'
 
     + '<div class="filter-bar">'
     + '<div class="search-wrap"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);pointer-events:none">🔍</span>'
@@ -484,6 +555,27 @@ export function adminDashboard({ db, log, token, req }) {
     + '<div id="mobile-list" style="margin-top:8px"></div>'
 
     + '</main>'
+    + '</div>'
+    // ── end .main-wrap
+    + '</div>'
+    // ── end .layout
+
+    // ── Bottom nav (mobile only) ────────────────────────────
+    + '<nav class="bottom-nav">'
+    + '<a href="/admin?tk=' + token + '" class="bn-item active">'
+    + '<span class="bn-icon">🏠</span>Home'
+    + '</a>'
+    + '<a href="/admin/tambah?tk=' + token + '" class="bn-item bn-green">'
+    + '<span class="bn-icon">➕</span>Tambah'
+    + '</a>'
+    + '<a href="/keuangan" class="bn-item">'
+    + '<span class="bn-icon">💰</span>Keuangan'
+    + '</a>'
+    + '<a href="/admin/reset?tk=' + token + '" class="bn-item bn-red"'
+    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
+    + '<span class="bn-icon">↺</span>Reset'
+    + '</a>'
+    + '</nav>'
 
     + '<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this){closeModal()}">'
     + '<div class="modal-box"><button class="modal-close" onclick="closeModal()">✕</button>'

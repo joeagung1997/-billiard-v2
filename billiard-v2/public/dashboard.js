@@ -11,7 +11,8 @@ const THEME_KEY = "warpat_admin_theme";
 
 const applyTheme = (t) => {
   document.documentElement.setAttribute("data-theme", t);
-  document.getElementById("themeBtn").textContent = t === "dark" ? "🌙" : "☀️";
+  const icon = t === "dark" ? "🌙" : "☀️";
+  document.querySelectorAll(".theme-btn").forEach(function(b) { b.textContent = icon; });
   try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
 };
 
