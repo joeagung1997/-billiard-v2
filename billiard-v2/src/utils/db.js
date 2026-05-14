@@ -58,16 +58,6 @@ export const appendLog = (kode, nama, aksi, detail = "") => {
   }
 };
 
-export const writeLog = (log) => {
-  try {
-    writeFileSync(CONFIG.LOG_PATH, JSON.stringify(log), "utf8");
-    return true;
-  } catch (err) {
-    console.error("[DB] writeLog error:", err.message);
-    return false;
-  }
-};
-
 // ── Member helpers ────────────────────────────────────────────
 
 // ── Finance helpers ───────────────────────────────────────────

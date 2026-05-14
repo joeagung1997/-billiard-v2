@@ -70,13 +70,6 @@ app.listen(CONFIG.PORT, () => {
   console.log(`${"=".repeat(44)}`);
   console.log(` Port    : ${CONFIG.PORT}`);
   console.log(` DB      : ${CONFIG.DB_PATH}`);
-  console.log(` Storage : ${CONFIG.PERSISTENT ? "✅ PERSISTEN (Railway Volume)" : "⚠️  EPHEMERAL — data hilang saat deploy!"}`);
   console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
   console.log(`${"=".repeat(44)}\n`);
-  if (!CONFIG.PERSISTENT) {
-    console.log(" ⚠️  PERINGATAN: Tidak ada Railway Volume.");
-    console.log("    Data akan HILANG saat deploy ulang.");
-    console.log("    Solusi: Tambah Volume di Railway (/data)");
-    console.log("    atau gunakan fitur Backup di Admin Panel.\n");
-  }
 });
