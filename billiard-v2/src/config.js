@@ -15,7 +15,8 @@ export const CONFIG = Object.freeze({
   KODE_PREFIX:process.env.KODE_PREFIX          ?? "JMB",
 
   // Path database — pakai Railway Volume jika ada
-  DATA_DIR:   existsSync("/data") ? "/data" : process.cwd(),
+  DATA_DIR:    existsSync("/data") ? "/data" : process.cwd(),
+  PERSISTENT:  existsSync("/data"),           // true = Railway Volume terpasang
   get DB_PATH()  { return join(this.DATA_DIR, "db.json");  },
   get LOG_PATH() { return join(this.DATA_DIR, "log.json"); },
 

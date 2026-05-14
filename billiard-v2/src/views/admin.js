@@ -254,9 +254,13 @@ function buildAdminCss() {
     '.nav-item.active { background:rgba(59,130,246,.1); color:var(--accent); font-weight:600; }',
     '.nav-item.active.nav-green { background:var(--green-bg); color:var(--green); }',
     '.nav-icon { font-size:15px; width:22px; text-align:center; flex-shrink:0; }',
-    '.nav-green:hover { background:var(--green-bg); color:var(--green); }',
+    '.nav-green:hover, .nav-green.active { background:var(--green-bg); color:var(--green); }',
     '.nav-gold:hover { background:var(--gold-bg); color:var(--gold); }',
     '.nav-red:hover { background:var(--red-bg); color:var(--red); }',
+    '.nav-blue:hover { background:rgba(59,130,246,.1); color:var(--accent); }',
+    '.sb-persist-warn { margin:8px 10px 0; padding:10px 12px; background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2); border-radius:10px; }',
+    '.sb-persist-warn code { font-size:9px; background:var(--surface2); padding:1px 4px; border-radius:3px; font-family:monospace; }',
+    '.banner-ok { background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.25); border-radius:var(--r-md); padding:10px 14px; font-size:var(--fs-sm); font-weight:var(--fw-b); margin-bottom:var(--sp-4); display:flex; align-items:center; gap:8px; }',
 
     // ── Topbar (mobile only) ─────────────────────────────────
     '.topbar { position:sticky; top:0; z-index:50; background:var(--surface); border-bottom:1px solid var(--border); padding:var(--sp-3) var(--sp-4); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }',
@@ -454,11 +458,24 @@ function buildSidebar(token, activePage, now) {
     + '<div class="sb-divider"></div>'
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Aksi</div>'
+    + '<a href="/admin/backup?tk=' + token + '" class="nav-item nav-blue" title="Download backup data">'
+    + '<span class="nav-icon">💾</span> Backup Data'
+    + '</a>'
+    + '<a href="/admin/restore?tk=' + token + '" class="nav-item nav-blue" title="Restore dari backup">'
+    + '<span class="nav-icon">🔄</span> Restore Data'
+    + '</a>'
     + '<a href="/admin/reset?tk=' + token + '" class="nav-item nav-red"'
     + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
     + '<span class="nav-icon">↺</span> Reset Harian'
     + '</a>'
     + '</div>'
+    + (CONFIG.PERSISTENT ? '' :
+        '<div class="sb-persist-warn">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:3px">⚠ Data tidak persisten</div>'
+      + '<div style="font-size:10px;color:var(--txt3);line-height:1.4">Backup rutin sebelum deploy. Atau pasang Railway Volume di <code>/data</code>.</div>'
+      + '<a href="/admin/backup?tk=' + token + '" style="display:inline-block;margin-top:6px;font-size:10px;font-weight:700;color:var(--gold);text-decoration:underline">Download Backup →</a>'
+      + '</div>'
+    )
     + '<div class="sb-footer">'
     + '<span class="sb-time">' + now + '</span>'
     + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
@@ -658,6 +675,8 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '</div></header>'
 
     + '<main class="page">'
+
+    + (req.query.restored ? '<div class="banner-ok">✅ Data berhasil dipulihkan dari backup!</div>' : '')
 
     + '<div class="stats">'
     + '<div class="stat-card"><div style="font-size:18px;margin-bottom:4px">👥</div><div class="stat-num">' + stats.total + '</div><div class="stat-lbl">Total member</div></div>'
