@@ -2,7 +2,11 @@
 // ── Routes: /admin/* ──────────────────────────────────────────
 
 import { Router }   from "express";
-import { readDB, writeDB, readLog, readTransaksi, createMember, findMemberIndex } from "../utils/db.js";
+import {
+  readDB, readLog, readTransaksi,
+  saveMember, deleteMember, resetScanHarian,
+  createMember, findMember, findMemberIndex,
+} from "../utils/db.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
@@ -17,7 +21,7 @@ import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuc
 const router = Router();
 
 // ── GET /admin — login atau dashboard ────────────────────────
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const tk  = req.query.tk ?? "";
   const pin = verifyToken(tk);
 
@@ -25,12 +29,17 @@ router.get("/", (req, res) => {
     return res.send(adminLoginPage(!!req.query.err));
   }
 
-  const token     = tk || createToken(pin);
-  const db        = readDB();
-  const log       = readLog();
-  const transaksi = readTransaksi();
+  try {
+    const token     = tk || createToken(pin);
+    const db        = await readDB();
+    const log       = await readLog();
+    const transaksi = await readTransaksi();
 
-  res.send(adminDashboard({ db, log, transaksi, token, req }));
+    res.send(adminDashboard({ db, log, transaksi, token, req }));
+  } catch (err) {
+    console.error("[ADMIN] dashboard error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
 });
 
 // ── POST /admin/login ─────────────────────────────────────────
@@ -42,15 +51,20 @@ router.post("/login", (req, res) => {
 });
 
 // ── GET /admin/members — member management page ───────────────
-router.get("/members", requireAdmin, (req, res) => {
-  const db    = readDB();
-  const token = res.locals.tk;
-  res.send(memberPage({ db, token, req }));
+router.get("/members", requireAdmin, async (req, res) => {
+  try {
+    const db    = await readDB();
+    const token = res.locals.tk;
+    res.send(memberPage({ db, token, req }));
+  } catch (err) {
+    console.error("[ADMIN] members error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
 });
 
 // ── GET /admin/tambah ─────────────────────────────────────────
 router.get("/tambah", requireAdmin, async (req, res) => {
-  const { tk }   = res.locals;
+  const { tk }        = res.locals;
   const { nama, tlp } = req.query;
 
   if (!nama) {
@@ -62,114 +76,139 @@ router.get("/tambah", requireAdmin, async (req, res) => {
     return res.redirect(`/admin/tambah?tk=${tk}&errtlp=1`);
   }
 
-  const digits     = normalizeTelepon(tlp);
-  const telepon    = formatTeleponDisplay(digits);
-  const db         = readDB();
-  const kode       = generateKode(db.members);
-  const newMember  = createMember(kode, nama, telepon);
-  db.members.push(newMember);
-  writeDB(db);
-
-  const scanUrl = buildScanUrl(req, kode);
-
-  // Upload QR ke Cloudinary untuk WA preview
   try {
-    const qrBuf = await qrBuffer(scanUrl, 520);
-    await uploadQrToCloudinary(kode, qrBuf);
-  } catch (err) {
-    console.error("[CDN] Upload QR gagal:", err.message);
-  }
+    const digits    = normalizeTelepon(tlp);
+    const telepon   = formatTeleponDisplay(digits);
+    const db        = await readDB();
+    const kode      = generateKode(db.members);
+    const newMember = createMember(kode, nama, telepon);
 
-  // Generate branded card untuk halaman sukses
-  let brandedCard = null;
-  try {
-    brandedCard = await brandedQrCard({ text: scanUrl, nama, kode });
-  } catch (err) {
+    await saveMember(newMember);
+
+    const scanUrl = buildScanUrl(req, kode);
+
+    // Upload QR ke Cloudinary untuk WA preview
     try {
-      const qrB64 = await qrDataUrl(scanUrl, 300);
-      brandedCard = { encoded: qrB64 };
-    } catch (_) {}
-  }
+      const qrBuf = await qrBuffer(scanUrl, 520);
+      await uploadQrToCloudinary(kode, qrBuf);
+    } catch (err) {
+      console.error("[CDN] Upload QR gagal:", err.message);
+    }
 
-  res.send(addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard }));
+    // Generate branded card untuk halaman sukses
+    let brandedCard = null;
+    try {
+      brandedCard = await brandedQrCard({ text: scanUrl, nama, kode });
+    } catch (err) {
+      try {
+        const qrB64 = await qrDataUrl(scanUrl, 300);
+        brandedCard = { encoded: qrB64 };
+      } catch (_) {}
+    }
+
+    res.send(addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard }));
+  } catch (err) {
+    console.error("[ADMIN] tambah error:", err.message);
+    res.status(500).send("Gagal menambah member. Coba lagi.");
+  }
 });
 
 // ── GET /admin/edit ───────────────────────────────────────────
-router.get("/edit", requireAdmin, (req, res) => {
+router.get("/edit", requireAdmin, async (req, res) => {
   const { tk }  = res.locals;
   const kode    = (req.query.kode ?? "").toUpperCase();
-  const db      = readDB();
-  const idx     = findMemberIndex(db.members, kode);
-  if (idx === -1) return res.redirect(`/admin?tk=${tk}`);
 
-  const m     = db.members[idx];
-  const { nama, tlp } = req.query;
+  try {
+    const db  = await readDB();
+    const idx = findMemberIndex(db.members, kode);
+    if (idx === -1) return res.redirect(`/admin?tk=${tk}`);
 
-  if (nama?.trim()) {
-    m.nama = nama.trim();
-    if (validateTelepon(tlp ?? "")) {
-      m.telepon = formatTeleponDisplay(normalizeTelepon(tlp));
+    const m     = { ...db.members[idx] };
+    const { nama, tlp } = req.query;
+
+    if (nama?.trim()) {
+      m.nama = nama.trim();
+      if (validateTelepon(tlp ?? "")) {
+        m.telepon = formatTeleponDisplay(normalizeTelepon(tlp));
+      }
+      await saveMember(m);
+      return res.redirect(`/admin?tk=${tk}`);
     }
-    db.members[idx] = m;
-    writeDB(db);
-    return res.redirect(`/admin?tk=${tk}`);
-  }
 
-  res.send(editMemberPage(tk, m));
+    res.send(editMemberPage(tk, m));
+  } catch (err) {
+    console.error("[ADMIN] edit error:", err.message);
+    res.status(500).send("Gagal memuat data member.");
+  }
 });
 
 // ── GET /admin/hapus ──────────────────────────────────────────
-router.get("/hapus", requireAdmin, (req, res) => {
+router.get("/hapus", requireAdmin, async (req, res) => {
   const { tk }  = res.locals;
   const kode    = (req.query.kode ?? "").toUpperCase();
-  const db      = readDB();
-  db.members    = db.members.filter((m) => m.kode !== kode);
-  writeDB(db);
-  res.redirect(`/admin?tk=${tk}`);
+  try {
+    await deleteMember(kode);
+    res.redirect(`/admin?tk=${tk}`);
+  } catch (err) {
+    console.error("[ADMIN] hapus error:", err.message);
+    res.redirect(`/admin?tk=${tk}`);
+  }
 });
 
 // ── GET /admin/klaim ──────────────────────────────────────────
-router.get("/klaim", requireAdmin, (req, res) => {
+router.get("/klaim", requireAdmin, async (req, res) => {
   const { tk }  = res.locals;
   const kode    = (req.query.kode ?? "").toUpperCase();
-  const db      = readDB();
-  const idx     = findMemberIndex(db.members, kode);
-  if (idx !== -1 && db.members[idx].status === "GRATIS") {
-    db.members[idx].status = "-";
-    writeDB(db);
+  try {
+    const db  = await readDB();
+    const idx = findMemberIndex(db.members, kode);
+    if (idx !== -1 && db.members[idx].status === "GRATIS") {
+      const m = { ...db.members[idx], status: "-" };
+      await saveMember(m);
+    }
+    res.redirect(`/admin?tk=${tk}`);
+  } catch (err) {
+    console.error("[ADMIN] klaim error:", err.message);
+    res.redirect(`/admin?tk=${tk}`);
   }
-  res.redirect(`/admin?tk=${tk}`);
 });
 
 // ── GET /admin/sync-qr — upload semua QR member ke Cloudinary ─
 router.get("/sync-qr", requireAdmin, async (req, res) => {
   const { tk } = res.locals;
-  const db = readDB();
-  let ok = 0, fail = 0;
+  try {
+    const db = await readDB();
+    let ok = 0, fail = 0;
 
-  for (const m of db.members) {
-    try {
-      const scanUrl = buildScanUrl(req, m.kode);
-      const qrBuf   = await qrBuffer(scanUrl, 520);
-      const success = await uploadQrToCloudinary(m.kode, qrBuf);
-      if (success) ok++; else fail++;
-    } catch (err) {
-      console.error("[SYNC] Gagal", m.kode, err.message);
-      fail++;
+    for (const m of db.members) {
+      try {
+        const scanUrl = buildScanUrl(req, m.kode);
+        const qrBuf   = await qrBuffer(scanUrl, 520);
+        const success = await uploadQrToCloudinary(m.kode, qrBuf);
+        if (success) ok++; else fail++;
+      } catch (err) {
+        console.error("[SYNC] Gagal", m.kode, err.message);
+        fail++;
+      }
     }
-  }
 
-  res.send("Sync selesai: " + ok + " berhasil, " + fail + " gagal. "
-    + "<a href='/admin?tk=" + tk + "'>Kembali</a>");
+    res.send("Sync selesai: " + ok + " berhasil, " + fail + " gagal. "
+      + "<a href='/admin?tk=" + tk + "'>Kembali</a>");
+  } catch (err) {
+    res.status(500).send("Gagal sync QR: " + err.message);
+  }
 });
 
 // ── GET /admin/reset ──────────────────────────────────────────
-router.get("/reset", requireAdmin, (req, res) => {
+router.get("/reset", requireAdmin, async (req, res) => {
   const { tk } = res.locals;
-  const db     = readDB();
-  db.members.forEach((m) => { m.sudahScanHariIni = false; });
-  writeDB(db);
-  res.redirect(`/admin?tk=${tk}`);
+  try {
+    await resetScanHarian();
+    res.redirect(`/admin?tk=${tk}`);
+  } catch (err) {
+    console.error("[ADMIN] reset error:", err.message);
+    res.redirect(`/admin?tk=${tk}`);
+  }
 });
 
 export default router;

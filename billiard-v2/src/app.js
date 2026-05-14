@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import cron           from "node-cron";
 
 import { CONFIG }     from "./config.js";
-import { initDB, readDB, writeDB } from "./utils/db.js";
+import { initDB, resetScanHarian } from "./utils/db.js";
 import scanRouter     from "./routes/scan.js";
 import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
@@ -23,8 +23,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, "../public")));
 
-// ── Init DB ───────────────────────────────────────────────────
-initDB();
 
 // ── Routes ────────────────────────────────────────────────────
 app.use("/", scanRouter);
@@ -56,20 +54,29 @@ app.use((req, res) => {
 });
 
 // ── Cron: reset scan harian jam 02.00 WIB (19.00 UTC) ────────
-cron.schedule("0 19 * * *", () => {
-  const db = readDB();
-  db.members.forEach((m) => { m.sudahScanHariIni = false; });
-  writeDB(db);
-  console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Reset harian selesai.`);
+cron.schedule("0 19 * * *", async () => {
+  try {
+    await resetScanHarian();
+    console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Reset harian selesai.`);
+  } catch (err) {
+    console.error("[CRON] Reset harian gagal:", err.message);
+  }
 }, { timezone: "UTC" });
 
-// ── Start ─────────────────────────────────────────────────────
-app.listen(CONFIG.PORT, () => {
-  console.log(`\n${"=".repeat(44)}`);
-  console.log(` ${CONFIG.NAMA_ARENA}`);
-  console.log(`${"=".repeat(44)}`);
-  console.log(` Port    : ${CONFIG.PORT}`);
-  console.log(` DB      : ${CONFIG.DB_PATH}`);
-  console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
-  console.log(`${"=".repeat(44)}\n`);
-});
+// ── Init DB lalu start server ─────────────────────────────────
+initDB()
+  .then(() => {
+    app.listen(CONFIG.PORT, () => {
+      console.log(`\n${"=".repeat(44)}`);
+      console.log(` ${CONFIG.NAMA_ARENA}`);
+      console.log(`${"=".repeat(44)}`);
+      console.log(` Port    : ${CONFIG.PORT}`);
+      console.log(` DB      : PostgreSQL`);
+      console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
+      console.log(`${"=".repeat(44)}\n`);
+    });
+  })
+  .catch((err) => {
+    console.error("[FATAL] Gagal koneksi database:", err.message);
+    process.exit(1);
+  });

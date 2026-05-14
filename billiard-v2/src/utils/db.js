@@ -1,87 +1,89 @@
 // src/utils/db.js
-// ── Database helper — baca/tulis db.json & log.json ──────────
+// ── Database helper — PostgreSQL via pg Pool ──────────────────
 
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { CONFIG } from "../config.js";
+import { query } from "./postgres.js";
+import { runMigrations } from "./migrate.js";
 
-// ── Member DB ─────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 
-export const readDB = () => {
-  try {
-    if (existsSync(CONFIG.DB_PATH)) {
-      return JSON.parse(readFileSync(CONFIG.DB_PATH, "utf8"));
-    }
-  } catch (err) {
-    console.error("[DB] readDB error:", err.message);
-  }
-  return { members: [] };
+export const initDB = async () => {
+  await runMigrations();
 };
 
-export const writeDB = (data) => {
-  try {
-    writeFileSync(CONFIG.DB_PATH, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch (err) {
-    console.error("[DB] writeDB error:", err.message);
-    return false;
-  }
+// ── Row mapper helpers ────────────────────────────────────────
+
+const rowToMember = (row) => ({
+  kode:                row.kode,
+  nama:                row.nama,
+  telepon:             row.telepon               ?? "",
+  totalMain:           row.total_main            ?? 0,
+  tanggalMulai:        row.tanggal_mulai         ?? null,
+  sudahScanHariIni:    row.sudah_scan_hari_ini   ?? false,
+  status:              row.status                ?? "-",
+  totalGratis:         row.total_gratis          ?? 0,
+  tanggalDaftar:       row.tanggal_daftar        ?? null,
+  tanggalScanTerakhir: row.tanggal_scan_terakhir ?? null,
+});
+
+const rowToTransaksi = (row) => ({
+  id:         row.id,
+  tanggal:    row.tanggal,
+  jenis:      row.jenis,
+  kategori:   row.kategori    ?? "",
+  keterangan: row.keterangan  ?? "",
+  jumlah:     Number(row.jumlah),
+  createdAt:  row.created_at  ?? null,
+});
+
+// ── readDB — ambil semua members + transaksi ──────────────────
+
+export const readDB = async () => {
+  const [membersRes, transaksiRes] = await Promise.all([
+    query("SELECT * FROM members ORDER BY tanggal_daftar DESC"),
+    query("SELECT * FROM transaksi ORDER BY tanggal DESC, created_at DESC"),
+  ]);
+  return {
+    members:   membersRes.rows.map(rowToMember),
+    transaksi: transaksiRes.rows.map(rowToTransaksi),
+  };
 };
 
-export const initDB = () => {
-  if (!existsSync(CONFIG.DB_PATH)) {
-    writeDB({ members: [] });
-    console.log("[DB] db.json dibuat di:", CONFIG.DB_PATH);
-  }
+// ── Member CRUD ───────────────────────────────────────────────
+
+export const saveMember = async (m) => {
+  await query(`
+    INSERT INTO members
+      (kode, nama, telepon, total_main, tanggal_mulai, sudah_scan_hari_ini,
+       status, total_gratis, tanggal_daftar, tanggal_scan_terakhir)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    ON CONFLICT (kode) DO UPDATE SET
+      nama                  = EXCLUDED.nama,
+      telepon               = EXCLUDED.telepon,
+      total_main            = EXCLUDED.total_main,
+      tanggal_mulai         = EXCLUDED.tanggal_mulai,
+      sudah_scan_hari_ini   = EXCLUDED.sudah_scan_hari_ini,
+      status                = EXCLUDED.status,
+      total_gratis          = EXCLUDED.total_gratis,
+      tanggal_scan_terakhir = EXCLUDED.tanggal_scan_terakhir
+  `, [
+    m.kode, m.nama, m.telepon ?? "",
+    m.totalMain ?? 0, m.tanggalMulai ?? null,
+    m.sudahScanHariIni ?? false, m.status ?? "-",
+    m.totalGratis ?? 0, m.tanggalDaftar ?? new Date().toISOString(),
+    m.tanggalScanTerakhir ?? null,
+  ]);
 };
 
-// ── Log ───────────────────────────────────────────────────────
-
-export const readLog = () => {
-  try {
-    if (existsSync(CONFIG.LOG_PATH)) {
-      return JSON.parse(readFileSync(CONFIG.LOG_PATH, "utf8"));
-    }
-  } catch (err) {
-    console.error("[DB] readLog error:", err.message);
-  }
-  return [];
+export const deleteMember = async (kode) => {
+  await query("DELETE FROM members WHERE kode = $1", [kode.toUpperCase()]);
 };
 
-export const appendLog = (kode, nama, aksi, detail = "") => {
-  try {
-    const log = readLog();
-    log.unshift({ ts: new Date().toISOString(), kode, nama, aksi, detail });
-    if (log.length > 500) log.splice(500);
-    writeFileSync(CONFIG.LOG_PATH, JSON.stringify(log), "utf8");
-  } catch (err) {
-    console.error("[DB] appendLog error:", err.message);
-  }
+export const resetScanHarian = async () => {
+  await query("UPDATE members SET sudah_scan_hari_ini = FALSE");
+  console.log("[DB] Reset scan harian selesai.");
 };
 
-// ── Member helpers ────────────────────────────────────────────
-
-// ── Finance helpers ───────────────────────────────────────────
-
-export const readTransaksi = () => {
-  try { return readDB().transaksi ?? []; }
-  catch { return []; }
-};
-
-export const appendTransaksi = (item) => {
-  const db = readDB();
-  if (!db.transaksi) db.transaksi = [];
-  db.transaksi.unshift(item);
-  writeDB(db);
-};
-
-export const hapusTransaksi = (id) => {
-  const db = readDB();
-  if (!db.transaksi) return;
-  db.transaksi = db.transaksi.filter((t) => t.id !== id);
-  writeDB(db);
-};
-
-// ── Member helpers ────────────────────────────────────────────
+// ── Member helpers (sync — bekerja pada array in-memory) ──────
 
 export const findMember = (members, kode) =>
   members.find((m) => m.kode.toUpperCase() === kode.toUpperCase()) ?? null;
@@ -101,3 +103,50 @@ export const createMember = (kode, nama, telepon = "") => ({
   tanggalDaftar:       new Date().toISOString(),
   tanggalScanTerakhir: null,
 });
+
+// ── Log ───────────────────────────────────────────────────────
+
+export const readLog = async () => {
+  const res = await query(
+    "SELECT ts, kode, nama, aksi, detail FROM logs ORDER BY ts DESC LIMIT 500"
+  );
+  return res.rows.map((r) => ({
+    ts:     r.ts,
+    kode:   r.kode,
+    nama:   r.nama,
+    aksi:   r.aksi,
+    detail: r.detail,
+  }));
+};
+
+export const appendLog = async (kode, nama, aksi, detail = "") => {
+  await query(
+    "INSERT INTO logs (ts, kode, nama, aksi, detail) VALUES (NOW(),$1,$2,$3,$4)",
+    [kode, nama, aksi, detail]
+  );
+};
+
+// ── Finance ───────────────────────────────────────────────────
+
+export const readTransaksi = async () => {
+  const res = await query(
+    "SELECT * FROM transaksi ORDER BY tanggal DESC, created_at DESC"
+  );
+  return res.rows.map(rowToTransaksi);
+};
+
+export const appendTransaksi = async (item) => {
+  await query(
+    `INSERT INTO transaksi (id, tanggal, jenis, kategori, keterangan, jumlah, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [
+      item.id, item.tanggal, item.jenis,
+      item.kategori ?? "", item.keterangan ?? "",
+      item.jumlah, item.createdAt ?? new Date().toISOString(),
+    ]
+  );
+};
+
+export const hapusTransaksi = async (id) => {
+  await query("DELETE FROM transaksi WHERE id = $1", [id]);
+};

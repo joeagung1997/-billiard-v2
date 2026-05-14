@@ -11,10 +11,10 @@ const router = Router();
 // ── GET /admin/qr-img/:kode — thumbnail PNG kecil di tabel ───
 router.get("/qr-img/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
-  const { members } = readDB();
-  if (!findMember(members, kode)) return res.status(404).end();
-
   try {
+    const { members } = await readDB();
+    if (!findMember(members, kode)) return res.status(404).end();
+
     const buf = await qrBuffer(buildScanUrl(req, kode), 200);
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "public, max-age=3600");
@@ -27,11 +27,11 @@ router.get("/qr-img/:kode", requireAdmin, async (req, res) => {
 // ── GET /admin/qr-card/:kode — branded SVG card (modal) ──────
 router.get("/qr-card/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
-  const { members } = readDB();
-  const member = findMember(members, kode);
-  if (!member) return res.status(404).end();
-
   try {
+    const { members } = await readDB();
+    const member = findMember(members, kode);
+    if (!member) return res.status(404).end();
+
     const { svg } = await brandedQrCard({
       text: buildScanUrl(req, kode),
       nama: member.nama,
@@ -46,25 +46,23 @@ router.get("/qr-card/:kode", requireAdmin, async (req, res) => {
 });
 
 // ── GET /admin/qr/:kode — download branded SVG ───────────────
-// Download juga pakai branded card agar ada frame nama arena
 router.get("/qr/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
-  const { members } = readDB();
-  const member = findMember(members, kode);
-  if (!member) return res.status(404).send("Member tidak ditemukan");
-
   try {
+    const { members } = await readDB();
+    const member = findMember(members, kode);
+    if (!member) return res.status(404).send("Member tidak ditemukan");
+
     const { svg } = await brandedQrCard({
       text: buildScanUrl(req, kode),
       nama: member.nama,
       kode,
     });
-    // Kirim sebagai SVG downloadable — lebih tajam dari PNG dan ada branding
     res.setHeader("Content-Type", "image/svg+xml");
     res.setHeader("Content-Disposition", `attachment; filename="QR-${kode}.svg"`);
     res.send(svg);
   } catch (err) {
-    // Fallback ke PNG polos kalau SVG gagal
+    // Fallback ke PNG polos
     try {
       const buf = await qrBuffer(buildScanUrl(req, kode), 400);
       res.setHeader("Content-Type", "image/png");

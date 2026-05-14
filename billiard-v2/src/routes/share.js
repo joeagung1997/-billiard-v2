@@ -98,7 +98,7 @@ async function makeQrPng(scanUrl) {
 // Cloudinary akan fetch URL ini untuk overlay ke background
 router.get("/qr-only/:kode", async (req, res) => {
   const kode = req.params.kode.toUpperCase();
-  const { members } = readDB();
+  const { members } = await readDB();
   const member = findMember(members, kode);
   if (!member) return res.status(404).end();
 
@@ -117,7 +117,7 @@ router.get("/qr-only/:kode", async (req, res) => {
 // ── GET /member/:kode — halaman OG untuk WA crawler + preview QR ─
 router.get("/member/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
-  const db     = readDB();
+  const db     = await readDB();
   const member = findMember(db.members, kode);
   if (!member) return res.redirect("/scan?id=" + kode);
 
@@ -183,7 +183,7 @@ router.get("/member/:kode", async (req, res) => {
 // Redirect ke Cloudinary yang render gambar dengan teks + QR dinamis
 router.get("/og-image/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
-  const db     = readDB();
+  const db     = await readDB();
   const member = findMember(db.members, kode);
   if (!member) return res.status(404).end();
 
@@ -194,9 +194,9 @@ router.get("/og-image/:kode", async (req, res) => {
 });
 
 // ── GET /og-debug/:kode — debug ───────────────────────────────
-router.get("/og-debug/:kode", (req, res) => {
+router.get("/og-debug/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
-  const db     = readDB();
+  const db     = await readDB();
   const member = findMember(db.members, kode);
   const base   = buildBaseUrl(req);
   const cdnUrl = member ? makeCloudinaryUrl(kode, member.nama, base) : "N/A";
