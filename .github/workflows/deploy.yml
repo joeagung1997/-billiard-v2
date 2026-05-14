@@ -15,8 +15,12 @@ jobs:
         run: npm install -g @railway/cli@latest
 
       - name: Deploy to Railway
-        run: railway up --service=$RAILWAY_SERVICE_ID --detach
+        run: |
+          railway up \
+            --project 07bd0bb5-148a-49bf-afe8-b03ad89d723e \
+            --service 35010fd5-2e97-4a6a-8fca-536e3cbfa790 \
+            --environment production \
+            --detach
         working-directory: billiard-v2
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
