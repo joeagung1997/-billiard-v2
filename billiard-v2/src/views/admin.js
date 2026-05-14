@@ -347,6 +347,8 @@ export function adminDashboard({ db, log, token, req }) {
     '.badge-blue  { background:rgba(59,130,246,.12); color:var(--accent); }',
     '.show-all-btn { display:block; width:100%; padding:var(--sp-3); border:none; border-top:1px solid var(--border); background:var(--surface2); color:var(--accent); font-size:var(--fs-sm); font-weight:var(--fw-b); cursor:pointer; }',
     '.show-all-btn:hover { background:var(--surface); }',
+    '.btn-add-member { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--accent); color:#fff; border-radius:var(--r-md); font-size:var(--fs-xs); font-weight:var(--fw-bk); text-decoration:none; white-space:nowrap; }',
+    '.btn-add-member:hover { opacity:.85; }',
     '.filter-bar { display:flex; gap:var(--sp-2); margin-bottom:var(--sp-2); flex-wrap:wrap; align-items:center; }',
     '.search-wrap { position:relative; flex:1; min-width:160px; }',
     '.search-input { width:100%; padding:var(--sp-2) var(--sp-3) var(--sp-2) 34px; background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-md); color:var(--txt); font-size:var(--fs-base); outline:none; font-family:var(--ff); }',
@@ -472,9 +474,6 @@ export function adminDashboard({ db, log, token, req }) {
     + '<a href="/admin?tk=' + token + '" class="nav-item active">'
     + '<span class="nav-icon">🏠</span> Dashboard'
     + '</a>'
-    + '<a href="/admin/tambah?tk=' + token + '" class="nav-item nav-green">'
-    + '<span class="nav-icon">➕</span> Tambah Member'
-    + '</a>'
     + '<a href="/keuangan" class="nav-item nav-gold">'
     + '<span class="nav-icon">💰</span> Keuangan'
     + '</a>'
@@ -528,9 +527,12 @@ export function adminDashboard({ db, log, token, req }) {
     + '<div id="tab-log" class="tab-body"><div id="log-list"></div><button id="log-showbtn" class="show-all-btn" style="display:none"></button></div>'
     + '</div>'
 
-    + '<div class="sec-label" style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div class="sec-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
     + '<span>Kelola Member</span>'
+    + '<div style="display:flex;align-items:center;gap:8px">'
     + '<span id="member-badge" class="filter-badge" style="display:none"></span>'
+    + '<a href="/admin/tambah?tk=' + token + '" class="btn-add-member">➕ Tambah Member</a>'
+    + '</div>'
     + '</div>'
 
     + '<div class="filter-bar">'
@@ -564,9 +566,6 @@ export function adminDashboard({ db, log, token, req }) {
     + '<nav class="bottom-nav">'
     + '<a href="/admin?tk=' + token + '" class="bn-item active">'
     + '<span class="bn-icon">🏠</span>Home'
-    + '</a>'
-    + '<a href="/admin/tambah?tk=' + token + '" class="bn-item bn-green">'
-    + '<span class="bn-icon">➕</span>Tambah'
     + '</a>'
     + '<a href="/keuangan" class="bn-item">'
     + '<span class="bn-icon">💰</span>Keuangan'
