@@ -462,7 +462,7 @@ function buildSidebar(token, activePage, now) {
     + '</div>'
     + '<div class="sb-footer">'
     + '<span class="sb-time">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
+    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
     + '</div>'
     + '</aside>';
 }
@@ -673,8 +673,8 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css?v=2">'
+    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"light");}catch(_){}<\/script>'
+    + '<link rel="stylesheet" href="/admin.css?v=3">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -689,7 +689,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="topbar-label">Admin Dashboard</div></div></div>'
     + '<div class="topbar-right">'
     + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
+    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
     + '</div></header>'
 
     + '<main class="page">'
@@ -814,8 +814,8 @@ export function memberPage({ db, token, req }) {
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css?v=2">'
+    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"light");}catch(_){}<\/script>'
+    + '<link rel="stylesheet" href="/admin.css?v=3">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -829,7 +829,7 @@ export function memberPage({ db, token, req }) {
     + '<div class="topbar-label">Kelola Member</div></div></div>'
     + '<div class="topbar-right">'
     + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">🌙</button>'
+    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
     + '</div></header>'
 
     + '<main class="page">'

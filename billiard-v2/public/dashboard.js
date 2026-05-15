@@ -21,7 +21,17 @@ const toggleTheme = () => {
   applyTheme(cur === "dark" ? "light" : "dark");
 };
 
-try { const saved = localStorage.getItem(THEME_KEY); if (saved) applyTheme(saved); } catch (_) {}
+// Sync icon with current data-theme (set by inline script before JS loaded)
+try {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) applyTheme(saved);
+  else {
+    // No saved pref — just sync the button icon to match the inline-script default
+    const cur = document.documentElement.getAttribute("data-theme") || "light";
+    const icon = cur === "dark" ? "🌙" : "☀️";
+    document.querySelectorAll(".theme-btn").forEach(function(b) { b.textContent = icon; });
+  }
+} catch (_) {}
 
 // ── Tab switcher ──────────────────────────────────────────────
 const TAB_IDS = ["scan", "lb", "log"];

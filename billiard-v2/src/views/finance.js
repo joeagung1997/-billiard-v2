@@ -21,8 +21,8 @@ function docHead(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
-    + "<script>try{var _t=localStorage.getItem('warpat_admin_theme');document.documentElement.setAttribute('data-theme',_t||'dark');}catch(_){}<\/script>"
-    + "<link rel=\"stylesheet\" href=\"/finance.css?v=2\">";
+    + "<script>try{var _t=localStorage.getItem('warpat_admin_theme');document.documentElement.setAttribute('data-theme',_t||'light');}catch(_){}<\/script>"
+    + "<link rel=\"stylesheet\" href=\"/finance.css?v=3\">";
 }
 
 const CSS = [
@@ -354,7 +354,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
     + "<div class=\"topbar-label\">Laporan Keuangan</div></div></div>"
     + "<div class=\"topbar-right\">"
-    + "<button class=\"theme-btn\" onclick=\"toggleTheme()\" id=\"themeBtn\">🌙</button>"
+    + "<button class=\"theme-btn\" onclick=\"toggleTheme()\" id=\"themeBtn\">☀️</button>"
     + "</div></header>"
 
     + "<main class=\"page\">"
@@ -456,7 +456,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
     + "const _savedT=localStorage.getItem('warpat_admin_theme');"
     + "const _btn=document.getElementById('themeBtn');"
-    + "if(_btn&&_savedT)_btn.textContent=_savedT==='dark'?'🌙':'☀️';"
+    + "if(_btn){const _t=_savedT||(document.documentElement.getAttribute('data-theme')||'light');_btn.textContent=_t==='dark'?'🌙':'☀️';}"
     + "</script>"
     + "</body></html>";
 }
