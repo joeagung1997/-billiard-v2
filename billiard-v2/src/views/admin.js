@@ -636,10 +636,11 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="trend-bars">' + trendBars + '</div>'
     + '</div>';
 
-  return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
+  return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<style>' + buildAdminCss() + '</style>'
+    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
+    + '<link rel="stylesheet" href="/admin.css">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -733,10 +734,11 @@ export function memberPage({ db, token, req }) {
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
   });
 
-  return '<!DOCTYPE html><html lang="id" data-theme="dark"><head>'
+  return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<style>' + buildAdminCss() + '</style>'
+    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
+    + '<link rel="stylesheet" href="/admin.css">'
     + '</head><body>'
 
     + '<div class="layout">'
