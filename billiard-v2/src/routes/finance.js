@@ -28,11 +28,12 @@ router.get("/", async (req, res) => {
   try {
     const token       = ftk || createToken(pin);
     const transaksi   = await readTransaksi();
-    const bulanFilter   = req.query.bulan   ?? "";
-    const jenisFilter   = req.query.jenis   ?? "";
-    const tanggalFilter = req.query.tanggal ?? "";
+    const bulanFilter = req.query.bulan     ?? "";
+    const jenisFilter = req.query.jenis     ?? "";
+    const tglDari     = req.query.tgl_dari  ?? "";
+    const tglSampai   = req.query.tgl_sampai ?? "";
 
-    res.send(financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tanggalFilter }));
+    res.send(financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");

@@ -245,13 +245,15 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tanggalFilter }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai }) {
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-  const bFilter  = bulanFilter  || curBulan;
-  const jFilter  = jenisFilter  || "";
+  const bFilter  = bulanFilter || curBulan;
+  const jFilter  = jenisFilter || "";
+  const tDari    = tglDari    || "";
+  const tSampai  = tglSampai  || "";
 
-  // Filter & sort
+  // Filter & sort — bulan + jenis untuk stats; date range untuk tabel
   const filtered = transaksi.filter((t) => {
     return t.tanggal.slice(0, 7) === bFilter
       && (!jFilter || t.jenis === jFilter);
@@ -261,6 +263,12 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
       ? b.tanggal.localeCompare(a.tanggal)
       : (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime())
   );
+
+  // Terapkan filter range tanggal ke tabel (stats bulanan tetap)
+  const tSampaiEff = tSampai || tDari;
+  const sortedTbl = tDari
+    ? sorted.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
+    : sorted;
 
   // Summary
   const pemasukan   = filtered.filter((t) => t.jenis === "pemasukan");
@@ -282,53 +290,57 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   }).join("");
 
 
-  // Rows transaksi
-  const rows = sorted.length > 0
-    ? sorted.map((t) => {
-        const isIn    = t.jenis === "pemasukan";
-        const isSiang = (t.waktu ?? "siang") === "siang";
-        const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
-          day: "numeric", month: "short", year: "numeric",
-        });
-        const jamDisp = t.jam ? " <span style=\"color:var(--txt3);font-size:11px\">" + t.jam + "</span>" : "";
-        return "<tr>"
-          + "<td style=\"white-space:nowrap\">" + tglDisp + jamDisp + "</td>"
-          + "<td><span class=\"badge " + (isIn ? "badge-green" : "badge-red") + "\">"
-          + (isIn ? "↑ Masuk" : "↓ Keluar") + "</span></td>"
-          + "<td><span style=\"font-size:12px\">" + (isSiang ? "☀️ Siang" : "🌙 Malam") + "</span></td>"
-          + "<td>" + escHtml(t.kategori) + "</td>"
-          + "<td style=\"max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\""
-          + " title=\"" + escHtml(t.keterangan) + "\">" + escHtml(t.keterangan || "—") + "</td>"
-          + "<td style=\"font-weight:700;color:" + (isIn ? "var(--green)" : "var(--red)") + ";white-space:nowrap\">"
-          + (isIn ? "+" : "−") + rp(t.jumlah) + "</td>"
-          + "<td><a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"tbl-btn\">Edit</a></td>"
-          + "</tr>";
-      }).join("")
+  // Rows transaksi — pakai sortedTbl (sudah di-filter range tanggal)
+  const makeRow = (t) => {
+    const isIn    = t.jenis === "pemasukan";
+    const isSiang = (t.waktu ?? "siang") === "siang";
+    const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
+      day: "numeric", month: "short", year: "numeric",
+    });
+    const jamDisp = t.jam ? " <span style=\"color:var(--txt3);font-size:11px\">" + t.jam + "</span>" : "";
+    return "<tr>"
+      + "<td style=\"white-space:nowrap\">" + tglDisp + jamDisp + "</td>"
+      + "<td><span class=\"badge " + (isIn ? "badge-green" : "badge-red") + "\">"
+      + (isIn ? "↑ Masuk" : "↓ Keluar") + "</span></td>"
+      + "<td><span style=\"font-size:12px\">" + (isSiang ? "☀️ Siang" : "🌙 Malam") + "</span></td>"
+      + "<td>" + escHtml(t.kategori) + "</td>"
+      + "<td style=\"max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\""
+      + " title=\"" + escHtml(t.keterangan) + "\">" + escHtml(t.keterangan || "—") + "</td>"
+      + "<td style=\"font-weight:700;color:" + (isIn ? "var(--green)" : "var(--red)") + ";white-space:nowrap\">"
+      + (isIn ? "+" : "−") + rp(t.jumlah) + "</td>"
+      + "<td><a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"tbl-btn\">Edit</a></td>"
+      + "</tr>";
+  };
+  const rows = sortedTbl.length > 0
+    ? sortedTbl.map(makeRow).join("")
     : "<tr><td colspan=\"7\" class=\"empty-state\">Belum ada transaksi</td></tr>";
 
   const bulanLabel = new Date(bFilter + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   const saldoClass = saldo >= 0 ? "stat-saldo-pos" : "stat-saldo-neg";
 
-  // Filter by specific date
-  const tFilter = tanggalFilter || "";
-  let hariSummaryHtml = "";
-  if (tFilter) {
-    const hariData = transaksi.filter((t) => t.tanggal === tFilter);
-    const hariIn   = hariData.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
-    const hariOut  = hariData.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
-    const hariSal  = hariIn - hariOut;
-    const hariLbl  = new Date(tFilter + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-    hariSummaryHtml = "<div class=\"sec-label\">Total Tanggal " + hariLbl + "</div>"
-      + "<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px\">"
+  // Label & summary untuk filter range aktif
+  const hasDateFilter = !!tDari;
+  let tabelLabel = sortedTbl.length + " transaksi — " + bulanLabel;
+  let rangeSummaryHtml = "";
+  if (hasDateFilter) {
+    const rIn  = sortedTbl.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
+    const rOut = sortedTbl.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
+    const rSal = rIn - rOut;
+    const lbl1 = new Date(tDari + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    const lbl2 = tSampai && tSampai !== tDari
+      ? " — " + new Date(tSampai + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+      : "";
+    tabelLabel = sortedTbl.length + " transaksi — " + lbl1 + lbl2;
+    rangeSummaryHtml = "<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px\">"
       + "<div class=\"stat-card\" style=\"border-left:3px solid var(--green)\">"
-      + "<div class=\"stat-num stat-up\">" + rp(hariIn) + "</div>"
+      + "<div class=\"stat-num stat-up\">" + rp(rIn) + "</div>"
       + "<div class=\"stat-lbl\">Pemasukan</div></div>"
       + "<div class=\"stat-card\" style=\"border-left:3px solid var(--red)\">"
-      + "<div class=\"stat-num stat-down\">" + rp(hariOut) + "</div>"
+      + "<div class=\"stat-num stat-down\">" + rp(rOut) + "</div>"
       + "<div class=\"stat-lbl\">Pengeluaran</div></div>"
       + "<div class=\"stat-card\" style=\"border-left:3px solid var(--accent)\">"
-      + "<div class=\"stat-num " + (hariSal >= 0 ? "stat-saldo-pos" : "stat-saldo-neg") + "\">" + (hariSal < 0 ? "−" : "") + rp(Math.abs(hariSal)) + "</div>"
-      + "<div class=\"stat-lbl\">Saldo Hari</div></div>"
+      + "<div class=\"stat-num " + (rSal >= 0 ? "stat-saldo-pos" : "stat-saldo-neg") + "\">" + (rSal < 0 ? "−" : "") + rp(Math.abs(rSal)) + "</div>"
+      + "<div class=\"stat-lbl\">Saldo</div></div>"
       + "</div>";
   }
 
@@ -336,12 +348,13 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</head><body>"
 
     + "<header class=\"topbar\">"
-    + "<div class=\"topbar-brand\"><span style=\"font-size:20px\">💰</span>"
+    + "<div class=\"topbar-brand\">"
+    + "<button class=\"back-btn\" onclick=\"goBack()\" title=\"Kembali ke Admin\">←</button>"
+    + "<span style=\"font-size:20px\">💰</span>"
     + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
     + "<div class=\"topbar-label\">Laporan Keuangan</div></div></div>"
     + "<div class=\"topbar-right\">"
     + "<button class=\"theme-btn\" onclick=\"toggleTheme()\" id=\"themeBtn\">🌙</button>"
-    + "<a href=\"/admin\" class=\"btn-secondary\" style=\"font-size:12px\">Admin</a>"
     + "</div></header>"
 
     + "<main class=\"page\">"
@@ -386,14 +399,17 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
     + "</select>"
     + "</div>"
-    + "<div class=\"sec-label\">Filter per Tanggal</div>"
-    + "<div class=\"filter-bar\" style=\"margin-bottom:16px\">"
-    + "<input type=\"date\" class=\"sel\" id=\"fTanggal\" value=\"" + tFilter + "\" onchange=\"applyTanggalFilter()\" style=\"cursor:pointer\">"
-    + (tFilter ? "<button class=\"btn-secondary\" onclick=\"clearTanggal()\">✕ Reset</button>" : "")
+    + "<div class=\"sec-label\">Filter Tanggal</div>"
+    + "<div class=\"filter-bar\" style=\"align-items:center;margin-bottom:8px\">"
+    + "<label style=\"font-size:11px;color:var(--txt3);text-transform:none;letter-spacing:0;margin:0;white-space:nowrap\">Dari</label>"
+    + "<input type=\"date\" class=\"sel\" id=\"fTglDari\" value=\"" + tDari + "\" onchange=\"applyTglFilter()\" style=\"cursor:pointer\">"
+    + "<label style=\"font-size:11px;color:var(--txt3);text-transform:none;letter-spacing:0;margin:0;white-space:nowrap\">Sampai</label>"
+    + "<input type=\"date\" class=\"sel\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\" style=\"cursor:pointer\">"
+    + (hasDateFilter ? "<button class=\"btn-secondary\" onclick=\"clearTgl()\" style=\"white-space:nowrap\">✕ Reset</button>" : "")
     + "</div>"
-    + hariSummaryHtml
+    + rangeSummaryHtml
 
-    + "<div class=\"sec-label\">" + sorted.length + " transaksi — " + bulanLabel + "</div>"
+    + "<div class=\"sec-label\">" + tabelLabel + "</div>"
     + "<div class=\"card\"><div class=\"table-wrap\">"
     + "<table><thead><tr>"
     + "<th>Tanggal</th><th>Jenis</th><th>Waktu</th><th>Kategori</th><th>Keterangan</th><th>Jumlah</th><th>Aksi</th>"
@@ -405,28 +421,31 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
     + "<script>"
     + "const FTK=" + JSON.stringify(token) + ";"
-    + "function applyFilter(){"
+    + "function buildUrl(){"
     + "const b=document.getElementById('fBulan').value;"
     + "const j=document.getElementById('fJenis').value;"
-    + "const t=document.getElementById('fTanggal')?document.getElementById('fTanggal').value:'';"
+    + "const d=document.getElementById('fTglDari').value;"
+    + "const s=document.getElementById('fTglSampai').value;"
     + "let url='/keuangan?ftk='+FTK+'&bulan='+b;"
     + "if(j)url+='&jenis='+j;"
-    + "if(t)url+='&tanggal='+t;"
-    + "window.location.href=url;}"
-    + "function applyTanggalFilter(){"
-    + "const t=document.getElementById('fTanggal').value;"
+    + "if(d)url+='&tgl_dari='+d;"
+    + "if(s)url+='&tgl_sampai='+s;"
+    + "return url;}"
+    + "function applyFilter(){window.location.href=buildUrl();}"
+    + "function applyTglFilter(){"
+    + "const d=document.getElementById('fTglDari').value;"
+    + "const s=document.getElementById('fTglSampai').value;"
+    + "if(d&&s&&s<d){document.getElementById('fTglSampai').value=d;}"
+    + "window.location.href=buildUrl();}"
+    + "function clearTgl(){"
     + "const b=document.getElementById('fBulan').value;"
     + "const j=document.getElementById('fJenis').value;"
     + "let url='/keuangan?ftk='+FTK+'&bulan='+b;"
     + "if(j)url+='&jenis='+j;"
-    + "if(t)url+='&tanggal='+t;"
     + "window.location.href=url;}"
-    + "function clearTanggal(){"
-    + "const b=document.getElementById('fBulan').value;"
-    + "const j=document.getElementById('fJenis').value;"
-    + "let url='/keuangan?ftk='+FTK+'&bulan='+b;"
-    + "if(j)url+='&jenis='+j;"
-    + "window.location.href=url;}"
+    + "function goBack(){"
+    + "var tk=localStorage.getItem('warpat_atk');"
+    + "window.location.href=tk?'/admin?tk='+tk:'/admin';}"
 
     + "function toggleTheme(){"
     + "const el=document.documentElement;"
