@@ -28,10 +28,11 @@ router.get("/", async (req, res) => {
   try {
     const token       = ftk || createToken(pin);
     const transaksi   = await readTransaksi();
-    const bulanFilter = req.query.bulan ?? "";
-    const jenisFilter = req.query.jenis ?? "";
+    const bulanFilter   = req.query.bulan   ?? "";
+    const jenisFilter   = req.query.jenis   ?? "";
+    const tanggalFilter = req.query.tanggal ?? "";
 
-    res.send(financeDashboard({ transaksi, token, bulanFilter, jenisFilter }));
+    res.send(financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tanggalFilter }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -59,7 +60,9 @@ router.get("/tambah", requireFinance, async (req, res) => {
 
 // ── POST /keuangan/tambah — simpan transaksi ──────────────────
 router.post("/tambah", requireFinance, async (req, res) => {
-  const { jenis, tanggal, jam, kategori, keterangan, jumlah } = req.body;
+  const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
+  const tanggal = (datetime ?? "").slice(0, 10);
+  const jam     = (datetime ?? "").slice(11, 16);
 
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
   if (!jenis || !tanggal || !kategori || jumlahNum <= 0) {
@@ -106,7 +109,9 @@ router.get("/edit", requireFinance, async (req, res) => {
 
 // ── POST /keuangan/edit — simpan perubahan transaksi ──────────
 router.post("/edit", requireFinance, async (req, res) => {
-  const { id, jenis, tanggal, jam, kategori, keterangan, jumlah } = req.body;
+  const { id, jenis, datetime, kategori, keterangan, jumlah } = req.body;
+  const tanggal = (datetime ?? "").slice(0, 10);
+  const jam     = (datetime ?? "").slice(11, 16);
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
 
   if (!id || !jenis || !tanggal || !kategori || jumlahNum <= 0) {
