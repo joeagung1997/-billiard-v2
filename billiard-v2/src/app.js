@@ -22,10 +22,12 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, "../public"), {
-  maxAge: "7d",
-  setHeaders(res, path) {
-    if (path.endsWith(".css") || path.endsWith(".js")) {
-      res.setHeader("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
+  etag: true,
+  lastModified: true,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
+      // no-cache: browser selalu revalidate, tapi pakai cache (304) jika file tidak berubah
+      res.setHeader("Cache-Control", "no-cache");
     }
   },
 }));
