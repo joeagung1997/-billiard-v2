@@ -257,7 +257,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const sorted = [...filtered].sort((a, b) =>
     b.tanggal !== a.tanggal
       ? b.tanggal.localeCompare(a.tanggal)
-      : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+      : (new Date(b.createdAt ?? 0).getTime()) - (new Date(a.createdAt ?? 0).getTime())
   );
 
   // Summary
