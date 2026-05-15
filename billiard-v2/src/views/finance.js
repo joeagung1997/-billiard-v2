@@ -22,7 +22,7 @@ function docHead(title) {
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<script>try{var _t=localStorage.getItem('warpat_admin_theme');document.documentElement.setAttribute('data-theme',_t||'dark');}catch(_){}<\/script>"
-    + "<link rel=\"stylesheet\" href=\"/finance.css\">";
+    + "<link rel=\"stylesheet\" href=\"/finance.css?v=2\">";
 }
 
 const CSS = [
