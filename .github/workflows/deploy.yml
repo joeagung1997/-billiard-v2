@@ -11,9 +11,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@latest
+
       - name: Deploy to Railway
-        uses: railwayapp/railway-deploy@v1
-        with:
-          railway-token: ${{ secrets.RAILWAY_TOKEN }}
-          service: ${{ secrets.RAILWAY_SERVICE_ID }}
-          detach: true
+        run: |
+          railway up \
+            --project 07bd0bb5-148a-49bf-afe8-b03ad89d723e \
+            --service 35010fd5-2e97-4a6a-8fca-536e3cbfa790 \
+            --environment production \
+            --detach
+        working-directory: billiard-v2
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
