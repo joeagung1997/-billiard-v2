@@ -21,7 +21,14 @@ const app = express();
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(join(__dirname, "../public")));
+app.use(express.static(join(__dirname, "../public"), {
+  maxAge: "7d",
+  setHeaders(res, path) {
+    if (path.endsWith(".css") || path.endsWith(".js")) {
+      res.setHeader("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
+    }
+  },
+}));
 
 
 // ── Routes ────────────────────────────────────────────────────

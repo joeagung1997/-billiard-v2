@@ -20,7 +20,9 @@ const escHtml = (s) =>
 function docHead(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-    + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>";
+    + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
+    + "<script>try{var _t=localStorage.getItem('warpat_admin_theme');document.documentElement.setAttribute('data-theme',_t||'dark');}catch(_){}<\/script>"
+    + "<link rel=\"stylesheet\" href=\"/finance.css\">";
 }
 
 const CSS = [
@@ -331,8 +333,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   }
 
   return docHead("Keuangan")
-    + "<style>" + CSS + "</style>"
-    + "</head><body data-theme=\"dark\">"
+    + "</head><body>"
 
     + "<header class=\"topbar\">"
     + "<div class=\"topbar-brand\"><span style=\"font-size:20px\">💰</span>"
@@ -432,12 +433,11 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "const t=el.getAttribute('data-theme')==='light'?'dark':'light';"
     + "el.setAttribute('data-theme',t);"
     + "document.getElementById('themeBtn').textContent=t==='dark'?'🌙':'☀️';"
-    + "localStorage.setItem('theme',t);}"
+    + "localStorage.setItem('warpat_admin_theme',t);}"
 
-    + "const saved=localStorage.getItem('theme');"
-    + "if(saved){document.documentElement.setAttribute('data-theme',saved);"
-    + "const btn=document.getElementById('themeBtn');"
-    + "if(btn)btn.textContent=saved==='dark'?'🌙':'☀️';}"
+    + "const _savedT=localStorage.getItem('warpat_admin_theme');"
+    + "const _btn=document.getElementById('themeBtn');"
+    + "if(_btn&&_savedT)_btn.textContent=_savedT==='dark'?'🌙':'☀️';"
     + "</script>"
     + "</body></html>";
 }
@@ -453,10 +453,8 @@ export function financeFormPage(token, kategoriList = []) {
     .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
 
   return docHead("Tambah Transaksi")
-    + "<style>" + CSS
-    + "body{display:flex;align-items:flex-start;justify-content:center;padding:20px}"
-
-    + "</style></head><body data-theme=\"dark\">"
+    + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
+    + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
     + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Tambah Transaksi</h1>"
@@ -543,9 +541,8 @@ export function financeEditPage(token, t, kategoriList = []) {
   const grpOut = makeOpts(kategoriList.filter((k) => k.jenis === "pengeluaran"), !isIn ? t.kategori : "");
 
   return docHead("Edit Transaksi")
-    + "<style>" + CSS
-    + "body { display:flex; align-items:flex-start; justify-content:center; padding:20px; }"
-    + "</style></head><body data-theme=\"dark\">"
+    + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
+    + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
     + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Edit Transaksi</h1>"
@@ -642,11 +639,8 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
   const outList = kategoriList.filter((k) => k.jenis === "pengeluaran");
 
   return docHead("Kelola Kategori")
-    + "<style>" + CSS
-    + "body{padding:20px;max-width:680px;margin:0 auto}"
-    + ".two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}"
-    + "@media(max-width:540px){.two-col{grid-template-columns:1fr}}"
-    + "</style></head><body data-theme=\"dark\">"
+    + "<style>body{padding:20px;max-width:680px;margin:0 auto}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:540px){.two-col{grid-template-columns:1fr}}</style>"
+    + "</head><body>"
     + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"display:inline-flex;margin-bottom:16px\">← Kembali ke Keuangan</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Kelola Kategori</h1>"
     + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Tambah atau hapus kategori transaksi</p>"
