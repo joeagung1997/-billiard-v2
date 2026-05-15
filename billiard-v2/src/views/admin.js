@@ -674,7 +674,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css">'
+    + '<link rel="stylesheet" href="/admin.css?v=2">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -815,7 +815,7 @@ export function memberPage({ db, token, req }) {
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"dark");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css">'
+    + '<link rel="stylesheet" href="/admin.css?v=2">'
     + '</head><body>'
 
     + '<div class="layout">'
