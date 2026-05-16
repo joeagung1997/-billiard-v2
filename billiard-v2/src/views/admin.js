@@ -1111,7 +1111,7 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
     +   'border-radius:20px;overflow:hidden;margin-bottom:20px;'
     +   'box-shadow:0 0 0 1px rgba(201,168,76,.14),0 16px 48px rgba(0,0,0,.6);'
     + '}'
-    + '.card-frame-wrap iframe{display:block;width:100%;height:570px;border:none}'
+    + '.card-frame-wrap iframe{display:block;width:100%;height:520px;border:none;transition:height .3s ease}'
     /* action buttons */
     + '.btns-primary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}'
     + '.btns-secondary{display:grid;grid-template-columns:1fr 1fr;gap:8px}'
@@ -1171,6 +1171,14 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
     +   'Dashboard'
     + '</a>'
     + '</div>'
+    + '<script>'
+    + 'window.addEventListener("message",function(e){'
+    + 'if(e.data&&e.data.qrH){'
+    + 'var f=document.querySelector(".card-frame-wrap iframe");'
+    + 'if(f)f.style.height=Math.ceil(e.data.qrH)+"px";'
+    + '}'
+    + '});'
+    + '</script>'
     + '</div></body></html>';
 }
 
