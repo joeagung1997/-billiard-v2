@@ -322,31 +322,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   }).join("");
 
 
-  // Rows transaksi — pakai sortedTbl (sudah di-filter range tanggal)
-  const makeRow = (t) => {
-    const isIn    = t.jenis === "pemasukan";
-    const isSiang = (t.waktu ?? "siang") === "siang";
-    const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
-      day: "numeric", month: "short", year: "numeric",
-    });
-    const jamDisp = t.jam ? " <span style=\"color:var(--txt3);font-size:11px\">" + t.jam + "</span>" : "";
-    return "<tr>"
-      + "<td style=\"white-space:nowrap\">" + tglDisp + jamDisp + "</td>"
-      + "<td><span class=\"badge " + (isIn ? "badge-green" : "badge-red") + "\">"
-      + (isIn ? "↑ Masuk" : "↓ Keluar") + "</span></td>"
-      + "<td><span style=\"font-size:12px\">" + (isSiang ? "☀️ Siang" : "🌙 Malam") + "</span></td>"
-      + "<td>" + escHtml(t.kategori) + "</td>"
-      + "<td style=\"max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\""
-      + " title=\"" + escHtml(t.keterangan) + "\">" + escHtml(t.keterangan || "—") + "</td>"
-      + "<td style=\"font-weight:700;color:" + (isIn ? "var(--green)" : "var(--red)") + ";white-space:nowrap\">"
-      + (isIn ? "+" : "−") + rp(t.jumlah) + "</td>"
-      + "<td><a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"tbl-btn\">Edit</a></td>"
-      + "</tr>";
-  };
-  const rows = sortedTbl.length > 0
-    ? sortedTbl.map(makeRow).join("")
-    : "<tr><td colspan=\"7\" class=\"empty-state\">Belum ada transaksi</td></tr>";
-
   const bulanLabel = new Date(bFilter + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
   // ── Weekly breakdown for bar chart ───────────────────────────
