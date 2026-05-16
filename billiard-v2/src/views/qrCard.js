@@ -3,18 +3,20 @@
 
 import { CONFIG } from "../config.js";
 
-export const qrCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
-  const tm    = totalMain ?? 0;
-  const batas = CONFIG.BATAS_MAIN;
-  const sisaLagi = Math.max(0, batas - 1 - tm); // sesi sebelum gratis
+export const qrCardPage = ({ nama, kode, totalMain, status, qrDataUrl }) => {
+  const tm       = totalMain ?? 0;
+  const batas    = CONFIG.BATAS_MAIN;
+  const isBonus  = status === "BONUS";
+  const sisaLagi = isBonus ? 0 : Math.max(0, batas - 1 - tm);
 
   // ── Dot progress ──────────────────────────────────────────────
   let dotsHtml = "";
   for (let i = 0; i < batas; i++) {
     const n = i + 1;
-    if (n === batas)    dotsHtml += `<div class="dot-seg free" title="Sesi gratis"></div>`;
-    else if (n <= tm)   dotsHtml += `<div class="dot-seg on"></div>`;
-    else                dotsHtml += `<div class="dot-seg"></div>`;
+    if (isBonus)          dotsHtml += `<div class="dot-seg free"></div>`;
+    else if (n === batas) dotsHtml += `<div class="dot-seg free" title="Sesi gratis"></div>`;
+    else if (n <= tm)     dotsHtml += `<div class="dot-seg on"></div>`;
+    else                  dotsHtml += `<div class="dot-seg"></div>`;
   }
 
   return `<!DOCTYPE html>
@@ -279,6 +281,9 @@ body::after{
 @keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.05)}}
 @keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
 
+/* Bonus pill */
+.bonus-pill{background:rgba(201,168,76,.12)!important;border-color:rgba(201,168,76,.3)!important}
+
 /* JS akan set zoom di runtime */
 </style>
 </head>
@@ -333,13 +338,13 @@ body::after{
               <div class="mi-id">${kode}</div>
             </div>
             <div class="mi-stats">
-              <div class="stat-pill">
+              <div class="stat-pill${isBonus ? ' bonus-pill' : ''}">
                 <div class="sp-label">Sesi</div>
-                <div class="sp-value">${tm} <span>/ ${batas - 1}</span></div>
+                <div class="sp-value">${isBonus ? batas : tm} <span>/ ${batas - 1}</span></div>
               </div>
-              <div class="stat-pill">
-                <div class="sp-label">Reward</div>
-                <div class="sp-value">${sisaLagi} <span>lagi</span></div>
+              <div class="stat-pill${isBonus ? ' bonus-pill' : ''}">
+                <div class="sp-label">${isBonus ? 'Status' : 'Reward'}</div>
+                <div class="sp-value" style="${isBonus ? 'font-size:9px;color:#C9A84C' : ''}">${isBonus ? '🎁 Klaim!' : sisaLagi + ' <span>lagi</span>'}</div>
               </div>
             </div>
           </div>
@@ -359,23 +364,24 @@ body::after{
           ${dotsHtml}
         </div>
         <div class="session-caption">
-          <span>${tm} / ${batas} sesi &nbsp;\xb7&nbsp; ${sisaLagi} lagi untuk gratis</span>
-          <div class="free-pill">
+          <span>${isBonus ? 'Semua sesi selesai!' : (tm + ' / ' + batas + ' sesi \xb7 ' + sisaLagi + ' lagi untuk gratis')}</span>
+          <div class="free-pill" style="${isBonus ? 'background:rgba(201,168,76,.25);border-color:rgba(201,168,76,.5)' : ''}">
             <svg width="7" height="7" viewBox="0 0 8 8" fill="none" aria-hidden="true">
               <polygon points="4,0 5,3 8,3 5.5,5 6.5,8 4,6 1.5,8 2.5,5 0,3 3,3" fill="currentColor"/>
             </svg>
-            FREE
+            ${isBonus ? 'BONUS' : 'FREE'}
           </div>
         </div>
 
         <!-- Check-in strip -->
-        <div class="checkin-strip">
-          <div class="ci-icon" aria-hidden="true">
-            <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-              <path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+        <div class="checkin-strip" style="${isBonus ? 'background:linear-gradient(90deg,rgba(201,168,76,.15),rgba(201,168,76,.1) 50%,rgba(201,168,76,.15));border-top-color:rgba(201,168,76,.3)' : ''}">
+          <div class="ci-icon" aria-hidden="true" style="${isBonus ? 'background:#C9A84C;box-shadow:0 0 8px rgba(201,168,76,.5)' : ''}">
+            ${isBonus
+              ? '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1L5.5 3.5H8L6 5.5L7 8L4.5 6.5L2 8L3 5.5L1 3.5H3.5Z" fill="#000" stroke="none"/></svg>'
+              : '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            }
           </div>
-          <div class="ci-text">Scan QR untuk check-in</div>
+          <div class="ci-text" style="${isBonus ? 'color:#C9A84C' : ''}">${isBonus ? '🎁 Bonus siap! Tunjukkan ke kasir' : 'Scan QR untuk check-in'}</div>
         </div>
 
       </div><!-- /card-face -->

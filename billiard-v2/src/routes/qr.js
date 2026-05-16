@@ -26,6 +26,7 @@ router.get("/qr-view/:kode", requireAdmin, async (req, res) => {
       nama:      member.nama,
       kode,
       totalMain: member.totalMain ?? 0,
+      status:    member.status ?? "-",
       qrDataUrl: qrImgUrl,
     }));
   } catch (err) {
@@ -85,6 +86,7 @@ router.get("/qr/:kode", requireAdmin, async (req, res) => {
       nama:      member.nama,
       kode,
       totalMain: member.totalMain ?? 0,
+      status:    member.status ?? "-",
       qrDataUrl: qrImgUrl,
     });
 
