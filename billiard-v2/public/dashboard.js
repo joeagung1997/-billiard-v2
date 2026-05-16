@@ -137,10 +137,10 @@ const renderMemberRow = (m, idx) => {
     : `<span class="badge badge-regular">Regular</span>`;
 
   const statusHtml = isBonus
-    ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:#C9A84C"><i class="ti ti-gift" style="font-size:11px"></i>Bonus</span>`
+    ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:#C9A84C"><i class="ti ti-gift" style="font-size:11px"></i>Bonus</span>`
     : m.aktif
-      ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--green-bg);border:1px solid rgba(45,102,36,.25);color:var(--accent)"><i class="ti ti-circle-check" style="font-size:11px"></i>Aktif</span>`
-      : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#f1f0eb;border:1px solid #ddd;color:#706e68"><i class="ti ti-circle-x" style="font-size:11px"></i>Tidak Aktif</span>`;
+      ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--green-bg);border:1px solid rgba(45,102,36,.25);color:var(--accent)"><i class="ti ti-circle-check" style="font-size:11px"></i>Aktif</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--red-bg);border:1px solid rgba(184,48,48,.25);color:var(--red)"><i class="ti ti-circle-x" style="font-size:11px"></i>Tidak Aktif</span>`;
 
   const hadirDot = m.sudahScan
     ? `<span title="Hadir hari ini" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle"></span>`
