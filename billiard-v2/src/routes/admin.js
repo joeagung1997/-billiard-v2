@@ -241,4 +241,22 @@ router.get("/reset", requireAdmin, async (req, res) => {
   }
 });
 
+// ── GET /admin/set-sesi — paksa total_main ke nilai tertentu (testing) ───────
+router.get("/set-sesi", requireAdmin, async (req, res) => {
+  const { tk }   = res.locals;
+  const kode     = (req.query.kode ?? "").toUpperCase();
+  const sesi     = parseInt(req.query.sesi ?? "");
+  if (!kode || isNaN(sesi)) return res.status(400).send("?kode=XXX&sesi=N wajib diisi");
+  try {
+    const db  = await readDB();
+    const idx = findMemberIndex(db.members, kode);
+    if (idx === -1) return res.status(404).send("Member tidak ditemukan: " + kode);
+    const m = { ...db.members[idx], totalMain: sesi };
+    await saveMember(m);
+    res.redirect(`/admin?tk=${tk}`);
+  } catch (err) {
+    res.status(500).send("Gagal: " + err.message);
+  }
+});
+
 export default router;
