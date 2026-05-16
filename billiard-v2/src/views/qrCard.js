@@ -279,31 +279,6 @@ body::after{
 @keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.05)}}
 @keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
 
-/* Terms */
-.terms{
-  width:340px;margin-top:14px;padding:14px 16px 16px;
-  background:rgba(14,107,56,.06);
-  border:1px solid rgba(201,168,76,.14);
-  border-radius:14px;position:relative;z-index:1;
-  animation:fadeUp .7s ease .4s both;
-}
-.terms-title{
-  display:flex;align-items:center;gap:7px;
-  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.18em;
-  color:var(--gold);margin-bottom:4px;
-}
-.terms-sub{font-size:10px;color:var(--muted);margin-bottom:11px}
-.terms-list{display:flex;flex-direction:column;gap:9px}
-.term-item{display:flex;gap:9px;align-items:flex-start}
-.term-icon{font-size:14px;flex-shrink:0;line-height:1.3}
-.term-text{font-size:10.5px;color:rgba(238,242,237,.7);line-height:1.55}
-.term-text strong{color:var(--text);font-weight:600}
-.terms-footer{
-  margin-top:12px;padding-top:10px;
-  border-top:1px solid rgba(201,168,76,.1);
-  font-size:9.5px;color:var(--muted);text-align:center;
-}
-
 /* JS akan set zoom di runtime */
 </style>
 </head>
@@ -503,34 +478,6 @@ body::after{
 
 <div class="pf">
   <div class="pf-text">Tunjukkan QR ini ke kasir untuk check-in</div>
-</div>
-
-<!-- Ketentuan Member -->
-<div class="terms">
-  <div class="terms-title">
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-top:1px"><rect x="1" y="1" width="12" height="12" rx="3" stroke="#C9A84C" stroke-width="1.3"/><line x1="4" y1="5" x2="10" y2="5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="10" x2="7.5" y2="10" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/></svg>
-    Ketentuan Member ${CONFIG.NAMA_ARENA}
-  </div>
-  <div class="terms-sub">Biar nggak ada salah paham, simak dulu ya! 😊</div>
-  <div class="terms-list">
-    <div class="term-item">
-      <span class="term-icon">🎁</span>
-      <div class="term-text"><strong>Bonus kamu berlaku 2 minggu</strong> — lebih dari itu, sayang banget kalau hangus. Jadi jangan lupa diklaim!</div>
-    </div>
-    <div class="term-item">
-      <span class="term-icon">🌙</span>
-      <div class="term-text"><strong>Malam Minggu? Tunggu sepi dulu</strong> — Bonus gratis nggak bisa diklaim saat ramai. Datang siang lebih aman &amp; lebih santai!</div>
-    </div>
-    <div class="term-item">
-      <span class="term-icon">💤</span>
-      <div class="term-text"><strong>Lama nggak mampir?</strong> — Member yang nggak scan lebih dari 2 bulan otomatis jadi tidak aktif.</div>
-    </div>
-    <div class="term-item">
-      <span class="term-icon">🔄</span>
-      <div class="term-text"><strong>Sempat balik tapi menghilang lagi?</strong> — Kalau sudah scan tapi absen lagi lebih dari 1 bulan, progres sesi akan mulai dari nol.</div>
-    </div>
-  </div>
-  <div class="terms-footer">Punya pertanyaan? Hubungi kasir kami langsung.</div>
 </div>
 
 <script>
