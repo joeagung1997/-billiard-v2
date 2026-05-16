@@ -883,7 +883,12 @@ export function memberPage({ db, token, req }) {
       bonusEarnedAt: m.bonusEarnedAt ?? null,
       bonusSisaHari,
     };
-  }).sort((a, b) => (b.status === 'BONUS' ? 1 : 0) - (a.status === 'BONUS' ? 1 : 0));
+  }).sort((a, b) => {
+    const score = (m) => m.status === 'BONUS' ? 3 : m.aktif ? 2 : 0;
+    const diff = score(b) - score(a);
+    if (diff !== 0) return diff;
+    return (b.totalMain || 0) - (a.totalMain || 0);
+  });
 
   const bulanOpts = getBulanOptions()
     .map((o) => '<option value="' + o.val + '"' + (o.selected ? ' selected' : '') + '>' + o.lbl + '</option>')
