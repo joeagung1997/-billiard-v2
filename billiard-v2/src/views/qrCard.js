@@ -31,14 +31,20 @@ export const qrCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
   --bg:#060B08;--text:#EEF2ED;--muted:rgba(238,242,237,0.40);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{
+html{
+  height:auto;
+  background:var(--bg);
+}
+body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);
   display:flex;flex-direction:column;
   align-items:center;justify-content:flex-start;
   padding:10px 12px 8px;
-  overflow:visible;position:relative;
+  overflow:visible;
   width:100%;
+  height:auto;
+  min-height:0;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -492,10 +498,15 @@ body::after{
     }
   }
 
-  // ── Kirim tinggi ke parent (sekali stabil) ────────────────────
+  // ── Kirim tinggi ke parent (akurat setelah zoom) ─────────────
   var _lastH = 0;
   function sendHeight() {
-    var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    // getBoundingClientRect().height sudah memperhitungkan CSS zoom,
+    // berbeda dengan scrollHeight yang bisa return nilai pra-zoom
+    var rect = document.body.getBoundingClientRect();
+    var h = Math.ceil(rect.height + rect.top);
+    // fallback kalau rect tidak akurat
+    if (h < 50) h = document.documentElement.scrollHeight;
     if (Math.abs(h - _lastH) > 3) {
       _lastH = h;
       window.parent.postMessage({ qrH: h }, '*');

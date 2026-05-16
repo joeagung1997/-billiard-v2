@@ -655,7 +655,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=13">'
+    + '<link rel="stylesheet" href="/admin.css?v=14">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -844,7 +844,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=13"><\/script>'
+    + '<script src="/dashboard.js?v=14"><\/script>'
     + '</body></html>';
 }
 
@@ -885,7 +885,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=13">'
+    + '<link rel="stylesheet" href="/admin.css?v=14">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -990,7 +990,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=13"></script>'
+    + '<script src="/dashboard.js?v=14"></script>'
     + '</body></html>';
 }
 
