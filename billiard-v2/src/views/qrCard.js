@@ -602,7 +602,7 @@ body::before{
 }
 
 /* Header */
-.hdr{text-align:center;margin-bottom:18px}
+.hdr{text-align:center;margin-bottom:18px;padding-right:62px}
 .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.32em;color:var(--gold)}
 .hdr-sub{font-size:11px;color:var(--muted);margin-top:3px}
 
