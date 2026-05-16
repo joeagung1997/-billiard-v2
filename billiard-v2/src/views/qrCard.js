@@ -721,6 +721,31 @@ body::before{
 }
 @keyframes holoMove{0%,100%{opacity:.6;transform:translateX(0)}50%{opacity:1;transform:translateX(-15px)}}
 
+/* Terms */
+.terms{
+  width:100%;max-width:380px;margin-top:16px;
+  padding:14px 16px 16px;
+  background:rgba(14,107,56,.06);
+  border:1px solid rgba(201,168,76,.14);
+  border-radius:14px;
+}
+.terms-title{
+  display:flex;align-items:center;gap:7px;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.18em;
+  color:var(--gold);margin-bottom:4px;
+}
+.terms-sub{font-size:10px;color:var(--muted);margin-bottom:11px}
+.terms-list{display:flex;flex-direction:column;gap:9px}
+.term-item{display:flex;gap:9px;align-items:flex-start}
+.term-icon{font-size:14px;flex-shrink:0;line-height:1.4}
+.term-text{font-size:10.5px;color:rgba(238,242,237,.7);line-height:1.55}
+.term-text strong{color:var(--text);font-weight:600}
+.terms-footer{
+  margin-top:12px;padding-top:10px;
+  border-top:1px solid rgba(201,168,76,.1);
+  font-size:9.5px;color:var(--muted);text-align:center;
+}
+
 /* Footer */
 .ftr{margin-top:14px;text-align:center}
 .ftr-txt{font-size:10px;color:rgba(238,242,237,.18);letter-spacing:.06em}
@@ -879,6 +904,34 @@ body::before{
   </div>
 
   </div><!-- /card-wrap -->
+
+  <!-- Ketentuan Member -->
+  <div class="terms">
+    <div class="terms-title">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-top:1px"><rect x="1" y="1" width="12" height="12" rx="3" stroke="#C9A84C" stroke-width="1.3"/><line x1="4" y1="5" x2="10" y2="5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="10" x2="7.5" y2="10" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Ketentuan Member ${CONFIG.NAMA_ARENA}
+    </div>
+    <div class="terms-sub">Biar nggak ada salah paham, simak dulu ya! 😊</div>
+    <div class="terms-list">
+      <div class="term-item">
+        <span class="term-icon">🎁</span>
+        <div class="term-text"><strong>Bonus kamu berlaku 2 minggu</strong> — lebih dari itu, sayang banget kalau hangus. Jadi jangan lupa diklaim!</div>
+      </div>
+      <div class="term-item">
+        <span class="term-icon">🌙</span>
+        <div class="term-text"><strong>Malam Minggu? Tunggu sepi dulu</strong> — Bonus gratis nggak bisa diklaim saat ramai. Datang siang lebih aman &amp; lebih santai!</div>
+      </div>
+      <div class="term-item">
+        <span class="term-icon">💤</span>
+        <div class="term-text"><strong>Lama nggak mampir?</strong> — Member yang nggak scan lebih dari 2 bulan otomatis jadi tidak aktif.</div>
+      </div>
+      <div class="term-item">
+        <span class="term-icon">🔄</span>
+        <div class="term-text"><strong>Sempat balik tapi menghilang lagi?</strong> — Kalau sudah scan tapi absen lagi lebih dari 1 bulan, progres sesi akan mulai dari nol.</div>
+      </div>
+    </div>
+    <div class="terms-footer">Punya pertanyaan? Hubungi kasir kami langsung.</div>
+  </div>
 
   <div class="ftr"><div class="ftr-txt">${CONFIG.NAMA_ARENA} • Member Card</div></div>
 </div>
