@@ -74,6 +74,7 @@ router.post("/checkin", async (req, res) => {
         judul:     "Sudah Check-in Hari Ini",
         pesan:     "",
         totalMain: m.totalMain,
+        kode,
         jamScan:   formatJam(m.tanggalScanTerakhir),
       }));
     }
