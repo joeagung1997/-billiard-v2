@@ -981,7 +981,7 @@ export function memberPage({ db, token, req }) {
     + '<div class="tbl-th">Tipe</div>'
     + '<div class="tbl-th">Bergabung</div>'
     + '<div class="tbl-th">Status</div>'
-    + '<div class="tbl-th r">Kunjungan</div>'
+    + '<div class="tbl-th r">Terakhir Datang</div>'
     + '<div class="tbl-th r">Aksi</div>'
     + '</div>'
     + '<div id="tbody"></div>'
