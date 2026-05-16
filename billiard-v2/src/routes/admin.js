@@ -16,6 +16,7 @@ import {
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
 } from "../utils/format.js";
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
+import { query } from "../utils/postgres.js";
 import { uploadQrToCloudinary } from "./share.js";
 import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
 
@@ -285,6 +286,22 @@ router.get("/seed-test", requireAdmin, async (req, res) => {
     );
   } catch (err) {
     res.status(500).send("Gagal: " + err.message);
+  }
+});
+
+// ── GET /admin/purge-data — hapus semua member & transaksi (TEMPORARY) ────────
+router.get("/purge-data", requireAdmin, async (req, res) => {
+  const { tk } = res.locals;
+  try {
+    await query("TRUNCATE TABLE members RESTART IDENTITY CASCADE");
+    await query("TRUNCATE TABLE transaksi RESTART IDENTITY CASCADE");
+    res.send(
+      '<p style="font-family:sans-serif;padding:20px;color:green">' +
+      '✅ Semua data member dan transaksi telah dihapus. ' +
+      '<a href="/admin?tk=' + tk + '">Kembali ke dashboard</a></p>'
+    );
+  } catch (err) {
+    res.status(500).send("Gagal purge data: " + err.message);
   }
 });
 
