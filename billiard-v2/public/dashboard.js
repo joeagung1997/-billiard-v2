@@ -37,7 +37,7 @@ try {
 const TAB_IDS = ["scan", "lb", "log"];
 
 const switchTab = (id) => {
-  document.querySelectorAll(".tab-btn").forEach((btn, i) =>
+  document.querySelectorAll(".tab-row .tab").forEach((btn, i) =>
     btn.classList.toggle("on", TAB_IDS[i] === id)
   );
   document.querySelectorAll(".tab-body").forEach((panel) =>
@@ -264,7 +264,7 @@ const initSimpleList = (data, listId, btnId, renderFn) => {
 
   const draw = () => {
     if (data.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">Tidak ada data</div>`;
+      listEl.innerHTML = `<div class="empty-state"><i class="ti ti-inbox"></i>Tidak ada data</div>`;
       btnEl && (btnEl.style.display = "none");
       return;
     }

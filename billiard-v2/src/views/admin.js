@@ -429,40 +429,31 @@ function buildAdminCss() {
 }
 
 // ── buildSidebar — shared sidebar HTML ───────────────────────────────────────
-function buildSidebar(token, activePage, now) {
+function buildSidebar(token, activePage) {
   const dashClass    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
-  const membersClass = 'nav-item nav-green' + (activePage === 'members' ? ' active' : '');
+  const membersClass = 'nav-item' + (activePage === 'members'   ? ' active' : '');
 
   return '<aside class="sidebar">'
     + '<div class="sb-brand">'
-    + '<div class="sb-brand-icon">🎱</div>'
-    + '<div><div class="sb-brand-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="sb-brand-sub">Admin Panel</div></div>'
+    + '<div class="sb-brand-icon"><i class="ti ti-circle-number-8"></i></div>'
+    + '<div class="sb-brand-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="sb-brand-sub">Admin Panel</div>'
     + '</div>'
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Menu</div>'
-    + '<a href="/admin?tk=' + token + '" class="' + dashClass + '">'
-    + '<span class="nav-icon">🏠</span> Dashboard'
-    + '</a>'
-    + '<a href="/admin/members?tk=' + token + '" class="' + membersClass + '">'
-    + '<span class="nav-icon">👥</span> Kelola Member'
-    + '</a>'
-    + '<a href="/keuangan" class="nav-item nav-gold"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">'
-    + '<span class="nav-icon">💰</span> Keuangan'
-    + '</a>'
+    + '<a href="/admin?tk=' + token + '" class="' + dashClass + '"><i class="ti ti-layout-dashboard"></i> Dashboard</a>'
+    + '<a href="/admin/members?tk=' + token + '" class="' + membersClass + '"><i class="ti ti-users"></i> Kelola Member</a>'
+    + '<a href="/keuangan" class="nav-item"'
+    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-wallet"></i> Keuangan</a>'
     + '</div>'
-    + '<div class="sb-divider"></div>'
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Aksi</div>'
-    + '<a href="/admin/reset?tk=' + token + '" class="nav-item nav-red"'
-    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
-    + '<span class="nav-icon">↺</span> Reset Harian'
-    + '</a>'
+    + '<a href="/admin/reset?tk=' + token + '" class="nav-item"'
+    + ' onclick="return confirm(\'Reset scan harian semua member?\')"><i class="ti ti-refresh"></i> Reset Harian</a>'
     + '</div>'
     + '<div class="sb-footer">'
-    + '<span class="sb-time">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
+    + '<div class="sb-avatar">AD</div>'
+    + '<div><div class="sb-user-name">Admin</div><div class="sb-user-role">Administrator</div></div>'
     + '</div>'
     + '</aside>';
 }
@@ -605,160 +596,216 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
       : 'Rp ' + a;
   };
 
-  // ── Finance card v2 HTML ──────────────────────────────────────
-  const maxFin = Math.max(pemasukanBulan, pengeluaranBulan, 1);
-  const pctIn  = Math.round(pemasukanBulan  / maxFin * 100);
-  const pctOut = Math.round(pengeluaranBulan / maxFin * 100);
-
-  const fin2Html = '<div class="fin2-card">'
-    + '<div class="fin2-header">'
-    + '<span class="fin2-title">💰 Keuangan ' + bulanLabel + '</span>'
-    + '<a href="/keuangan" class="fin2-link"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">Lihat Detail →</a>'
-    + '</div>'
-    + '<div class="fin2-row">'
-    + '<div class="fin2-icon ic-green">↑</div>'
-    + '<div class="fin2-info">'
-    + '<div class="fin2-lbl">Pemasukan</div>'
-    + '<div class="fin2-val" style="color:var(--green)">' + rpFmt(pemasukanBulan) + '</div>'
-    + '<div class="fin2-bar-track"><div class="fin2-bar-fill" style="width:' + pctIn + '%;background:var(--green)"></div></div>'
-    + '</div></div>'
-    + '<div class="fin2-row">'
-    + '<div class="fin2-icon ic-red">↓</div>'
-    + '<div class="fin2-info">'
-    + '<div class="fin2-lbl">Pengeluaran</div>'
-    + '<div class="fin2-val" style="color:var(--red)">' + rpFmt(pengeluaranBulan) + '</div>'
-    + '<div class="fin2-bar-track"><div class="fin2-bar-fill" style="width:' + pctOut + '%;background:var(--red)"></div></div>'
-    + '</div></div>'
-    + '<div class="fin2-row">'
-    + '<div class="fin2-icon ic-blue" style="font-size:13px">=</div>'
-    + '<div class="fin2-info">'
-    + '<div class="fin2-lbl">Saldo Bersih</div>'
-    + '<div class="fin2-val" style="color:' + (saldoBulan >= 0 ? 'var(--green)' : 'var(--red)') + '">'
-    + (saldoBulan < 0 ? '−' : '') + rpFmt(Math.abs(saldoBulan)) + '</div>'
-    + '</div></div>'
-    + '<div class="fin2-row" style="margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">'
-    + '<div class="fin2-icon ic-gold">☀</div>'
-    + '<div class="fin2-info">'
-    + '<div class="fin2-lbl">Pemasukan Hari Ini</div>'
-    + '<div class="fin2-val" style="color:var(--gold)">' + rpFmt(pemasukanHariIni) + '</div>'
-    + '</div></div>'
-    + '</div>';
-
-  // ── Trend chart v2 HTML ───────────────────────────────────────
+  // ── Chart data ───────────────────────────────────────────────
   const totalScan7 = trendDays.reduce((s, d) => s + d.count, 0);
-  const trend2Html = '<div class="trend-card2">'
-    + '<div class="trend2-header">'
-    + '<div><div class="trend2-title">📈 Trend Kunjungan</div>'
-    + '<div class="trend2-sub">7 hari terakhir · total <strong>' + totalScan7 + '</strong> kunjungan</div>'
-    + '</div>'
-    + '</div>'
-    + '<div class="trend2-bars">'
-    + trendDays.map(function(d) {
-        const pct   = Math.round((d.count / maxCount) * 100);
-        const barH  = Math.max(pct, d.count > 0 ? 4 : 0);
-        const color = d.isToday ? 'var(--accent)' : 'var(--green)';
-        const opac  = d.isToday ? '1' : '0.65';
-        return '<div class="trend2-col">'
-          + '<div class="trend2-cnt">' + (d.count > 0 ? d.count : '') + '</div>'
-          + '<div class="trend2-bar-wrap">'
-          + '<div class="trend2-bar" style="height:' + barH + '%;background:' + color + ';opacity:' + opac + '"></div>'
+  const bestDayObj = trendDays.reduce((b, d) => (d.count > b.count ? d : b), trendDays[0]);
+  const bestDayLbl = (bestDayObj && bestDayObj.count > 0) ? bestDayObj.lbl : '—';
+  const avgVisit   = totalScan7 > 0 ? (totalScan7 / 7).toFixed(1) : '0';
+  const chartLabels = JSON.stringify(trendDays.map((d) => d.lbl));
+  const chartData   = JSON.stringify(trendDays.map((d) => d.count));
+
+  // ── Member list card HTML ─────────────────────────────────────
+  const initials = (s) => {
+    const w = (s || '').trim().split(/\s+/).slice(0, 2);
+    return w.map((x) => (x[0] || '').toUpperCase()).join('');
+  };
+  const topMembers = [...members].sort((a, b) => (b.totalMain || 0) - (a.totalMain || 0)).slice(0, 5);
+  const topMembersHtml = topMembers.length
+    ? topMembers.map(function(m) {
+        const isVip = (m.totalMain || 0) >= CONFIG.BATAS_MAIN;
+        const since = m.tanggalDaftar
+          ? 'Sejak ' + new Date(m.tanggalDaftar).toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+          : 'Member';
+        return '<div class="member-item">'
+          + '<div class="m-avatar">' + initials(m.nama) + '</div>'
+          + '<div class="m-info">'
+          + '<div class="m-name">' + m.nama + '</div>'
+          + '<div class="m-since">' + since + '</div>'
           + '</div>'
-          + '<div class="trend2-day">' + d.lbl + '</div>'
+          + '<div class="m-badge' + (isVip ? ' vip' : '') + '">' + (isVip ? 'VIP' : 'Regular') + '</div>'
           + '</div>';
       }).join('')
-    + '</div>'
-    + '</div>';
+    : '<div class="empty-state"><i class="ti ti-users"></i>Belum ada member</div>';
+
+  // ── Finance rows card HTML ────────────────────────────────────
+  const recentTrx = transaksi.slice(-5).reverse();
+  const recentTrxHtml = recentTrx.length
+    ? recentTrx.map(function(t) {
+        const isIn = t.jenis === 'pemasukan';
+        return '<div class="fin-row">'
+          + '<div class="fin-left">'
+          + '<div class="fin-dot" style="background:' + (isIn ? 'var(--green)' : 'var(--red)') + '"></div>'
+          + '<div>'
+          + '<div class="fin-type">' + (t.keterangan || t.kategori || (isIn ? 'Pemasukan' : 'Pengeluaran')) + '</div>'
+          + '<div class="fin-desc">' + (t.tanggal || bulanLabel) + '</div>'
+          + '</div></div>'
+          + '<div class="fin-amount ' + (isIn ? 'income' : 'expense') + '">'
+          + (isIn ? '+' : '−') + rpFmt(t.jumlah)
+          + '</div></div>';
+      }).join('')
+    : '<div class="empty-state"><i class="ti ti-receipt"></i>Belum ada transaksi</div>';
+
+  const scanPct = stats.total > 0 ? Math.round(stats.scan / stats.total * 100) : 0;
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"light");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css?v=3">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=4">'
     + '</head><body>'
 
     + '<div class="layout">'
-    + buildSidebar(token, 'dashboard', now)
+    + buildSidebar(token, 'dashboard')
 
-    // ── Main wrap ───────────────────────────────────────────
     + '<div class="main-wrap">'
 
+    // Mobile topbar (hidden ≥769px via CSS)
     + '<header class="topbar">'
-    + '<div class="topbar-brand"><span style="font-size:20px">🎱</span>'
+    + '<div class="topbar-brand">'
+    + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
+    + '<i class="ti ti-circle-number-8"></i></div>'
     + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="topbar-label">Admin Dashboard</div></div></div>'
+    + '<div class="topbar-label">Admin Dashboard</div></div>'
+    + '</div>'
     + '<div class="topbar-right">'
-    + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
+    + '<span style="font-size:11px;color:var(--txt3)">' + now + '</span>'
     + '</div></header>'
 
-    + '<main class="page">'
+    + '<div class="page">'
 
-    // ── Welcome Hero ───────────────────────────────────────────
-    + '<div class="welcome-hero">'
-    + '<div class="welcome-left">'
-    + '<div class="welcome-tag">🎱 ' + CONFIG.NAMA_ARENA + '</div>'
-    + '<h2 class="welcome-h2">Hai, Admin! 👋</h2>'
-    + '<p class="welcome-p">Selamat datang kembali, dasbor Anda sudah siap!</p>'
-    + '<div class="welcome-qs-row">'
-    + '<div><div class="welcome-qs-num">' + stats.scan + '</div><div class="welcome-qs-lbl">Scan Hari Ini</div></div>'
-    + '<div class="welcome-qs-sep"></div>'
-    + '<div><div class="welcome-qs-num">' + rpS(pemasukanHariIni) + '</div><div class="welcome-qs-lbl">Pemasukan Hari Ini</div></div>'
-    + '<div class="welcome-qs-sep"></div>'
-    + '<div><div class="welcome-qs-num">' + stats.total + '</div><div class="welcome-qs-lbl">Total Member</div></div>'
+    // ── Desktop topbar ──────────────────────────────────────────
+    + '<div class="dash-topbar">'
+    + '<div>'
+    + '<div class="page-title">Dashboard</div>'
+    + '<div class="page-sub">' + now + ' — Ringkasan operasional harian</div>'
     + '</div>'
-    + '<a href="/keuangan" class="welcome-cta"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">Lihat Keuangan →</a>'
-    + '</div>'
-    + '<div class="welcome-art">🎱</div>'
-    + '</div>'
-
-    // ── Stat cards v2 ──────────────────────────────────────────
-    + '<div class="stats">'
-    + '<div class="stat-card stat-card-v2">'
-    + '<div class="stat-v2-left"><div class="stat-v2-lbl">Total Member</div>'
-    + '<div class="stat-v2-num">' + stats.total + '</div>'
-    + '<span class="trend-badge trend-blue">👥 Terdaftar</span></div>'
-    + '<div class="stat-v2-icon ic-blue">👥</div>'
-    + '</div>'
-    + '<div class="stat-card stat-card-v2">'
-    + '<div class="stat-v2-left"><div class="stat-v2-lbl">Scan Hari Ini</div>'
-    + '<div class="stat-v2-num">' + stats.scan + '</div>'
-    + '<span class="trend-badge trend-up">✓ dari ' + stats.total + ' member</span></div>'
-    + '<div class="stat-v2-icon ic-green">📲</div>'
-    + '</div>'
-    + '<div class="stat-card stat-card-v2">'
-    + '<div class="stat-v2-left"><div class="stat-v2-lbl">Reward Pending</div>'
-    + '<div class="stat-v2-num">' + stats.reward + '</div>'
-    + '<span class="trend-badge trend-gold">🎁 Menunggu klaim</span></div>'
-    + '<div class="stat-v2-icon ic-gold">🎁</div>'
-    + '</div>'
-    + '<div class="stat-card stat-card-v2">'
-    + '<div class="stat-v2-left"><div class="stat-v2-lbl">Pendapatan Bulan Ini</div>'
-    + '<div class="stat-v2-num">' + rpS(pemasukanBulan) + '</div>'
-    + '<span class="trend-badge trend-up">↑ ' + bulanLabel + '</span></div>'
-    + '<div class="stat-v2-icon ic-red">💰</div>'
+    + '<div class="topbar-actions">'
+    + '<a href="/admin/members?tk=' + token + '" class="btn-outline">'
+    + '<i class="ti ti-users" style="font-size:14px"></i> Member</a>'
+    + '<a href="/keuangan" class="btn-primary"'
+    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-wallet" style="font-size:14px"></i> Keuangan</a>'
     + '</div>'
     + '</div>'
 
-    // ── Dash grid: finance + trend ──────────────────────────────
-    + '<div class="dash-grid">'
-    + fin2Html
-    + trend2Html
+    // ── Stat grid ───────────────────────────────────────────────
+    + '<div class="stat-grid">'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Total Member'
+    + '<div class="stat-icon green"><i class="ti ti-users"></i></div></div>'
+    + '<div class="stat-value">' + stats.total + '</div>'
+    + '<div class="stat-footer">'
+    + '<i class="ti ti-circle-check" style="font-size:12px;color:var(--accent)"></i>&nbsp;Terdaftar aktif'
+    + '</div></div>'
+
+    + '<div class="stat-card amber">'
+    + '<div class="stat-label">Scan Hari Ini'
+    + '<div class="stat-icon amber"><i class="ti ti-scan"></i></div></div>'
+    + '<div class="stat-value">' + stats.scan + '</div>'
+    + '<div class="stat-footer">dari ' + stats.total + ' member</div></div>'
+
+    + '<div class="stat-card blue">'
+    + '<div class="stat-label">Reward Pending'
+    + '<div class="stat-icon blue"><i class="ti ti-gift"></i></div></div>'
+    + '<div class="stat-value">' + stats.reward + '</div>'
+    + '<div class="stat-footer">Menunggu klaim</div></div>'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Pendapatan Bulan Ini'
+    + '<div class="stat-icon green"><i class="ti ti-trending-up"></i></div></div>'
+    + '<div class="stat-value" style="font-size:22px">' + rpFmt(pemasukanBulan) + '</div>'
+    + '<div class="stat-footer">' + bulanLabel + '</div></div>'
+
     + '</div>'
 
-    + '<div class="card" style="margin-bottom:var(--sp-4)">'
-    + '<div class="tabs-wrap">'
-    + '<div class="tab-btn on" onclick="switchTab(\'scan\')">📲 Hari ini</div>'
-    + '<div class="tab-btn" onclick="switchTab(\'lb\')">🏆 Leaderboard</div>'
-    + '<div class="tab-btn" onclick="switchTab(\'log\')">📋 Log</div>'
-    + '</div>'
-    + '<div id="tab-scan" class="tab-body on"><div id="scan-list"></div><button id="scan-showbtn" class="show-all-btn" style="display:none"></button></div>'
-    + '<div id="tab-lb" class="tab-body"><div id="lb-list"></div><button id="lb-showbtn" class="show-all-btn" style="display:none"></button></div>'
-    + '<div id="tab-log" class="tab-body"><div id="log-list"></div><button id="log-showbtn" class="show-all-btn" style="display:none"></button></div>'
+    // ── Summary bar ─────────────────────────────────────────────
+    + '<div class="summary-bar">'
+    + '<div><div class="sum-label">Pemasukan ' + bulanLabel + '</div>'
+    + '<div class="sum-val green">' + rpFmt(pemasukanBulan) + '</div></div>'
+    + '<div class="divider-v"></div>'
+    + '<div><div class="sum-label">Pengeluaran</div>'
+    + '<div class="sum-val red">' + rpFmt(pengeluaranBulan) + '</div></div>'
+    + '<div class="divider-v"></div>'
+    + '<div><div class="sum-label">Saldo Bersih</div>'
+    + '<div class="sum-val' + (saldoBulan < 0 ? ' red' : '') + '">' + rpFmt(saldoBulan) + '</div></div>'
+    + '<div class="divider-v"></div>'
+    + '<div><div class="sum-label">Pemasukan Hari Ini</div>'
+    + '<div class="sum-val">' + rpFmt(pemasukanHariIni) + '</div></div>'
+    + '<a href="/keuangan" class="sum-btn"'
+    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-arrow-right" style="font-size:14px"></i> Lihat Detail Keuangan</a>'
     + '</div>'
 
-    + '</main>'
+    // ── Content grid ────────────────────────────────────────────
+    + '<div class="content-grid">'
+
+    // Chart card
+    + '<div class="card">'
+    + '<div class="card-header"><div>'
+    + '<div class="card-title">Trend Kunjungan</div>'
+    + '<div class="card-sub">7 hari terakhir — total ' + totalScan7 + ' kunjungan</div>'
+    + '</div></div>'
+    + '<div class="chart-wrap"><canvas id="trendChart"></canvas></div>'
+    + '<div class="chart-meta">'
+    + '<div class="chart-meta-item"><div class="cmi-label">Hari Terbaik</div>'
+    + '<div class="cmi-val">' + bestDayLbl + '</div></div>'
+    + '<div class="chart-meta-item"><div class="cmi-label">Rata-rata / hari</div>'
+    + '<div class="cmi-val">' + avgVisit + ' kunjungan</div></div>'
+    + '<div class="chart-meta-item"><div class="cmi-label">Total 7 Hari</div>'
+    + '<div class="cmi-val">' + totalScan7 + ' kunjungan</div></div>'
+    + '</div>'
+    + '</div>'
+
+    // Member list card
+    + '<div class="card">'
+    + '<div class="card-header"><div>'
+    + '<div class="card-title">Member Terdaftar</div>'
+    + '<div class="card-sub">' + stats.total + ' aktif</div>'
+    + '</div>'
+    + '<a href="/admin/members?tk=' + token + '" class="link-btn">Kelola <i class="ti ti-arrow-right" style="font-size:12px"></i></a>'
+    + '</div>'
+    + topMembersHtml
+    + '<div class="progress-wrap">'
+    + '<div class="progress-meta"><span>Aktif hari ini</span><span>' + stats.scan + ' / ' + stats.total + '</span></div>'
+    + '<div class="progress-bar"><div class="progress-fill" style="width:' + scanPct + '%"></div></div>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>'
+
+    // ── Bottom grid ─────────────────────────────────────────────
+    + '<div class="bottom-grid">'
+
+    // Activity tabs card
+    + '<div class="card">'
+    + '<div class="card-header"><div class="card-title">Aktivitas Hari Ini</div></div>'
+    + '<div class="tab-row">'
+    + '<div class="tab on" onclick="switchTab(\'scan\')">Scan</div>'
+    + '<div class="tab" onclick="switchTab(\'lb\')">Leaderboard</div>'
+    + '<div class="tab" onclick="switchTab(\'log\')">Log</div>'
+    + '</div>'
+    + '<div id="tab-scan" class="tab-body on"><div id="scan-list"></div></div>'
+    + '<div id="tab-lb"   class="tab-body"><div id="lb-list"></div></div>'
+    + '<div id="tab-log"  class="tab-body"><div id="log-list"></div></div>'
+    + '</div>'
+
+    // Finance rows card
+    + '<div class="card">'
+    + '<div class="card-header">'
+    + '<div class="card-title">Riwayat Keuangan</div>'
+    + '<a href="/keuangan" class="link-btn"'
+    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">Detail <i class="ti ti-arrow-right" style="font-size:12px"></i></a>'
+    + '</div>'
+    + recentTrxHtml
+    + '<div class="fin-total">'
+    + '<div class="fin-total-label">Saldo Bersih ' + bulanLabel + '</div>'
+    + '<div class="fin-total-val"' + (saldoBulan < 0 ? ' style="color:var(--red)"' : '') + '>' + rpFmt(saldoBulan) + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>'
+
+    + '</div>'
     + '</div>'
     + '</div>'
 
@@ -767,6 +814,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
 
     + '<div class="toast" id="toast">✓ Disalin!</div>'
 
+    + '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>'
     + '<script>'
     + 'const DATA_SCAN   = ' + JSON.stringify(dataScan)   + ';'
     + 'const DATA_LB     = ' + JSON.stringify(dataLb)     + ';'
@@ -775,8 +823,25 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'const TK          = ' + JSON.stringify(token)      + ';'
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
-    + '</script>'
-    + '<script src="/dashboard.js"></script>'
+    + '(function(){'
+    + 'var ctx=document.getElementById("trendChart");'
+    + 'if(!ctx)return;'
+    + 'new Chart(ctx,{'
+    + 'type:"line",'
+    + 'data:{labels:' + chartLabels + ',datasets:[{'
+    + 'label:"Kunjungan",data:' + chartData + ','
+    + 'borderColor:"#3a7d2c",backgroundColor:"rgba(58,125,44,0.08)",'
+    + 'tension:0.4,fill:true,pointBackgroundColor:"#3a7d2c",'
+    + 'pointRadius:4,pointHoverRadius:6,borderWidth:2'
+    + '}]},'
+    + 'options:{responsive:true,maintainAspectRatio:false,'
+    + 'plugins:{legend:{display:false}},'
+    + 'scales:{x:{grid:{display:false},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78"}},'
+    + 'y:{beginAtZero:true,grid:{color:"#f0f3ef"},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78",stepSize:1}}}'
+    + '}});'
+    + '})();'
+    + '<\/script>'
+    + '<script src="/dashboard.js"><\/script>'
     + '</body></html>';
 }
 
@@ -814,22 +879,25 @@ export function memberPage({ db, token, req }) {
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
-    + '<script>try{var _t=localStorage.getItem("warpat_admin_theme");document.documentElement.setAttribute("data-theme",_t||"light");}catch(_){}<\/script>'
-    + '<link rel="stylesheet" href="/admin.css?v=3">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=4">'
     + '</head><body>'
 
     + '<div class="layout">'
-    + buildSidebar(token, 'members', now)
+    + buildSidebar(token, 'members')
 
     + '<div class="main-wrap">'
 
     + '<header class="topbar">'
-    + '<div class="topbar-brand"><span style="font-size:20px">🎱</span>'
+    + '<div class="topbar-brand">'
+    + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
+    + '<i class="ti ti-circle-number-8"></i></div>'
     + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="topbar-label">Kelola Member</div></div></div>'
+    + '<div class="topbar-label">Kelola Member</div></div>'
+    + '</div>'
     + '<div class="topbar-right">'
-    + '<span style="font-size:var(--fs-xs);color:var(--txt3)">' + now + '</span>'
-    + '<button class="theme-btn" onclick="toggleTheme()">☀️</button>'
+    + '<span style="font-size:11px;color:var(--txt3)">' + now + '</span>'
     + '</div></header>'
 
     + '<main class="page">'
