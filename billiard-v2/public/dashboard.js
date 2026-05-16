@@ -137,10 +137,10 @@ const renderMemberRow = (m, idx) => {
     : `<span class="badge badge-regular">Regular</span>`;
 
   const statusHtml = isBonus
-    ? `<div class="sdot" style="background:#C9A84C;box-shadow:0 0 6px #C9A84C"></div><span style="font-size:12px;font-weight:600;color:#C9A84C">Bonus Pending</span>`
+    ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:#C9A84C"><i class="ti ti-gift" style="font-size:11px"></i>Bonus</span>`
     : m.aktif
-      ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Aktif</span>`
-      : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak Aktif</span>`;
+      ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--green-bg);border:1px solid rgba(45,102,36,.25);color:var(--accent)"><i class="ti ti-circle-check" style="font-size:11px"></i>Aktif</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#f1f0eb;border:1px solid #ddd;color:#706e68"><i class="ti ti-circle-x" style="font-size:11px"></i>Tidak Aktif</span>`;
 
   const hadirDot = m.sudahScan
     ? `<span title="Hadir hari ini" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle"></span>`
@@ -174,7 +174,7 @@ const renderMemberRow = (m, idx) => {
     <div class="tbl-td">${tipeBadge}</div>
     <div class="tbl-td muted" style="font-size:12px">${esc(m.tglDaftar)}</div>
     <div class="tbl-td">${statusHtml}</div>
-    <div class="tbl-td r" style="font-size:12px">${m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '<span style="color:var(--txt3)">—</span>'}</div>
+    <div class="tbl-td r" style="font-size:12px;color:var(--txt2)">${m.tglTerakhir === '—' ? '<span style="color:var(--txt3)">—</span>' : m.tglTerakhir}</div>
     <div class="tbl-td r">
       <div class="act-cell">
         ${isBonus ? `<a href="${klaimUrl}" onclick="${klaimConfirm}" class="icon-btn" title="Klaim Bonus" style="background:#C9A84C;color:#000;font-weight:700;font-size:13px">🎁</a>` : ""}
