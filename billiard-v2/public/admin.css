@@ -378,6 +378,107 @@ td          { padding:10px 16px; vertical-align:middle; }
 .mc-btn-red   { color:var(--red); border-color:rgba(184,48,48,.25); background:var(--red-bg); }
 .mc-empty     { text-align:center; padding:32px 16px; color:var(--txt3); font-size:13px; }
 
+/* ── Grid table (member + finance pages) ────────────────────────── */
+.table-card  { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.tbl-head    { display:grid; padding:10px 20px; background:var(--surface2); border-bottom:1px solid var(--border); }
+.tbl-row     { display:grid; padding:12px 20px; border-bottom:1px solid #f0f3ef; align-items:center; transition:background .1s; }
+.tbl-row:last-child { border-bottom:none; }
+.tbl-row:hover { background:var(--surface2); }
+.tbl-th      { font-size:11px; font-weight:600; color:var(--txt3); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; }
+.tbl-th.r    { justify-content:flex-end; }
+.tbl-th.c    { justify-content:center; }
+.tbl-td      { font-size:13px; color:var(--txt); display:flex; align-items:center; min-width:0; }
+.tbl-td.r    { justify-content:flex-end; }
+.tbl-td.c    { justify-content:center; }
+.tbl-td.muted  { color:var(--txt3); }
+.tbl-td.mono   { font-family:var(--ff-mono); }
+
+/* Member cell */
+.row-num   { font-size:12px; color:var(--txt3); font-weight:500; }
+.m-cell    { display:flex; align-items:center; gap:10px; min-width:0; }
+.m-av      { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+.m-av.green { background:var(--green-bg);  color:var(--accent); }
+.m-av.amber { background:var(--amber-bg);  color:var(--amber); }
+.m-av.blue  { background:var(--blue-bg);   color:var(--blue); }
+.m-av.teal  { background:#e1f5ee;           color:#0f6e56; }
+.m-nm      { font-size:13px; font-weight:500; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-id      { font-size:11px; color:var(--txt3); font-family:var(--ff-mono); margin-top:1px; }
+
+/* Type/tier badges */
+.badge-vip      { background:var(--amber-bg); color:var(--amber); }
+.badge-regular  { background:var(--green-bg); color:var(--accent); }
+.badge-inactive { background:#f1f0eb; color:#706e68; }
+
+/* Status dot */
+.sdot     { width:7px; height:7px; border-radius:50%; margin-right:6px; flex-shrink:0; }
+.sdot.on  { background:var(--green); }
+.sdot.off { background:var(--txt3); }
+
+/* Icon action buttons */
+.icon-btn            { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; border:none; background:transparent; color:var(--txt3); transition:background .15s, color .15s; font-family:var(--ff); }
+.icon-btn:hover        { background:#f0f3ef; color:var(--txt); }
+.icon-btn.danger:hover { background:var(--red-bg); color:var(--red); }
+.act-cell  { display:flex; align-items:center; gap:4px; justify-content:flex-end; }
+
+/* Amount colors */
+.amt-in  { font-family:var(--ff-mono); font-weight:600; color:var(--accent); }
+.amt-out { font-family:var(--ff-mono); font-weight:600; color:var(--red); }
+
+/* Transaction type badge */
+.t-badge     { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+.t-badge.in  { background:var(--green-bg); color:var(--accent); }
+.t-badge.out { background:var(--red-bg);   color:var(--red); }
+
+/* Toolbar card (search + filter bar in a card) */
+.toolbar-card { display:flex; align-items:center; gap:10px; margin-bottom:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 16px; flex-wrap:wrap; }
+
+/* Period selector bar */
+.period-bar { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:6px; margin-bottom:22px; width:fit-content; flex-wrap:wrap; }
+.period-btn { padding:6px 14px; border-radius:7px; font-size:13px; font-weight:500; cursor:pointer; border:none; font-family:var(--ff); color:var(--txt3); background:transparent; transition:background .15s, color .15s; }
+.period-btn.active             { background:var(--accent); color:#fff; }
+.period-btn:hover:not(.active) { background:var(--surface2); color:var(--txt); }
+
+/* Grid table pagination */
+.tbl-pg      { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); background:var(--surface2); flex-wrap:wrap; gap:8px; }
+.tbl-pg-info { font-size:12px; color:var(--txt3); }
+.tbl-pg-btns { display:flex; gap:4px; }
+.tbl-pg-btn  { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:7px; border:1px solid var(--border); font-size:13px; font-weight:500; cursor:pointer; background:var(--surface); color:var(--txt); font-family:var(--ff); transition:background .15s; }
+.tbl-pg-btn:hover    { background:var(--surface2); }
+.tbl-pg-btn.active   { background:var(--accent); color:#fff; border-color:var(--accent); }
+.tbl-pg-btn.disable  { color:var(--txt3); cursor:default; pointer-events:none; }
+
+/* ── Finance overlay modal ───────────────────────────────────────── */
+.overlay           { position:fixed; inset:0; background:rgba(10,20,10,.45); display:flex; align-items:center; justify-content:center; z-index:999; opacity:0; pointer-events:none; transition:opacity .2s; }
+.overlay.open      { opacity:1; pointer-events:all; }
+.over-modal        { background:var(--surface); border-radius:14px; width:460px; max-width:95vw; padding:26px; transform:translateY(10px); transition:transform .2s; overflow-y:auto; max-height:95vh; }
+.overlay.open .over-modal { transform:translateY(0); }
+.fmg               { margin-bottom:14px; }
+.flbl              { font-size:12px; font-weight:500; color:var(--txt3); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:.05em; }
+.finp              { width:100%; padding:9px 12px; border:1px solid var(--border2); border-radius:8px; font-size:13px; font-family:var(--ff); color:var(--txt); outline:none; background:var(--surface); }
+.finp:focus        { border-color:var(--accent); }
+.fsel              { width:100%; padding:9px 12px; border:1px solid var(--border2); border-radius:8px; font-size:13px; font-family:var(--ff); color:var(--txt); outline:none; background:var(--surface); }
+.fsel:focus        { border-color:var(--accent); }
+.frow              { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.mfooter           { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }
+.type-tog          { display:flex; gap:8px; }
+.type-opt          { flex:1; padding:10px; border:1.5px solid var(--border2); border-radius:9px; text-align:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--txt3); transition:all .15s; font-family:var(--ff); border-width:1.5px; border-style:solid; }
+.type-opt:hover    { border-color:var(--accent); color:var(--accent); }
+.type-opt.sel-in   { border-color:var(--green); background:var(--green-bg); color:var(--accent); }
+.type-opt.sel-out  { border-color:var(--red);   background:var(--red-bg);   color:var(--red); }
+
+/* ── Donut chart + legend ────────────────────────────────────────── */
+.donut-wrap  { position:relative; width:100%; height:180px; display:flex; align-items:center; justify-content:center; }
+.donut-leg   { margin-top:16px; }
+.dl-item     { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f3ef; }
+.dl-item:last-child { border-bottom:none; }
+.dl-l        { display:flex; align-items:center; gap:8px; }
+.dl-dot      { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.dl-lbl      { font-size:12px; color:var(--txt); font-weight:500; }
+.dl-val      { font-size:12px; font-family:var(--ff-mono); font-weight:600; }
+
+/* Chart legend dots */
+.leg-dot { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; }
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (min-width:641px) { #mobile-list { display:none !important; } }
 @media (max-width:1100px) {

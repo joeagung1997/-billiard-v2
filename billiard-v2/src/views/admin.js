@@ -652,7 +652,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=4">'
+    + '<link rel="stylesheet" href="/admin.css?v=5">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -881,7 +881,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=4">'
+    + '<link rel="stylesheet" href="/admin.css?v=5">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -900,38 +900,75 @@ export function memberPage({ db, token, req }) {
     + '<span style="font-size:11px;color:var(--txt3)">' + now + '</span>'
     + '</div></header>'
 
-    + '<main class="page">'
+    + '<div class="page">'
 
-    + '<div class="sec-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
-    + '<span>Kelola Member</span>'
-    + '<div style="display:flex;align-items:center;gap:8px">'
+    // ── Desktop topbar ──────────────────────────────────────────
+    + '<div class="dash-topbar">'
+    + '<div>'
+    + '<div class="page-title">Kelola Member</div>'
+    + '<div class="page-sub">Manajemen data anggota &amp; status keanggotaan</div>'
+    + '</div>'
+    + '<div class="topbar-actions">'
     + '<span id="member-badge" class="filter-badge" style="display:none"></span>'
-    + '<a href="/admin/tambah?tk=' + token + '" class="btn-add-member">➕ Tambah Member</a>'
+    + '<a href="/admin/tambah?tk=' + token + '" class="btn-primary">'
+    + '<i class="ti ti-plus" style="font-size:14px"></i> Tambah Member</a>'
     + '</div>'
     + '</div>'
 
-    + '<div class="filter-bar">'
-    + '<div class="search-wrap"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);pointer-events:none">🔍</span>'
+    // ── Stat grid ───────────────────────────────────────────────
+    + '<div class="stat-grid">'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Total Member<div class="stat-icon green"><i class="ti ti-users"></i></div></div>'
+    + '<div class="stat-value">' + members.length + '</div>'
+    + '<div class="stat-footer">Semua terdaftar</div></div>'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Member Aktif<div class="stat-icon green"><i class="ti ti-user-check"></i></div></div>'
+    + '<div class="stat-value">' + members.filter(function(m){ return (m.totalMain||0) > 0; }).length + '</div>'
+    + '<div class="stat-footer">Aktif bulan ini</div></div>'
+
+    + '<div class="stat-card amber">'
+    + '<div class="stat-label">Member VIP<div class="stat-icon amber"><i class="ti ti-crown"></i></div></div>'
+    + '<div class="stat-value">' + members.filter(function(m){ return (m.totalMain||0) >= CONFIG.BATAS_MAIN; }).length + '</div>'
+    + '<div class="stat-footer">' + Math.round(members.filter(function(m){ return (m.totalMain||0) >= CONFIG.BATAS_MAIN; }).length / Math.max(members.length,1) * 100) + '% dari total</div></div>'
+
+    + '<div class="stat-card blue">'
+    + '<div class="stat-label">Scan Hari Ini<div class="stat-icon blue"><i class="ti ti-scan"></i></div></div>'
+    + '<div class="stat-value">' + members.filter(function(m){ return m.sudahScanHariIni; }).length + '</div>'
+    + '<div class="stat-footer">dari ' + members.length + ' member</div></div>'
+
+    + '</div>'
+
+    // ── Toolbar ─────────────────────────────────────────────────
+    + '<div class="toolbar-card">'
+    + '<div class="search-wrap" style="flex:1;min-width:160px;position:relative">'
+    + '<i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px"></i>'
     + '<input class="search-input" type="text" id="cari" placeholder="Cari nama, kode, atau no. HP…" oninput="filterMember()" style="padding-left:34px"></div>'
     + '<select id="filterBulan" class="sel" onchange="filterMember()"><option value="">Semua bulan</option>' + bulanOpts + '</select>'
     + '<select id="filterStatus" class="sel" onchange="filterMember()"><option value="">Semua status</option><option value="hadir">Hadir hari ini</option><option value="gratis">Reward pending</option><option value="aktif">Aktif bulan ini</option><option value="nonaktif">Tidak aktif</option></select>'
     + '</div>'
 
-    + '<div class="card">'
+    // ── Table ───────────────────────────────────────────────────
+    + '<div class="table-card">'
     + '<div id="tbl-summary" class="filter-summary" style="display:none"></div>'
-    + '<div class="table-wrap"><table><thead><tr>'
-    + '<th>Kode</th><th>Nama &amp; No. HP</th><th>Progress</th>'
-    + '<th>Status</th><th>Reward</th><th style="text-align:center">QR</th>'
-    + '<th style="text-align:right">Aksi</th>'
-    + '</tr></thead><tbody id="tbody"></tbody></table>'
-    + '<div id="tbl-empty" class="empty-state" style="display:none">Tidak ada member yang cocok</div>'
+    + '<div class="tbl-head" style="grid-template-columns:40px 1fr 110px 110px 90px 120px 120px">'
+    + '<div class="tbl-th">#</div>'
+    + '<div class="tbl-th">Member</div>'
+    + '<div class="tbl-th">Tipe</div>'
+    + '<div class="tbl-th">Bergabung</div>'
+    + '<div class="tbl-th">Status</div>'
+    + '<div class="tbl-th r">Total</div>'
+    + '<div class="tbl-th r">Aksi</div>'
     + '</div>'
-    + '<div class="pg-wrap" id="member-pg"></div>'
+    + '<div id="tbody"></div>'
+    + '<div id="tbl-empty" class="empty-state" style="display:none"><i class="ti ti-users"></i>Tidak ada member yang cocok</div>'
+    + '<div class="tbl-pg" id="member-pg" style="display:none"></div>'
     + '</div>'
 
     + '<div id="mobile-list" style="margin-top:8px"></div>'
 
-    + '</main>'
+    + '</div>'
     + '</div>'
     + '</div>'
 
