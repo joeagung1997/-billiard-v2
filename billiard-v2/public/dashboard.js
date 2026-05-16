@@ -432,34 +432,49 @@ const showToast = () => {
 };
 
 // ── Modal QR ──────────────────────────────────────────────────
-let _modalUrl = "";
+let _modalUrl  = "";
+let _openedAt  = 0;          // waktu openModal dipanggil
+let _pendingQr = null;       // data postMessage yang menunggu
 
-// Terima tinggi konten dari iframe via postMessage → resize + fade in
+const MIN_LOADER_MS = 450;   // loader minimal tampil 450ms
+
+// Terapkan card (sembunyikan loader, tampilkan iframe)
+const _applyCard = (qrH) => {
+  const frame  = document.getElementById("modalFrame");
+  const loader = document.getElementById("modalLoader");
+  if (frame) {
+    frame.style.height  = (qrH + 8) + "px";
+    frame.style.opacity = "1";
+  }
+  if (loader) loader.classList.add("done");
+};
+
+// Terima tinggi dari iframe via postMessage
 window.addEventListener("message", (e) => {
   if (e.data && typeof e.data.qrH === "number") {
-    const frame  = document.getElementById("modalFrame");
-    const loader = document.getElementById("modalLoader");
-    if (frame) {
-      frame.style.height  = (e.data.qrH + 8) + "px";
-      frame.style.opacity = "1";
-    }
-    // Sembunyikan loader: fade out dulu, lalu display:none setelah transisi
-    if (loader) {
-      loader.classList.add("done");
-      setTimeout(() => { loader.style.display = "none"; }, 280);
+    const elapsed = Date.now() - _openedAt;
+    const wait    = Math.max(0, MIN_LOADER_MS - elapsed);
+    if (wait > 0) {
+      // Card siap tapi loader belum cukup tampil → tunda
+      _pendingQr = e.data.qrH;
+      setTimeout(() => { if (_pendingQr !== null) { _applyCard(_pendingQr); _pendingQr = null; } }, wait);
+    } else {
+      _applyCard(e.data.qrH);
     }
   }
 });
 
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
-  _modalUrl = scanUrl;
+  _modalUrl  = scanUrl;
+  _openedAt  = Date.now();
+  _pendingQr = null;
 
   // Reset: tampilkan loader, sembunyikan iframe
   const frame  = document.getElementById("modalFrame");
   const loader = document.getElementById("modalLoader");
-  if (loader) { loader.style.display = ""; loader.classList.remove("done"); }
+  if (loader) { loader.classList.remove("done"); }
   frame.style.opacity = "0";
-  frame.style.height  = "1px";
+  frame.style.height  = "0";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
 
   document.getElementById("modalName").textContent = "";

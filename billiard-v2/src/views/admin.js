@@ -341,13 +341,14 @@ function buildAdminCss() {
     '@keyframes modalIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }',
     '.modal-close { position:absolute; top:12px; right:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:rgba(255,255,255,.5); z-index:10; }',
     '.modal-close:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }',
-    '.modal-qr-wrap { position:relative; border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; min-height:400px; }',
-    '.modal-qr-wrap iframe { display:block; width:100%; height:1px; border:none; transition:height .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; opacity:0; }',
-    '.qr-loader { position:absolute; inset:0; background:#060B08; display:flex; align-items:flex-end; transition:opacity .25s ease; z-index:2; }',
-    '.qr-loader.done { opacity:0; pointer-events:none; }',
-    '.qr-lbar { width:100%; height:3px; background:rgba(201,168,76,.12); overflow:hidden; position:relative; }',
-    '.qr-lbar::after { content:""; position:absolute; top:0; left:-45%; width:45%; height:100%; background:linear-gradient(90deg,transparent,#C9A84C 40%,#2DB56D 60%,transparent); animation:lbarSlide 1.3s ease-in-out infinite; }',
-    '@keyframes lbarSlide { 0%{left:-45%} 100%{left:110%} }',
+    '.modal-qr-wrap { border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; }',
+    '.modal-qr-wrap iframe { display:block; width:100%; height:0; border:none; transition:height .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; opacity:0; }',
+    /* loader: in-flow, bukan absolute — pasti muncul */
+    '.qr-loader { width:100%; height:400px; background:#060B08; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:0; border-radius:18px; }',
+    '.qr-loader.done { display:none; }',
+    '.qr-lbar { width:100%; height:3px; background:rgba(201,168,76,.12); overflow:hidden; position:relative; border-radius:0 0 18px 18px; }',
+    '.qr-lbar::after { content:""; position:absolute; top:0; left:-50%; width:50%; height:100%; background:linear-gradient(90deg,transparent,#C9A84C 40%,#2DB56D 60%,transparent); animation:lbarRun 1.3s ease-in-out infinite; }',
+    '@keyframes lbarRun { 0%{left:-50%} 100%{left:110%} }',
     '.modal-name { font-size:var(--fs-lg); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:4px; }',
     '.modal-kode { font-family:monospace; font-size:var(--fs-sm); color:var(--green); margin-bottom:var(--sp-4); }',
     '.modal-btns { display:flex; gap:var(--sp-2); justify-content:center; flex-wrap:wrap; }',
@@ -663,7 +664,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=18">'
+    + '<link rel="stylesheet" href="/admin.css?v=19">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -852,7 +853,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=18"><\/script>'
+    + '<script src="/dashboard.js?v=19"><\/script>'
     + '</body></html>';
 }
 
@@ -893,7 +894,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=18">'
+    + '<link rel="stylesheet" href="/admin.css?v=19">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -998,7 +999,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=18"></script>'
+    + '<script src="/dashboard.js?v=19"></script>'
     + '</body></html>';
 }
 
