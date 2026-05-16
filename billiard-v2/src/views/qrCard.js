@@ -7,16 +7,15 @@ export const qrCardPage = ({ nama, kode, totalMain, status, qrDataUrl }) => {
   const tm       = totalMain ?? 0;
   const batas    = CONFIG.BATAS_MAIN;
   const isBonus  = status === "BONUS";
-  const sisaLagi = isBonus ? 0 : Math.max(0, batas - 1 - tm);
+  const sisaLagi = isBonus ? 0 : Math.max(0, batas - tm);
 
   // ── Dot progress ──────────────────────────────────────────────
   let dotsHtml = "";
   for (let i = 0; i < batas; i++) {
     const n = i + 1;
-    if (isBonus)          dotsHtml += `<div class="dot-seg free"></div>`;
-    else if (n === batas) dotsHtml += `<div class="dot-seg free" title="Sesi gratis"></div>`;
-    else if (n <= tm)     dotsHtml += `<div class="dot-seg on"></div>`;
-    else                  dotsHtml += `<div class="dot-seg"></div>`;
+    if (isBonus)      dotsHtml += `<div class="dot-seg free"></div>`;
+    else if (n <= tm) dotsHtml += `<div class="dot-seg on"></div>`;
+    else              dotsHtml += `<div class="dot-seg"></div>`;
   }
 
   return `<!DOCTYPE html>
@@ -340,7 +339,7 @@ body::after{
             <div class="mi-stats">
               <div class="stat-pill${isBonus ? ' bonus-pill' : ''}">
                 <div class="sp-label">Sesi</div>
-                <div class="sp-value">${isBonus ? batas : tm} <span>/ ${batas - 1}</span></div>
+                <div class="sp-value">${isBonus ? batas : tm} <span>/ ${batas}</span></div>
               </div>
               <div class="stat-pill${isBonus ? ' bonus-pill' : ''}">
                 <div class="sp-label">${isBonus ? 'Status' : 'Reward'}</div>
@@ -558,14 +557,13 @@ body::after{
 export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
   const tm    = totalMain ?? 0;
   const batas = CONFIG.BATAS_MAIN;
-  const sisaLagi = Math.max(0, batas - 1 - tm);
+  const sisaLagi = Math.max(0, batas - tm);
 
   let dotsHtml = "";
   for (let i = 0; i < batas; i++) {
     const n = i + 1;
-    if (n === batas)  dotsHtml += `<div class="dot-seg free"></div>`;
-    else if (n <= tm) dotsHtml += `<div class="dot-seg on"></div>`;
-    else              dotsHtml += `<div class="dot-seg"></div>`;
+    if (n <= tm) dotsHtml += `<div class="dot-seg on"></div>`;
+    else         dotsHtml += `<div class="dot-seg"></div>`;
   }
 
   return `<!DOCTYPE html>
@@ -808,7 +806,7 @@ body::before{
     <div class="stats">
       <div class="stat">
         <div class="st-lbl">Sesi</div>
-        <div class="st-val">${tm} <span>/ ${batas - 1}</span></div>
+        <div class="st-val">${tm} <span>/ ${batas}</span></div>
       </div>
       <div class="stat">
         <div class="st-lbl">Reward</div>
