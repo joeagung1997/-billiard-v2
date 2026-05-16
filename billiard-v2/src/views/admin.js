@@ -510,11 +510,15 @@ function buildModal() {
 export function adminDashboard({ db, log, transaksi = [], token, req }) {
   const { members } = db;
 
+  const nowWib   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const curBulan = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
+
   const stats = {
-    total:  members.length,
-    scan:   members.filter((m) => m.sudahScanHariIni).length,
-    reward: members.filter((m) => m.status === 'GRATIS').length,
-    aktif:  members.filter((m) => m.totalMain > 0).length,
+    total:    members.length,
+    scan:     members.filter((m) => m.sudahScanHariIni).length,
+    reward:   members.filter((m) => m.status === 'GRATIS').length,
+    aktif:    members.filter((m) => m.totalMain > 0).length,
+    bariBaru: members.filter((m) => m.tanggalDaftar && String(m.tanggalDaftar).startsWith(curBulan)).length,
   };
 
   const hostBase  = req.protocol + '://' + req.get('host');
@@ -547,8 +551,6 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   });
 
   // ── Ringkasan keuangan ────────────────────────────────────────
-  const nowWib      = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-  const curBulan    = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
   const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
   const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan));
   const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
@@ -557,9 +559,9 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr);
   const pemasukanHariIni = trxHariIni.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
 
-  // ── Trend kunjungan 7 hari ────────────────────────────────────
+  // ── Trend kunjungan 30 hari ───────────────────────────────────
   const trendDays = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(nowWib);
     d.setDate(d.getDate() - i);
     const ymd = d.getFullYear() + '-'
@@ -609,12 +611,14 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   };
 
   // ── Chart data ───────────────────────────────────────────────
-  const totalScan7 = trendDays.reduce((s, d) => s + d.count, 0);
-  const bestDayObj = trendDays.reduce((b, d) => (d.count > b.count ? d : b), trendDays[0]);
+  const allChartLabels = JSON.stringify(trendDays.map((d) => d.lbl));
+  const allChartData   = JSON.stringify(trendDays.map((d) => d.count));
+  // default view: 7 hari
+  const trend7 = trendDays.slice(-7);
+  const totalScan7 = trend7.reduce((s, d) => s + d.count, 0);
+  const bestDayObj = trend7.reduce((b, d) => (d.count > b.count ? d : b), trend7[0]);
   const bestDayLbl = (bestDayObj && bestDayObj.count > 0) ? bestDayObj.lbl : '—';
   const avgVisit   = totalScan7 > 0 ? (totalScan7 / 7).toFixed(1) : '0';
-  const chartLabels = JSON.stringify(trendDays.map((d) => d.lbl));
-  const chartData   = JSON.stringify(trendDays.map((d) => d.count));
 
   // ── Member list card HTML ─────────────────────────────────────
   const initials = (s) => {
@@ -664,7 +668,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=19">'
+    + '<link rel="stylesheet" href="/admin.css?v=20">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -701,7 +705,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '</div>'
 
     // ── Stat grid ───────────────────────────────────────────────
-    + '<div class="stat-grid">'
+    + '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">'
 
     + '<div class="stat-card">'
     + '<div class="stat-label">Total Member'
@@ -729,6 +733,12 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="stat-value" style="font-size:22px">' + rpFmt(pemasukanBulan) + '</div>'
     + '<div class="stat-footer">' + bulanLabel + '</div></div>'
 
+    + '<div class="stat-card blue">'
+    + '<div class="stat-label">Member Baru'
+    + '<div class="stat-icon blue"><i class="ti ti-user-plus"></i></div></div>'
+    + '<div class="stat-value">' + stats.bariBaru + '</div>'
+    + '<div class="stat-footer">Daftar ' + bulanLabel + '</div></div>'
+
     + '</div>'
 
     // ── Summary bar ─────────────────────────────────────────────
@@ -755,16 +765,23 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="card">'
     + '<div class="card-header"><div>'
     + '<div class="card-title">Trend Kunjungan</div>'
-    + '<div class="card-sub">7 hari terakhir — total ' + totalScan7 + ' kunjungan</div>'
-    + '</div></div>'
+    + '<div class="card-sub" id="chartSub">7 hari terakhir — total ' + totalScan7 + ' kunjungan</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:4px">'
+    + '<button class="trend-pill" onclick="setTrend(1,this)">Hari Ini</button>'
+    + '<button class="trend-pill on" onclick="setTrend(7,this)">7 Hari</button>'
+    + '<button class="trend-pill" onclick="setTrend(14,this)">14 Hari</button>'
+    + '<button class="trend-pill" onclick="setTrend(30,this)">30 Hari</button>'
+    + '</div>'
+    + '</div>'
     + '<div class="chart-wrap"><canvas id="trendChart"></canvas></div>'
     + '<div class="chart-meta">'
     + '<div class="chart-meta-item"><div class="cmi-label">Hari Terbaik</div>'
-    + '<div class="cmi-val">' + bestDayLbl + '</div></div>'
+    + '<div class="cmi-val" id="metaBest">' + bestDayLbl + '</div></div>'
     + '<div class="chart-meta-item"><div class="cmi-label">Rata-rata / hari</div>'
-    + '<div class="cmi-val">' + avgVisit + ' kunjungan</div></div>'
-    + '<div class="chart-meta-item"><div class="cmi-label">Total 7 Hari</div>'
-    + '<div class="cmi-val">' + totalScan7 + ' kunjungan</div></div>'
+    + '<div class="cmi-val" id="metaAvg">' + avgVisit + ' kunjungan</div></div>'
+    + '<div class="chart-meta-item"><div class="cmi-label">Total Periode</div>'
+    + '<div class="cmi-val" id="metaTotal">' + totalScan7 + ' kunjungan</div></div>'
     + '</div>'
     + '</div>'
 
@@ -835,13 +852,16 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'const TK          = ' + JSON.stringify(token)      + ';'
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
+    + 'const ALL_LABELS  = ' + allChartLabels             + ';'
+    + 'const ALL_DATA    = ' + allChartData               + ';'
+    + 'var trendChart;'
     + '(function(){'
     + 'var ctx=document.getElementById("trendChart");'
     + 'if(!ctx)return;'
-    + 'new Chart(ctx,{'
+    + 'trendChart=new Chart(ctx,{'
     + 'type:"line",'
-    + 'data:{labels:' + chartLabels + ',datasets:[{'
-    + 'label:"Kunjungan",data:' + chartData + ','
+    + 'data:{labels:ALL_LABELS.slice(-7),datasets:[{'
+    + 'label:"Kunjungan",data:ALL_DATA.slice(-7),'
     + 'borderColor:"#3a7d2c",backgroundColor:"rgba(58,125,44,0.08)",'
     + 'tension:0.4,fill:true,pointBackgroundColor:"#3a7d2c",'
     + 'pointRadius:4,pointHoverRadius:6,borderWidth:2'
@@ -852,6 +872,30 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'y:{beginAtZero:true,grid:{color:"#f0f3ef"},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78",stepSize:1}}}'
     + '}});'
     + '})();'
+    + 'function setTrend(days,btn){'
+    + '  var labels,data;'
+    + '  if(days===1){'
+    + '    labels=ALL_LABELS.slice(-1);data=ALL_DATA.slice(-1);'
+    + '  } else {'
+    + '    labels=ALL_LABELS.slice(-days);data=ALL_DATA.slice(-days);'
+    + '  }'
+    + '  if(trendChart){'
+    + '    trendChart.data.labels=labels;'
+    + '    trendChart.data.datasets[0].data=data;'
+    + '    trendChart.update();'
+    + '  }'
+    + '  var total=data.reduce(function(s,v){return s+v;},0);'
+    + '  var best=labels[data.indexOf(Math.max.apply(null,data))]||"—";'
+    + '  var avg=total>0?(total/data.length).toFixed(1):"0";'
+    + '  var label=days===1?"Hari ini":days+" hari terakhir";'
+    + '  var sub=document.getElementById("chartSub");'
+    + '  if(sub)sub.textContent=label+" — total "+total+" kunjungan";'
+    + '  var mb=document.getElementById("metaBest");if(mb)mb.textContent=total>0?best:"—";'
+    + '  var ma=document.getElementById("metaAvg");if(ma)ma.textContent=avg+" kunjungan";'
+    + '  var mt=document.getElementById("metaTotal");if(mt)mt.textContent=total+" kunjungan";'
+    + '  document.querySelectorAll(".trend-pill").forEach(function(p){p.classList.remove("on");});'
+    + '  if(btn)btn.classList.add("on");'
+    + '}'
     + '<\/script>'
     + '<script src="/dashboard.js?v=20"><\/script>'
     + '</body></html>';
