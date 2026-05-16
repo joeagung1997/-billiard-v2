@@ -434,11 +434,20 @@ const showToast = () => {
 // ── Modal QR ──────────────────────────────────────────────────
 let _modalUrl = "";
 
+// Terima tinggi konten dari iframe via postMessage → resize otomatis
+window.addEventListener("message", (e) => {
+  if (e.data && typeof e.data.qrH === "number") {
+    const frame = document.getElementById("modalFrame");
+    if (frame) frame.style.height = (e.data.qrH + 8) + "px";
+  }
+});
+
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
 
-  // Tampilkan branded card v3 dalam iframe
+  // Reset iframe height dulu agar tidak pakai ukuran member sebelumnya
   const frame = document.getElementById("modalFrame");
+  frame.style.height = "420px";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
 
   document.getElementById("modalName").textContent = "";

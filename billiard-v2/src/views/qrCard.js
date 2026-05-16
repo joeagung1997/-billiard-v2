@@ -31,14 +31,14 @@ export const qrCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
   --bg:#060B08;--text:#EEF2ED;--muted:rgba(238,242,237,0.40);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{
+html,body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);
-  min-height:100vh;
   display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
+  align-items:center;justify-content:flex-start;
   padding:10px 12px 8px;
-  overflow:hidden;position:relative;
+  overflow:visible;position:relative;
+  width:100%;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -481,7 +481,28 @@ body::after{
 </div>
 
 <script>
-  // Subtle 3D tilt on mouse move
+  // ── Auto-resize: kirim tinggi konten ke parent (modal) ────────
+  function sendHeight() {
+    var h = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight
+    );
+    window.parent.postMessage({ qrH: h }, '*');
+  }
+  // Kirim saat DOM siap
+  if (document.readyState === 'complete') { sendHeight(); }
+  else { window.addEventListener('load', sendHeight); }
+  // Kirim ulang setelah font Google Fonts selesai dimuat
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function() { sendHeight(); });
+  }
+  // Kirim ulang sekali lagi setelah animasi awal selesai
+  setTimeout(sendHeight, 600);
+  setTimeout(sendHeight, 1200);
+
+  // ── Subtle 3D tilt on mouse move ──────────────────────────────
   const outer = document.getElementById('cardOuter');
   document.addEventListener('mousemove', e => {
     const rect = outer.getBoundingClientRect();
