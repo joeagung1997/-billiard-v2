@@ -962,7 +962,7 @@ export function memberPage({ db, token, req }) {
     + '<div class="toolbar-card">'
     + '<div class="search-wrap" style="flex:1;min-width:160px;position:relative">'
     + '<i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px"></i>'
-    + '<input class="search-input" type="text" id="cari" placeholder="Cari nama, kode, atau no. HP…" oninput="filterMember()" style="padding-left:34px"></div>'
+    + '<input class="search-input" type="text" id="cari" placeholder="Cari nama, kode, atau no. HP…" oninput="filterMember()" autocomplete="off" style="padding-left:34px"></div>'
     + '<select id="filterBulan" class="sel" onchange="filterMember()"><option value="">Semua bulan</option>' + bulanOpts + '</select>'
     + '<select id="filterStatus" class="sel" onchange="filterMember()"><option value="">Semua status</option><option value="hadir">Hadir hari ini</option><option value="gratis">Reward pending</option><option value="aktif">Aktif bulan ini</option><option value="nonaktif">Tidak aktif</option></select>'
     + '</div>'
@@ -1004,7 +1004,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=21"></script>'
+    + '<script src="/dashboard.js?v=22"></script>'
     + '</body></html>';
 }
 
