@@ -273,8 +273,7 @@ body::after{
 @keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.05)}}
 @keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
 
-/* Responsive scaling untuk iframe sempit — JS akan override ini */
-.scene{transform-origin:top center;}
+/* JS akan set zoom di runtime */
 </style>
 </head>
 <body>
@@ -476,61 +475,48 @@ body::after{
 </div>
 
 <script>
-  // ── Scale scene agar muat di lebar iframe ─────────────────────
-  // Hardcode lebar natural: card-outer 340px + chibi 72px - margin-left 12px + padding
-  var SCENE_NAT_W = 416;
-  var _scene  = document.querySelector('.scene');
-  var _sceneH = 0; // tinggi natural scene (diukur sekali saat load)
-
-  function scaleScene() {
-    var vw    = document.documentElement.clientWidth;
-    var avail = vw - 24; // padding body 12px kiri+kanan
-    if (SCENE_NAT_W > avail) {
-      var ratio = avail / SCENE_NAT_W;
-      _scene.style.transform      = 'scale(' + ratio + ')';
-      _scene.style.transformOrigin = 'top center';
-      // Tarik ke atas untuk menutup ruang kosong akibat scale
-      if (_sceneH > 0) {
-        var loss = _sceneH * (1 - ratio);
-        _scene.style.marginBottom = '-' + Math.round(loss) + 'px';
-      }
+  // ── Zoom seluruh halaman agar muat di lebar iframe ────────────
+  // zoom (bukan transform) → benar-benar mengecilkan layout,
+  // tidak ada overflow, dan scrollHeight ikut menyesuaikan.
+  function applyZoom() {
+    var scene = document.querySelector('.scene');
+    if (!scene) return;
+    // Lebar yang dibutuhkan: scene natural width + body padding 24px
+    var needed = scene.scrollWidth + 24;
+    var vw = document.documentElement.clientWidth;
+    if (needed > vw && needed > 0) {
+      var ratio = vw / needed;
+      document.body.style.zoom = ratio.toFixed(4);
     } else {
-      _scene.style.transform    = '';
-      _scene.style.marginBottom = '';
+      document.body.style.zoom = '';
     }
   }
 
-  // ── Kirim tinggi ke parent — hanya kalau berubah > 4px ───────
+  // ── Kirim tinggi ke parent (sekali stabil) ────────────────────
   var _lastH = 0;
   function sendHeight() {
     var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-    if (Math.abs(h - _lastH) > 4) {
+    if (Math.abs(h - _lastH) > 3) {
       _lastH = h;
       window.parent.postMessage({ qrH: h }, '*');
     }
   }
 
-  // ── Init: jalankan sekali setelah konten siap ─────────────────
+  // ── Init ──────────────────────────────────────────────────────
   function init() {
-    // Ukur tinggi natural scene sebelum scale
-    _sceneH = _scene.offsetHeight;
-    scaleScene();
-    // Tunggu repaint lalu kirim
+    applyZoom();
     requestAnimationFrame(sendHeight);
+    // Satu kali lagi setelah font Google Fonts selesai load
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function() {
+        applyZoom();
+        requestAnimationFrame(sendHeight);
+      });
+    }
   }
 
-  if (document.readyState === 'complete') {
-    init();
-  } else {
-    window.addEventListener('load', init);
-  }
-
-  // Kirim ulang setelah font selesai (font bisa ubah tinggi teks)
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function() {
-      requestAnimationFrame(sendHeight);
-    });
-  }
+  if (document.readyState === 'complete') { init(); }
+  else { window.addEventListener('load', init); }
 
   // ── Subtle 3D tilt on mouse move ──────────────────────────────
   var outer = document.getElementById('cardOuter');
