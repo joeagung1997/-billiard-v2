@@ -5,7 +5,7 @@ import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
 import { buildScanUrl, buildBaseUrl, brandedQrCard, qrDataUrl } from "../utils/qr.js";
 import { CONFIG }             from "../config.js";
-import { qrCardPage }        from "../views/qrCard.js";
+import { memberCardPage }    from "../views/qrCard.js";
 import QRCode                 from "qrcode";
 
 const router = Router();
@@ -132,8 +132,8 @@ router.get("/member/:kode", async (req, res) => {
   // Generate QR data URL untuk kartu
   const qrImg = await qrDataUrl(scanUrl, 200);
 
-  // Build halaman kartu v3 + inject OG meta tags
-  const cardHtml = qrCardPage({
+  // Build halaman kartu portrait (QR besar, mobile-friendly) + inject OG meta tags
+  const cardHtml = memberCardPage({
     nama:      member.nama,
     kode,
     totalMain: member.totalMain ?? 0,

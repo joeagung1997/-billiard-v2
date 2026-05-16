@@ -546,3 +546,246 @@ body::after{
 </body>
 </html>`;
 };
+
+// ── memberCardPage — layout portrait mobile-friendly untuk /member/:kode ──────
+// QR besar (250px), mudah di-scan kasir, layar penuh tanpa empty space.
+export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
+  const tm    = totalMain ?? 0;
+  const batas = CONFIG.BATAS_MAIN;
+  const sisaLagi = Math.max(0, batas - 1 - tm);
+
+  let dotsHtml = "";
+  for (let i = 0; i < batas; i++) {
+    const n = i + 1;
+    if (n === batas)  dotsHtml += `<div class="dot-seg free"></div>`;
+    else if (n <= tm) dotsHtml += `<div class="dot-seg on"></div>`;
+    else              dotsHtml += `<div class="dot-seg"></div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>Kartu Member — ${CONFIG.NAMA_ARENA}</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C9A84C;--gold-lt:#F0D88A;
+  --green:#0E6B38;--green-lt:#2DB56D;
+  --bg:#060B08;--text:#EEF2ED;--muted:rgba(238,242,237,0.45);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:var(--bg);
+  min-height:100vh;
+  font-family:'DM Sans',sans-serif;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:20px 16px 24px;
+}
+
+/* Background glow */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%,rgba(14,107,56,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 85% 90%,rgba(201,168,76,.08) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* Wrapper */
+.wrap{
+  width:100%;max-width:380px;
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;position:relative;z-index:1;
+}
+
+/* Header */
+.hdr{text-align:center;margin-bottom:18px}
+.hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.32em;color:var(--gold)}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* Card */
+.card{
+  width:100%;
+  background:linear-gradient(155deg,#0A160E 0%,#06100A 50%,#050D08 100%);
+  border-radius:22px;overflow:hidden;position:relative;
+  border:1px solid rgba(201,168,76,.22);
+  box-shadow:0 0 0 1px rgba(45,181,109,.08),0 20px 60px rgba(0,0,0,.7);
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,.7) 30%,rgba(240,216,138,.9) 50%,rgba(45,181,109,.6) 70%,transparent);
+}
+
+/* Card top bar */
+.card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.04);
+}
+.brand-row{display:flex;align-items:center;gap:8px}
+.ball{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2a2a2a,#090909);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;color:#fff;position:relative}
+.ball::before{content:'';position:absolute;top:4px;left:5px;width:7px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);filter:blur(1px)}
+.brand-txt .name{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.15em;color:var(--text)}
+.brand-txt .sub{font-size:7px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.chip{width:28px;height:21px;border-radius:3px;background:linear-gradient(135deg,#C9A84C,#8A6A1E 40%,#C9A84C 70%,#F0D88A)}
+
+/* QR section — BESAR untuk mudah di-scan */
+.qr-section{
+  padding:20px 16px 14px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.qr-outer{
+  position:relative;
+  padding:10px;background:#fff;border-radius:14px;
+  box-shadow:0 0 0 1px rgba(201,168,76,.35),0 8px 30px rgba(0,0,0,.6);
+  width:260px;height:260px;
+}
+.qr-outer::before,.qr-outer::after,.qr-c1,.qr-c2{
+  content:'';position:absolute;width:16px;height:16px;
+  border-color:var(--gold-lt);border-style:solid;
+}
+.qr-outer::before{top:-3px;left:-3px;border-width:2.5px 0 0 2.5px;border-radius:4px 0 0 0}
+.qr-outer::after {bottom:-3px;right:-3px;border-width:0 2.5px 2.5px 0;border-radius:0 0 4px 0}
+.qr-c1{top:-3px;right:-3px;border-width:2.5px 2.5px 0 0;border-radius:0 4px 0 0}
+.qr-c2{bottom:-3px;left:-3px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 4px}
+.qr-outer img{width:100%;height:100%;display:block;border-radius:6px}
+.qr-label{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+
+/* Member info */
+.mi{width:100%;padding:0 16px 14px;text-align:center}
+.mi-lbl{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.mi-name{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--text);line-height:1;margin-bottom:8px}
+.mi-id{display:inline-flex;align-items:center;gap:6px;background:rgba(45,181,109,.08);border:1px solid rgba(45,181,109,.2);border-radius:20px;padding:4px 12px}
+.mi-dot{width:6px;height:6px;border-radius:50%;background:var(--green-lt);box-shadow:0 0 6px var(--green-lt)}
+.mi-kode{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--green-lt);letter-spacing:.1em}
+
+/* Stats pills */
+.stats{display:flex;gap:8px;padding:0 16px 14px}
+.stat{flex:1;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:7px 8px;text-align:center}
+.st-lbl{font-size:7px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.st-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--text)}
+.st-val span{font-size:9px;color:var(--muted)}
+
+/* Progress dots */
+.prog{padding:0 16px 16px}
+.prog-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.prog-lbl{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.prog-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--text)}
+.prog-num em{color:var(--gold);font-style:normal}
+.dots-track{display:flex;gap:3px;margin-bottom:5px}
+.dot-seg{flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,.07)}
+.dot-seg.on{background:linear-gradient(90deg,var(--green),var(--green-lt));box-shadow:0 0 5px rgba(45,181,109,.4)}
+.dot-seg.free{background:linear-gradient(90deg,#7A5E1A,var(--gold))}
+.prog-cap{font-size:9px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.free-pill{font-size:7px;font-weight:700;letter-spacing:.1em;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);padding:2px 7px;border-radius:9px}
+
+/* Check-in strip */
+.ci-strip{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 16px;
+  background:linear-gradient(90deg,rgba(14,107,56,.15),rgba(45,181,109,.1) 50%,rgba(14,107,56,.15));
+  border-top:1px solid rgba(45,181,109,.2);
+}
+.ci-icon{width:18px;height:18px;border-radius:50%;background:var(--green-lt);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 8px rgba(45,181,109,.5)}
+.ci-txt{font-size:11px;font-weight:600;color:var(--green-lt);letter-spacing:.04em}
+
+/* Holo strip */
+.holo-strip{
+  position:absolute;top:0;right:0;width:90px;height:100%;
+  background:linear-gradient(110deg,transparent 0%,rgba(93,219,160,.03) 30%,rgba(201,168,76,.05) 50%,rgba(93,219,160,.03) 70%,transparent 90%);
+  pointer-events:none;animation:holoMove 5s ease-in-out infinite;
+}
+@keyframes holoMove{0%,100%{opacity:.6;transform:translateX(0)}50%{opacity:1;transform:translateX(-15px)}}
+
+/* Footer */
+.ftr{margin-top:14px;text-align:center}
+.ftr-txt{font-size:10px;color:rgba(238,242,237,.18);letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-brand">${CONFIG.NAMA_ARENA}</div>
+    <div class="hdr-sub">Tunjukkan QR ini ke kasir untuk check-in billiard</div>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+    <div class="holo-strip"></div>
+
+    <!-- Top bar -->
+    <div class="card-top">
+      <div class="brand-row">
+        <div class="ball">8</div>
+        <div class="brand-txt">
+          <div class="name">${CONFIG.NAMA_ARENA}</div>
+          <div class="sub">Member Card</div>
+        </div>
+      </div>
+      <div class="chip"></div>
+    </div>
+
+    <!-- QR besar -->
+    <div class="qr-section">
+      <div class="qr-outer">
+        <div class="qr-c1"></div><div class="qr-c2"></div>
+        <img src="${qrDataUrl}" alt="QR Code" draggable="false">
+      </div>
+      <div class="qr-label">Scan to Check-in</div>
+    </div>
+
+    <!-- Member info -->
+    <div class="mi">
+      <div class="mi-lbl">Member Name</div>
+      <div class="mi-name">${nama}</div>
+      <div class="mi-id">
+        <div class="mi-dot"></div>
+        <div class="mi-kode">${kode}</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="st-lbl">Sesi</div>
+        <div class="st-val">${tm} <span>/ ${batas - 1}</span></div>
+      </div>
+      <div class="stat">
+        <div class="st-lbl">Reward</div>
+        <div class="st-val">${sisaLagi} <span>lagi</span></div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="prog">
+      <div class="prog-row">
+        <div class="prog-lbl">Sesi Bulan Ini</div>
+        <div class="prog-num"><em>${tm}</em> / ${batas}</div>
+      </div>
+      <div class="dots-track">${dotsHtml}</div>
+      <div class="prog-cap">
+        <span>${sisaLagi} sesi lagi untuk gratis</span>
+        <div class="free-pill">★ FREE</div>
+      </div>
+    </div>
+
+    <!-- Check-in strip -->
+    <div class="ci-strip">
+      <div class="ci-icon">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 5L4 7L8 3" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="ci-txt">Scan QR untuk check-in</div>
+    </div>
+  </div>
+
+  <div class="ftr"><div class="ftr-txt">${CONFIG.NAMA_ARENA} • Member Card</div></div>
+</div>
+</body>
+</html>`;
+};
