@@ -174,7 +174,7 @@ const renderMemberRow = (m, idx) => {
     <div class="tbl-td">${tipeBadge}</div>
     <div class="tbl-td muted" style="font-size:12px">${esc(m.tglDaftar)}</div>
     <div class="tbl-td">${statusHtml}</div>
-    <div class="tbl-td r mono" style="font-size:12px">${m.totalMain ?? 0}x</div>
+    <div class="tbl-td r" style="font-size:12px">${m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '<span style="color:var(--txt3)">—</span>'}</div>
     <div class="tbl-td r">
       <div class="act-cell">
         ${isBonus ? `<a href="${klaimUrl}" onclick="${klaimConfirm}" class="icon-btn" title="Klaim Bonus" style="background:#C9A84C;color:#000;font-weight:700;font-size:13px">🎁</a>` : ""}
