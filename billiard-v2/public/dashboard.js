@@ -437,20 +437,24 @@ let _modalUrl = "";
 // Terima tinggi konten dari iframe via postMessage → resize + fade in
 window.addEventListener("message", (e) => {
   if (e.data && typeof e.data.qrH === "number") {
-    const frame = document.getElementById("modalFrame");
+    const frame  = document.getElementById("modalFrame");
+    const loader = document.getElementById("modalLoader");
     if (frame) {
-      frame.style.height = (e.data.qrH + 8) + "px";
-      // Tampilkan iframe setelah height sudah benar (cegah dark flash)
+      frame.style.height  = (e.data.qrH + 8) + "px";
       frame.style.opacity = "1";
     }
+    // Sembunyikan progress loader setelah card siap
+    if (loader) loader.classList.add("done");
   }
 });
 
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
 
-  // Mulai dari 1px agar modal kompak, expand smooth saat card siap
-  const frame = document.getElementById("modalFrame");
+  // Reset: tampilkan loader, sembunyikan iframe
+  const frame  = document.getElementById("modalFrame");
+  const loader = document.getElementById("modalLoader");
+  if (loader) loader.classList.remove("done");
   frame.style.opacity = "0";
   frame.style.height  = "1px";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
