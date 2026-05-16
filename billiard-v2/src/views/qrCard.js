@@ -37,7 +37,7 @@ body{
   min-height:100vh;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  padding:16px 12px 12px;
+  padding:10px 12px 8px;
   overflow:hidden;position:relative;
 }
 body::before{
@@ -55,9 +55,9 @@ body::after{
 }
 
 /* Page header */
-.ph{text-align:center;margin-bottom:16px;position:relative;z-index:1;animation:fadeDown .5s ease both}
-.ph-brand{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.3em;color:var(--gold);margin-bottom:4px}
-.ph-desc{font-size:11px;color:var(--muted);font-weight:300;line-height:1.5}
+.ph{text-align:center;margin-bottom:10px;position:relative;z-index:1;animation:fadeDown .5s ease both}
+.ph-brand{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.3em;color:var(--gold);margin-bottom:3px}
+.ph-desc{font-size:10px;color:var(--muted);font-weight:300;line-height:1.4}
 
 /* Scene */
 .scene{
@@ -260,8 +260,8 @@ body::after{
 }
 
 /* Page footer */
-.pf{margin-top:12px;text-align:center;position:relative;z-index:1;animation:fadeUp .7s ease .35s both}
-.pf-text{font-size:10px;color:rgba(238,242,237,.2);letter-spacing:.06em}
+.pf{margin-top:8px;text-align:center;position:relative;z-index:1;animation:fadeUp .7s ease .35s both}
+.pf-text{font-size:9px;color:rgba(238,242,237,.18);letter-spacing:.06em}
 
 /* Animations */
 @keyframes fadeDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
