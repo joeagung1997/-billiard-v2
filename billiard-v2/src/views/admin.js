@@ -343,17 +343,11 @@ function buildAdminCss() {
     '.modal-close:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }',
     '.modal-qr-wrap { position:relative; border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; min-height:400px; }',
     '.modal-qr-wrap iframe { display:block; width:100%; height:1px; border:none; transition:height .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; opacity:0; }',
-    '.qr-loader { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; transition:opacity .3s ease; pointer-events:none; }',
-    '.qr-loader.done { opacity:0; }',
-    '.qr-lbar { position:absolute; top:0; left:0; right:0; height:2px; background:rgba(201,168,76,.1); overflow:hidden; }',
-    '.qr-lbar::after { content:""; position:absolute; top:0; left:-100%; width:80%; height:100%; background:linear-gradient(90deg,transparent,#C9A84C,transparent); animation:lbarSlide 1.4s ease-in-out infinite; }',
-    '.qr-ldots { display:flex; gap:8px; }',
-    '.qr-ldots span { width:8px; height:8px; border-radius:50%; background:#C9A84C; animation:ldotPop 1.4s ease-in-out infinite; opacity:.5; }',
-    '.qr-ldots span:nth-child(2) { animation-delay:.18s; background:#2DB56D; }',
-    '.qr-ldots span:nth-child(3) { animation-delay:.36s; }',
-    '.qr-ltxt { font-size:11px; color:rgba(238,242,237,.28); letter-spacing:.14em; font-family:sans-serif; }',
-    '@keyframes lbarSlide { 0%{left:-80%} 100%{left:110%} }',
-    '@keyframes ldotPop { 0%,80%,100%{transform:scale(.55);opacity:.3} 40%{transform:scale(1);opacity:1} }',
+    '.qr-loader { position:absolute; inset:0; background:#060B08; display:flex; align-items:flex-end; transition:opacity .25s ease; z-index:2; }',
+    '.qr-loader.done { opacity:0; pointer-events:none; }',
+    '.qr-lbar { width:100%; height:3px; background:rgba(201,168,76,.12); overflow:hidden; position:relative; }',
+    '.qr-lbar::after { content:""; position:absolute; top:0; left:-45%; width:45%; height:100%; background:linear-gradient(90deg,transparent,#C9A84C 40%,#2DB56D 60%,transparent); animation:lbarSlide 1.3s ease-in-out infinite; }',
+    '@keyframes lbarSlide { 0%{left:-45%} 100%{left:110%} }',
     '.modal-name { font-size:var(--fs-lg); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:4px; }',
     '.modal-kode { font-family:monospace; font-size:var(--fs-sm); color:var(--green); margin-bottom:var(--sp-4); }',
     '.modal-btns { display:flex; gap:var(--sp-2); justify-content:center; flex-wrap:wrap; }',
@@ -500,11 +494,7 @@ function buildModal() {
   return '<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this){closeModal()}">'
     + '<div class="modal-box"><button class="modal-close" onclick="closeModal()">✕</button>'
     + '<div class="modal-qr-wrap">'
-    + '<div id="modalLoader" class="qr-loader">'
-    + '<div class="qr-lbar"></div>'
-    + '<div class="qr-ldots"><span></span><span></span><span></span></div>'
-    + '<div class="qr-ltxt">Memuat kartu...</div>'
-    + '</div>'
+    + '<div id="modalLoader" class="qr-loader"><div class="qr-lbar"></div></div>'
     + '<iframe id="modalFrame" src="" title="Kartu Member" scrolling="no"></iframe>'
     + '</div>'
     + '<div class="modal-name" id="modalName"></div>'
@@ -673,7 +663,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=17">'
+    + '<link rel="stylesheet" href="/admin.css?v=18">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -862,7 +852,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=17"><\/script>'
+    + '<script src="/dashboard.js?v=18"><\/script>'
     + '</body></html>';
 }
 
@@ -903,7 +893,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=17">'
+    + '<link rel="stylesheet" href="/admin.css?v=18">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1008,7 +998,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=17"></script>'
+    + '<script src="/dashboard.js?v=18"></script>'
     + '</body></html>';
 }
 

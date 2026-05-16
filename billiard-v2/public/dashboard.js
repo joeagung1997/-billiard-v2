@@ -443,8 +443,11 @@ window.addEventListener("message", (e) => {
       frame.style.height  = (e.data.qrH + 8) + "px";
       frame.style.opacity = "1";
     }
-    // Sembunyikan progress loader setelah card siap
-    if (loader) loader.classList.add("done");
+    // Sembunyikan loader: fade out dulu, lalu display:none setelah transisi
+    if (loader) {
+      loader.classList.add("done");
+      setTimeout(() => { loader.style.display = "none"; }, 280);
+    }
   }
 });
 
@@ -454,7 +457,7 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   // Reset: tampilkan loader, sembunyikan iframe
   const frame  = document.getElementById("modalFrame");
   const loader = document.getElementById("modalLoader");
-  if (loader) loader.classList.remove("done");
+  if (loader) { loader.style.display = ""; loader.classList.remove("done"); }
   frame.style.opacity = "0";
   frame.style.height  = "1px";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
