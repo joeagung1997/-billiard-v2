@@ -668,7 +668,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=20">'
+    + '<link rel="stylesheet" href="/admin.css?v=21">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -763,15 +763,16 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
 
     // Chart card
     + '<div class="card">'
-    + '<div class="card-header"><div>'
+    + '<div class="card-header" style="flex-wrap:wrap;gap:10px"><div>'
     + '<div class="card-title">Trend Kunjungan</div>'
     + '<div class="card-sub" id="chartSub">7 hari terakhir — total ' + totalScan7 + ' kunjungan</div>'
     + '</div>'
-    + '<div style="display:flex;gap:4px">'
-    + '<button class="trend-pill" onclick="setTrend(1,this)">Hari Ini</button>'
-    + '<button class="trend-pill on" onclick="setTrend(7,this)">7 Hari</button>'
-    + '<button class="trend-pill" onclick="setTrend(14,this)">14 Hari</button>'
-    + '<button class="trend-pill" onclick="setTrend(30,this)">30 Hari</button>'
+    + '<div class="trend-range-wrap">'
+    + '<label style="font-size:11px;color:var(--txt3);font-weight:500">Dari</label>'
+    + '<input type="date" id="dateFrom" class="date-inp" value="' + trendDays[23].ymd + '" onchange="applyDateRange()">'
+    + '<span style="font-size:11px;color:var(--txt3)">—</span>'
+    + '<label style="font-size:11px;color:var(--txt3);font-weight:500">Sampai</label>'
+    + '<input type="date" id="dateTo" class="date-inp" value="' + trendDays[29].ymd + '" onchange="applyDateRange()">'
     + '</div>'
     + '</div>'
     + '<div class="chart-wrap"><canvas id="trendChart"></canvas></div>'
@@ -854,14 +855,16 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + 'const ALL_LABELS  = ' + allChartLabels             + ';'
     + 'const ALL_DATA    = ' + allChartData               + ';'
+    + 'const ALL_YMD     = ' + JSON.stringify(trendDays.map((d) => d.ymd)) + ';'
     + 'var trendChart;'
     + '(function(){'
     + 'var ctx=document.getElementById("trendChart");'
     + 'if(!ctx)return;'
+    + 'var init7=ALL_LABELS.slice(-7);var init7d=ALL_DATA.slice(-7);'
     + 'trendChart=new Chart(ctx,{'
     + 'type:"line",'
-    + 'data:{labels:ALL_LABELS.slice(-7),datasets:[{'
-    + 'label:"Kunjungan",data:ALL_DATA.slice(-7),'
+    + 'data:{labels:init7,datasets:[{'
+    + 'label:"Kunjungan",data:init7d,'
     + 'borderColor:"#3a7d2c",backgroundColor:"rgba(58,125,44,0.08)",'
     + 'tension:0.4,fill:true,pointBackgroundColor:"#3a7d2c",'
     + 'pointRadius:4,pointHoverRadius:6,borderWidth:2'
@@ -872,29 +875,29 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'y:{beginAtZero:true,grid:{color:"#f0f3ef"},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78",stepSize:1}}}'
     + '}});'
     + '})();'
-    + 'function setTrend(days,btn){'
-    + '  var labels,data;'
-    + '  if(days===1){'
-    + '    labels=ALL_LABELS.slice(-1);data=ALL_DATA.slice(-1);'
-    + '  } else {'
-    + '    labels=ALL_LABELS.slice(-days);data=ALL_DATA.slice(-days);'
+    + 'function applyDateRange(){'
+    + '  var from=document.getElementById("dateFrom").value;'
+    + '  var to=document.getElementById("dateTo").value;'
+    + '  if(!from||!to||from>to)return;'
+    + '  var labels=[],data=[];'
+    + '  for(var i=0;i<ALL_YMD.length;i++){'
+    + '    if(ALL_YMD[i]>=from&&ALL_YMD[i]<=to){labels.push(ALL_LABELS[i]);data.push(ALL_DATA[i]);}'
     + '  }'
+    + '  if(!labels.length)return;'
     + '  if(trendChart){'
     + '    trendChart.data.labels=labels;'
     + '    trendChart.data.datasets[0].data=data;'
     + '    trendChart.update();'
     + '  }'
     + '  var total=data.reduce(function(s,v){return s+v;},0);'
-    + '  var best=labels[data.indexOf(Math.max.apply(null,data))]||"—";'
+    + '  var maxVal=Math.max.apply(null,data);'
+    + '  var best=total>0?labels[data.indexOf(maxVal)]:"—";'
     + '  var avg=total>0?(total/data.length).toFixed(1):"0";'
-    + '  var label=days===1?"Hari ini":days+" hari terakhir";'
     + '  var sub=document.getElementById("chartSub");'
-    + '  if(sub)sub.textContent=label+" — total "+total+" kunjungan";'
-    + '  var mb=document.getElementById("metaBest");if(mb)mb.textContent=total>0?best:"—";'
+    + '  if(sub)sub.textContent=from+" s/d "+to+" — total "+total+" kunjungan";'
+    + '  var mb=document.getElementById("metaBest");if(mb)mb.textContent=best;'
     + '  var ma=document.getElementById("metaAvg");if(ma)ma.textContent=avg+" kunjungan";'
     + '  var mt=document.getElementById("metaTotal");if(mt)mt.textContent=total+" kunjungan";'
-    + '  document.querySelectorAll(".trend-pill").forEach(function(p){p.classList.remove("on");});'
-    + '  if(btn)btn.classList.add("on");'
     + '}'
     + '<\/script>'
     + '<script src="/dashboard.js?v=20"><\/script>'
@@ -906,6 +909,10 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
 export function memberPage({ db, token, req }) {
   const { members } = db;
   const hostBase = req.protocol + '://' + req.get('host');
+  const nowWibM  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const curBulanM = nowWibM.getFullYear() + '-' + String(nowWibM.getMonth() + 1).padStart(2, '0');
+  const bulanLabelM = nowWibM.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const memberBaruCount = members.filter((m) => m.tanggalDaftar && String(m.tanggalDaftar).startsWith(curBulanM)).length;
 
   const dataMember = members.map((m) => {
     const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
@@ -948,7 +955,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=19">'
+    + '<link rel="stylesheet" href="/admin.css?v=21">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -983,7 +990,7 @@ export function memberPage({ db, token, req }) {
     + '</div>'
 
     // ── Stat grid ───────────────────────────────────────────────
-    + '<div class="stat-grid">'
+    + '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">'
 
     + '<div class="stat-card">'
     + '<div class="stat-label">Total Member<div class="stat-icon green"><i class="ti ti-users"></i></div></div>'
@@ -1004,6 +1011,11 @@ export function memberPage({ db, token, req }) {
     + '<div class="stat-label">Scan Hari Ini<div class="stat-icon blue"><i class="ti ti-scan"></i></div></div>'
     + '<div class="stat-value">' + members.filter(function(m){ return m.sudahScanHariIni; }).length + '</div>'
     + '<div class="stat-footer">dari ' + members.length + ' member</div></div>'
+
+    + '<div class="stat-card blue">'
+    + '<div class="stat-label">Member Baru<div class="stat-icon blue"><i class="ti ti-user-plus"></i></div></div>'
+    + '<div class="stat-value">' + memberBaruCount + '</div>'
+    + '<div class="stat-footer">Daftar ' + bulanLabelM + '</div></div>'
 
     + '</div>'
 
