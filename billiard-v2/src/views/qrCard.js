@@ -606,6 +606,21 @@ body::before{
 .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.32em;color:var(--gold)}
 .hdr-sub{font-size:11px;color:var(--muted);margin-top:3px}
 
+/* Card wrapper — untuk posisi chibi */
+.card-wrap{position:relative;width:100%}
+
+/* Chibi */
+.chibi{
+  position:absolute;right:-10px;bottom:30px;
+  width:80px;height:107px;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)) drop-shadow(0 -2px 8px rgba(45,181,109,.2));
+  animation:chibiFloat 3.5s ease-in-out infinite;
+  z-index:5;pointer-events:none;
+}
+@keyframes chibiFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.05)}}
+@keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
+
 /* Card */
 .card{
   width:100%;
@@ -713,7 +728,78 @@ body::before{
     <div class="hdr-sub">Tunjukkan QR ini ke kasir untuk check-in billiard</div>
   </div>
 
-  <!-- Card -->
+  <!-- Card + Chibi -->
+  <div class="card-wrap">
+
+  <!-- Chibi character -->
+  <div class="chibi" aria-hidden="true">
+    <svg width="80" height="107" viewBox="0 0 72 96" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="mSkin" cx="42%" cy="35%" r="58%"><stop offset="0%" stop-color="#FDDCB0"/><stop offset="100%" stop-color="#E8A870"/></radialGradient>
+        <radialGradient id="mBall" cx="36%" cy="32%" r="54%"><stop offset="0%" stop-color="#2a2a2a"/><stop offset="100%" stop-color="#090909"/></radialGradient>
+        <radialGradient id="mBallHi" cx="30%" cy="28%" r="38%"><stop offset="0%" stop-color="rgba(255,255,255,0.5)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient>
+        <linearGradient id="mJacket" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e4228"/><stop offset="100%" stop-color="#0c1e10"/></linearGradient>
+        <linearGradient id="mCue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a8fe0"/><stop offset="12%" stop-color="#d4a460"/><stop offset="88%" stop-color="#a07030"/><stop offset="100%" stop-color="#6b4018"/></linearGradient>
+        <linearGradient id="mHair" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e1a08"/><stop offset="100%" stop-color="#180d04"/></linearGradient>
+      </defs>
+      <g style="transform-origin:58px 70px;animation:cueWag 3s ease-in-out infinite">
+        <rect x="55" y="8" width="4" height="72" rx="2" fill="url(#mCue)"/>
+        <rect x="55.5" y="5" width="3" height="6" rx="1.5" fill="#4a90c4"/>
+        <rect x="55" y="10" width="4" height="2" rx="1" fill="#e0d8c8"/>
+      </g>
+      <rect x="22" y="62" width="11" height="22" rx="5" fill="#0f1f14"/>
+      <rect x="36" y="62" width="11" height="22" rx="5" fill="#0f1f14"/>
+      <ellipse cx="27" cy="84" rx="9" ry="5" fill="#1a1008"/>
+      <ellipse cx="42" cy="84" rx="9" ry="5" fill="#1a1008"/>
+      <rect x="16" y="44" width="39" height="24" rx="7" fill="url(#mJacket)"/>
+      <path d="M27 44 L32 54 L20 60 Z" fill="#122a18" opacity="0.85"/>
+      <path d="M44 44 L39 54 L51 60 Z" fill="#122a18" opacity="0.85"/>
+      <path d="M32 44 L34 52 L37 52 L39 44 Z" fill="#f0f0e8"/>
+      <path d="M33 46 L32 56 L35.5 61 L39 56 L38 46 Z" fill="#C9A84C"/>
+      <ellipse cx="35.5" cy="46" rx="3" ry="2" fill="#E8C96A"/>
+      <path d="M50 48 L56 48 L54 53 L48 52 Z" fill="#C9A84C" opacity="0.8"/>
+      <path d="M18 50 Q8 56 7 64" stroke="#FDDCB0" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M18 50 Q8 56 7 64" stroke="url(#mJacket)" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="7" cy="66" rx="6" ry="5" fill="url(#mSkin)"/>
+      <circle cx="7" cy="74" r="9" fill="url(#mBall)"/>
+      <circle cx="7" cy="74" r="9" fill="url(#mBallHi)"/>
+      <circle cx="7" cy="75" r="4" fill="white" opacity="0.93"/>
+      <text x="7" y="78" font-family="'DM Sans',sans-serif" font-size="5" font-weight="700" fill="#111" text-anchor="middle">8</text>
+      <path d="M53 50 Q60 56 58 62" stroke="#FDDCB0" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M53 50 Q60 56 58 62" stroke="url(#mJacket)" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="57" cy="64" rx="5" ry="4" fill="url(#mSkin)"/>
+      <rect x="30" y="38" width="10" height="9" rx="3" fill="url(#mSkin)"/>
+      <path d="M26 44 L30 38 L35.5 41 L41 38 L45 44 Z" fill="#f0f0e8"/>
+      <ellipse cx="35" cy="24" rx="20" ry="20" fill="url(#mSkin)"/>
+      <ellipse cx="15" cy="25" rx="4.5" ry="6" fill="url(#mSkin)"/>
+      <ellipse cx="15" cy="25" rx="2.5" ry="4" fill="#e09070" opacity="0.4"/>
+      <ellipse cx="55" cy="25" rx="4.5" ry="6" fill="url(#mSkin)"/>
+      <ellipse cx="55" cy="25" rx="2.5" ry="4" fill="#e09070" opacity="0.4"/>
+      <ellipse cx="35" cy="11" rx="20" ry="11" fill="url(#mHair)"/>
+      <ellipse cx="18" cy="18" rx="7" ry="10" fill="url(#mHair)"/>
+      <ellipse cx="52" cy="18" rx="7" ry="10" fill="url(#mHair)"/>
+      <path d="M28 10 Q33 2 40 6 Q46 10 43 14 Q37 6 29 12 Z" fill="#3e2810"/>
+      <rect x="18" y="20" width="14" height="10" rx="3" fill="rgba(201,168,76,0.06)" stroke="#C9A84C" stroke-width="1.2" opacity="0.85"/>
+      <rect x="38" y="20" width="14" height="10" rx="3" fill="rgba(201,168,76,0.06)" stroke="#C9A84C" stroke-width="1.2" opacity="0.85"/>
+      <line x1="32" y1="24" x2="38" y2="24" stroke="#C9A84C" stroke-width="1.2" opacity="0.85"/>
+      <ellipse cx="25" cy="25" rx="5.5" ry="5.5" fill="white"/>
+      <circle cx="25" cy="25.5" r="3.5" fill="#3a2510"/>
+      <circle cx="25" cy="25.5" r="2.2" fill="#1a0f04"/>
+      <circle cx="26.3" cy="24.2" r="1.2" fill="white" opacity="0.9"/>
+      <ellipse cx="45" cy="25" rx="5.5" ry="5.5" fill="white"/>
+      <g style="transform-origin:45px 25.5px;animation:chibiWink 4.5s ease-in-out infinite 2s">
+        <circle cx="45" cy="25.5" r="3.5" fill="#3a2510"/>
+        <circle cx="45" cy="25.5" r="2.2" fill="#1a0f04"/>
+        <circle cx="46.3" cy="24.2" r="1.2" fill="white" opacity="0.9"/>
+      </g>
+      <ellipse cx="17" cy="31" rx="5" ry="3.5" fill="rgba(240,130,110,0.22)"/>
+      <ellipse cx="53" cy="31" rx="5" ry="3.5" fill="rgba(240,130,110,0.22)"/>
+      <path d="M33.5 29 Q35 32 36.5 29" stroke="#c8906a" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M24 34 Q35 42 46 34" stroke="#c8906a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M26 35.5 Q35 41 44 35.5 Q35 39 26 35.5 Z" fill="white" opacity="0.8"/>
+    </svg>
+  </div>
+
   <div class="card">
     <div class="holo-strip"></div>
 
@@ -782,7 +868,8 @@ body::before{
       </div>
       <div class="ci-txt">Scan QR untuk check-in</div>
     </div>
-  </div>
+  </div><!-- /card -->
+  </div><!-- /card-wrap -->
 
   <div class="ftr"><div class="ftr-txt">${CONFIG.NAMA_ARENA} • Member Card</div></div>
 </div>
