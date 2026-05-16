@@ -206,10 +206,11 @@ body::after{
 .member-info{flex:1;padding-top:2px;min-width:0}
 .mi-label{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
 .mi-name{
-  font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;
-  color:var(--text);line-height:1;letter-spacing:.01em;margin-bottom:8px;
+  font-family:'Cormorant Garamond',serif;font-size:clamp(17px,5.5vw,26px);font-weight:700;
+  color:var(--text);line-height:1.15;letter-spacing:.01em;margin-bottom:8px;
   text-shadow:0 1px 0 rgba(255,255,255,.06),0 -1px 0 rgba(0,0,0,.4);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  word-break:break-word;
 }
 .mi-id-row{display:flex;align-items:center;gap:6px;margin-bottom:12px}
 .mi-id-dot{width:6px;height:6px;border-radius:50%;background:var(--green-lt);box-shadow:0 0 6px var(--green-lt);flex-shrink:0}
