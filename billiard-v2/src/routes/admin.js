@@ -259,4 +259,23 @@ router.get("/set-sesi", requireAdmin, async (req, res) => {
   }
 });
 
+// ── GET /admin/seed-test — buat member testing (hapus setelah selesai) ────────
+router.get("/seed-test", requireAdmin, async (req, res) => {
+  const { tk } = res.locals;
+  try {
+    const kode = "JMB-TEST-99";
+    const m = createMember(kode, "Testing Bonus", "");
+    m.totalMain           = 9;
+    m.tanggalScanTerakhir = new Date().toISOString();
+    await saveMember(m);
+    res.send(
+      '<p style="font-family:sans-serif;padding:20px">Member <strong>' + kode +
+      '</strong> (Testing Bonus, sesi 9/10) berhasil dibuat. ' +
+      '<a href="/admin?tk=' + tk + '">Kembali ke dashboard</a></p>'
+    );
+  } catch (err) {
+    res.status(500).send("Gagal: " + err.message);
+  }
+});
+
 export default router;
