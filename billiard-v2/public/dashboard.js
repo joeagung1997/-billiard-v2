@@ -133,23 +133,26 @@ const renderMemberRow = (m, idx) => {
     ? `<span class="badge badge-vip" style="display:inline-flex;align-items:center;gap:4px"><i class="ti ti-crown" style="font-size:10px;"></i>VIP</span>`
     : `<span class="badge badge-regular">Regular</span>`;
 
-  const statusHtml = m.sudahScan
-    ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Hadir</span>`
-    : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak</span>`;
+  // Status: aktif/tidak aktif (berdasarkan scan terakhir < 2 bulan)
+  const statusHtml = m.aktif
+    ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Aktif</span>`
+    : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak Aktif</span>`;
 
-  const klaimBtn = isGratis
-    ? `<a href="/admin/klaim?tk=${TK}&kode=${m.kode}"
-          onclick="return confirm('Tandai reward sudah diklaim?')"
-          class="tbl-btn tbl-btn-gold" style="font-size:11px">Klaim</a>`
+  // Indikator hadir hari ini (dot kecil di nama)
+  const hadirDot = m.sudahScan
+    ? `<span title="Hadir hari ini" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle"></span>`
     : "";
 
-  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 170px">
+  const resetQrUrl = `/admin/reset-qr?tk=${TK}&kode=${m.kode}`;
+  const resetQrConfirm = `return confirm('Reset QR member ${safeNama}? Kode lama tidak bisa dipakai lagi.')`;
+
+  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 200px">
     <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
     <div class="tbl-td">
       <div class="m-cell">
         <div class="m-av ${color}">${initials(m.nama)}</div>
         <div>
-          <div class="m-nm">${esc(m.nama)}</div>
+          <div class="m-nm">${esc(m.nama)}${hadirDot}</div>
           <div class="m-id">${esc(m.kode)} &middot; ${esc(m.telepon || "—")}</div>
         </div>
       </div>
@@ -163,11 +166,10 @@ const renderMemberRow = (m, idx) => {
         <button class="icon-btn" title="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        <a href="${dlUrl}" class="icon-btn" title="Download QR" download="QR-${m.kode}.svg">
-          <i class="ti ti-download"></i>
-        </a>
         ${waNum ? `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" title="Kirim WA" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
-        ${klaimBtn}
+        <a href="${resetQrUrl}" onclick="${resetQrConfirm}" class="icon-btn" title="Reset QR (kartu hilang)">
+          <i class="ti ti-refresh"></i>
+        </a>
         <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="icon-btn" title="Edit">
           <i class="ti ti-edit"></i>
         </a>
@@ -198,8 +200,12 @@ const renderMemberCard = (m) => {
     + "Tunjukkan QR ini ke kasir tiap mau main: " + shareUrl
   );
 
-  const statusBadge = m.sudahScan
-    ? `<span class="badge badge-green" style="font-size:10px">✓ Hadir</span>`
+  // Status aktif/tidak aktif (scan < 2 bulan)
+  const aktifBadge = m.aktif
+    ? `<span class="badge badge-green" style="font-size:10px">● Aktif</span>`
+    : `<span class="badge badge-inactive" style="font-size:10px;background:var(--surface2);color:var(--txt3)">● Tidak Aktif</span>`;
+  const hadirBadge = m.sudahScan
+    ? `<span class="badge badge-blue" style="font-size:10px">✓ Hadir</span>`
     : "";
   const gratisBadge = isGratis
     ? `<span class="badge badge-gold" style="font-size:10px">🎁 Reward</span>`
@@ -218,7 +224,11 @@ const renderMemberCard = (m) => {
   const waShareBtn = `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener"
       class="mc-btn mc-btn-wa">📤 Kirim QR</a>`;
 
-  return `<div class="mc ${m.sudahScan ? "hadir" : ""}">
+  const resetQrMcBtn = `<a href="/admin/reset-qr?tk=${TK}&kode=${m.kode}"
+      onclick="return confirm('Reset QR member ${safeNama}? Kode lama tidak bisa dipakai lagi.')"
+      class="mc-btn" title="Reset QR (kartu hilang)">🔄 Reset QR</a>`;
+
+  return `<div class="mc ${m.aktif ? "aktif" : "nonaktif"}">
     <div class="mc-top">
       <img src="${imgUrl}" alt="QR" class="mc-qr" loading="lazy" onclick="${qrClick}">
       <div class="mc-body">
@@ -228,7 +238,7 @@ const renderMemberCard = (m) => {
           <div class="mc-prog-track"><div class="mc-prog-fill" style="width:${pct}%"></div></div>
           <span class="mc-prog-txt">${m.totalMain}/${BATAS}</span>
         </div>
-        <div class="mc-badges">${statusBadge}${gratisBadge}</div>
+        <div class="mc-badges">${aktifBadge}${hadirBadge}${gratisBadge}</div>
       </div>
       <div class="mc-right">
         <button onclick="${qrClick}" class="mc-btn mc-btn-qr" style="padding:8px 14px;font-size:18px">QR</button>
@@ -237,6 +247,7 @@ const renderMemberCard = (m) => {
     <div class="mc-btm">
       ${waShareBtn}
       ${waBtn}
+      ${resetQrMcBtn}
       ${klaimBtn}
       <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="mc-btn">Edit</a>
       <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
@@ -375,8 +386,8 @@ const filterMember = () => {
     const matchS =
       status === "hadir"    ? m.sudahScan :
       status === "gratis"   ? m.status === "GRATIS" :
-      status === "aktif"    ? (m.totalMain ?? 0) > 0 :
-      status === "nonaktif" ? (m.totalMain ?? 0) === 0 && !m.sudahScan :
+      status === "aktif"    ? m.aktif === true :
+      status === "nonaktif" ? m.aktif === false :
       true;
     return matchQ && matchB && matchS;
   });

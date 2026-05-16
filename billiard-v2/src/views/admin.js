@@ -843,7 +843,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=5"><\/script>'
+    + '<script src="/dashboard.js?v=6"><\/script>'
     + '</body></html>';
 }
 
@@ -863,6 +863,7 @@ export function memberPage({ db, token, req }) {
       totalGratis: m.totalGratis ?? 0,
       status:      m.status ?? '-',
       sudahScan:   m.sudahScanHariIni ?? false,
+      aktif:       m.aktif ?? false,
       tglDaftar:   m.tanggalDaftar    ? formatTanggalPendek(m.tanggalDaftar)   : '—',
       tglTerakhir: m.tanggalScanTerakhir ? formatTanggalBulan(m.tanggalScanTerakhir) : '—',
       bulanScan:   d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
@@ -927,8 +928,8 @@ export function memberPage({ db, token, req }) {
 
     + '<div class="stat-card">'
     + '<div class="stat-label">Member Aktif<div class="stat-icon green"><i class="ti ti-user-check"></i></div></div>'
-    + '<div class="stat-value">' + members.filter(function(m){ return (m.totalMain||0) > 0; }).length + '</div>'
-    + '<div class="stat-footer">Aktif bulan ini</div></div>'
+    + '<div class="stat-value">' + members.filter(function(m){ return m.aktif; }).length + '</div>'
+    + '<div class="stat-footer">Scan &lt; 2 bulan terakhir</div></div>'
 
     + '<div class="stat-card amber">'
     + '<div class="stat-label">Member VIP<div class="stat-icon amber"><i class="ti ti-crown"></i></div></div>'
@@ -954,7 +955,7 @@ export function memberPage({ db, token, req }) {
     // ── Table ───────────────────────────────────────────────────
     + '<div class="table-card">'
     + '<div id="tbl-summary" class="filter-summary" style="display:none"></div>'
-    + '<div class="tbl-head" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 170px">'
+    + '<div class="tbl-head" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 200px">'
     + '<div class="tbl-th">#</div>'
     + '<div class="tbl-th">Member</div>'
     + '<div class="tbl-th">Tipe</div>'
@@ -988,7 +989,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=5"></script>'
+    + '<script src="/dashboard.js?v=6"></script>'
     + '</body></html>';
 }
 

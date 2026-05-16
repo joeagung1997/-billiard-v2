@@ -6,6 +6,7 @@ import {
   readDB, readLog, readTransaksi,
   saveMember, deleteMember, resetScanHarian,
   createMember, findMember, findMemberIndex,
+  resetQrMember, appendLog,
 } from "../utils/db.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
@@ -196,6 +197,35 @@ router.get("/sync-qr", requireAdmin, async (req, res) => {
       + "<a href='/admin?tk=" + tk + "'>Kembali</a>");
   } catch (err) {
     res.status(500).send("Gagal sync QR: " + err.message);
+  }
+});
+
+// ── GET /admin/reset-qr — ganti kode/QR, data tetap ─────────
+router.get("/reset-qr", requireAdmin, async (req, res) => {
+  const { tk }  = res.locals;
+  const oldKode = (req.query.kode ?? "").toUpperCase();
+  try {
+    const db = await readDB();
+    const m  = findMember(db.members, oldKode);
+    if (!m) return res.redirect(`/admin/members?tk=${tk}`);
+
+    const newKode = generateKode(db.members);
+    await resetQrMember(oldKode, newKode);
+
+    // Re-upload QR ke Cloudinary dengan kode baru
+    const scanUrl = buildScanUrl(req, newKode);
+    try {
+      const qrBuf = await qrBuffer(scanUrl, 520);
+      await uploadQrToCloudinary(newKode, qrBuf);
+    } catch (err) {
+      console.error("[RESET-QR] Upload QR gagal:", err.message);
+    }
+
+    await appendLog(newKode, m.nama, "RESET_QR", "Kode lama: " + oldKode);
+    res.redirect(`/admin/members?tk=${tk}`);
+  } catch (err) {
+    console.error("[ADMIN] reset-qr error:", err.message);
+    res.redirect(`/admin/members?tk=${tk}`);
   }
 });
 

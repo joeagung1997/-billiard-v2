@@ -12,18 +12,29 @@ export const initDB = async () => {
 
 // ── Row mapper helpers ────────────────────────────────────────
 
-const rowToMember = (row) => ({
-  kode:                row.kode,
-  nama:                row.nama,
-  telepon:             row.telepon               ?? "",
-  totalMain:           row.total_main            ?? 0,
-  tanggalMulai:        row.tanggal_mulai         ?? null,
-  sudahScanHariIni:    row.sudah_scan_hari_ini   ?? false,
-  status:              row.status                ?? "-",
-  totalGratis:         row.total_gratis          ?? 0,
-  tanggalDaftar:       row.tanggal_daftar        ?? null,
-  tanggalScanTerakhir: row.tanggal_scan_terakhir ?? null,
-});
+// 60 hari = 2 bulan (threshold inaktif)
+const DUA_BULAN_MS = 60 * 24 * 60 * 60 * 1000;
+
+const rowToMember = (row) => {
+  const lastScan = row.tanggal_scan_terakhir
+    ? new Date(row.tanggal_scan_terakhir).getTime()
+    : null;
+  // Aktif = pernah scan DAN scan terakhir < 2 bulan lalu
+  const aktif = lastScan !== null && (Date.now() - lastScan) < DUA_BULAN_MS;
+  return {
+    kode:                row.kode,
+    nama:                row.nama,
+    telepon:             row.telepon               ?? "",
+    totalMain:           row.total_main            ?? 0,
+    tanggalMulai:        row.tanggal_mulai         ?? null,
+    sudahScanHariIni:    row.sudah_scan_hari_ini   ?? false,
+    status:              row.status                ?? "-",
+    totalGratis:         row.total_gratis          ?? 0,
+    tanggalDaftar:       row.tanggal_daftar        ?? null,
+    tanggalScanTerakhir: row.tanggal_scan_terakhir ?? null,
+    aktif,
+  };
+};
 
 const rowToTransaksi = (row) => ({
   id:         row.id,
@@ -78,6 +89,21 @@ export const saveMember = async (m) => {
 
 export const deleteMember = async (kode) => {
   await query("DELETE FROM members WHERE kode = $1", [kode.toUpperCase()]);
+};
+
+// ── Reset QR — kode baru, data tetap ─────────────────────────
+export const resetQrMember = async (oldKode, newKode) => {
+  // Copy semua data ke kode baru
+  await query(`
+    INSERT INTO members
+      (kode, nama, telepon, total_main, tanggal_mulai,
+       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir)
+    SELECT $2, nama, telepon, total_main, tanggal_mulai,
+       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir
+    FROM members WHERE kode = $1
+  `, [oldKode.toUpperCase(), newKode.toUpperCase()]);
+  // Hapus kode lama
+  await query("DELETE FROM members WHERE kode = $1", [oldKode.toUpperCase()]);
 };
 
 export const resetScanHarian = async () => {
