@@ -787,61 +787,177 @@ export function financeEditPage(token, t, kategoriList = []) {
 // ── Halaman kelola kategori ───────────────────────────────────
 export function financeKategoriPage(token, kategoriList = [], showErr = false) {
   const errHtml = showErr
-    ? "<div style=\"background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px\">Kategori sudah ada atau tidak valid.</div>"
+    ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\">Kategori sudah ada atau tidak valid.</div>"
     : "";
-
-  const makeRows = (list) => list.length > 0
-    ? list.map((k) =>
-        "<tr><td>" + escHtml(k.nama) + "</td>"
-        + "<td><a href=\"/keuangan/kategori/hapus?id=" + k.id + "&ftk=" + token
-        + "\" class=\"tbl-btn tbl-btn-red\" onclick=\"return confirm('Hapus kategori ini?')\">Hapus</a></td></tr>"
-      ).join("")
-    : "<tr><td colspan=\"2\" class=\"empty-state\">Belum ada kategori</td></tr>";
 
   const inList  = kategoriList.filter((k) => k.jenis === "pemasukan");
   const outList = kategoriList.filter((k) => k.jenis === "pengeluaran");
 
-  return docHead("Kelola Kategori")
-    + "<style>body{padding:20px;max-width:680px;margin:0 auto}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:540px){.two-col{grid-template-columns:1fr}}</style>"
+  const makeRows = (list, jenis) => list.length > 0
+    ? list.map((k) =>
+        "<div class=\"kat-row\">"
+        + "<div class=\"kat-name\"><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
+        + "<div class=\"kat-act\">"
+        + "<a href=\"/keuangan/kategori/hapus?id=" + k.id + "&ftk=" + token
+        + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
+        + "</div></div>"
+      ).join("")
+    : "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada kategori</div>";
+
+  const extraCss = [
+    ".kat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}",
+    "@media(max-width:860px){.kat-grid{grid-template-columns:1fr}}",
+    ".kat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
+    ".kat-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border)}",
+    ".kat-header-left{display:flex;align-items:center;gap:8px}",
+    ".kat-type-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}",
+    ".kat-type-badge.income{color:var(--accent)}",
+    ".kat-type-badge.expense{color:var(--red)}",
+    ".count-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}",
+    ".count-chip.income{background:var(--green-bg);color:var(--accent)}",
+    ".count-chip.expense{background:var(--red-bg);color:var(--red)}",
+    ".kat-table-head{display:grid;grid-template-columns:1fr 64px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
+    ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
+    ".kat-th.r{text-align:right}",
+    ".kat-row{display:grid;grid-template-columns:1fr 64px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s}",
+    ".kat-row:last-child{border-bottom:none}",
+    ".kat-row:hover{background:var(--surface2)}",
+    ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
+    ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
+    ".kat-dot.income{background:var(--green)}",
+    ".kat-dot.expense{background:var(--red)}",
+    ".kat-act{display:flex;justify-content:flex-end}",
+    ".btn-del{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(184,48,48,.25);background:var(--red-bg);color:var(--red);text-decoration:none;transition:opacity .15s}",
+    ".btn-del:hover{opacity:.75}",
+    ".btn-del i{font-size:12px}",
+    ".kat-empty{padding:24px 18px;text-align:center;font-size:12px;color:var(--txt3)}",
+    ".kat-empty i{font-size:24px;display:block;margin-bottom:6px;opacity:.35}",
+    ".add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:24px}",
+    ".add-card-title{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:6px}",
+    ".add-card-title i{font-size:14px;color:var(--accent)}",
+    ".type-pills{display:flex;gap:6px;margin-bottom:14px}",
+    ".type-pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s}",
+    ".type-pill.income{background:var(--green-bg);color:var(--accent);border-color:rgba(45,102,36,.2)}",
+    ".type-pill.income.active{background:var(--accent);color:#fff;border-color:var(--accent)}",
+    ".type-pill.expense{background:var(--red-bg);color:var(--red);border-color:rgba(184,48,48,.2)}",
+    ".type-pill.expense.active{background:var(--red);color:#fff;border-color:var(--red)}",
+    ".add-form{display:flex;gap:10px;align-items:stretch}",
+    ".inp-wrap{position:relative;flex:1}",
+    ".inp-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}",
+    ".cat-input{width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;height:42px}",
+    ".cat-input:focus{border-color:var(--accent);background:var(--surface)}",
+    ".cat-input::placeholder{color:var(--txt3)}",
+    ".stats-mini{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}",
+    ".stat-mini{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}",
+    ".stat-mini::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:var(--r-lg) var(--r-lg) 0 0}",
+    ".stat-mini.income::before{background:var(--green)}",
+    ".stat-mini.expense::before{background:var(--red)}",
+    ".sm-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}",
+    ".sm-icon.income{background:var(--green-bg);color:var(--accent)}",
+    ".sm-icon.expense{background:var(--red-bg);color:var(--red)}",
+    ".sm-label{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}",
+    ".sm-count{font-size:22px;font-weight:600;color:var(--txt);font-family:var(--ff-mono)}",
+  ].join("");
+
+  return docHeadV4("Kelola Kategori")
+    + "<style>" + extraCss + "</style>"
     + "</head><body>"
-    + "<a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\" style=\"display:inline-flex;margin-bottom:16px\">← Kembali ke Keuangan</a>"
-    + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Kelola Kategori</h1>"
-    + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Tambah atau hapus kategori transaksi</p>"
+
+    + "<div class=\"layout\">"
+    + buildFinanceSidebar(token)
+    + "<div class=\"main-wrap\">"
+
+    // Mobile topbar
+    + "<header class=\"topbar\">"
+    + "<div class=\"topbar-brand\">"
+    + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-circle-number-8\"></i></div>"
+    + "<div><div class=\"topbar-name\">Kelola Kategori</div>"
+    + "<div class=\"topbar-label\">Keuangan</div></div>"
+    + "</div>"
+    + "</header>"
+
+    + "<div class=\"page\">"
+
+    // Breadcrumb
+    + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
+    + "<a href=\"/keuangan?ftk=" + token + "\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
+    + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
+    + "</div>"
+
+    // Page title
+    + "<div class=\"dash-topbar\">"
+    + "<div><div class=\"page-title\">Kelola Kategori</div>"
+    + "<div class=\"page-sub\">Tambah atau hapus kategori transaksi keuangan</div></div>"
+    + "</div>"
+
     + errHtml
 
-    // Form tambah kategori
-    + "<div class=\"card\" style=\"padding:16px;margin-bottom:20px\">"
-    + "<div class=\"sec-label\" style=\"margin-top:0\">Tambah Kategori Baru</div>"
-    + "<form action=\"/keuangan/kategori/tambah\" method=\"post\" style=\"display:flex;gap:8px;flex-wrap:wrap;margin-top:10px\">"
-    + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
-    + "<input type=\"text\" name=\"nama\" placeholder=\"Nama kategori\" required"
-    + " style=\"flex:1;min-width:160px;padding:9px 12px;background:#0a1422;border:1.5px solid #1e3a5f;border-radius:8px;font-size:13px;color:var(--txt);outline:none\">"
-    + "<select name=\"jenis\" class=\"inp\" style=\"width:150px\">"
-    + "<option value=\"pemasukan\">↑ Pemasukan</option>"
-    + "<option value=\"pengeluaran\">↓ Pengeluaran</option>"
-    + "</select>"
-    + "<button type=\"submit\" class=\"btn-primary\">Tambah</button>"
-    + "</form></div>"
+    // Stats mini
+    + "<div class=\"stats-mini\">"
+    + "<div class=\"stat-mini income\">"
+    + "<div class=\"sm-icon income\"><i class=\"ti ti-arrow-up-circle\"></i></div>"
+    + "<div><div class=\"sm-label\">Kategori Pemasukan</div>"
+    + "<div class=\"sm-count\">" + inList.length + "</div></div></div>"
+    + "<div class=\"stat-mini expense\">"
+    + "<div class=\"sm-icon expense\"><i class=\"ti ti-arrow-down-circle\"></i></div>"
+    + "<div><div class=\"sm-label\">Kategori Pengeluaran</div>"
+    + "<div class=\"sm-count\">" + outList.length + "</div></div></div>"
+    + "</div>"
 
-    // List kategori
-    + "<div class=\"two-col\">"
+    // Add card
+    + "<div class=\"add-card\">"
+    + "<div class=\"add-card-title\"><i class=\"ti ti-circle-plus\"></i> Tambah Kategori Baru</div>"
+    + "<div class=\"type-pills\">"
+    + "<div class=\"type-pill income active\" id=\"pill-income\" onclick=\"selectType('income')\"><i class=\"ti ti-arrow-up\" style=\"font-size:12px\"></i> Pemasukan</div>"
+    + "<div class=\"type-pill expense\" id=\"pill-expense\" onclick=\"selectType('expense')\"><i class=\"ti ti-arrow-down\" style=\"font-size:12px\"></i> Pengeluaran</div>"
+    + "</div>"
+    + "<form action=\"/keuangan/kategori/tambah\" method=\"post\">"
+    + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+    + "<input type=\"hidden\" name=\"jenis\" id=\"jenisInput\" value=\"pemasukan\">"
+    + "<div class=\"add-form\">"
+    + "<div class=\"inp-wrap\"><i class=\"ti ti-tag\"></i>"
+    + "<input class=\"cat-input\" name=\"nama\" type=\"text\" id=\"catInput\" placeholder=\"Nama kategori pemasukan...\" required></div>"
+    + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;white-space:nowrap\"><i class=\"ti ti-plus\" style=\"font-size:16px\"></i> Tambah</button>"
+    + "</div></form></div>"
+
+    // Category grid
+    + "<div class=\"kat-grid\">"
 
     // Pemasukan
-    + "<div>"
-    + "<div class=\"sec-label\" style=\"color:var(--green)\">↑ Pemasukan (" + inList.length + ")</div>"
-    + "<div class=\"card\"><div class=\"table-wrap\">"
-    + "<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead>"
-    + "<tbody>" + makeRows(inList) + "</tbody></table>"
-    + "</div></div></div>"
+    + "<div class=\"kat-card\">"
+    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
+    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-arrow-up\"></i> Pemasukan</div>"
+    + "<div class=\"count-chip income\">" + inList.length + "</div>"
+    + "</div></div>"
+    + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
+    + "<div>" + makeRows(inList, "income") + "</div>"
+    + "</div>"
 
     // Pengeluaran
-    + "<div>"
-    + "<div class=\"sec-label\" style=\"color:var(--red)\">↓ Pengeluaran (" + outList.length + ")</div>"
-    + "<div class=\"card\"><div class=\"table-wrap\">"
-    + "<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead>"
-    + "<tbody>" + makeRows(outList) + "</tbody></table>"
-    + "</div></div></div>"
+    + "<div class=\"kat-card\">"
+    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
+    + "<div class=\"kat-type-badge expense\"><i class=\"ti ti-arrow-down\"></i> Pengeluaran</div>"
+    + "<div class=\"count-chip expense\">" + outList.length + "</div>"
+    + "</div></div>"
+    + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
+    + "<div>" + makeRows(outList, "expense") + "</div>"
+    + "</div>"
 
     + "</div>"
+    + "</div>"
+    + "</div>"
+    + "</div>"
+
+    + "<script>"
+    + "function selectType(type){"
+    + "document.getElementById('jenisInput').value=type==='income'?'pemasukan':'pengeluaran';"
+    + "document.getElementById('pill-income').className='type-pill income'+(type==='income'?' active':'');"
+    + "document.getElementById('pill-expense').className='type-pill expense'+(type==='expense'?' active':'');"
+    + "document.getElementById('catInput').placeholder=type==='income'?'Nama kategori pemasukan...':'Nama kategori pengeluaran...';"
+    + "document.getElementById('catInput').focus();}"
+    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
+    + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
+    + "</script>"
     + "</body></html>";
 }
