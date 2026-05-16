@@ -337,12 +337,12 @@ function buildAdminCss() {
     '.filter-badge { display:inline-flex; align-items:center; gap:4px; background:var(--green-bg); color:var(--green); padding:2px var(--sp-2); border-radius:var(--r-sm); font-size:var(--fs-xs); font-weight:var(--fw-b); }',
     '.modal-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.82); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:var(--sp-4); }',
     '.modal-overlay.open { display:flex; }',
-    '.modal-box { background:#0a0f0c; border:1px solid rgba(201,168,76,0.18); border-radius:var(--r-xl); padding:16px 16px 18px; max-width:480px; width:100%; text-align:center; animation:modalIn .25s ease; position:relative; }',
+    '.modal-box { background:#0a0f0c; border:1px solid rgba(201,168,76,0.18); border-radius:var(--r-xl); padding:16px 16px 18px; max-width:540px; width:100%; text-align:center; animation:modalIn .25s ease; position:relative; }',
     '@keyframes modalIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }',
     '.modal-close { position:absolute; top:12px; right:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:rgba(255,255,255,.5); z-index:10; }',
     '.modal-close:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }',
     '.modal-qr-wrap { border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; }',
-    '.modal-qr-wrap iframe { display:block; width:100%; height:510px; border:none; }',
+    '.modal-qr-wrap iframe { display:block; width:100%; height:600px; border:none; }',
     '.modal-name { font-size:var(--fs-lg); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:4px; }',
     '.modal-kode { font-family:monospace; font-size:var(--fs-sm); color:var(--green); margin-bottom:var(--sp-4); }',
     '.modal-btns { display:flex; gap:var(--sp-2); justify-content:center; flex-wrap:wrap; }',
@@ -655,7 +655,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=7">'
+    + '<link rel="stylesheet" href="/admin.css?v=8">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -844,7 +844,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=7"><\/script>'
+    + '<script src="/dashboard.js?v=8"><\/script>'
     + '</body></html>';
 }
 
@@ -885,7 +885,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=7">'
+    + '<link rel="stylesheet" href="/admin.css?v=8">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -990,7 +990,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=7"></script>'
+    + '<script src="/dashboard.js?v=8"></script>'
     + '</body></html>';
 }
 
@@ -1035,48 +1035,114 @@ export function addMemberPage(tk, errTlp) {
 
 // ── Tambah member sukses ──────────────────────────────────────
 
-export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl, brandedCard }) {
-  const qrSection = brandedCard
-    ? '<div class="qr-card-wrap"><img src="' + brandedCard.encoded + '" alt="QR Card"></div>'
-      + '<p class="qr-hint">Kartu QR siap — download lalu kirim ke WhatsApp member atau cetak</p>'
-    : '';
-
-  // shareUrl pakai /member/:kode agar WA preview ada gambar QR
-  // Paksa HTTPS agar thumbnail muncul di WA (WA tidak crawl HTTP)
+export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const waMsg = encodeURIComponent(
-    'Halo ' + nama + '! Ini kartu member ' + CONFIG.NAMA_ARENA + '. '
+    'Halo ' + nama + '! Ini kartu member ' + CONFIG.NAMA_ARENA + '.\n'
     + 'Scan QR ini tiap kali mau main ya! ' + shareUrl
   );
 
   return docHead('Member Terdaftar')
+    + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">'
     + '<style>'
-    + '*{box-sizing:border-box;margin:0;padding:0}'
-    + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080e18;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}'
-    + '.wrap{max-width:440px;width:100%;text-align:center}'
-    + '.ic{width:48px;height:48px;border-radius:50%;background:#14532d;border:2px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 10px}'
-    + '.qr-card-wrap{margin:16px 0;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}'
-    + '.qr-card-wrap img{display:block;width:100%;height:auto}'
-    + '.qr-hint{font-size:11px;color:#334155;margin-bottom:16px}'
+    + ':root{--gold:#C9A84C;--gold-lt:#F0D88A;--green:#0E6B38;--green-lt:#2DB56D;--bg:#060B08;--text:#EEF2ED;--muted:rgba(238,242,237,0.42)}'
+    + '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{'
+    +   'font-family:"DM Sans",sans-serif;background:var(--bg);min-height:100vh;'
+    +   'display:flex;flex-direction:column;align-items:center;justify-content:center;'
+    +   'padding:32px 20px 40px;position:relative;overflow-x:hidden;'
+    + '}'
+    + 'body::before{'
+    +   'content:"";position:fixed;inset:0;'
+    +   'background:radial-gradient(ellipse 80% 60% at 50% -5%,rgba(14,107,56,.14) 0%,transparent 65%),'
+    +     'radial-gradient(ellipse 50% 40% at 85% 85%,rgba(201,168,76,.07) 0%,transparent 60%);'
+    +   'pointer-events:none;z-index:0;'
+    + '}'
+    + '.wrap{max-width:480px;width:100%;text-align:center;position:relative;z-index:1}'
+    /* header badge */
+    + '.ok-ring{'
+    +   'width:52px;height:52px;border-radius:50%;margin:0 auto 14px;'
+    +   'background:rgba(45,181,109,.12);border:1.5px solid rgba(45,181,109,.35);'
+    +   'display:flex;align-items:center;justify-content:center;'
+    +   'box-shadow:0 0 20px rgba(45,181,109,.18);'
+    +   'animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;'
+    + '}'
+    + '@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}'
+    + '.ok-label{'
+    +   'font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:.32em;'
+    +   'color:var(--green-lt);margin-bottom:6px;'
+    + '}'
+    + '.member-name{'
+    +   'font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:700;'
+    +   'color:var(--text);line-height:1;margin-bottom:8px;'
+    +   'text-shadow:0 1px 0 rgba(255,255,255,.06);'
+    + '}'
+    + '.member-tlp{'
+    +   'font-family:"DM Mono",monospace;font-size:12px;color:var(--muted);'
+    +   'margin-bottom:6px;letter-spacing:.06em;'
+    + '}'
+    + '.member-kode{'
+    +   'display:inline-flex;align-items:center;gap:5px;'
+    +   'background:rgba(45,181,109,.08);border:1px solid rgba(45,181,109,.22);'
+    +   'border-radius:20px;padding:4px 12px;margin-bottom:22px;'
+    + '}'
+    + '.member-kode span{font-family:"DM Mono",monospace;font-size:11px;color:var(--green-lt);letter-spacing:.12em}'
+    /* card iframe */
+    + '.card-frame-wrap{'
+    +   'border-radius:20px;overflow:hidden;margin-bottom:20px;'
+    +   'box-shadow:0 0 0 1px rgba(201,168,76,.14),0 16px 48px rgba(0,0,0,.6);'
+    + '}'
+    + '.card-frame-wrap iframe{display:block;width:100%;height:570px;border:none}'
+    /* action buttons */
     + '.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}'
-    + '.btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;text-decoration:none}'
-    + '.btn-dl{background:#22c55e;color:#fff}'
+    + '.btn{'
+    +   'display:inline-flex;align-items:center;gap:6px;border-radius:10px;'
+    +   'padding:10px 18px;font-size:13px;font-weight:600;text-decoration:none;'
+    +   'letter-spacing:.02em;transition:opacity .15s,transform .1s;border:none;cursor:pointer;'
+    + '}'
+    + '.btn:active{opacity:.8;transform:scale(.96)}'
+    + '.btn-dl{background:var(--green-lt);color:#fff}'
     + '.btn-wa{background:#25d366;color:#fff}'
-    + '.btn-b{background:#2563eb;color:#fff}'
-    + '.btn-w{background:#1e2d45;color:#94a3b8}'
+    + '.btn-more{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--muted)}'
+    + '.btn-dash{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.22);color:var(--gold)}'
     + '</style>'
     + '</head><body><div class="wrap">'
-    + '<div class="ic">✓</div>'
-    + '<h1 style="font-size:18px;font-weight:700;color:#22c55e;margin-bottom:3px">Member Terdaftar!</h1>'
-    + '<div style="font-size:20px;font-weight:700;color:#e8edf5;margin-bottom:3px">' + nama + '</div>'
-    + '<div style="font-size:13px;color:#4a5e78;font-family:monospace;margin-bottom:16px">' + telepon + '</div>'
-    + qrSection
+    /* Header */
+    + '<div class="ok-ring" aria-hidden="true">'
+    +   '<svg width="22" height="22" viewBox="0 0 22 22" fill="none">'
+    +     '<path d="M4 11L9 16L18 6" stroke="#2DB56D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+    +   '</svg>'
+    + '</div>'
+    + '<div class="ok-label">Member Terdaftar</div>'
+    + '<div class="member-name">' + nama + '</div>'
+    + '<div class="member-tlp">' + telepon + '</div>'
+    + '<div class="member-kode">'
+    +   '<svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">'
+    +     '<rect x=".5" y="1.5" width="10" height="7" rx="1.5" stroke="#2DB56D" stroke-width="1.1"/>'
+    +     '<rect x="2" y="4" width="4" height="1" rx=".5" fill="#2DB56D"/>'
+    +     '<rect x="2" y="5.5" width="2.5" height="1" rx=".5" fill="#2DB56D"/>'
+    +     '<circle cx="8" cy="5" r="1.2" fill="#2DB56D"/>'
+    +   '</svg>'
+    +   '<span>' + kode + '</span>'
+    + '</div>'
+    /* Card iframe */
+    + '<div class="card-frame-wrap">'
+    +   '<iframe src="/admin/qr-view/' + kode + '?tk=' + tk + '" title="Kartu Member" scrolling="no"></iframe>'
+    + '</div>'
+    /* Buttons */
     + '<div class="btns">'
-    + '<a href="/admin/qr/' + kode + '?tk=' + tk + '" class="btn btn-dl" download="QR-' + kode + '.svg">⬇ Download Kartu QR</a>'
-    + '<a href="https://wa.me/?text=' + waMsg + '" target="_blank" class="btn btn-wa">Kirim WA</a>'
-    + '<a href="/admin/tambah?tk=' + tk + '" class="btn btn-w">＋ Tambah lagi</a>'
-    + '<a href="/admin?tk=' + tk + '" class="btn btn-b">Dashboard</a>'
-    + '</div></div></body></html>';
+    + '<a href="/admin/qr/' + kode + '?tk=' + tk + '" class="btn btn-dl" download="QR-' + kode + '.svg">'
+    +   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v13m-5-5 5 5 5-5"/><path d="M3 20h18"/></svg>'
+    +   'Download Kartu'
+    + '</a>'
+    + '<a href="https://wa.me/?text=' + waMsg + '" target="_blank" rel="noopener" class="btn btn-wa">'
+    +   '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.549 4.103 1.508 5.827L0 24l6.335-1.482A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.003-1.368l-.36-.214-3.732.873.916-3.641-.235-.374A9.818 9.818 0 1112 21.818z"/></svg>'
+    +   'Kirim WA'
+    + '</a>'
+    + '<a href="/admin/tambah?tk=' + tk + '" class="btn btn-more">＋ Tambah lagi</a>'
+    + '<a href="/admin?tk=' + tk + '" class="btn btn-dash">Dashboard</a>'
+    + '</div>'
+    + '</div></body></html>';
 }
 
 // ── Edit member page ──────────────────────────────────────────

@@ -31,15 +31,14 @@ export const qrCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
   --bg:#060B08;--text:#EEF2ED;--muted:rgba(238,242,237,0.40);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
 body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);
-  min-height:100%;
+  min-height:100vh;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  padding:20px 16px 16px;
-  overflow-x:hidden;position:relative;
+  padding:16px 12px 12px;
+  overflow:hidden;position:relative;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -273,6 +272,14 @@ body::after{
 @keyframes chibiFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.05)}}
 @keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
+
+/* Responsive scaling untuk iframe sempit */
+@media (max-width:440px){
+  .scene{transform:scale(0.88);transform-origin:top center;margin-bottom:-36px}
+}
+@media (max-width:380px){
+  .scene{transform:scale(0.76);transform-origin:top center;margin-bottom:-72px}
+}
 </style>
 </head>
 <body>
