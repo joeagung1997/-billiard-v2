@@ -610,8 +610,9 @@ body::before{
 .card-wrap{
   display:flex;align-items:flex-end;
   width:100%;gap:0;
+  perspective:900px;
 }
-.card{flex:1;min-width:0}
+.card{flex:1;min-width:0;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.23,1,.32,1)}
 
 /* Chibi */
 .chibi{
@@ -738,7 +739,7 @@ body::before{
   <div class="card-wrap">
 
   <!-- Real card -->
-  <div class="card">
+  <div class="card" id="memberCard">
     <div class="holo-strip"></div>
 
     <!-- Top bar -->
@@ -881,6 +882,45 @@ body::before{
 
   <div class="ftr"><div class="ftr-txt">${CONFIG.NAMA_ARENA} • Member Card</div></div>
 </div>
+
+<script>
+(function() {
+  var card = document.getElementById('memberCard');
+  if (!card) return;
+
+  function applyTilt(dx, dy) {
+    // dx, dy: -0.5..0.5 normalized offset from card center
+    card.style.transform = 'rotateY(' + (dx * 18) + 'deg) rotateX(' + (-dy * 12) + 'deg)';
+  }
+  function resetTilt() {
+    card.style.transform = '';
+  }
+
+  // Desktop: mouse move over document
+  document.addEventListener('mousemove', function(e) {
+    var rect = card.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height / 2;
+    var dx = (e.clientX - cx) / rect.width;
+    var dy = (e.clientY - cy) / rect.height;
+    applyTilt(dx, dy);
+  });
+  document.addEventListener('mouseleave', resetTilt);
+
+  // Mobile: touch move
+  card.addEventListener('touchmove', function(e) {
+    if (!e.touches.length) return;
+    var t = e.touches[0];
+    var rect = card.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height / 2;
+    var dx = (t.clientX - cx) / rect.width;
+    var dy = (t.clientY - cy) / rect.height;
+    applyTilt(dx, dy);
+  }, { passive: true });
+  card.addEventListener('touchend', resetTilt, { passive: true });
+})();
+</script>
 </body>
 </html>`;
 };
