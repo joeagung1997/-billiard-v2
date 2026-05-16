@@ -335,13 +335,14 @@ function buildAdminCss() {
     '.pg-size-sel { padding:3px var(--sp-2); background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r-sm); color:var(--txt2); font-size:var(--fs-xs); outline:none; cursor:pointer; }',
     '.filter-summary { font-size:var(--fs-xs); color:var(--txt3); padding:var(--sp-2) var(--sp-4); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2); }',
     '.filter-badge { display:inline-flex; align-items:center; gap:4px; background:var(--green-bg); color:var(--green); padding:2px var(--sp-2); border-radius:var(--r-sm); font-size:var(--fs-xs); font-weight:var(--fw-b); }',
-    '.modal-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.75); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:var(--sp-4); }',
+    '.modal-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.82); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:var(--sp-4); }',
     '.modal-overlay.open { display:flex; }',
-    '.modal-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-xl); padding:var(--sp-5); max-width:360px; width:100%; text-align:center; animation:modalIn .2s ease; position:relative; }',
+    '.modal-box { background:#0a0f0c; border:1px solid rgba(201,168,76,0.18); border-radius:var(--r-xl); padding:16px 16px 18px; max-width:480px; width:100%; text-align:center; animation:modalIn .25s ease; position:relative; }',
     '@keyframes modalIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }',
-    '.modal-close { position:absolute; top:var(--sp-3); right:var(--sp-3); background:var(--surface2); border:1px solid var(--border); border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; color:var(--txt2); }',
-    '.modal-qr-wrap { background:#fff; border-radius:var(--r-lg); padding:var(--sp-3); display:inline-block; margin-bottom:var(--sp-3); overflow:hidden; width:100%; }',
-    '.modal-qr-wrap img { display:block; width:100%; height:auto; border-radius:var(--r-sm); }',
+    '.modal-close { position:absolute; top:12px; right:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:rgba(255,255,255,.5); z-index:10; }',
+    '.modal-close:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }',
+    '.modal-qr-wrap { border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; }',
+    '.modal-qr-wrap iframe { display:block; width:100%; height:510px; border:none; }',
     '.modal-name { font-size:var(--fs-lg); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:4px; }',
     '.modal-kode { font-family:monospace; font-size:var(--fs-sm); color:var(--green); margin-bottom:var(--sp-4); }',
     '.modal-btns { display:flex; gap:var(--sp-2); justify-content:center; flex-wrap:wrap; }',
@@ -487,7 +488,7 @@ function buildBottomNav(token, activePage) {
 function buildModal() {
   return '<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this){closeModal()}">'
     + '<div class="modal-box"><button class="modal-close" onclick="closeModal()">✕</button>'
-    + '<div class="modal-qr-wrap"><img id="modalImg" src="" alt="QR"></div>'
+    + '<div class="modal-qr-wrap"><iframe id="modalFrame" src="" title="Kartu Member" scrolling="no"></iframe></div>'
     + '<div class="modal-name" id="modalName"></div>'
     + '<div class="modal-kode" id="modalKode"></div>'
     + '<div class="modal-btns">'
@@ -654,7 +655,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=6">'
+    + '<link rel="stylesheet" href="/admin.css?v=7">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -843,7 +844,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=6"><\/script>'
+    + '<script src="/dashboard.js?v=7"><\/script>'
     + '</body></html>';
 }
 
@@ -884,7 +885,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=6">'
+    + '<link rel="stylesheet" href="/admin.css?v=7">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -989,7 +990,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=6"></script>'
+    + '<script src="/dashboard.js?v=7"></script>'
     + '</body></html>';
 }
 

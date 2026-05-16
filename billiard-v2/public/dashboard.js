@@ -437,21 +437,16 @@ let _modalUrl = "";
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
 
-  // Tampilkan branded card SVG — lebih informatif dari thumbnail biasa
-  const modalImg = document.getElementById("modalImg");
-  modalImg.src              = `/admin/qr-card/${kode}?tk=${TK}`;
-  modalImg.style.width      = "100%";
-  modalImg.style.height     = "auto";
-  modalImg.style.borderRadius = "16px";
-  modalImg.removeAttribute("width");
-  modalImg.removeAttribute("height");
+  // Tampilkan branded card v3 dalam iframe
+  const frame = document.getElementById("modalFrame");
+  frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
 
-  document.getElementById("modalName").textContent = "";  // nama sudah ada di kartu
-  document.getElementById("modalKode").textContent = "";  // kode sudah ada di kartu
+  document.getElementById("modalName").textContent = "";
+  document.getElementById("modalKode").textContent = "";
 
   const dlEl = document.getElementById("modalDl");
-  dlEl.href  = dlUrl;
-  dlEl.setAttribute("download", `QR-${kode}.png`);
+  dlEl.href  = `/admin/qr/${kode}?tk=${TK}`;
+  dlEl.setAttribute("download", `QR-${kode}.svg`);
 
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
