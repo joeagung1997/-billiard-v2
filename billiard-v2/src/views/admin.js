@@ -342,7 +342,7 @@ function buildAdminCss() {
     '.modal-close { position:absolute; top:12px; right:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:rgba(255,255,255,.5); z-index:10; }',
     '.modal-close:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }',
     '.modal-qr-wrap { border-radius:18px; overflow:hidden; margin-bottom:14px; background:#060B08; }',
-    '.modal-qr-wrap iframe { display:block; width:100%; height:420px; border:none; transition:height .25s ease; }',
+    '.modal-qr-wrap iframe { display:block; width:100%; height:420px; border:none; transition:height .25s ease, opacity .2s ease; opacity:0; }',
     '.modal-name { font-size:var(--fs-lg); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:4px; }',
     '.modal-kode { font-family:monospace; font-size:var(--fs-sm); color:var(--green); margin-bottom:var(--sp-4); }',
     '.modal-btns { display:flex; gap:var(--sp-2); justify-content:center; flex-wrap:wrap; }',
@@ -655,7 +655,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=14">'
+    + '<link rel="stylesheet" href="/admin.css?v=15">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -844,7 +844,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=14"><\/script>'
+    + '<script src="/dashboard.js?v=15"><\/script>'
     + '</body></html>';
 }
 
@@ -885,7 +885,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=14">'
+    + '<link rel="stylesheet" href="/admin.css?v=15">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -990,7 +990,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=14"></script>'
+    + '<script src="/dashboard.js?v=15"></script>'
     + '</body></html>';
 }
 

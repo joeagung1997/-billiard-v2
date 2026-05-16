@@ -434,20 +434,25 @@ const showToast = () => {
 // ── Modal QR ──────────────────────────────────────────────────
 let _modalUrl = "";
 
-// Terima tinggi konten dari iframe via postMessage → resize otomatis
+// Terima tinggi konten dari iframe via postMessage → resize + fade in
 window.addEventListener("message", (e) => {
   if (e.data && typeof e.data.qrH === "number") {
     const frame = document.getElementById("modalFrame");
-    if (frame) frame.style.height = (e.data.qrH + 8) + "px";
+    if (frame) {
+      frame.style.height = (e.data.qrH + 8) + "px";
+      // Tampilkan iframe setelah height sudah benar (cegah dark flash)
+      frame.style.opacity = "1";
+    }
   }
 });
 
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
 
-  // Reset iframe height dulu agar tidak pakai ukuran member sebelumnya
+  // Sembunyikan iframe dulu agar tidak ada dark flash saat load
   const frame = document.getElementById("modalFrame");
-  frame.style.height = "420px";
+  frame.style.opacity = "0";
+  frame.style.height  = "420px";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
 
   document.getElementById("modalName").textContent = "";
