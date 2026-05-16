@@ -477,54 +477,60 @@ body::after{
 
 <script>
   // ── Scale scene agar muat di lebar iframe ─────────────────────
-  var _scene = document.querySelector('.scene');
+  // Hardcode lebar natural: card-outer 340px + chibi 72px - margin-left 12px + padding
+  var SCENE_NAT_W = 416;
+  var _scene  = document.querySelector('.scene');
+  var _sceneH = 0; // tinggi natural scene (diukur sekali saat load)
 
   function scaleScene() {
-    var vw = document.documentElement.clientWidth;
-    var pad = 24; // total horizontal padding body (12px * 2)
-    var avail = vw - pad;
-    // Reset dulu agar bisa ukur naturalWidth
-    _scene.style.transform = '';
-    _scene.style.marginBottom = '';
-    var natural = _scene.scrollWidth;
-    if (natural > avail) {
-      var ratio = avail / natural;
-      _scene.style.transform = 'scale(' + ratio + ')';
+    var vw    = document.documentElement.clientWidth;
+    var avail = vw - 24; // padding body 12px kiri+kanan
+    if (SCENE_NAT_W > avail) {
+      var ratio = avail / SCENE_NAT_W;
+      _scene.style.transform      = 'scale(' + ratio + ')';
       _scene.style.transformOrigin = 'top center';
-      // Kompensasi ruang vertikal yang hilang akibat scale
-      var scaledH = _scene.scrollHeight * ratio;
-      var delta = _scene.scrollHeight - scaledH;
-      _scene.style.marginBottom = '-' + Math.round(delta) + 'px';
+      // Tarik ke atas untuk menutup ruang kosong akibat scale
+      if (_sceneH > 0) {
+        var loss = _sceneH * (1 - ratio);
+        _scene.style.marginBottom = '-' + Math.round(loss) + 'px';
+      }
+    } else {
+      _scene.style.transform    = '';
+      _scene.style.marginBottom = '';
     }
   }
 
-  // ── Kirim tinggi nyata ke parent setelah scale ────────────────
+  // ── Kirim tinggi ke parent — hanya kalau berubah > 4px ───────
+  var _lastH = 0;
   function sendHeight() {
-    scaleScene();
-    // Tunggu browser repaint
-    requestAnimationFrame(function() {
-      var h = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-        document.body.offsetHeight
-      );
+    var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    if (Math.abs(h - _lastH) > 4) {
+      _lastH = h;
       window.parent.postMessage({ qrH: h }, '*');
+    }
+  }
+
+  // ── Init: jalankan sekali setelah konten siap ─────────────────
+  function init() {
+    // Ukur tinggi natural scene sebelum scale
+    _sceneH = _scene.offsetHeight;
+    scaleScene();
+    // Tunggu repaint lalu kirim
+    requestAnimationFrame(sendHeight);
+  }
+
+  if (document.readyState === 'complete') {
+    init();
+  } else {
+    window.addEventListener('load', init);
+  }
+
+  // Kirim ulang setelah font selesai (font bisa ubah tinggi teks)
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function() {
+      requestAnimationFrame(sendHeight);
     });
   }
-
-  // Kirim saat DOM siap
-  if (document.readyState === 'complete') { sendHeight(); }
-  else { window.addEventListener('load', sendHeight); }
-  // Setelah font Google Fonts selesai
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(sendHeight);
-  }
-  // Kirim ulang beberapa kali untuk antisipasi animasi awal
-  setTimeout(sendHeight, 400);
-  setTimeout(sendHeight, 900);
-
-  // Re-scale kalau iframe di-resize
-  window.addEventListener('resize', sendHeight);
 
   // ── Subtle 3D tilt on mouse move ──────────────────────────────
   var outer = document.getElementById('cardOuter');
