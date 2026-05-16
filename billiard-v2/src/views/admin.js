@@ -853,7 +853,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=19"><\/script>'
+    + '<script src="/dashboard.js?v=20"><\/script>'
     + '</body></html>';
 }
 
@@ -999,7 +999,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=19"></script>'
+    + '<script src="/dashboard.js?v=20"></script>'
     + '</body></html>';
 }
 

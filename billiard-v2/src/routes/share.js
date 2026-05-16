@@ -3,8 +3,9 @@
 
 import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
-import { buildScanUrl, buildBaseUrl, brandedQrCard } from "../utils/qr.js";
+import { buildScanUrl, buildBaseUrl, brandedQrCard, qrDataUrl } from "../utils/qr.js";
 import { CONFIG }             from "../config.js";
+import { qrCardPage }        from "../views/qrCard.js";
 import QRCode                 from "qrcode";
 
 const router = Router();
@@ -114,7 +115,7 @@ router.get("/qr-only/:kode", async (req, res) => {
   }
 });
 
-// ── GET /member/:kode — halaman OG untuk WA crawler + preview QR ─
+// ── GET /member/:kode — halaman kartu v3 + OG meta untuk WA ─────
 router.get("/member/:kode", async (req, res) => {
   const kode   = req.params.kode.toUpperCase();
   const db     = await readDB();
@@ -128,19 +129,19 @@ router.get("/member/:kode", async (req, res) => {
   const desc     = "Kartu member " + CONFIG.NAMA_ARENA
     + ". Tunjukkan QR ini ke kasir untuk check-in. Kode: " + kode;
 
-  const card = await brandedQrCard({
-    text: scanUrl,
-    nama: member.nama,
+  // Generate QR data URL untuk kartu
+  const qrImg = await qrDataUrl(scanUrl, 200);
+
+  // Build halaman kartu v3 + inject OG meta tags
+  const cardHtml = qrCardPage({
+    nama:      member.nama,
     kode,
-    totalMain:        member.totalMain        ?? 0,
-    sudahScanHariIni: member.sudahScanHariIni ?? false,
+    totalMain: member.totalMain ?? 0,
+    qrDataUrl: qrImg,
   });
 
-  res.status(200).setHeader("Content-Type", "text/html; charset=utf-8").send(
-    '<!DOCTYPE html>'
-    + '<html prefix="og: http://ogp.me/ns#" lang="id"><head>'
-    + '<meta charset="UTF-8">'
-    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+  // Inject OG + Twitter meta tags ke dalam <head> sebelum </head>
+  const ogTags = ''
     + '<meta property="og:type"             content="website">'
     + '<meta property="og:url"              content="' + base + '/member/' + kode + '">'
     + '<meta property="og:title"            content="' + title + '">'
@@ -155,28 +156,14 @@ router.get("/member/:kode", async (req, res) => {
     + '<meta name="twitter:card"            content="summary_large_image">'
     + '<meta name="twitter:title"           content="' + title + '">'
     + '<meta name="twitter:description"     content="' + desc + '">'
-    + '<meta name="twitter:image"           content="' + ogImgUrl + '">'
-    + '<title>' + title + '</title>'
-    + '<style>'
-    + '*{box-sizing:border-box;margin:0;padding:0}'
-    + 'body{background:#070d18;min-height:100vh;display:flex;flex-direction:column;'
-    + 'align-items:center;justify-content:center;padding:24px 16px;'
-    + 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}'
-    + '.arena-tag{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;'
-    + 'color:#22c55e;margin-bottom:6px}'
-    + '.instruction{font-size:13px;color:#4a6a80;margin-bottom:20px;text-align:center;line-height:1.6}'
-    + '.card-wrap img{width:100%;max-width:400px;height:auto;border-radius:20px;'
-    + 'box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(34,197,94,.15)}'
-    + '</style>'
-    + '</head>'
-    + '<body>'
-    + '<div class="arena-tag">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<p class="instruction">Tunjukkan kartu ini ke kasir<br>untuk check-in billiard.</p>'
-    + '<div class="card-wrap">'
-    + '<img src="' + card.encoded + '" alt="Kartu Member ' + member.nama + '">'
-    + '</div>'
-    + '</body></html>'
-  );
+    + '<meta name="twitter:image"           content="' + ogImgUrl + '">';
+
+  const finalHtml = cardHtml.replace('</head>', ogTags + '</head>');
+
+  res.status(200)
+    .setHeader("Content-Type", "text/html; charset=utf-8")
+    .setHeader("Cache-Control", "no-cache")
+    .send(finalHtml);
 });
 
 // ── GET /og-image/:kode — PNG untuk WA thumbnail ─────────────

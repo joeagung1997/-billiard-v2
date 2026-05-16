@@ -70,7 +70,7 @@ router.get("/qr-card/:kode", requireAdmin, async (req, res) => {
   }
 });
 
-// ── GET /admin/qr/:kode — download branded SVG ───────────────
+// ── GET /admin/qr/:kode — download kartu HTML v3 ─────────────
 router.get("/qr/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
   try {
@@ -78,24 +78,21 @@ router.get("/qr/:kode", requireAdmin, async (req, res) => {
     const member = findMember(members, kode);
     if (!member) return res.status(404).send("Member tidak ditemukan");
 
-    const { svg } = await brandedQrCard({
-      text: buildScanUrl(req, kode),
-      nama: member.nama,
+    const scanUrl  = buildScanUrl(req, kode);
+    const qrImgUrl = await qrDataUrl(scanUrl, 200);
+
+    const html = qrCardPage({
+      nama:      member.nama,
       kode,
+      totalMain: member.totalMain ?? 0,
+      qrDataUrl: qrImgUrl,
     });
-    res.setHeader("Content-Type", "image/svg+xml");
-    res.setHeader("Content-Disposition", `attachment; filename="QR-${kode}.svg"`);
-    res.send(svg);
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="Kartu-${kode}.html"`);
+    res.send(html);
   } catch (err) {
-    // Fallback ke PNG polos
-    try {
-      const buf = await qrBuffer(buildScanUrl(req, kode), 400);
-      res.setHeader("Content-Type", "image/png");
-      res.setHeader("Content-Disposition", `attachment; filename="QR-${kode}.png"`);
-      res.send(buf);
-    } catch {
-      res.status(500).send(`Gagal generate QR: ${err.message}`);
-    }
+    res.status(500).send(`Gagal generate kartu: ${err.message}`);
   }
 });
 

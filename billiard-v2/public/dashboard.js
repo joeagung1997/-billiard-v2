@@ -482,7 +482,7 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
 
   const dlEl = document.getElementById("modalDl");
   dlEl.href  = `/admin/qr/${kode}?tk=${TK}`;
-  dlEl.setAttribute("download", `QR-${kode}.svg`);
+  dlEl.setAttribute("download", `Kartu-${kode}.html`);
 
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
