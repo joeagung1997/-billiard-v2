@@ -273,13 +273,8 @@ body::after{
 @keyframes chibiWink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.05)}}
 @keyframes cueWag{0%,100%{transform:rotate(-6deg);transform-origin:bottom center}50%{transform:rotate(4deg);transform-origin:bottom center}}
 
-/* Responsive scaling untuk iframe sempit */
-@media (max-width:440px){
-  .scene{transform:scale(0.88);transform-origin:top center;margin-bottom:-36px}
-}
-@media (max-width:380px){
-  .scene{transform:scale(0.76);transform-origin:top center;margin-bottom:-72px}
-}
+/* Responsive scaling untuk iframe sempit — JS akan override ini */
+.scene{transform-origin:top center;}
 </style>
 </head>
 <body>
@@ -481,38 +476,67 @@ body::after{
 </div>
 
 <script>
-  // ── Auto-resize: kirim tinggi konten ke parent (modal) ────────
-  function sendHeight() {
-    var h = Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.offsetHeight
-    );
-    window.parent.postMessage({ qrH: h }, '*');
+  // ── Scale scene agar muat di lebar iframe ─────────────────────
+  var _scene = document.querySelector('.scene');
+
+  function scaleScene() {
+    var vw = document.documentElement.clientWidth;
+    var pad = 24; // total horizontal padding body (12px * 2)
+    var avail = vw - pad;
+    // Reset dulu agar bisa ukur naturalWidth
+    _scene.style.transform = '';
+    _scene.style.marginBottom = '';
+    var natural = _scene.scrollWidth;
+    if (natural > avail) {
+      var ratio = avail / natural;
+      _scene.style.transform = 'scale(' + ratio + ')';
+      _scene.style.transformOrigin = 'top center';
+      // Kompensasi ruang vertikal yang hilang akibat scale
+      var scaledH = _scene.scrollHeight * ratio;
+      var delta = _scene.scrollHeight - scaledH;
+      _scene.style.marginBottom = '-' + Math.round(delta) + 'px';
+    }
   }
+
+  // ── Kirim tinggi nyata ke parent setelah scale ────────────────
+  function sendHeight() {
+    scaleScene();
+    // Tunggu browser repaint
+    requestAnimationFrame(function() {
+      var h = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight
+      );
+      window.parent.postMessage({ qrH: h }, '*');
+    });
+  }
+
   // Kirim saat DOM siap
   if (document.readyState === 'complete') { sendHeight(); }
   else { window.addEventListener('load', sendHeight); }
-  // Kirim ulang setelah font Google Fonts selesai dimuat
+  // Setelah font Google Fonts selesai
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function() { sendHeight(); });
+    document.fonts.ready.then(sendHeight);
   }
-  // Kirim ulang sekali lagi setelah animasi awal selesai
-  setTimeout(sendHeight, 600);
-  setTimeout(sendHeight, 1200);
+  // Kirim ulang beberapa kali untuk antisipasi animasi awal
+  setTimeout(sendHeight, 400);
+  setTimeout(sendHeight, 900);
+
+  // Re-scale kalau iframe di-resize
+  window.addEventListener('resize', sendHeight);
 
   // ── Subtle 3D tilt on mouse move ──────────────────────────────
-  const outer = document.getElementById('cardOuter');
-  document.addEventListener('mousemove', e => {
-    const rect = outer.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top  + rect.height / 2;
-    const dx = (e.clientX - cx) / rect.width;
-    const dy = (e.clientY - cy) / rect.height;
+  var outer = document.getElementById('cardOuter');
+  document.addEventListener('mousemove', function(e) {
+    var rect = outer.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top  + rect.height / 2;
+    var dx = (e.clientX - cx) / rect.width;
+    var dy = (e.clientY - cy) / rect.height;
     outer.style.transform = 'rotateY(' + (dx * 10) + 'deg) rotateX(' + (-dy * 7) + 'deg)';
   });
-  document.addEventListener('mouseleave', () => {
+  document.addEventListener('mouseleave', function() {
     outer.style.transform = '';
   });
 </script>
