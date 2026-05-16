@@ -102,90 +102,83 @@ const renderLog = ({ nama, aksi, detail, tgl }) => {
   </div>`;
 };
 
-const renderMemberRow = (m) => {
-  const pct      = Math.round((m.totalMain ?? 0) / BATAS * 100);
+const AVATAR_COLORS = ["green", "amber", "blue", "teal"];
+const avatarColor = (nama) => AVATAR_COLORS[
+  (nama || "").split("").reduce((s, c) => s + c.charCodeAt(0), 0) % AVATAR_COLORS.length
+];
+const initials = (nama) => {
+  const w = (nama || "").trim().split(/\s+/).slice(0, 2);
+  return w.map((x) => (x[0] || "").toUpperCase()).join("");
+};
+
+const renderMemberRow = (m, idx) => {
+  const isVip    = (m.totalMain ?? 0) >= BATAS;
   const isGratis = m.status === "GRATIS";
-  const baseUrl  = (HOST || '').replace('http://', 'https://');
-  const scanUrl  = baseUrl + '/scan?id=' + m.kode;
-  const shareUrl = baseUrl + '/member/' + m.kode;
-  const dlUrl    = '/admin/qr/' + m.kode + '?tk=' + TK;
-  const imgUrl   = '/admin/qr-img/' + m.kode + '?tk=' + TK;
-  const waNum    = (m.telepon ?? '').replace(/[^0-9]/g, '');
+  const baseUrl  = (HOST || "").replace("http://", "https://");
+  const scanUrl  = baseUrl + "/scan?id=" + m.kode;
+  const shareUrl = baseUrl + "/member/" + m.kode;
+  const dlUrl    = "/admin/qr/" + m.kode + "?tk=" + TK;
+  const imgUrl   = "/admin/qr-img/" + m.kode + "?tk=" + TK;
+  const waNum    = (m.telepon ?? "").replace(/[^0-9]/g, "");
+  const safeNama = m.nama.replace(/'/g, "\\'");
+  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}')`;
+  const color    = avatarColor(m.nama);
 
-  // Ikon WA kecil → buka chat ke nomor member
-  const waIcon = waNum
-    ? '<a href="https://wa.me/' + waNum + '" target="_blank" rel="noopener"'
-      + ' title="Chat WA ' + esc(m.nama) + '"'
-      + ' style="display:inline-flex;align-items:center;justify-content:center;'
-      + 'width:22px;height:22px;background:#25d366;border-radius:50%;'
-      + 'flex-shrink:0;text-decoration:none">' + WA_SVG + '</a>'
-    : '';
-
-  // Tombol Kirim QR → share URL /member/ yang ada thumbnail preview WA
   const waShareMsg = encodeURIComponent(
-    'Halo ' + m.nama + '! Ini kartu member billiard kamu.\n'
-    + 'Tunjukkan QR ini ke kasir tiap mau main: ' + shareUrl
+    "Halo " + m.nama + "! Ini kartu member billiard kamu.\n" +
+    "Tunjukkan QR ini ke kasir tiap mau main: " + shareUrl
   );
-  const waShareBtn = '<a href="https://wa.me/?text=' + waShareMsg + '"'
-    + ' target="_blank" rel="noopener" class="tbl-btn"'
-    + ' style="background:#25d366;color:#fff;border-color:#25d366;display:inline-flex;align-items:center;gap:3px">'
-    + WA_SVG + ' QR</a>';
 
-  const progressHtml = isGratis
-    ? `<span class="badge badge-green">🎁 GRATIS</span>`
-    : `<div>
-         <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
-         <span style="font-size:11px;color:var(--green)">${m.totalMain}/${BATAS}</span>
-       </div>`;
+  const tipeBadge = isGratis
+    ? `<span class="badge badge-vip" style="display:inline-flex;align-items:center;gap:4px"><i class="ti ti-crown" style="font-size:10px;"></i>VIP</span>`
+    : `<span class="badge badge-regular">Regular</span>`;
 
   const statusHtml = m.sudahScan
-    ? `<span class="badge badge-green">✓ Hadir</span>`
-    : `<span style="color:var(--txt3);font-size:12px">—</span>`;
+    ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Hadir</span>`
+    : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak</span>`;
 
   const klaimBtn = isGratis
     ? `<a href="/admin/klaim?tk=${TK}&kode=${m.kode}"
           onclick="return confirm('Tandai reward sudah diklaim?')"
-          class="tbl-btn tbl-btn-gold">Klaim</a>`
+          class="tbl-btn tbl-btn-gold" style="font-size:11px">Klaim</a>`
     : "";
 
-  const safeNama = m.nama.replace(/'/g, "\\'");
-  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}')`;
-
-  return `<tr>
-    <td>
-      <span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--green)">${esc(m.kode)}</span>
-      <div style="font-size:11px;color:var(--txt3);margin-top:2px">${esc(m.tglDaftar)}</div>
-    </td>
-    <td>
-      <div style="font-size:13px;font-weight:500;color:var(--txt)">${esc(m.nama)}</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-        <span style="font-size:11px;color:var(--txt3);font-family:monospace">${esc(m.telepon || "—")}</span>
-        ${waIcon}
+  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 120px 120px">
+    <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
+    <div class="tbl-td">
+      <div class="m-cell">
+        <div class="m-av ${color}">${initials(m.nama)}</div>
+        <div>
+          <div class="m-nm">${esc(m.nama)}</div>
+          <div class="m-id">${esc(m.kode)} &middot; ${esc(m.telepon || "—")}</div>
+        </div>
       </div>
-    </td>
-    <td>${progressHtml}</td>
-    <td>${statusHtml}</td>
-    <td><span style="font-size:13px;font-weight:700;color:var(--gold)">${m.totalGratis ?? 0}×</span></td>
-    <td style="text-align:center">
-      <img src="${imgUrl}" width="52" height="52" alt="QR" loading="lazy"
-           onclick="${qrClick}"
-           style="border-radius:8px;background:#fff;padding:3px;display:block;
-                  cursor:pointer;transition:transform .15s"
-           onmouseover="this.style.transform='scale(1.1)'"
-           onmouseout="this.style.transform='scale(1)'">
-    </td>
-    <td>
-      <div style="display:flex;gap:4px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
-        <a href="${dlUrl}" class="tbl-btn tbl-btn-blue" download="QR-${m.kode}.svg">⬇ QR</a>
-        ${waShareBtn}
+    </div>
+    <div class="tbl-td">${tipeBadge}</div>
+    <div class="tbl-td muted" style="font-size:12px">${esc(m.tglDaftar)}</div>
+    <div class="tbl-td">${statusHtml}</div>
+    <div class="tbl-td r mono" style="font-size:12px">${m.totalMain ?? 0} kunjungan</div>
+    <div class="tbl-td r">
+      <div class="act-cell">
+        <button class="icon-btn" title="Lihat QR" onclick="${qrClick}">
+          <i class="ti ti-qrcode"></i>
+        </button>
+        <a href="${dlUrl}" class="icon-btn" title="Download QR" download="QR-${m.kode}.svg">
+          <i class="ti ti-download"></i>
+        </a>
+        ${waNum ? `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" title="Kirim WA" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
         ${klaimBtn}
-        <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="tbl-btn">Edit</a>
+        <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="icon-btn" title="Edit">
+          <i class="ti ti-edit"></i>
+        </a>
         <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
            onclick="return confirm('Hapus member ${safeNama}?')"
-           class="tbl-btn tbl-btn-red">Hapus</a>
+           class="icon-btn danger" title="Hapus">
+          <i class="ti ti-trash"></i>
+        </a>
       </div>
-    </td>
-  </tr>`;
+    </div>
+  </div>`;
 };
 
 // ── Mobile member card ────────────────────────────────────────
@@ -328,11 +321,8 @@ const renderMemberTable = () => {
   // Pagination bar
   const pgEl = document.getElementById("member-pg");
   if (!pgEl) return;
-  if (total <= perPage) { pgEl.innerHTML = ""; return; }
-
-  const sizeOpts = [10, 25, 50]
-    .map((n) => `<option value="${n}" ${n === perPage ? "selected" : ""}>${n} / hal</option>`)
-    .join("");
+  if (total <= perPage) { pgEl.style.display = "none"; pgEl.innerHTML = ""; return; }
+  pgEl.style.display = "flex";
 
   const buildPageRange = (cur, max) => {
     if (max <= 7) return Array.from({ length: max }, (_, i) => i + 1);
@@ -344,19 +334,20 @@ const renderMemberTable = () => {
   const pageBtns = buildPageRange(page, pages)
     .map((p) =>
       p === "…"
-        ? `<span class="pg-btn" style="cursor:default">…</span>`
-        : `<button class="pg-btn ${p === page ? "active" : ""}" onclick="goPage(${p})">${p}</button>`
+        ? `<span class="tbl-pg-btn disable">…</span>`
+        : `<button class="tbl-pg-btn ${p === page ? "active" : ""}" onclick="goPage(${p})">${p}</button>`
     ).join("");
 
   pgEl.innerHTML = `
-    <div class="pg-info">
-      ${start + 1}–${Math.min(start + perPage, total)} dari ${total}
-      <select class="pg-size-sel" id="pgSize" onchange="changePerPage(+this.value)">${sizeOpts}</select>
-    </div>
-    <div class="pg-btns">
-      <button class="pg-btn" onclick="goPage(${page - 1})" ${page === 1 ? "disabled" : ""}>&#8249;</button>
+    <div class="tbl-pg-info">Menampilkan ${start + 1}–${Math.min(start + perPage, total)} dari ${total} member</div>
+    <div class="tbl-pg-btns">
+      <button class="tbl-pg-btn ${page === 1 ? "disable" : ""}" onclick="goPage(${page - 1})">
+        <i class="ti ti-chevron-left" style="font-size:13px"></i>
+      </button>
       ${pageBtns}
-      <button class="pg-btn" onclick="goPage(${page + 1})" ${page === pages ? "disabled" : ""}>&#8250;</button>
+      <button class="tbl-pg-btn ${page === pages ? "disable" : ""}" onclick="goPage(${page + 1})">
+        <i class="ti ti-chevron-right" style="font-size:13px"></i>
+      </button>
     </div>`;
 };
 
