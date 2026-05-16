@@ -449,10 +449,10 @@ window.addEventListener("message", (e) => {
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
   _modalUrl = scanUrl;
 
-  // Sembunyikan iframe dulu agar tidak ada dark flash saat load
+  // Mulai dari 1px agar modal kompak, expand smooth saat card siap
   const frame = document.getElementById("modalFrame");
   frame.style.opacity = "0";
-  frame.style.height  = "420px";
+  frame.style.height  = "1px";
   frame.src = `/admin/qr-view/${kode}?tk=${TK}`;
 
   document.getElementById("modalName").textContent = "";
