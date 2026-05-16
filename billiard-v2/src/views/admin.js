@@ -4,7 +4,7 @@
 // sebagai variabel string biasa SEBELUM dimasukkan ke template literal.
 
 import { CONFIG } from "../config.js";
-import { getBulanOptions, formatTanggalPendek, formatTanggalBulan } from "../utils/format.js";
+import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam } from "../utils/format.js";
 
 // ── WA SVG icon (string biasa, bukan template literal) ────────
 const WA_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">'
@@ -878,7 +878,7 @@ export function memberPage({ db, token, req }) {
       sudahScan:     m.sudahScanHariIni ?? false,
       aktif:         m.aktif ?? false,
       tglDaftar:     m.tanggalDaftar         ? formatTanggalPendek(m.tanggalDaftar)         : '—',
-      tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalBulan(m.tanggalScanTerakhir)    : '—',
+      tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalJam(m.tanggalScanTerakhir)      : '—',
       bulanScan:     d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
       bonusEarnedAt: m.bonusEarnedAt ?? null,
       bonusSisaHari,

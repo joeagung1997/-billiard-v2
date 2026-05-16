@@ -27,6 +27,12 @@ export const formatTanggalBulan = (date) =>
     day: "numeric", month: "short",
   });
 
+export const formatTanggalJam = (date) =>
+  new Date(date).toLocaleString("id-ID", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: ID_TZ,
+  });
+
 export const selisihHari = (tgl1, tgl2) => {
   const a = new Date(tgl1); a.setHours(0, 0, 0, 0);
   const b = new Date(tgl2); b.setHours(0, 0, 0, 0);
