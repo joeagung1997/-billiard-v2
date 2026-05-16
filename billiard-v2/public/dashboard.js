@@ -143,7 +143,7 @@ const renderMemberRow = (m, idx) => {
           class="tbl-btn tbl-btn-gold" style="font-size:11px">Klaim</a>`
     : "";
 
-  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 120px 120px">
+  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 170px">
     <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
     <div class="tbl-td">
       <div class="m-cell">
@@ -157,7 +157,7 @@ const renderMemberRow = (m, idx) => {
     <div class="tbl-td">${tipeBadge}</div>
     <div class="tbl-td muted" style="font-size:12px">${esc(m.tglDaftar)}</div>
     <div class="tbl-td">${statusHtml}</div>
-    <div class="tbl-td r mono" style="font-size:12px">${m.totalMain ?? 0} kunjungan</div>
+    <div class="tbl-td r mono" style="font-size:12px">${m.totalMain ?? 0}x</div>
     <div class="tbl-td r">
       <div class="act-cell">
         <button class="icon-btn" title="Lihat QR" onclick="${qrClick}">

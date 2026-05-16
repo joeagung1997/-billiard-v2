@@ -841,7 +841,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}});'
     + '})();'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=4"><\/script>'
+    + '<script src="/dashboard.js?v=5"><\/script>'
     + '</body></html>';
 }
 
@@ -952,13 +952,13 @@ export function memberPage({ db, token, req }) {
     // ── Table ───────────────────────────────────────────────────
     + '<div class="table-card">'
     + '<div id="tbl-summary" class="filter-summary" style="display:none"></div>'
-    + '<div class="tbl-head" style="grid-template-columns:40px 1fr 110px 110px 90px 120px 120px">'
+    + '<div class="tbl-head" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 170px">'
     + '<div class="tbl-th">#</div>'
     + '<div class="tbl-th">Member</div>'
     + '<div class="tbl-th">Tipe</div>'
     + '<div class="tbl-th">Bergabung</div>'
     + '<div class="tbl-th">Status</div>'
-    + '<div class="tbl-th r">Total</div>'
+    + '<div class="tbl-th r">Kunjungan</div>'
     + '<div class="tbl-th r">Aksi</div>'
     + '</div>'
     + '<div id="tbody"></div>'
@@ -986,7 +986,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=4"></script>'
+    + '<script src="/dashboard.js?v=5"></script>'
     + '</body></html>';
 }
 
