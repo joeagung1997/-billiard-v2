@@ -546,4 +546,11 @@ Object.assign(window, {
 initSimpleList(DATA_SCAN || [], "scan-list", "scan-showbtn", renderScan);
 initSimpleList(DATA_LB   || [], "lb-list",   "lb-showbtn",   renderLb);
 initSimpleList(DATA_LOG  || [], "log-list",  "log-showbtn",  renderLog);
-if (document.getElementById('tbody')) filterMember();
+if (document.getElementById('tbody')) {
+  // Reset semua filter ke default agar tidak ada browser-saved value yang auto-filter
+  ["cari", "filterBulan", "filterStatus"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  filterMember();
+}
