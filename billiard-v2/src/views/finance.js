@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=5\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=6\">";
 }
 
 function buildFinanceSidebar(ftk) {
@@ -491,8 +491,9 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
 
     // ── Transaction table ───────────────────────────────────────
+    + "<div class=\"finance-table-wrap\">"
     + "<div class=\"table-card\">"
-    + "<div class=\"tbl-head\" style=\"grid-template-columns:100px 1fr 110px 130px 100px 80px\">"
+    + "<div class=\"tbl-head\" style=\"grid-template-columns:100px 1fr 110px 130px 100px 80px;min-width:580px\">"
     + "<div class=\"tbl-th\">Tanggal</div>"
     + "<div class=\"tbl-th\">Keterangan</div>"
     + "<div class=\"tbl-th\">Kategori</div>"
@@ -504,6 +505,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"tbl-pg\">"
     + "<div class=\"tbl-pg-info\">" + sortedTbl.length + " transaksi &nbsp;|&nbsp; Saldo: <strong style=\"color:" + (saldo >= 0 ? "var(--accent)" : "var(--red)") + ";font-family:var(--ff-mono)\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</strong></div>"
     + "<div><a href=\"/keuangan/tambah?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px\"><i class=\"ti ti-plus\" style=\"font-size:13px\"></i> Tambah Manual</a></div>"
+    + "</div>"
     + "</div>"
     + "</div>"
 

@@ -421,6 +421,8 @@ function buildAdminCss() {
     '  .mini-fin-val { font-size:10px; }',
     '  .mini-fin-lbl { font-size:9px; }',
     '  .trend-card { padding:12px; }',
+    '  .dash-topbar { flex-direction:column; gap:10px; }',
+    '  .topbar-actions { width:100%; justify-content:flex-end; }',
     '}',
     '@media (min-width:641px) {',
     '  .topbar { display:none; }',
@@ -652,7 +654,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=5">'
+    + '<link rel="stylesheet" href="/admin.css?v=6">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -881,7 +883,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=5">'
+    + '<link rel="stylesheet" href="/admin.css?v=6">'
     + '</head><body>'
 
     + '<div class="layout">'

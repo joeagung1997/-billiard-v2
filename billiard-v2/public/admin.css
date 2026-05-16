@@ -487,18 +487,60 @@ td          { padding:10px 16px; vertical-align:middle; }
   .bottom-grid  { grid-template-columns:1fr; }
 }
 @media (max-width:768px) {
-  .sidebar    { display:none; }
-  .main-wrap  { margin-left:0; }
-  .page       { padding:16px; padding-bottom:80px; }
+  .sidebar     { display:none; }
+  .main-wrap   { margin-left:0; }
+  .page        { padding:16px; padding-bottom:80px; }
   .summary-bar { flex-wrap:wrap; gap:12px; }
-  .divider-v  { display:none; }
-  .stat-grid  { grid-template-columns:repeat(2,1fr); gap:8px; }
-  .bottom-nav { display:flex; }
+  .divider-v   { display:none; }
+  .stat-grid   { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .bottom-nav  { display:flex; }
+
+  /* Toolbar: stack vertically */
+  .toolbar-card { flex-direction:column; gap:8px; }
+  .toolbar-card > .search-wrap { width:100% !important; min-width:unset !important; }
+  .toolbar-card select,
+  .toolbar-card .sel { width:100%; }
+
+  /* Finance period bar: wrap */
+  .period-bar { flex-wrap:wrap; gap:8px; }
+  .period-bar select,
+  .period-bar input[type="date"] { flex:1; min-width:130px; }
+
+  /* Finance transaction table: horizontal scroll on tablet */
+  .table-card { overflow-x:auto; }
 }
 @media (max-width:640px) {
-  .table-wrap { display:none; }
-  .pg-wrap    { display:none; }
+  .table-wrap  { display:none; }
+  .pg-wrap     { display:none; }
   .dash-topbar { flex-direction:column; gap:12px; }
   .topbar-actions { width:100%; }
+
+  /* Hide new grid table on mobile — mobile-list cards take over */
+  .table-card  { display:none !important; }
+  .tbl-pg      { display:none !important; }
+
+  /* Finance table — show scrollable, not hidden (no card fallback) */
+  .finance-table-wrap .table-card { display:block !important; overflow-x:auto; }
+  .finance-table-wrap .tbl-pg     { display:flex !important; }
+  .finance-table-wrap .tbl-head,
+  .finance-table-wrap #ftbody > .tbl-row { min-width:580px; }
+
+  /* Finance modal: full width */
+  .over-modal  { width:calc(100% - 32px) !important; max-height:88vh; overflow-y:auto; }
+
+  /* Finance content-grid: single column */
+  .content-grid { grid-template-columns:1fr !important; }
+
+  /* Stat grid: 2 cols on small mobile */
+  .stat-grid   { grid-template-columns:repeat(2,1fr) !important; gap:8px; }
+
+  /* Period bar: stack on small mobile */
+  .period-bar  { flex-direction:column; gap:8px; }
+  .period-bar select,
+  .period-bar input[type="date"] { width:100%; min-width:unset; }
+}
+@media (max-width:400px) {
+  /* Stat grid: 1 col on very small screens */
+  .stat-grid   { grid-template-columns:1fr !important; }
 }
 @media (min-width:769px) { .topbar { display:none; } }
