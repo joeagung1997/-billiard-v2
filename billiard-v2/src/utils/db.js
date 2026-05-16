@@ -33,6 +33,7 @@ const rowToMember = (row) => {
     tanggalDaftar:       row.tanggal_daftar        ?? null,
     tanggalScanTerakhir: row.tanggal_scan_terakhir ?? null,
     aktif,
+    bonusEarnedAt: row.bonus_earned_at ?? null,
   };
 };
 
@@ -67,8 +68,8 @@ export const saveMember = async (m) => {
   await query(`
     INSERT INTO members
       (kode, nama, telepon, total_main, tanggal_mulai, sudah_scan_hari_ini,
-       status, total_gratis, tanggal_daftar, tanggal_scan_terakhir)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       status, total_gratis, tanggal_daftar, tanggal_scan_terakhir, bonus_earned_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     ON CONFLICT (kode) DO UPDATE SET
       nama                  = EXCLUDED.nama,
       telepon               = EXCLUDED.telepon,
@@ -77,14 +78,31 @@ export const saveMember = async (m) => {
       sudah_scan_hari_ini   = EXCLUDED.sudah_scan_hari_ini,
       status                = EXCLUDED.status,
       total_gratis          = EXCLUDED.total_gratis,
-      tanggal_scan_terakhir = EXCLUDED.tanggal_scan_terakhir
+      tanggal_scan_terakhir = EXCLUDED.tanggal_scan_terakhir,
+      bonus_earned_at       = EXCLUDED.bonus_earned_at
   `, [
     m.kode, m.nama, m.telepon ?? "",
     m.totalMain ?? 0, m.tanggalMulai ?? null,
     m.sudahScanHariIni ?? false, m.status ?? "-",
     m.totalGratis ?? 0, m.tanggalDaftar ?? new Date().toISOString(),
-    m.tanggalScanTerakhir ?? null,
+    m.tanggalScanTerakhir ?? null, m.bonusEarnedAt ?? null,
   ]);
+};
+
+export const checkBonusExpiry = async () => {
+  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const res = await query(
+    `SELECT kode, nama FROM members WHERE bonus_earned_at IS NOT NULL AND bonus_earned_at < $1`,
+    [cutoff]
+  );
+  for (const row of res.rows) {
+    await query(
+      `UPDATE members SET total_main = 0, bonus_earned_at = NULL, status = '-', tanggal_mulai = NOW() WHERE kode = $1`,
+      [row.kode]
+    );
+    await appendLog(row.kode, row.nama, "BONUS_EXPIRED", "Bonus tidak diklaim dalam 2 minggu, progress direset");
+  }
+  if (res.rows.length > 0) console.log("[DB] Bonus expired:", res.rows.length, "member direset");
 };
 
 export const deleteMember = async (kode) => {

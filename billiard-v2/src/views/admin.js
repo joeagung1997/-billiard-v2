@@ -865,20 +865,25 @@ export function memberPage({ db, token, req }) {
 
   const dataMember = members.map((m) => {
     const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
+    const bonusSisaHari = m.bonusEarnedAt
+      ? Math.max(0, 14 - Math.floor((Date.now() - new Date(m.bonusEarnedAt).getTime()) / 86400000))
+      : null;
     return {
-      kode:        m.kode,
-      nama:        m.nama,
-      telepon:     m.telepon ?? '',
-      totalMain:   m.totalMain ?? 0,
-      totalGratis: m.totalGratis ?? 0,
-      status:      m.status ?? '-',
-      sudahScan:   m.sudahScanHariIni ?? false,
-      aktif:       m.aktif ?? false,
-      tglDaftar:   m.tanggalDaftar    ? formatTanggalPendek(m.tanggalDaftar)   : '—',
-      tglTerakhir: m.tanggalScanTerakhir ? formatTanggalBulan(m.tanggalScanTerakhir) : '—',
-      bulanScan:   d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
+      kode:          m.kode,
+      nama:          m.nama,
+      telepon:       m.telepon ?? '',
+      totalMain:     m.totalMain ?? 0,
+      totalGratis:   m.totalGratis ?? 0,
+      status:        m.status ?? '-',
+      sudahScan:     m.sudahScanHariIni ?? false,
+      aktif:         m.aktif ?? false,
+      tglDaftar:     m.tanggalDaftar         ? formatTanggalPendek(m.tanggalDaftar)         : '—',
+      tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalBulan(m.tanggalScanTerakhir)    : '—',
+      bulanScan:     d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
+      bonusEarnedAt: m.bonusEarnedAt ?? null,
+      bonusSisaHari,
     };
-  });
+  }).sort((a, b) => (b.status === 'BONUS' ? 1 : 0) - (a.status === 'BONUS' ? 1 : 0));
 
   const bulanOpts = getBulanOptions()
     .map((o) => '<option value="' + o.val + '"' + (o.selected ? ' selected' : '') + '>' + o.lbl + '</option>')
@@ -999,7 +1004,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=20"></script>'
+    + '<script src="/dashboard.js?v=21"></script>'
     + '</body></html>';
 }
 

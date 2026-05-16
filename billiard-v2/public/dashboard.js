@@ -88,6 +88,9 @@ const renderLb = ({ nama, kode, total, reward }, idx) =>
 
 const renderLog = ({ nama, aksi, detail, tgl }) => {
   const badge =
+    aksi === "BONUS_EARNED"  ? `<span class="badge badge-gold">🎁 Bonus Earned</span>` :
+    aksi === "BONUS_KLAIM"   ? `<span class="badge badge-gold" style="background:rgba(201,168,76,.25)">✅ Bonus Diklaim</span>` :
+    aksi === "BONUS_EXPIRED" ? `<span class="badge badge-red" style="background:rgba(239,68,68,.15);color:#f87171">⏰ Bonus Hangus</span>` :
     aksi === "REWARD_GRATIS" ? `<span class="badge badge-gold">🎁 Reward</span>` :
     aksi === "SCAN_RESET"    ? `<span class="badge badge-blue">↺ Reset</span>` :
                                `<span class="badge badge-green">✓ Scan</span>`;
@@ -112,8 +115,8 @@ const initials = (nama) => {
 };
 
 const renderMemberRow = (m, idx) => {
+  const isBonus  = m.status === "BONUS";
   const isVip    = (m.totalMain ?? 0) >= BATAS;
-  const isGratis = m.status === "GRATIS";
   const baseUrl  = (HOST || "").replace("http://", "https://");
   const scanUrl  = baseUrl + "/scan?id=" + m.kode;
   const shareUrl = baseUrl + "/member/" + m.kode;
@@ -129,24 +132,34 @@ const renderMemberRow = (m, idx) => {
     "Tunjukkan QR ini ke kasir tiap mau main: " + shareUrl
   );
 
-  const tipeBadge = isGratis
-    ? `<span class="badge badge-vip" style="display:inline-flex;align-items:center;gap:4px"><i class="ti ti-crown" style="font-size:10px;"></i>VIP</span>`
+  const tipeBadge = isBonus
+    ? `<span class="badge badge-gold" style="display:inline-flex;align-items:center;gap:4px"><i class="ti ti-gift" style="font-size:10px"></i>Bonus!</span>`
     : `<span class="badge badge-regular">Regular</span>`;
 
-  // Status: aktif/tidak aktif (berdasarkan scan terakhir < 2 bulan)
-  const statusHtml = m.aktif
-    ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Aktif</span>`
-    : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak Aktif</span>`;
+  const statusHtml = isBonus
+    ? `<div class="sdot" style="background:#C9A84C;box-shadow:0 0 6px #C9A84C"></div><span style="font-size:12px;font-weight:600;color:#C9A84C">Bonus Pending</span>`
+    : m.aktif
+      ? `<div class="sdot on"></div><span style="font-size:12px;font-weight:500;color:var(--accent)">Aktif</span>`
+      : `<div class="sdot off"></div><span style="font-size:12px;color:var(--txt3)">Tidak Aktif</span>`;
 
-  // Indikator hadir hari ini (dot kecil di nama)
   const hadirDot = m.sudahScan
     ? `<span title="Hadir hari ini" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle"></span>`
     : "";
 
-  const resetQrUrl = `/admin/reset-qr?tk=${TK}&kode=${m.kode}`;
-  const resetQrConfirm = `return confirm('Reset QR member ${safeNama}? Kode lama tidak bisa dipakai lagi.')`;
+  const bonusExpiry = isBonus && m.bonusSisaHari !== null
+    ? `<div style="font-size:10px;color:#f59e0b;margin-top:2px">⏳ Hangus ${m.bonusSisaHari}h lagi</div>`
+    : "";
 
-  return `<div class="tbl-row" style="grid-template-columns:40px 1fr 110px 110px 90px 110px 200px">
+  const resetQrUrl     = `/admin/reset-qr?tk=${TK}&kode=${m.kode}`;
+  const resetQrConfirm = `return confirm('Reset QR member ${safeNama}? Kode lama tidak bisa dipakai lagi.')`;
+  const klaimUrl       = `/admin/klaim?tk=${TK}&kode=${m.kode}`;
+  const klaimConfirm   = `return confirm('Klaim bonus ${safeNama}? Progress sesi akan direset ke 0.')`;
+
+  const rowStyle = isBonus
+    ? `grid-template-columns:40px 1fr 110px 110px 90px 110px 200px;background:rgba(201,168,76,.06);border-left:3px solid #C9A84C`
+    : `grid-template-columns:40px 1fr 110px 110px 90px 110px 200px`;
+
+  return `<div class="tbl-row" style="${rowStyle}">
     <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
     <div class="tbl-td">
       <div class="m-cell">
@@ -154,6 +167,7 @@ const renderMemberRow = (m, idx) => {
         <div>
           <div class="m-nm">${esc(m.nama)}${hadirDot}</div>
           <div class="m-id">${esc(m.kode)} &middot; ${esc(m.telepon || "—")}</div>
+          ${bonusExpiry}
         </div>
       </div>
     </div>
@@ -163,6 +177,7 @@ const renderMemberRow = (m, idx) => {
     <div class="tbl-td r mono" style="font-size:12px">${m.totalMain ?? 0}x</div>
     <div class="tbl-td r">
       <div class="act-cell">
+        ${isBonus ? `<a href="${klaimUrl}" onclick="${klaimConfirm}" class="icon-btn" title="Klaim Bonus" style="background:#C9A84C;color:#000;font-weight:700;font-size:13px">🎁</a>` : ""}
         <button class="icon-btn" title="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
@@ -185,6 +200,7 @@ const renderMemberRow = (m, idx) => {
 
 // ── Mobile member card ────────────────────────────────────────
 const renderMemberCard = (m) => {
+  const isBonus  = m.status === "BONUS";
   const isGratis = m.status === "GRATIS";
   const pct      = Math.min(Math.round((m.totalMain ?? 0) / BATAS * 100), 100);
   const baseUrl  = (HOST || "").replace("http://", "https://");
@@ -207,14 +223,20 @@ const renderMemberCard = (m) => {
   const hadirBadge = m.sudahScan
     ? `<span class="badge badge-blue" style="font-size:10px">✓ Hadir</span>`
     : "";
-  const gratisBadge = isGratis
-    ? `<span class="badge badge-gold" style="font-size:10px">🎁 Reward</span>`
+  const gratisBadge = isBonus
+    ? `<span class="badge badge-gold" style="font-size:10px">🎁 Bonus!</span>`
+    : isGratis
+      ? `<span class="badge badge-gold" style="font-size:10px">🎁 Reward</span>`
+      : "";
+
+  const bonusExpiryMc = isBonus && m.bonusSisaHari !== null
+    ? `<div style="font-size:10px;color:#f59e0b;margin-top:4px;text-align:center">⏳ Hangus dalam ${m.bonusSisaHari} hari</div>`
     : "";
 
-  const klaimBtn = isGratis
+  const klaimBtn = (isBonus || isGratis)
     ? `<a href="/admin/klaim?tk=${TK}&kode=${m.kode}"
-          onclick="return confirm('Tandai reward sudah diklaim?')"
-          class="mc-btn mc-btn-gold">🎁 Klaim</a>`
+          onclick="return confirm('Klaim bonus ${safeNama}? Progress sesi akan direset ke 0.')"
+          class="mc-btn mc-btn-gold">🎁 Klaim Bonus</a>`
     : "";
 
   const waBtn = waNum
@@ -239,6 +261,7 @@ const renderMemberCard = (m) => {
           <span class="mc-prog-txt">${m.totalMain}/${BATAS}</span>
         </div>
         <div class="mc-badges">${aktifBadge}${hadirBadge}${gratisBadge}</div>
+        ${bonusExpiryMc}
       </div>
       <div class="mc-right">
         <button onclick="${qrClick}" class="mc-btn mc-btn-qr" style="padding:8px 14px;font-size:18px">QR</button>
@@ -385,7 +408,7 @@ const filterMember = () => {
     const matchB = !bulan || m.bulanScan === bulan;
     const matchS =
       status === "hadir"    ? m.sudahScan :
-      status === "gratis"   ? m.status === "GRATIS" :
+      status === "gratis"   ? m.status === "BONUS" || m.status === "GRATIS" :
       status === "aktif"    ? m.aktif === true :
       status === "nonaktif" ? m.aktif === false :
       true;

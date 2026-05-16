@@ -74,6 +74,7 @@ export const runMigrations = async () => {
   // ── Kolom tambahan (idempotent) ─────────────────────────────
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);
+  await query(`ALTER TABLE members   ADD COLUMN IF NOT EXISTS bonus_earned_at TIMESTAMPTZ`);
 
   // ── Insert default kategori (skip jika sudah ada) ──────────
   for (const k of DEFAULT_KATEGORI) {

@@ -97,22 +97,20 @@ router.post("/checkin", async (req, res) => {
     m.sudahScanHariIni    = true;
     m.tanggalScanTerakhir = today.toISOString();
 
-    // Case: 10x → gratis + reset
+    // Case: sesi penuh → bonus earned, tunggu klaim kasir
     if (m.totalMain >= CONFIG.BATAS_MAIN) {
-      m.totalGratis  = (m.totalGratis ?? 0) + 1;
-      m.status       = "GRATIS";
-      m.tanggalMulai = today.toISOString();
-      const totalGratis = m.totalGratis;
-      const tn          = m.totalMain;
-      m.totalMain       = 0;
+      m.status        = "BONUS";
+      m.bonusEarnedAt = today.toISOString();
 
       await saveMember(m);
-      await appendLog(kode, m.nama, "REWARD_GRATIS", `Reward ke-${totalGratis}`);
+      await appendLog(kode, m.nama, "BONUS_EARNED", `Bonus earned setelah ${m.totalMain} sesi`);
 
       return res.send(resultPage("gratis", {
-        nama: m.nama, judul: "Selamat! Main Gratis!",
-        pesan: `Kamu sudah main ${tn}x! Main berikutnya GRATIS.`,
-        totalGratis, kode,
+        nama:  m.nama,
+        judul: "Selamat! Bonus Kamu Siap! 🎁",
+        pesan: "Tunjukkan layar ini ke kasir untuk klaim sesi gratis kamu.",
+        totalGratis: m.totalGratis ?? 0,
+        kode,
       }));
     }
 

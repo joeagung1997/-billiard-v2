@@ -6,7 +6,7 @@ import {
   readDB, readLog, readTransaksi,
   saveMember, deleteMember, resetScanHarian,
   createMember, findMember, findMemberIndex,
-  resetQrMember, appendLog,
+  resetQrMember, appendLog, checkBonusExpiry,
 } from "../utils/db.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
@@ -31,6 +31,7 @@ router.get("/", async (req, res) => {
   }
 
   try {
+    await checkBonusExpiry();
     const token     = tk || createToken(pin);
     const db        = await readDB();
     const log       = await readLog();
@@ -54,6 +55,7 @@ router.post("/login", (req, res) => {
 // ── GET /admin/members — member management page ───────────────
 router.get("/members", requireAdmin, async (req, res) => {
   try {
+    await checkBonusExpiry();
     const db    = await readDB();
     const token = res.locals.tk;
     res.send(memberPage({ db, token, req }));
@@ -163,9 +165,17 @@ router.get("/klaim", requireAdmin, async (req, res) => {
   try {
     const db  = await readDB();
     const idx = findMemberIndex(db.members, kode);
-    if (idx !== -1 && db.members[idx].status === "GRATIS") {
-      const m = { ...db.members[idx], status: "-" };
-      await saveMember(m);
+    if (idx !== -1) {
+      const m = { ...db.members[idx] };
+      if (m.status === "BONUS" || m.status === "GRATIS") {
+        m.totalGratis   = (m.totalGratis ?? 0) + 1;
+        m.totalMain     = 0;
+        m.tanggalMulai  = new Date().toISOString();
+        m.status        = "-";
+        m.bonusEarnedAt = null;
+        await saveMember(m);
+        await appendLog(kode, m.nama, "BONUS_KLAIM", `Reward ke-${m.totalGratis} diklaim kasir`);
+      }
     }
     res.redirect(`/admin?tk=${tk}`);
   } catch (err) {
