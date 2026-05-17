@@ -21,6 +21,7 @@ function docHead(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
+    + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"/finance.css?v=3\">";
 }
 
@@ -28,6 +29,7 @@ function docHeadV4(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
+    + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
     + "<link rel=\"stylesheet\" href=\"/admin.css?v=16\">";
