@@ -94,6 +94,155 @@ window.closeConfirm = function() {
   if (ov) ov.classList.remove("open");
 };
 
+// ── Member detail modal ──────────────────────────────────────
+const formatRiwTime = (ts) => {
+  if (!ts) return "";
+  try {
+    const d = new Date(ts);
+    const tgl = d.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric", timeZone:"Asia/Jakarta" });
+    const jam = d.toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" });
+    return tgl + " · " + jam;
+  } catch (_) { return String(ts); }
+};
+
+const formatDateOnly = (s) => {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"2-digit", timeZone:"Asia/Jakarta" });
+  } catch (_) { return String(s); }
+};
+
+window.openMemberDetail = function(kode) {
+  if (!Array.isArray(DATA_MEMBER)) return;
+  const m = DATA_MEMBER.find((x) => x.kode === kode);
+  if (!m) return;
+
+  const isBonus = m.status === "BONUS";
+  const isGratis = m.status === "GRATIS";
+  const isVip = (m.totalMain || 0) >= BATAS;
+  const waNum = (m.telepon || "").replace(/[^0-9]/g, "");
+
+  // Avatar initials
+  const ini = m.nama.trim().split(/\s+/).slice(0, 2).map((w) => (w[0] || "").toUpperCase()).join("");
+  document.getElementById("dtAv").textContent = ini || "?";
+  document.getElementById("dtNm").textContent = m.nama;
+  document.getElementById("dtCd").textContent = m.kode;
+  document.getElementById("dtKode").textContent = m.kode;
+
+  // Badges
+  const badges = [];
+  badges.push(m.aktif
+    ? `<span class="dt-b aktif"><i class="ti ti-point-filled"></i>Aktif</span>`
+    : `<span class="dt-b off"><i class="ti ti-point-filled"></i>Tidak Aktif</span>`);
+  if (isBonus)       badges.push(`<span class="dt-b bonus">🎁 Bonus</span>`);
+  else if (isGratis) badges.push(`<span class="dt-b bonus">🎁 Reward</span>`);
+  else if (isVip)    badges.push(`<span class="dt-b vip">👑 VIP</span>`);
+  else               badges.push(`<span class="dt-b reg">Regular</span>`);
+  document.getElementById("dtBadges").innerHTML = badges.join("");
+
+  // Stats
+  document.getElementById("dtKunjungan").textContent = m.totalMain || 0;
+  document.getElementById("dtBergabung").textContent = m.tglDaftar || "—";
+  document.getElementById("dtTerakhir").textContent  = m.tglTerakhir || "—";
+
+  // Phone
+  const phoneEl = document.getElementById("dtPhone");
+  const phoneWa = document.getElementById("dtPhoneWa");
+  if (m.telepon) {
+    phoneEl.textContent = m.telepon;
+    phoneEl.classList.add("link");
+    phoneEl.classList.remove("muted");
+    if (waNum) {
+      phoneWa.href = "https://wa.me/" + waNum;
+      phoneWa.style.display = "";
+    } else {
+      phoneWa.style.display = "none";
+    }
+  } else {
+    phoneEl.textContent = "Belum diisi";
+    phoneEl.classList.remove("link");
+    phoneEl.classList.add("muted");
+    phoneWa.style.display = "none";
+  }
+
+  // Reward count row (totalGratis)
+  const bonusRow = document.getElementById("dtBonusRow");
+  if (m.totalGratis > 0) {
+    document.getElementById("dtBonusVal").textContent = m.totalGratis + "× reward";
+    bonusRow.style.display = "";
+  } else {
+    bonusRow.style.display = "none";
+  }
+
+  // Bonus expiry warning
+  const warnEl = document.getElementById("dtBonusWarn");
+  if (isBonus && m.bonusSisaHari !== null && m.bonusSisaHari !== undefined) {
+    warnEl.innerHTML = `<div class="dt-exp-warn bonus">
+      <i class="ti ti-clock-exclamation"></i>
+      <p>Bonus belum diklaim — hangus dalam <strong>${m.bonusSisaHari} hari</strong></p>
+    </div>`;
+  } else {
+    warnEl.innerHTML = "";
+  }
+
+  // Riwayat dari DATA_LOG (filter SCAN untuk member ini, max 10)
+  const riv = (Array.isArray(DATA_LOG) ? DATA_LOG : [])
+    .filter((l) => l.kode === m.kode && l.aksi === "SCAN")
+    .slice(0, 10);
+  const rivEl = document.getElementById("dtRiwayat");
+  if (riv.length === 0) {
+    rivEl.innerHTML = `<div class="dt-empty">
+      <i class="ti ti-calendar-off"></i>
+      <p>Belum ada riwayat kunjungan</p>
+    </div>`;
+  } else {
+    rivEl.innerHTML = riv.map((l, i) => `<div class="dt-riv-item">
+      <div class="dt-riv-dot"></div>
+      <div class="dt-riv-body">
+        <p class="dt-riv-label">${esc(l.detail || "Kunjungan ke-" + (riv.length - i))}</p>
+        <p class="dt-riv-time">${esc(l.tgl || "")}</p>
+      </div>
+    </div>`).join("");
+  }
+
+  // Footer actions
+  const waBtn = document.getElementById("dtBtnWa");
+  if (waNum) {
+    const baseUrl  = (HOST || "").replace("http://", "https://");
+    const shareUrl = baseUrl + "/member/" + m.kode;
+    const msg = encodeURIComponent("Halo " + m.nama + "! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: " + shareUrl);
+    waBtn.href = "https://wa.me/?text=" + msg;
+    waBtn.style.display = "";
+  } else {
+    waBtn.style.display = "none";
+  }
+
+  const baseUrl = (HOST || "").replace("http://", "https://");
+  const scanUrl = baseUrl + "/scan?id=" + m.kode;
+  const dlUrl   = "/admin/qr/"     + m.kode + "?tk=" + TK;
+  const imgUrl  = "/admin/qr-img/" + m.kode + "?tk=" + TK;
+  const safeNama = m.nama.replace(/'/g, "\\'");
+  document.getElementById("dtBtnQr").onclick = function() {
+    closeMemberDetail();
+    openModal(m.kode, safeNama, scanUrl, dlUrl, imgUrl);
+  };
+  document.getElementById("dtBtnEdit").href  = "/admin/edit?tk=" + TK + "&kode=" + m.kode;
+  const resetBtn = document.getElementById("dtBtnReset");
+  const resetUrl = "/admin/reset-qr?tk=" + TK + "&kode=" + m.kode;
+  resetBtn.href = resetUrl;
+  resetBtn.dataset.confirm = "resetqr";
+  resetBtn.dataset.name = m.nama;
+  resetBtn.dataset.href = resetUrl;
+  resetBtn.onclick = function() { closeMemberDetail(); confirmAction(this); return false; };
+
+  document.getElementById("memberDetailOv").classList.add("open");
+};
+
+window.closeMemberDetail = function() {
+  const ov = document.getElementById("memberDetailOv");
+  if (ov) ov.classList.remove("open");
+};
+
 // ── Tab switcher ──────────────────────────────────────────────
 const TAB_IDS = ["scan", "lb", "log"];
 
@@ -233,7 +382,7 @@ const renderMemberRow = (m, idx) => {
   return `<div class="tbl-row" style="${rowStyle}">
     <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
     <div class="tbl-td">
-      <div class="m-cell">
+      <div class="m-cell clickable" data-tip="Lihat detail member" onclick="openMemberDetail('${m.kode}')">
         <div class="m-av ${color}">${initials(m.nama)}</div>
         <div>
           <div class="m-nm">${esc(m.nama)}${hadirDot}</div>
@@ -322,7 +471,7 @@ const renderMemberCard = (m) => {
   return `<div class="mc ${m.aktif ? "aktif" : "nonaktif"}">
     <div class="mc-top">
       <img src="${imgUrl}" alt="QR" class="mc-qr" loading="lazy" onclick="${qrClick}">
-      <div class="mc-body">
+      <div class="mc-body" style="cursor:pointer" onclick="openMemberDetail('${m.kode}')">
         <div class="mc-name">${esc(m.nama)}</div>
         <div class="mc-kode">${esc(m.kode)}</div>
         <div class="mc-prog">

@@ -833,7 +833,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=27">'
+    + '<link rel="stylesheet" href="/admin.css?v=28">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1151,7 +1151,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=24"><\/script>'
+    + '<script src="/dashboard.js?v=25"><\/script>'
     + '</body></html>';
 }
 
@@ -1218,7 +1218,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=27">'
+    + '<link rel="stylesheet" href="/admin.css?v=28">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1317,6 +1317,55 @@ export function memberPage({ db, token, req }) {
     + buildBottomNav(token, 'members')
     + buildModal()
 
+    // ── Member detail modal (full profile pop-up) ──────────────
+    + '<div class="dt-ov" id="memberDetailOv" onclick="if(event.target===this)closeMemberDetail()">'
+    + '<div class="dt-md">'
+    + '<div class="dt-hd">'
+    + '<div class="dt-av" id="dtAv">—</div>'
+    + '<div class="dt-hd-info">'
+    + '<p class="dt-nm" id="dtNm">—</p>'
+    + '<p class="dt-cd" id="dtCd">—</p>'
+    + '<div class="dt-hd-badges" id="dtBadges"></div>'
+    + '</div>'
+    + '<button class="dt-xb" aria-label="Tutup" onclick="closeMemberDetail()"><i class="ti ti-x"></i></button>'
+    + '</div>'
+    + '<div class="dt-body">'
+    + '<div class="dt-stats">'
+    + '<div class="dt-st"><p class="dt-st-v" id="dtKunjungan">0</p><p class="dt-st-l">Kunjungan</p></div>'
+    + '<div class="dt-st"><p class="dt-st-v sm" id="dtBergabung">—</p><p class="dt-st-l">Bergabung</p></div>'
+    + '<div class="dt-st"><p class="dt-st-v sm" id="dtTerakhir">—</p><p class="dt-st-l">Terakhir Scan</p></div>'
+    + '</div>'
+    + '<div class="dt-sec">'
+    + '<p class="dt-sec-t">Informasi</p>'
+    + '<div class="dt-inf-row">'
+    + '<div class="dt-inf-ic"><i class="ti ti-phone"></i></div>'
+    + '<div class="dt-inf-body"><p class="dt-inf-l">Nomor HP</p><p class="dt-inf-v link" id="dtPhone">—</p></div>'
+    + '<a class="dt-wa-inline" id="dtPhoneWa" target="_blank" rel="noopener" style="display:none"><i class="ti ti-brand-whatsapp"></i>WA</a>'
+    + '</div>'
+    + '<div class="dt-inf-row">'
+    + '<div class="dt-inf-ic"><i class="ti ti-qrcode"></i></div>'
+    + '<div class="dt-inf-body"><p class="dt-inf-l">Kode Member</p><p class="dt-inf-v mono" id="dtKode">—</p></div>'
+    + '</div>'
+    + '<div class="dt-inf-row" id="dtBonusRow" style="display:none">'
+    + '<div class="dt-inf-ic"><i class="ti ti-gift"></i></div>'
+    + '<div class="dt-inf-body"><p class="dt-inf-l">Reward Diklaim</p><p class="dt-inf-v" id="dtBonusVal">—</p></div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="dt-sec">'
+    + '<p class="dt-sec-t">Riwayat Kunjungan</p>'
+    + '<div id="dtBonusWarn"></div>'
+    + '<div id="dtRiwayat" class="dt-riv"></div>'
+    + '</div>'
+    + '</div>' // /dt-body
+    + '<div class="dt-ft">'
+    + '<a class="dt-btn dt-btn-wa" id="dtBtnWa" target="_blank" rel="noopener" style="display:none"><i class="ti ti-brand-whatsapp"></i>WA</a>'
+    + '<button type="button" class="dt-btn" id="dtBtnQr"><i class="ti ti-qrcode"></i>QR</button>'
+    + '<a class="dt-btn" id="dtBtnEdit"><i class="ti ti-edit"></i>Edit</a>'
+    + '<a class="dt-btn dt-btn-main" id="dtBtnReset"><i class="ti ti-refresh"></i>Reset QR</a>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
     // ── Confirm modal (custom, untuk hapus/reset QR/klaim) ─────
     + '<div class="confirm-ov" id="confirmOv" onclick="if(event.target===this)closeConfirm()">'
     + '<div class="confirm-box">'
@@ -1341,7 +1390,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=24"></script>'
+    + '<script src="/dashboard.js?v=25"></script>'
     + '</body></html>';
 }
 
