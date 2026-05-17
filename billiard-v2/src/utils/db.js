@@ -232,7 +232,7 @@ export const deleteKategori = async (id) => {
 // ── Menu Items (kopi/snack) ───────────────────────────────────
 
 export const readMenuItems = async () => {
-  const res = await query("SELECT id, nama, harga, harga_hot, kategori, best_seller FROM menu_items ORDER BY kategori, best_seller DESC, nama");
+  const res = await query("SELECT id, nama, harga, harga_hot, kategori, best_seller FROM menu_items ORDER BY kategori, best_seller DESC, id ASC");
   return res.rows;
 };
 
