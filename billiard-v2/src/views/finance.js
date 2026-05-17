@@ -1520,6 +1520,10 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     ".cat-input::placeholder{color:var(--txt3)}",
     ".menu-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}",
     "@media(max-width:700px){.menu-grid{grid-template-columns:1fr}}",
+    ".pag-btn{min-width:32px;height:32px;padding:0 8px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;transition:all .15s}",
+    ".pag-btn:hover:not([disabled]){background:var(--accent);color:#fff;border-color:var(--accent)}",
+    ".pag-btn[disabled]{opacity:.35;cursor:default}",
+    ".pag-btn.pag-active{background:var(--accent);color:#fff;border-color:var(--accent)}",
   ].join("");
 
   return docHeadV4("Kelola Menu")
@@ -1573,7 +1577,8 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
             + "<div class=\"kat-th\">Harga</div>"
             + "<div class=\"kat-th r\">Aksi</div>"
             + "</div>"
-            + "<div>" + (g.rows.length ? makeGroupRows(g.rows) : "<div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Tidak ada item.</div>") + "</div>"
+            + "<div class=\"kat-rows\">" + (g.rows.length ? makeGroupRows(g.rows) : "<div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Tidak ada item.</div>") + "</div>"
+            + "<div class=\"menu-pagination\" style=\"display:none;align-items:center;justify-content:center;gap:4px;padding:10px 14px;border-top:1px solid var(--border)\"></div>"
             + "</div>"
           ).join("")
       )
@@ -1644,38 +1649,55 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "document.getElementById('sortLabel').textContent=sortDesc?'Mahal → Murah':'Default';"
     + "applyFilter();}"
 
-    // Apply filter + sort to all menu-row elements
+    // Pagination state
+    + "var PAGE_SIZE=10;var pageState={};"
+    + "function goPage(ci,page){pageState[ci]=page;applyFilter();}"
+    // Apply filter + sort + pagination per card
     + "function applyFilter(){"
-    // Sort per card container
+    + "var ci=0;"
     + "document.querySelectorAll('.kat-card').forEach(function(card){"
-    + "var container=card.querySelector('.kat-card > div:last-child');"
+    + "var cIdx=ci++;"
+    + "var container=card.querySelector('.kat-rows');"
     + "if(!container)return;"
     + "var rows=Array.from(container.querySelectorAll('.menu-row'));"
+    // Sort
     + "if(sortDesc){"
     + "rows.sort(function(a,b){return parseInt(b.dataset.harga||0)-parseInt(a.dataset.harga||0);});"
-    + "rows.forEach(function(r){container.appendChild(r);});}"
-    + "else{"
-    // Restore original order (by data-original-index)
-    + "rows.sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);});"
-    + "rows.forEach(function(r){container.appendChild(r);});}"
-    // Filter visibility
+    + "}else{"
+    + "rows.sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);});}"
+    + "rows.forEach(function(r){container.appendChild(r);});"
+    // Filtered visible rows
+    + "var visible=rows.filter(function(r){return !bsActive||(r.dataset.bs==='1');});"
+    // Pagination calc
+    + "var page=pageState[cIdx]||1;"
+    + "var totalPages=Math.max(1,Math.ceil(visible.length/PAGE_SIZE));"
+    + "if(page>totalPages)page=totalPages;"
+    + "pageState[cIdx]=page;"
+    + "var start=(page-1)*PAGE_SIZE,end=start+PAGE_SIZE;"
+    // Show/hide rows
     + "rows.forEach(function(r){"
-    + "var show=!bsActive||(r.dataset.bs==='1');"
-    + "r.style.display=show?'':'none';});"
-    // Show empty state if all hidden
-    + "var visible=rows.filter(function(r){return r.style.display!=='none';}).length;"
+    + "var vi=visible.indexOf(r);"
+    + "r.style.display=(vi>=start&&vi<end)?'':'none';});"
+    // Empty state
     + "var empty=container.querySelector('.menu-filter-empty');"
-    + "if(visible===0&&!empty){"
+    + "if(visible.length===0&&!empty){"
     + "var e=document.createElement('div');e.className='kat-empty menu-filter-empty';"
     + "e.innerHTML='<i class=\"ti ti-filter-off\" style=\"font-size:22px;display:block;margin-bottom:6px;opacity:.35\"></i>Tidak ada item yang cocok.';"
-    + "container.appendChild(e);}"
-    + "else if(visible>0&&empty){empty.remove();}"
-    + "});"
-    // Toggle card visibility if ALL rows are hidden by filter
-    + "document.querySelectorAll('.kat-card').forEach(function(card){"
-    + "var rows=Array.from(card.querySelectorAll('.menu-row'));"
-    + "var anyVisible=rows.length===0||rows.some(function(r){return r.style.display!=='none';});"
-    + "card.style.display=anyVisible?'':'none';});}"
+    + "container.appendChild(e);"
+    + "}else if(visible.length>0&&empty){empty.remove();}"
+    // Pagination buttons
+    + "var pagDiv=card.querySelector('.menu-pagination');"
+    + "if(pagDiv){"
+    + "if(totalPages<=1){pagDiv.style.display='none';}"
+    + "else{"
+    + "pagDiv.style.display='flex';"
+    + "var btns='<button onclick=\"goPage('+cIdx+','+(page-1)+')\" class=\"pag-btn\"'+(page<=1?' disabled':'')+'>‹</button>';"
+    + "for(var p=1;p<=totalPages;p++){btns+='<button onclick=\"goPage('+cIdx+','+p+')\" class=\"pag-btn'+(p===page?' pag-active':'')+'\">'+p+'</button>';}"
+    + "btns+='<button onclick=\"goPage('+cIdx+','+(page+1)+')\" class=\"pag-btn\"'+(page>=totalPages?' disabled':'')+'>›</button>';"
+    + "pagDiv.innerHTML=btns;}}"
+    // Hide card if all filtered out
+    + "card.style.display=(visible.length===0&&bsActive)?'none':'';});"
+    + "}"
 
     // Stamp original index for stable restore
     + "(function(){"
