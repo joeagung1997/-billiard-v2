@@ -767,7 +767,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>';"
     + "c.appendChild(r);}"
     + "function wizRmItem(btn){var rows=document.querySelectorAll('#wizMenuItems .fin-menu-row');if(rows.length>1)btn.closest('.fin-menu-row').remove();}"
-    + "function wizFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
+    + "function wizFmtJ(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;var s=n>0?String(n):'';el.value=s?s.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
     + "function wizGoTo(n){"
     + "wizS.step=n;"
     + "[1,2,3].forEach(function(i){document.getElementById('wizStep'+i).style.display=i===n?'':'none';});"
