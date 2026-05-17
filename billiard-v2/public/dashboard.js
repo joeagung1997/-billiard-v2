@@ -147,14 +147,22 @@ const renderLb = ({ nama, kode, total, reward }, idx) =>
     </div>
   </div>`;
 
+const LOG_BADGE = {
+  SCAN:          `<span class="badge badge-green">✓ Scan</span>`,
+  BONUS_EARNED:  `<span class="badge badge-gold">🎁 Bonus Earned</span>`,
+  BONUS_KLAIM:   `<span class="badge badge-gold" style="background:rgba(201,168,76,.25)">✅ Bonus Diklaim</span>`,
+  BONUS_EXPIRED: `<span class="badge badge-red" style="background:rgba(239,68,68,.15);color:#f87171">⏰ Bonus Hangus</span>`,
+  REWARD_GRATIS: `<span class="badge badge-gold">🎁 Reward</span>`,
+  SCAN_RESET:    `<span class="badge badge-blue">↺ Reset Scan</span>`,
+  EDIT_MEMBER:   `<span class="badge" style="background:rgba(38,96,164,.15);color:#2660a4">✏ Edit Member</span>`,
+  DELETE_MEMBER: `<span class="badge badge-red" style="background:rgba(163,45,45,.15);color:#a32d2d">🗑 Hapus Member</span>`,
+  RESET_QR:      `<span class="badge" style="background:rgba(196,127,26,.15);color:#c47f1a">🔄 Reset QR</span>`,
+};
+
 const renderLog = ({ nama, aksi, detail, tgl }) => {
-  const badge =
-    aksi === "BONUS_EARNED"  ? `<span class="badge badge-gold">🎁 Bonus Earned</span>` :
-    aksi === "BONUS_KLAIM"   ? `<span class="badge badge-gold" style="background:rgba(201,168,76,.25)">✅ Bonus Diklaim</span>` :
-    aksi === "BONUS_EXPIRED" ? `<span class="badge badge-red" style="background:rgba(239,68,68,.15);color:#f87171">⏰ Bonus Hangus</span>` :
-    aksi === "REWARD_GRATIS" ? `<span class="badge badge-gold">🎁 Reward</span>` :
-    aksi === "SCAN_RESET"    ? `<span class="badge badge-blue">↺ Reset</span>` :
-                               `<span class="badge badge-green">✓ Scan</span>`;
+  // Fallback: tampilkan aksi mentah (bukan default ke 'Scan' yg misleading)
+  const badge = LOG_BADGE[aksi]
+    || `<span class="badge" style="background:var(--surface2);color:var(--txt2)">${esc(aksi || "—")}</span>`;
   return `<div class="list-item">
     <div class="list-main">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
