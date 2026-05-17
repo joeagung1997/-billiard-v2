@@ -5,6 +5,7 @@ import express        from "express";
 import { join }       from "path";
 import { fileURLToPath } from "url";
 import cron           from "node-cron";
+import swaggerUi      from "swagger-ui-express";
 
 import { CONFIG }     from "./config.js";
 import { initDB, resetScanHarian } from "./utils/db.js";
@@ -13,6 +14,8 @@ import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
 import shareRouter    from "./routes/share.js";
 import financeRouter  from "./routes/finance.js";
+import apiRouter      from "./routes/api.js";
+import { swaggerSpec } from "./utils/swagger.js";
 import { resultPage } from "./views/member.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -32,6 +35,16 @@ app.use(express.static(join(__dirname, "../public"), {
   },
 }));
 
+
+// ── REST API v1 + Swagger UI ──────────────────────────────────
+app.use("/api/v1", apiRouter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "Billiard API Docs",
+  customCss: ".swagger-ui .topbar { background-color: #0c1526; } .swagger-ui .topbar-wrapper .link { display:none; }",
+  swaggerOptions: { persistAuthorization: true },
+}));
+// Endpoint untuk download spec JSON (cocok untuk Postman/Insomnia)
+app.get("/api/v1/openapi.json", (_req, res) => res.json(swaggerSpec));
 
 // ── Routes ────────────────────────────────────────────────────
 app.use("/", scanRouter);

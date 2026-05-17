@@ -194,6 +194,10 @@ export const appendTransaksi = async (item) => {
   );
 };
 
+export const deleteTransaksi = async (id) => {
+  await query("DELETE FROM transaksi WHERE id = $1", [id]);
+};
+
 export const updateTransaksi = async (item) => {
   await query(
     `UPDATE transaksi SET tanggal=$1, jam=$2, jenis=$3, waktu=$4, kategori=$5, keterangan=$6, jumlah=$7
