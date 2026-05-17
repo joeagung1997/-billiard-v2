@@ -1699,9 +1699,10 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "card.style.display=(visible.length===0&&bsActive)?'none':'';});"
     + "}"
 
-    // Stamp original index for stable restore
+    // Stamp original index then trigger initial pagination
     + "(function(){"
     + "document.querySelectorAll('.menu-row').forEach(function(r,i){r.dataset.idx=i;});"
+    + "applyFilter();"
     + "})();"
 
     + "</script>"
