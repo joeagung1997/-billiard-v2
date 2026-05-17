@@ -312,7 +312,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], menuItems = [] }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], menuItems = [], toppings = [] }) {
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
@@ -321,12 +321,21 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const tSampai  = tglSampai  || "";
 
   // Menu items untuk wizard Kopi/Snack — dikelompokkan by kategori
+  // Build toppings map by item name (for wizard JS)
+  const toppingsByName = {};
+  menuItems.forEach((m) => {
+    const mt = toppings.filter((t) => t.item_id === m.id);
+    if (mt.length) toppingsByName[m.nama] = mt.map((t) => ({ nama: t.nama, harga: t.harga }));
+  });
+
   const menuOptsHtml = MENU_KAT_OPTS.map((k) => {
     const kRows = menuItems.filter((m) => (m.kategori || "minuman") === k.value);
     if (!kRows.length) return "";
     return "<optgroup label=\"" + k.label + "\">"
       + kRows.map((m) =>
-          "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + m.harga + "\">"
+          "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + m.harga + "\""
+          + " data-harga-hot=\"" + (m.harga_hot || 0) + "\""
+          + " data-kategori=\"" + escHtml(m.kategori || "minuman") + "\">"
           + escHtml(m.nama) + " — Rp " + Number(m.harga).toLocaleString("id-ID") + "</option>"
         ).join("")
       + "</optgroup>";
@@ -695,9 +704,17 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Item Pesanan</label>"
     + "<div class=\"fin-menu-items\" id=\"wizMenuItems\">"
     + "<div class=\"fin-menu-row\">"
-    + "<select class=\"fsel\" onchange=\"wizCalcTotal()\"><option value=\"\">Pilih item...</option>" + menuOptsHtml + "</select>"
+    + "<select class=\"fsel\" onchange=\"wizItemChange(this)\"><option value=\"\">Pilih item...</option>" + menuOptsHtml + "</select>"
     + "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">"
     + "<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>"
+    + "<div class=\"wiz-extras\" style=\"grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px\">"
+    + "<div class=\"wiz-temp\" style=\"display:none;flex-direction:row;gap:6px;align-items:center\">"
+    + "<span style=\"font-size:11px;color:var(--txt2)\">Suhu:</span>"
+    + "<button type=\"button\" data-temp=\"ice\" onclick=\"wizSetTemp(this,'ice')\" style=\"padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid #3b82f6;background:rgba(59,130,246,.12);color:#3b82f6;font-family:inherit\">❄ Ice</button>"
+    + "<button type=\"button\" data-temp=\"hot\" onclick=\"wizSetTemp(this,'hot')\" style=\"padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);font-family:inherit\">☕ Hot</button>"
+    + "</div>"
+    + "<div class=\"wiz-tops\" style=\"display:none;flex-direction:column;gap:4px\"></div>"
+    + "</div>"
     + "</div></div>"
     + "<button type=\"button\" class=\"fin-btn-add-item\" onclick=\"wizAddItem()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah Item</button>"
     + "<div id=\"wizKopiErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:6px\">Pilih minimal 1 item pesanan.</div>"
@@ -755,6 +772,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"><\/script>"
     + "<script>"
     + "const WIZ_MENU_OPTS=" + JSON.stringify("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
+    + "const WIZ_TOPPINGS=" + JSON.stringify(toppingsByName) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
@@ -820,21 +838,82 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function wizSetWaktu(w){wizS.waktu=w;"
     + "document.getElementById('wiz-siang').className='fin-tog-btn'+(w==='siang'?' sel-siang':'');"
     + "document.getElementById('wiz-malam').className='fin-tog-btn'+(w==='malam'?' sel-malam':'');}"
+    + "var WIZ_EXTRAS_HTML="
+    + JSON.stringify(
+        '<div class="wiz-extras" style="grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px">'
+        + '<div class="wiz-temp" style="display:none;flex-direction:row;gap:6px;align-items:center">'
+        + '<span style="font-size:11px;color:var(--txt2)">Suhu:</span>'
+        + '<button type="button" data-temp="ice" onclick="wizSetTemp(this,\'ice\')" style="padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid #3b82f6;background:rgba(59,130,246,.12);color:#3b82f6;font-family:inherit">❄ Ice</button>'
+        + '<button type="button" data-temp="hot" onclick="wizSetTemp(this,\'hot\')" style="padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);font-family:inherit">☕ Hot</button>'
+        + '</div>'
+        + '<div class="wiz-tops" style="display:none;flex-direction:column;gap:4px"></div>'
+        + '</div>'
+      ) + ";"
     + "function wizAddItem(){"
     + "var c=document.getElementById('wizMenuItems'),r=document.createElement('div');r.className='fin-menu-row';"
-    + "r.innerHTML='<select class=\"fsel\" onchange=\"wizCalcTotal()\">'+WIZ_MENU_OPTS+'</select>'"
+    + "r.innerHTML='<select class=\"fsel\" onchange=\"wizItemChange(this)\">'+WIZ_MENU_OPTS+'</select>'"
     + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">'"
-    + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>';"
+    + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>'"
+    + "+WIZ_EXTRAS_HTML;"
     + "c.appendChild(r);}"
+    + "function wizItemChange(sel){"
+    + "var row=sel.closest('.fin-menu-row');"
+    + "var opt=sel.selectedIndex>0?sel.options[sel.selectedIndex]:null;"
+    + "var extras=row.querySelector('.wiz-extras');"
+    + "var tempDiv=row.querySelector('.wiz-temp');"
+    + "var topsDiv=row.querySelector('.wiz-tops');"
+    + "if(!opt||!opt.value){if(extras)extras.style.display='none';wizCalcTotal();return;}"
+    + "var hargaHot=parseInt(opt.dataset.hargaHot||'0');"
+    + "var kat=opt.dataset.kategori||'minuman';"
+    + "var nama=opt.value;"
+    + "var showTemp=kat==='minuman'&&hargaHot>0;"
+    + "var tops=WIZ_TOPPINGS[nama]||[];"
+    + "var showTops=tops.length>0;"
+    + "if(tempDiv){tempDiv.style.display=showTemp?'flex':'none';"
+    + "if(showTemp&&!row.dataset.temp)row.dataset.temp='ice';}"
+    + "if(topsDiv){topsDiv.style.display=showTops?'flex':'none';"
+    + "if(showTops){topsDiv.innerHTML=tops.map(function(t){"
+    + "return '<label style=\"display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt);cursor:pointer\">'"
+    + "+'<input type=\"checkbox\" data-top-harga=\"'+t.harga+'\" onchange=\"wizCalcTotal()\" style=\"width:14px;height:14px;accent-color:#3a7d2c;cursor:pointer\">'"
+    + "+'<span>'+t.nama+'</span>'"
+    + "+'<span style=\"color:var(--txt2)\">+Rp '+Number(t.harga).toLocaleString('id-ID')+'</span>'"
+    + "+'<input type=\"number\" value=\"1\" min=\"1\" max=\"10\" onchange=\"wizCalcTotal()\" style=\"width:44px;padding:2px 6px;border-radius:5px;border:1px solid var(--border2);font-size:11px;text-align:center;background:var(--surface2);color:var(--txt);font-family:inherit\">'"
+    + "+'</label>';}).join('');}}"
+    + "if(extras)extras.style.display=(showTemp||showTops)?'flex':'none';"
+    + "wizCalcTotal();}"
+    + "function wizSetTemp(btn,temp){"
+    + "var row=btn.closest('.fin-menu-row');"
+    + "row.dataset.temp=temp;"
+    + "var tempDiv=row.querySelector('.wiz-temp');"
+    + "if(tempDiv){tempDiv.querySelectorAll('button').forEach(function(b){"
+    + "var isIce=b.dataset.temp==='ice';"
+    + "var isHot=b.dataset.temp==='hot';"
+    + "if(b.dataset.temp===temp){"
+    + "b.style.borderColor=isIce?'#3b82f6':'#ef4444';"
+    + "b.style.background=isIce?'rgba(59,130,246,.12)':'rgba(239,68,68,.1)';"
+    + "b.style.color=isIce?'#3b82f6':'#ef4444';"
+    + "}else{"
+    + "b.style.borderColor='var(--border2)';b.style.background='transparent';b.style.color='var(--txt2)';}});}"
+    + "wizCalcTotal();}"
     + "function wizRmItem(btn){var rows=document.querySelectorAll('#wizMenuItems .fin-menu-row');if(rows.length>1){btn.closest('.fin-menu-row').remove();wizCalcTotal();}}"
     + "function wizCalcTotal(){"
     + "var total=0;"
     + "document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){"
-    + "var sel=r.querySelector('select');var qty=r.querySelector('input[type=number]');"
+    + "var sel=r.querySelector('select');var qty=r.querySelector('.fin-qty-inp');"
     + "if(sel&&sel.value&&sel.selectedIndex>0){"
     + "var opt=sel.options[sel.selectedIndex];"
-    + "var harga=parseInt(opt.dataset.harga)||0;"
-    + "total+=harga*(parseInt(qty?.value)||1);}});"
+    + "var kat=opt.dataset.kategori||'minuman';"
+    + "var hargaHot=parseInt(opt.dataset.hargaHot||'0');"
+    + "var temp=r.dataset.temp||'ice';"
+    + "var harga=(kat==='minuman'&&hargaHot>0&&temp==='hot')?hargaHot:parseInt(opt.dataset.harga||'0');"
+    + "var q=parseInt(qty?qty.value:'1')||1;"
+    + "total+=harga*q;"
+    + "r.querySelectorAll('.wiz-tops label').forEach(function(lbl){"
+    + "var cb=lbl.querySelector('input[type=checkbox]');"
+    + "if(!cb||!cb.checked)return;"
+    + "var topH=parseInt(cb.dataset.topHarga||'0');"
+    + "var topQEl=lbl.querySelector('input[type=number]');"
+    + "total+=topH*(parseInt(topQEl?topQEl.value:'1')||1);}});"
     + "var jEl=document.getElementById('wizJumlah');"
     + "if(jEl){var s=total>0?String(total).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
     + "jEl.value=s;}"
@@ -872,8 +951,23 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(dr&&dr.value==='Open / Loss'&&dtl&&dtl.value.trim())ket+=' ('+dtl.value.trim()+')';}"
     + "else if(wizS.act==='kopi'&&wizS.tipe==='income'){"
     + "var items=[];document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){"
-    + "var sel=r.querySelector('select');var qty=r.querySelector('input[type=number]');"
-    + "if(sel&&sel.value){var q=parseInt(qty?.value)||1;items.push(q>1?q+'× '+sel.value:sel.value);}});"
+    + "var sel=r.querySelector('select');var qty=r.querySelector('.fin-qty-inp');"
+    + "if(sel&&sel.value){"
+    + "var q=parseInt(qty?qty.value:'1')||1;"
+    + "var opt2=sel.options[sel.selectedIndex];"
+    + "var kat2=opt2?opt2.dataset.kategori||'minuman':'minuman';"
+    + "var hH=opt2?parseInt(opt2.dataset.hargaHot||'0'):0;"
+    + "var tmp=r.dataset.temp||'ice';"
+    + "var iStr=q>1?q+'\\xD7 '+sel.value:sel.value;"
+    + "if(kat2==='minuman'&&hH>0)iStr+=' ('+tmp+')';"
+    + "var ts=[];r.querySelectorAll('.wiz-tops label').forEach(function(lbl){"
+    + "var cb=lbl.querySelector('input[type=checkbox]');"
+    + "if(!cb||!cb.checked)return;"
+    + "var tq=parseInt(lbl.querySelector('input[type=number]')?lbl.querySelector('input[type=number]').value:'1')||1;"
+    + "var tn=lbl.querySelector('span')?lbl.querySelector('span').textContent:'';"
+    + "ts.push(tq>1?tq+'\\xD7 '+tn:tn);});"
+    + "if(ts.length)iStr+=' + '+ts.join(', ');"
+    + "items.push(iStr);}});"
     + "ket=items.join(', ');}"
     + "var ketExtra=(document.getElementById('wizKet')?document.getElementById('wizKet').value:'').trim();"
     + "if(ket&&ketExtra&&ket!==ketExtra)ket=ket+' — '+ketExtra;else if(!ket)ket=ketExtra;"
@@ -1315,8 +1409,15 @@ function katSelect(name, selected = "minuman", extraStyle = "") {
     + "</select>";
 }
 
-export function financeMenuPage(token, items = [], hasErr = false, editItem = null) {
+export function financeMenuPage(token, items = [], toppings = [], hasErr = false, editItem = null) {
   const rpFmt = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+
+  // Build topping map by item_id
+  const toppingMap = {};
+  toppings.forEach((t) => {
+    if (!toppingMap[t.item_id]) toppingMap[t.item_id] = [];
+    toppingMap[t.item_id].push(t);
+  });
 
   // Group items by kategori
   const groups = MENU_KAT_OPTS.map((k) => ({
@@ -1336,22 +1437,54 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "</label>";
 
   const makeGroupRows = (groupRows) => groupRows.map((m) => {
+    const itemToppings = toppingMap[m.id] || [];
     if (editItem && editItem.id === m.id) {
-      // grid-column:1/-1 agar form span semua kolom, tidak terpotong overflow:hidden
+      const isMinuman = (m.kategori || "minuman") === "minuman";
       return "<div style=\"grid-column:1/-1;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2)\">"
         + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap\">"
         + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
         + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\">"
         + katSelect("kategori", m.kategori || "minuman", "min-width:130px")
-        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga Ice\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+        + (isMinuman
+            ? "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" placeholder=\"Harga Hot\" value=\"" + (m.harga_hot || "") + "\" style=\"width:100px\" oninput=\"fmtH(this)\">"
+            : "")
         + bsCheckbox(!!m.best_seller)
         + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 16px;font-size:13px\">Simpan</button>"
         + "<a href=\"/keuangan/menu\" class=\"btn-del\" style=\"height:42px;display:inline-flex;align-items:center\">Batal</a>"
-        + "</form></div>";
+        + "</form>"
+        // Topping management section for edit mode
+        + (itemToppings.length || (m.kategori || "minuman") === "makanan"
+            ? "<div style=\"margin-top:10px;padding-top:10px;border-top:1px solid var(--border)\">"
+            + "<div style=\"font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px\">Topping</div>"
+            + (itemToppings.length
+                ? "<div style=\"display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px\">"
+                + itemToppings.map((t) =>
+                    "<div style=\"display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);font-size:11px;color:var(--txt)\">"
+                    + escHtml(t.nama) + " <span style=\"color:var(--txt2)\">+Rp " + Number(t.harga).toLocaleString("id-ID") + "</span>"
+                    + "<a href=\"/keuangan/menu/topping/hapus?id=" + t.id + "\" style=\"color:var(--red);margin-left:2px;text-decoration:none\" title=\"Hapus\" onclick=\"return confirm('Hapus topping " + escHtml(t.nama) + "?')\">✕</a>"
+                    + "</div>"
+                  ).join("")
+                + "</div>"
+                : "")
+            + "<form action=\"/keuangan/menu/topping/tambah\" method=\"post\" style=\"display:flex;gap:6px;align-items:center;flex-wrap:wrap\">"
+            + "<input type=\"hidden\" name=\"item_id\" value=\"" + m.id + "\">"
+            + "<input class=\"cat-input\" type=\"text\" name=\"nama\" placeholder=\"Nama topping\" required style=\"flex:1;min-width:120px\">"
+            + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga\" required style=\"width:90px\" oninput=\"fmtH(this)\">"
+            + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 12px;font-size:12px\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+            + "</form></div>"
+            : "")
+        + "</div>";
     }
+    const priceHtml = m.harga_hot
+      ? "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">❄ " + rpFmt(m.harga) + " / ☕ " + rpFmt(m.harga_hot) + "</div>"
+      : "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>";
+    const toppingBadge = itemToppings.length
+      ? "<span style=\"font-size:10px;color:var(--txt2);margin-left:6px\">" + itemToppings.length + " topping</span>"
+      : "";
     return "<div class=\"kat-row menu-row\" data-harga=\"" + m.harga + "\" data-bs=\"" + (m.best_seller ? "1" : "0") + "\">"
-      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + (m.best_seller ? bsBadge : "") + "</div>"
-      + "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>"
+      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + (m.best_seller ? bsBadge : "") + toppingBadge + "</div>"
+      + priceHtml
       + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
       + "<a href=\"/keuangan/menu?edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
       + "<a href=\"/keuangan/menu/hapus?id=" + m.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
@@ -1461,8 +1594,12 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + katSelect("kategori", "minuman")
     + "</div>"
     + "<div>"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Ice / Default (Rp)</label>"
     + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7.000\" required oninput=\"fmtH(this)\">"
+    + "</div>"
+    + "<div id=\"addHotWrap\">"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Hot (Rp) <span style=\"text-transform:none;font-weight:400;font-size:10px;color:var(--txt3)\">(opsional, khusus minuman)</span></label>"
+    + "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" id=\"addHargaHot\" placeholder=\"0 = tidak ada varian hot\" oninput=\"fmtH(this)\">"
     + "</div>"
     + "<div style=\"padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md)\">"
     + bsCheckbox(false)
@@ -1477,6 +1614,10 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "</div>"
     + "<script>"
     + "function fmtH(el){var r=el.value.replace(/\\D/g,'');var n=parseInt(r)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
+    + "(function(){var addKatSel=document.querySelector('form[action=\"/keuangan/menu/tambah\"] select[name=kategori]');var hotWrap=document.getElementById('addHotWrap');"
+    + "function toggleHot(){if(addKatSel&&hotWrap){hotWrap.style.display=addKatSel.value==='minuman'?'':'none';}}"
+    + "if(addKatSel){addKatSel.addEventListener('change',toggleHot);toggleHot();}"
+    + "})();"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"

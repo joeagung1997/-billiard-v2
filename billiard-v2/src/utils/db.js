@@ -232,24 +232,40 @@ export const deleteKategori = async (id) => {
 // ── Menu Items (kopi/snack) ───────────────────────────────────
 
 export const readMenuItems = async () => {
-  const res = await query("SELECT id, nama, harga, kategori, best_seller FROM menu_items ORDER BY kategori, best_seller DESC, nama");
+  const res = await query("SELECT id, nama, harga, harga_hot, kategori, best_seller FROM menu_items ORDER BY kategori, best_seller DESC, nama");
   return res.rows;
 };
 
-export const addMenuItem = async (nama, harga, kategori, bestSeller = false) => {
+export const readMenuToppings = async () => {
+  const res = await query("SELECT id, item_id, nama, harga FROM menu_toppings ORDER BY item_id, id");
+  return res.rows;
+};
+
+export const addMenuItem = async (nama, harga, kategori, bestSeller = false, hargaHot = null) => {
   await query(
-    "INSERT INTO menu_items (nama, harga, kategori, best_seller) VALUES ($1, $2, $3, $4) ON CONFLICT (nama) DO NOTHING",
-    [nama.trim(), harga, kategori, bestSeller]
+    "INSERT INTO menu_items (nama, harga, harga_hot, kategori, best_seller) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (nama) DO NOTHING",
+    [nama.trim(), harga, hargaHot, kategori, bestSeller]
   );
 };
 
-export const updateMenuItem = async (id, nama, harga, kategori, bestSeller = false) => {
+export const updateMenuItem = async (id, nama, harga, kategori, bestSeller = false, hargaHot = null) => {
   await query(
-    "UPDATE menu_items SET nama=$1, harga=$2, kategori=$3, best_seller=$4 WHERE id=$5",
-    [nama.trim(), harga, kategori, bestSeller, id]
+    "UPDATE menu_items SET nama=$1, harga=$2, harga_hot=$3, kategori=$4, best_seller=$5 WHERE id=$6",
+    [nama.trim(), harga, hargaHot, kategori, bestSeller, id]
   );
 };
 
 export const deleteMenuItem = async (id) => {
   await query("DELETE FROM menu_items WHERE id=$1", [id]);
+};
+
+export const addMenuTopping = async (itemId, nama, harga) => {
+  await query(
+    "INSERT INTO menu_toppings (item_id, nama, harga) VALUES ($1, $2, $3)",
+    [itemId, nama.trim(), harga]
+  );
+};
+
+export const deleteMenuTopping = async (id) => {
+  await query("DELETE FROM menu_toppings WHERE id=$1", [id]);
 };

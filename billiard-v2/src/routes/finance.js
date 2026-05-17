@@ -5,7 +5,8 @@ import { Router } from "express";
 import {
   readTransaksi, appendTransaksi, updateTransaksi,
   readKategori, addKategori, deleteKategori,
-  readMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
+  readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
+  addMenuTopping, deleteMenuTopping,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import {
@@ -21,13 +22,13 @@ router.use((req, res, next) => { res.locals.ftk = ""; next(); });
 // ── GET /keuangan — dashboard ─────────────────────────────────
 router.get("/", async (req, res) => {
   try {
-    const [transaksi, kategoriList, menuItems] = await Promise.all([readTransaksi(), readKategori(), readMenuItems()]);
+    const [transaksi, kategoriList, menuItems, toppings] = await Promise.all([readTransaksi(), readKategori(), readMenuItems(), readMenuToppings()]);
     const bulanFilter = req.query.bulan      ?? "";
     const jenisFilter = req.query.jenis      ?? "";
     const tglDari     = req.query.tgl_dari   ?? "";
     const tglSampai   = req.query.tgl_sampai ?? "";
 
-    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, menuItems }));
+    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, menuItems, toppings }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -166,10 +167,10 @@ router.get("/kategori/hapus", async (req, res) => {
 // ── GET /keuangan/menu — kelola menu item kopi/snack ─────────
 router.get("/menu", async (req, res) => {
   try {
-    const items   = await readMenuItems();
+    const [items, toppings] = await Promise.all([readMenuItems(), readMenuToppings()]);
     const editId  = parseInt(req.query.edit) || 0;
     const editItem = editId ? items.find((m) => m.id === editId) || null : null;
-    res.send(financeMenuPage("", items, !!req.query.err, editItem));
+    res.send(financeMenuPage("", items, toppings, !!req.query.err, editItem));
   } catch (err) {
     console.error("[FINANCE] menu GET error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -180,11 +181,12 @@ router.get("/menu", async (req, res) => {
 router.post("/menu/tambah", async (req, res) => {
   const nama       = (req.body.nama     ?? "").trim();
   const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  const hargaHot   = parseInt((req.body.harga_hot ?? "").replace(/\D/g, "")) || null;
   const kategori   = (req.body.kategori ?? "minuman").trim();
   const bestSeller = [].concat(req.body.best_seller ?? "0").includes("1");
   if (!nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
   try {
-    await addMenuItem(nama, harga, kategori, bestSeller);
+    await addMenuItem(nama, harga, kategori, bestSeller, hargaHot || null);
     res.redirect("/keuangan/menu");
   } catch (err) {
     console.error("[FINANCE] menu tambah error:", err.message);
@@ -197,11 +199,12 @@ router.post("/menu/edit", async (req, res) => {
   const id         = parseInt(req.body.id) || 0;
   const nama       = (req.body.nama     ?? "").trim();
   const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  const hargaHot   = parseInt((req.body.harga_hot ?? "").replace(/\D/g, "")) || null;
   const kategori   = (req.body.kategori ?? "minuman").trim();
   const bestSeller = [].concat(req.body.best_seller ?? "0").includes("1");
   if (!id || !nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
   try {
-    await updateMenuItem(id, nama, harga, kategori, bestSeller);
+    await updateMenuItem(id, nama, harga, kategori, bestSeller, hargaHot || null);
     res.redirect("/keuangan/menu");
   } catch (err) {
     console.error("[FINANCE] menu edit error:", err.message);
@@ -215,6 +218,32 @@ router.get("/menu/hapus", async (req, res) => {
   if (id) {
     try { await deleteMenuItem(id); } catch (err) {
       console.error("[FINANCE] menu hapus error:", err.message);
+    }
+  }
+  res.redirect("/keuangan/menu");
+});
+
+// ── POST /keuangan/menu/topping/tambah ────────────────────────
+router.post("/menu/topping/tambah", async (req, res) => {
+  const itemId = parseInt(req.body.item_id) || 0;
+  const nama   = (req.body.nama  ?? "").trim();
+  const harga  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  if (!itemId || !nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
+  try {
+    await addMenuTopping(itemId, nama, harga);
+    res.redirect("/keuangan/menu");
+  } catch (err) {
+    console.error("[FINANCE] topping tambah error:", err.message);
+    res.redirect("/keuangan/menu?err=1");
+  }
+});
+
+// ── GET /keuangan/menu/topping/hapus ─────────────────────────
+router.get("/menu/topping/hapus", async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteMenuTopping(id); } catch (err) {
+      console.error("[FINANCE] topping hapus error:", err.message);
     }
   }
   res.redirect("/keuangan/menu");

@@ -104,9 +104,20 @@ export const runMigrations = async () => {
     );
   }
 
-  // ── Kolom kategori & best_seller di menu_items (idempotent) ─────
+  // ── Kolom tambahan menu_items (idempotent) ───────────────────────
   await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kategori    TEXT    DEFAULT 'minuman'`);
   await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS best_seller BOOLEAN DEFAULT FALSE`);
+  await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS harga_hot   INTEGER`);
+
+  // ── Tabel topping menu ────────────────────────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS menu_toppings (
+      id      SERIAL  PRIMARY KEY,
+      item_id INTEGER NOT NULL,
+      nama    TEXT    NOT NULL,
+      harga   INTEGER NOT NULL DEFAULT 0
+    )
+  `);
 
   // ── Insert default menu items (skip jika sudah ada) ──────────
   for (const m of DEFAULT_MENU_ITEMS) {
