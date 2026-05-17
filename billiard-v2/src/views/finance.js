@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=6\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=7\">";
 }
 
 function buildFinanceSidebar(ftk) {
@@ -308,12 +308,18 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const totalIn     = pemasukan.reduce((s, t) => s + t.jumlah, 0);
   const totalOut    = pengeluaran.reduce((s, t) => s + t.jumlah, 0);
   const saldo       = totalIn - totalOut;
+  const margin      = totalIn > 0 ? ((saldo / totalIn) * 100).toFixed(1) : "0";
 
-  // Siang vs Malam breakdown
-  const inSiang = pemasukan.filter((t) => (t.waktu ?? "siang") === "siang").reduce((s, t) => s + t.jumlah, 0);
-  const inMalam = pemasukan.filter((t) => (t.waktu ?? "siang") === "malam").reduce((s, t) => s + t.jumlah, 0);
+  // Perbandingan bulan lalu untuk badge "vs Apr 2026"
+  const prevDate    = new Date(bFilter + "-01");
+  prevDate.setMonth(prevDate.getMonth() - 1);
+  const prevBulan   = prevDate.getFullYear() + "-" + String(prevDate.getMonth() + 1).padStart(2, "0");
+  const prevLabel   = prevDate.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+  const prevIn      = transaksi.filter((t) => t.tanggal.slice(0, 7) === prevBulan && t.jenis === "pemasukan")
+                               .reduce((s, t) => s + t.jumlah, 0);
+  const inDelta     = prevIn > 0 ? Math.round(((totalIn - prevIn) / prevIn) * 100) : 0;
 
-  // Bulan options (12 bulan terakhir)
+  // Bulan options (12 bulan terakhir) untuk select tersembunyi
   const bulanOpts = Array.from({ length: 12 }, (_, i) => {
     const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const val = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
@@ -321,8 +327,14 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     return "<option value=\"" + val + "\"" + (val === bFilter ? " selected" : "") + ">" + lbl + "</option>";
   }).join("");
 
-
   const bulanLabel = new Date(bFilter + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const bulanLabelShort = new Date(bFilter + "-01").toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+
+  // Kategori options dari semua transaksi
+  const kategoriSet = Array.from(new Set(transaksi.map((t) => t.kategori).filter(Boolean))).sort();
+  const kategoriOpts = kategoriSet.map((k) =>
+    "<option value=\"" + escHtml(k) + "\">" + escHtml(k) + "</option>"
+  ).join("");
 
   // ── Weekly breakdown for bar chart ───────────────────────────
   const weekIn  = [0, 0, 0, 0];
@@ -341,51 +353,62 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   });
   const catEntries = Object.entries(catMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 4);
   const DONUT_COLORS = ["#3a7d2c", "#2660a4", "#c47f1a", "#d4ddd2"];
-  const donutVals  = catEntries.length ? catEntries.map(function(e) { return e[1]; }) : [1];
-  const donutLabels = catEntries.length ? catEntries.map(function(e) { return e[0]; }) : ["Belum ada"];
-  const donutColors = catEntries.length ? catEntries.map(function(_, i) { return DONUT_COLORS[i] || "#d4ddd2"; }) : ["#d4ddd2"];
+  const donutVals   = catEntries.length ? catEntries.map(function(e) { return e[1]; }) : [1];
+  const donutLabels = catEntries.length ? catEntries.map(function(e) { return e[0]; }) : ["Tidak ada data"];
+  const donutColors = catEntries.length ? catEntries.map(function(_, i) { return DONUT_COLORS[i] || "#d4ddd2"; }) : ["#e8ede6"];
 
   // ── Donut legend HTML ─────────────────────────────────────────
   const donutLegHtml = catEntries.length
     ? catEntries.map(function(e, i) {
+        const pct = totalIn > 0 ? Math.round((e[1] / totalIn) * 100) : 0;
         return "<div class=\"dl-item\">"
-          + "<div class=\"dl-l\"><div class=\"dl-dot\" style=\"background:" + (DONUT_COLORS[i] || "#d4ddd2") + "\"></div>"
-          + "<div class=\"dl-lbl\">" + escHtml(e[0]) + "</div></div>"
-          + "<div class=\"dl-val\" style=\"color:" + (DONUT_COLORS[i] || "var(--txt3)") + "\">" + rp(e[1]) + "</div>"
+          + "<div class=\"dl-left\"><div class=\"dl-dot\" style=\"background:" + (DONUT_COLORS[i] || "#d4ddd2") + "\"></div>"
+          + "<div><div class=\"dl-name\">" + escHtml(e[0]) + "</div><div class=\"dl-pct\">" + pct + "%</div></div></div>"
+          + "<div class=\"dl-amt\">" + rp(e[1]) + "</div>"
           + "</div>";
       }).join("")
-    : "<div class=\"dl-item\"><div class=\"dl-lbl\" style=\"color:var(--txt3)\">Belum ada pemasukan</div></div>";
+    : "<div class=\"empty-donut-leg\"><i class=\"ti ti-chart-donut\"></i>Belum ada pemasukan</div>";
 
-  // ── Transaction rows (grid style) ────────────────────────────
+  // ── Transaction rows ────────────────────────────────────────
   const makeRow = function(t) {
     const isIn    = t.jenis === "pemasukan";
     const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
       day: "numeric", month: "short", year: "numeric",
     });
-    return "<div class=\"tbl-row\" style=\"grid-template-columns:100px 1fr 110px 130px 100px 80px\">"
-      + "<div class=\"tbl-td muted\" style=\"font-size:12px;font-family:var(--ff-mono)\">" + tglDisp + "</div>"
-      + "<div class=\"tbl-td\"><div>"
-      + "<div style=\"font-size:13px;font-weight:500\">" + escHtml(t.keterangan || "—") + "</div>"
-      + (t.jam ? "<div style=\"font-size:11px;color:var(--txt3)\">" + escHtml(t.jam) + "</div>" : "")
-      + "</div></div>"
-      + "<div class=\"tbl-td\"><span style=\"font-size:12px;background:var(--surface2);color:var(--txt3);padding:3px 8px;border-radius:5px;font-weight:500\">" + escHtml(t.kategori || "—") + "</span></div>"
-      + "<div class=\"tbl-td r " + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
-      + "<div class=\"tbl-td c\"><span class=\"t-badge " + (isIn ? "in" : "out") + "\">"
-      + "<i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:10px;margin-right:3px\"></i>"
+    return "<div class=\"fin-row\">"
+      + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
+      + "<div class=\"fr-td fr-desc\">"
+      + "<div class=\"fr-desc-title\">" + escHtml(t.keterangan || "—") + "</div>"
+      + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "") + "</div>"
+      + "</div>"
+      + "<div class=\"fr-td\"><span class=\"cat-tag\">" + escHtml(t.kategori || "—") + "</span></div>"
+      + "<div class=\"fr-td right " + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
+      + "<div class=\"fr-td\"><span class=\"t-badge " + (isIn ? "in" : "out") + "\">"
+      + "<i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>"
       + (isIn ? "Masuk" : "Keluar") + "</span></div>"
-      + "<div class=\"tbl-td r\"><div class=\"act-cell\">"
+      + "<div class=\"fr-td right fr-act\">"
       + "<a href=\"/keuangan/edit?id=" + t.id + "&ftk=" + token + "\" class=\"icon-btn\" title=\"Edit\"><i class=\"ti ti-edit\"></i></a>"
-      + "</div></div>"
+      + "</div>"
       + "</div>";
   };
 
   const rows = sortedTbl.length > 0
-    ? sortedTbl.map(makeRow).join("")
-    : "<div class=\"empty-state\"><i class=\"ti ti-receipt\"></i>Belum ada transaksi</div>";
+    ? "<div id=\"trxRows\">" + sortedTbl.map(makeRow).join("") + "</div>"
+    : "<div class=\"empty-state\" id=\"emptyState\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
 
   const hasDateFilter = !!tDari;
 
-  // ── Build URL helper (baked into script) ─────────────────────
+  // ── Periode aktif detection ───────────────────────────────────
+  const todayStr = now.toISOString().slice(0, 10);
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // Senin=0
+  const mondayDate = new Date(now); mondayDate.setDate(now.getDate() - dayOfWeek);
+  const mondayStr = mondayDate.toISOString().slice(0, 10);
+
+  const isHariIni    = tDari === todayStr && tSampai === todayStr;
+  const isMingguIni  = tDari === mondayStr && tSampai === todayStr;
+  const isBulanIni   = !tDari && bFilter === curBulan;
+  const periodeKey   = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
+
   const chartLabelsJson = JSON.stringify(["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]);
   const chartInJson     = JSON.stringify(weekIn);
   const chartOutJson    = JSON.stringify(weekOut);
@@ -421,49 +444,69 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
     + "</div></div>"
 
-    // ── Period selector ─────────────────────────────────────────
-    + "<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap\">"
-    + "<div class=\"period-bar\">"
-    + "<select class=\"period-btn\" id=\"fBulan\" onchange=\"applyFilter()\" style=\"border:none;background:transparent;color:var(--txt3);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;outline:none\">"
-    + bulanOpts
-    + "</select></div>"
-    + "<select class=\"sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
-    + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua</option>"
+    // ── Filter bar (single card) ────────────────────────────────
+    + "<div class=\"fin-filter-bar\">"
+    + "<div class=\"fin-filter-lbl\">Periode</div>"
+    + "<div class=\"fin-period-toggle\">"
+    + "<button class=\"fin-period-btn" + (periodeKey === "hari"   ? " active" : "") + "\" onclick=\"setPeriode('hari')\">Hari Ini</button>"
+    + "<button class=\"fin-period-btn" + (periodeKey === "minggu" ? " active" : "") + "\" onclick=\"setPeriode('minggu')\">Minggu Ini</button>"
+    + "<button class=\"fin-period-btn" + (periodeKey === "bulan"  ? " active" : "") + "\" onclick=\"setPeriode('bulan')\">" + bulanLabelShort + "</button>"
+    + "<select class=\"fin-period-btn fin-bulan-sel\" id=\"fBulan\" onchange=\"applyFilter()\">" + bulanOpts + "</select>"
+    + "</div>"
+    + "<div class=\"fin-filter-sep\"></div>"
+    + "<select class=\"fin-filter-sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
+    + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua Tipe</option>"
     + "<option value=\"pemasukan\""  + (jFilter === "pemasukan"   ? " selected" : "") + ">Pemasukan</option>"
     + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
     + "</select>"
-    + "<input type=\"date\" class=\"sel\" id=\"fTglDari\" value=\"" + tDari + "\" onchange=\"applyTglFilter()\" style=\"cursor:pointer\">"
-    + "<input type=\"date\" class=\"sel\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\" style=\"cursor:pointer\">"
-    + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"white-space:nowrap\">✕ Reset tanggal</button>" : "")
+    + "<select class=\"fin-filter-sel\" id=\"fKategori\" onchange=\"filterByCat()\">"
+    + "<option value=\"\">Semua Kategori</option>"
+    + kategoriOpts
+    + "</select>"
+    + "<div class=\"fin-daterange\">"
+    + "<i class=\"ti ti-calendar\"></i>"
+    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglDari\"  value=\"" + tDari + "\" onchange=\"applyTglFilter()\">"
+    + "<span class=\"fin-date-sep\">—</span>"
+    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
+    + "</div>"
+    + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
     + "</div>"
 
-    // ── Stat grid ───────────────────────────────────────────────
-    + "<div class=\"stat-grid\" style=\"margin-bottom:20px\">"
+    // ── Stat grid (4 cards dengan colored top border) ───────────
+    + "<div class=\"fin-stat-grid\">"
 
-    + "<div class=\"stat-card\">"
-    + "<div class=\"stat-label\">Pemasukan<div class=\"stat-icon green\"><i class=\"ti ti-trending-up\"></i></div></div>"
-    + "<div class=\"stat-value\" style=\"font-size:22px\">" + rp(totalIn) + "</div>"
-    + "<div class=\"stat-footer badge-up\"><i class=\"ti ti-arrow-up\" style=\"font-size:11px\"></i>&nbsp;" + bulanLabel + "</div></div>"
+    + "<div class=\"fin-stat-card income\">"
+    + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Pemasukan</div>"
+    + "<div class=\"fin-stat-icon income\"><i class=\"ti ti-trending-up\"></i></div></div>"
+    + "<div class=\"fin-stat-val\">" + rp(totalIn) + "</div>"
+    + "<div class=\"fin-stat-foot\">"
+    + (inDelta !== 0
+        ? "<span class=\"" + (inDelta >= 0 ? "fin-badge-up" : "fin-badge-down") + "\"><i class=\"ti ti-arrow-" + (inDelta >= 0 ? "up" : "down") + "\" style=\"font-size:10px\"></i> " + Math.abs(inDelta) + "%</span>&nbsp;vs " + prevLabel
+        : "<span>vs " + prevLabel + "</span>")
+    + "</div></div>"
 
-    + "<div class=\"stat-card red\">"
-    + "<div class=\"stat-label\">Pengeluaran<div class=\"stat-icon\" style=\"background:var(--red-bg);color:var(--red)\"><i class=\"ti ti-trending-down\"></i></div></div>"
-    + "<div class=\"stat-value\" style=\"font-size:22px\">" + rp(totalOut) + "</div>"
-    + "<div class=\"stat-footer\">Bulan ini</div></div>"
+    + "<div class=\"fin-stat-card expense\">"
+    + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Pengeluaran</div>"
+    + "<div class=\"fin-stat-icon expense\"><i class=\"ti ti-trending-down\"></i></div></div>"
+    + "<div class=\"fin-stat-val\">" + rp(totalOut) + "</div>"
+    + "<div class=\"fin-stat-foot\">" + bulanLabel + "</div></div>"
 
-    + "<div class=\"stat-card\">"
-    + "<div class=\"stat-label\">Saldo Bersih<div class=\"stat-icon green\"><i class=\"ti ti-scale\"></i></div></div>"
-    + "<div class=\"stat-value\" style=\"font-size:22px;" + (saldo < 0 ? "color:var(--red)" : "") + "\">" + (saldo < 0 ? "−" : "") + rp(Math.abs(saldo)) + "</div>"
-    + "<div class=\"stat-footer\">Akumulasi " + bulanLabel + "</div></div>"
+    + "<div class=\"fin-stat-card saldo\">"
+    + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Saldo Bersih</div>"
+    + "<div class=\"fin-stat-icon saldo\"><i class=\"ti ti-scale\"></i></div></div>"
+    + "<div class=\"fin-stat-val\" style=\"" + (saldo < 0 ? "color:#a32d2d" : "") + "\">" + (saldo < 0 ? "−" : "") + rp(Math.abs(saldo)) + "</div>"
+    + "<div class=\"fin-stat-foot\">Akumulasi " + bulanLabelShort + "</div></div>"
 
-    + "<div class=\"stat-card blue\">"
-    + "<div class=\"stat-label\">Transaksi<div class=\"stat-icon blue\"><i class=\"ti ti-receipt\"></i></div></div>"
-    + "<div class=\"stat-value\">" + filtered.length + "</div>"
-    + "<div class=\"stat-footer\">Total catatan</div></div>"
+    + "<div class=\"fin-stat-card trx\">"
+    + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Transaksi</div>"
+    + "<div class=\"fin-stat-icon trx\"><i class=\"ti ti-receipt\"></i></div></div>"
+    + "<div class=\"fin-stat-val\">" + filtered.length + "</div>"
+    + "<div class=\"fin-stat-foot\">Total catatan</div></div>"
 
     + "</div>"
 
     // ── Charts ──────────────────────────────────────────────────
-    + "<div class=\"content-grid\" style=\"margin-bottom:20px\">"
+    + "<div class=\"fin-charts-row\">"
 
     // Bar chart card
     + "<div class=\"card\">"
@@ -475,7 +518,18 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<span><span class=\"leg-dot\" style=\"background:#3a7d2c\"></span>&nbsp;Pemasukan</span>"
     + "<span><span class=\"leg-dot\" style=\"background:#f09595\"></span>&nbsp;Pengeluaran</span>"
     + "</div></div>"
-    + "<div class=\"chart-wrap\" style=\"height:220px\"><canvas id=\"barChart\"></canvas></div>"
+    + "<div class=\"chart-wrap\" style=\"height:200px\"><canvas id=\"barChart\"></canvas></div>"
+    + "<div class=\"fin-chart-foot\">"
+    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Total Pemasukan</div>"
+    + "<div class=\"fin-cf-val\" style=\"color:#2d6624\">" + rp(totalIn) + "</div>"
+    + "<div class=\"fin-cf-sub\">" + bulanLabelShort + "</div></div>"
+    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Total Pengeluaran</div>"
+    + "<div class=\"fin-cf-val\" style=\"color:#a32d2d\">" + rp(totalOut) + "</div>"
+    + "<div class=\"fin-cf-sub\">" + bulanLabelShort + "</div></div>"
+    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Margin Bersih</div>"
+    + "<div class=\"fin-cf-val\">" + margin + "%</div>"
+    + "<div class=\"fin-cf-sub\">dari pemasukan</div></div>"
+    + "</div>"
     + "</div>"
 
     // Donut chart card
@@ -484,28 +538,42 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"card-title\">Komposisi Pemasukan</div>"
     + "<div class=\"card-sub\">Berdasarkan kategori</div>"
     + "</div></div>"
-    + "<div class=\"donut-wrap\"><canvas id=\"donutChart\"></canvas></div>"
-    + "<div class=\"donut-leg\">" + donutLegHtml + "</div>"
+    + "<div class=\"fin-donut-wrap\">"
+    + "<canvas id=\"donutChart\"></canvas>"
+    + "<div class=\"fin-donut-center\">"
+    + "<div class=\"fin-dc-val\">" + rp(totalIn) + "</div>"
+    + "<div class=\"fin-dc-sub\">Total</div>"
+    + "</div>"
+    + "</div>"
+    + "<div class=\"fin-donut-leg\">" + donutLegHtml + "</div>"
     + "</div>"
 
     + "</div>"
 
     // ── Transaction table ───────────────────────────────────────
-    + "<div class=\"finance-table-wrap\">"
-    + "<div class=\"table-card\">"
-    + "<div class=\"tbl-head\" style=\"grid-template-columns:100px 1fr 110px 130px 100px 80px;min-width:580px\">"
-    + "<div class=\"tbl-th\">Tanggal</div>"
-    + "<div class=\"tbl-th\">Keterangan</div>"
-    + "<div class=\"tbl-th\">Kategori</div>"
-    + "<div class=\"tbl-th r\">Jumlah</div>"
-    + "<div class=\"tbl-th c\">Tipe</div>"
-    + "<div class=\"tbl-th r\">Aksi</div>"
+    + "<div class=\"fin-table-card\">"
+    + "<div class=\"fin-tbl-toolbar\">"
+    + "<div class=\"fin-search-wrap\">"
+    + "<i class=\"ti ti-search\"></i>"
+    + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"searchTrx()\">"
+    + "</div>"
+    + "</div>"
+    + "<div class=\"fin-tbl-head\">"
+    + "<div class=\"fin-th\">Tanggal</div>"
+    + "<div class=\"fin-th\">Keterangan</div>"
+    + "<div class=\"fin-th\">Kategori</div>"
+    + "<div class=\"fin-th right\">Jumlah</div>"
+    + "<div class=\"fin-th\">Tipe</div>"
+    + "<div class=\"fin-th right\">Aksi</div>"
     + "</div>"
     + rows
-    + "<div class=\"tbl-pg\">"
-    + "<div class=\"tbl-pg-info\">" + sortedTbl.length + " transaksi &nbsp;|&nbsp; Saldo: <strong style=\"color:" + (saldo >= 0 ? "var(--accent)" : "var(--red)") + ";font-family:var(--ff-mono)\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</strong></div>"
-    + "<div><a href=\"/keuangan/tambah?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px\"><i class=\"ti ti-plus\" style=\"font-size:13px\"></i> Tambah Manual</a></div>"
+    + "<div class=\"fin-tbl-footer\">"
+    + "<div class=\"fin-tf-left\">"
+    + "<span>" + sortedTbl.length + " transaksi</span>"
+    + "<span style=\"color:#e2e8e0\">|</span>"
+    + "<span>Saldo: <span class=\"fin-tf-saldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
     + "</div>"
+    + "<div><a href=\"/keuangan/tambah?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px;padding:6px 12px\"><i class=\"ti ti-plus\" style=\"font-size:13px\"></i> Tambah Manual</a></div>"
     + "</div>"
     + "</div>"
 
@@ -581,6 +649,33 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "var url='/keuangan?ftk='+FTK+'&bulan='+b;"
     + "if(j)url+='&jenis='+j;"
     + "window.location.href=url;}"
+    + "function setPeriode(p){"
+    + "var b=document.getElementById('fBulan').value;"
+    + "var j=document.getElementById('fJenis').value;"
+    + "var today=new Date();"
+    + "var ymd=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};"
+    + "var url='/keuangan?ftk='+FTK+'&bulan='+b;"
+    + "if(j)url+='&jenis='+j;"
+    + "if(p==='hari'){url+='&tgl_dari='+ymd(today)+'&tgl_sampai='+ymd(today);}"
+    + "else if(p==='minggu'){var dow=today.getDay()===0?6:today.getDay()-1;var mon=new Date(today);mon.setDate(today.getDate()-dow);url+='&tgl_dari='+ymd(mon)+'&tgl_sampai='+ymd(today);}"
+    + "window.location.href=url;}"
+    + "function filterByCat(){"
+    + "var k=document.getElementById('fKategori').value.toLowerCase();"
+    + "var rows=document.querySelectorAll('#trxRows .fin-row');"
+    + "var shown=0;"
+    + "rows.forEach(function(r){"
+    + "var tag=r.querySelector('.cat-tag');"
+    + "var match=!k||(tag&&tag.textContent.trim().toLowerCase()===k);"
+    + "r.style.display=match?'':'none';"
+    + "if(match)shown++;});"
+    + "var empty=document.querySelector('.empty-state');"
+    + "if(empty)empty.style.display=shown===0&&rows.length?'flex':(rows.length?'none':'flex');}"
+    + "function searchTrx(){"
+    + "var q=document.getElementById('trxSearch').value.toLowerCase();"
+    + "var rows=document.querySelectorAll('#trxRows .fin-row');"
+    + "rows.forEach(function(r){"
+    + "var txt=r.textContent.toLowerCase();"
+    + "r.style.display=txt.indexOf(q)>=0?'':'none';});}"
     + "function openTrxModal(){document.getElementById('trxOverlay').classList.add('open');}"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
     + "function selectTipe(t){"
