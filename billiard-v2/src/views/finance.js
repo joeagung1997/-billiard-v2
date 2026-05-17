@@ -1325,15 +1325,15 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
 
   const makeGroupRows = (groupRows) => groupRows.map((m) => {
     if (editItem && editItem.id === m.id) {
-      return "<div class=\"kat-row edit-row\">"
+      // grid-column:1/-1 agar form span semua kolom, tidak terpotong overflow:hidden
+      return "<div style=\"grid-column:1/-1;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2)\">"
         + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap\">"
-        + ""
         + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
-        + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:120px\">"
-        + katSelect("kategori", m.kategori || "minuman", "width:140px")
-        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:90px\" oninput=\"fmtH(this)\">"
-        + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 14px;font-size:13px\">Simpan</button>"
-        + "<a href=\"/keuangan/menu\" class=\"btn-del\">Batal</a>"
+        + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\">"
+        + katSelect("kategori", m.kategori || "minuman", "min-width:130px")
+        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+        + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 16px;font-size:13px\">Simpan</button>"
+        + "<a href=\"/keuangan/menu\" class=\"btn-del\" style=\"height:42px;display:inline-flex;align-items:center\">Batal</a>"
         + "</form></div>";
     }
     return "<div class=\"kat-row\">"
