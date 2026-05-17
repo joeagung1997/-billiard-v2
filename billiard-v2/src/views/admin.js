@@ -831,7 +831,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=25">'
+    + '<link rel="stylesheet" href="/admin.css?v=26">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1161,7 +1161,18 @@ export function memberPage({ db, token, req }) {
   const nowWibM  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   const curBulanM = nowWibM.getFullYear() + '-' + String(nowWibM.getMonth() + 1).padStart(2, '0');
   const bulanLabelM = nowWibM.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-  const memberBaruCount = members.filter((m) => m.tanggalDaftar && new Date(m.tanggalDaftar).toISOString().startsWith(curBulanM)).length;
+
+  // Operational day = periode 24h dimulai jam 2 pagi WIB.
+  const opDayM = (date) => {
+    const w = new Date(new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    if (w.getHours() < 2) w.setDate(w.getDate() - 1);
+    return w.getFullYear() + '-' + String(w.getMonth() + 1).padStart(2, '0') + '-' + String(w.getDate()).padStart(2, '0');
+  };
+  const todayOpM = opDayM(new Date());
+
+  // Reset otomatis jam 02:00 WIB
+  const memberBaruCount = members.filter((m) => m.tanggalDaftar && opDayM(m.tanggalDaftar) === todayOpM).length;
+  const scanHariIniCount = members.filter((m) => m.tanggalScanTerakhir && opDayM(m.tanggalScanTerakhir) === todayOpM).length;
 
   const dataMember = members.map((m) => {
     const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
@@ -1175,7 +1186,7 @@ export function memberPage({ db, token, req }) {
       totalMain:     m.totalMain ?? 0,
       totalGratis:   m.totalGratis ?? 0,
       status:        m.status ?? '-',
-      sudahScan:     m.sudahScanHariIni ?? false,
+      sudahScan:     !!(m.tanggalScanTerakhir && opDayM(m.tanggalScanTerakhir) === todayOpM),
       aktif:         m.aktif ?? false,
       tglDaftar:     m.tanggalDaftar         ? formatTanggalPendek(m.tanggalDaftar)         : '—',
       tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalJam(m.tanggalScanTerakhir)      : '—',
@@ -1204,7 +1215,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=25">'
+    + '<link rel="stylesheet" href="/admin.css?v=26">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1258,13 +1269,13 @@ export function memberPage({ db, token, req }) {
 
     + '<div class="stat-card blue">'
     + '<div class="stat-label">Scan Hari Ini<div class="stat-icon blue"><i class="ti ti-scan"></i></div></div>'
-    + '<div class="stat-value">' + members.filter(function(m){ return m.sudahScanHariIni; }).length + '</div>'
+    + '<div class="stat-value">' + scanHariIniCount + '</div>'
     + '<div class="stat-footer">dari ' + members.length + ' member</div></div>'
 
     + '<div class="stat-card blue">'
     + '<div class="stat-label">Member Baru<div class="stat-icon blue"><i class="ti ti-user-plus"></i></div></div>'
     + '<div class="stat-value">' + memberBaruCount + '</div>'
-    + '<div class="stat-footer">Daftar ' + bulanLabelM + '</div></div>'
+    + '<div class="stat-footer">Daftar hari ini (sejak 02:00)</div></div>'
 
     + '</div>'
 
