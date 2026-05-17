@@ -228,3 +228,28 @@ export const addKategori = async (nama, jenis) => {
 export const deleteKategori = async (id) => {
   await query("DELETE FROM kategori WHERE id = $1", [id]);
 };
+
+// ── Menu Items (kopi/snack) ───────────────────────────────────
+
+export const readMenuItems = async () => {
+  const res = await query("SELECT id, nama, harga FROM menu_items ORDER BY nama");
+  return res.rows;
+};
+
+export const addMenuItem = async (nama, harga) => {
+  await query(
+    "INSERT INTO menu_items (nama, harga) VALUES ($1, $2) ON CONFLICT (nama) DO NOTHING",
+    [nama.trim(), harga]
+  );
+};
+
+export const updateMenuItem = async (id, nama, harga) => {
+  await query(
+    "UPDATE menu_items SET nama=$1, harga=$2 WHERE id=$3",
+    [nama.trim(), harga, id]
+  );
+};
+
+export const deleteMenuItem = async (id) => {
+  await query("DELETE FROM menu_items WHERE id=$1", [id]);
+};

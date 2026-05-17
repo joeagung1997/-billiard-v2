@@ -3,6 +3,16 @@
 
 import { query } from "./postgres.js";
 
+const DEFAULT_MENU_ITEMS = [
+  { nama: "Kopi",         harga: 5000  },
+  { nama: "Kopi Susu",   harga: 7000  },
+  { nama: "Teh Manis",   harga: 5000  },
+  { nama: "Air Mineral", harga: 3000  },
+  { nama: "Mie Instan",  harga: 8000  },
+  { nama: "Gorengan",    harga: 2000  },
+  { nama: "Rokok",       harga: 25000 },
+];
+
 const DEFAULT_KATEGORI = [
   // Pemasukan
   { nama: "Sewa Meja",           jenis: "pemasukan"   },
@@ -71,6 +81,15 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Tabel menu item kopi/snack ──────────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS menu_items (
+      id    SERIAL PRIMARY KEY,
+      nama  TEXT NOT NULL UNIQUE,
+      harga INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
   // ── Kolom tambahan (idempotent) ─────────────────────────────
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);
@@ -81,6 +100,14 @@ export const runMigrations = async () => {
     await query(
       `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
       [k.nama, k.jenis]
+    );
+  }
+
+  // ── Insert default menu items (skip jika sudah ada) ──────────
+  for (const m of DEFAULT_MENU_ITEMS) {
+    await query(
+      `INSERT INTO menu_items (nama, harga) VALUES ($1, $2) ON CONFLICT (nama) DO NOTHING`,
+      [m.nama, m.harga]
     );
   }
 

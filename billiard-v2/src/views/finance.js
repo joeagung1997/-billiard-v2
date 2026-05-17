@@ -45,6 +45,8 @@ function buildFinanceSidebar(ftk) {
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\"><i class=\"ti ti-layout-dashboard\"></i> Dashboard</a>"
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\"><i class=\"ti ti-users\"></i> Kelola Member</a>"
     + "<a href=\"/keuangan?ftk=" + ftk + "\" class=\"nav-item active\"><i class=\"ti ti-wallet\"></i> Keuangan</a>"
+    + "<a href=\"/keuangan/kategori?ftk=" + ftk + "\" class=\"nav-item\"><i class=\"ti ti-tag\"></i> Kelola Kategori</a>"
+    + "<a href=\"/keuangan/menu?ftk=" + ftk + "\" class=\"nav-item\"><i class=\"ti ti-coffee\"></i> Kelola Menu</a>"
     + "</div>"
     + "<div class=\"sb-section\">"
     + "<div class=\"sb-lbl\">Aksi</div>"
@@ -277,13 +279,19 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [] }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], menuItems = [] }) {
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
   const jFilter  = jenisFilter || "";
   const tDari    = tglDari    || "";
   const tSampai  = tglSampai  || "";
+
+  // Menu items untuk wizard Kopi/Snack
+  const menuOptsHtml = menuItems.map((m) =>
+    "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + m.harga + "\">"
+    + escHtml(m.nama) + " — Rp " + Number(m.harga).toLocaleString("id-ID") + "</option>"
+  ).join("");
 
   // Kategori optgroups untuk modal
   const modalGrpIn  = kategoriList.filter((k) => k.jenis === "pemasukan")
@@ -629,9 +637,13 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-info-chip\"><i class=\"ti ti-info-circle\"></i><span>Isi detail sesi main billiard.</span></div>"
     + "<div class=\"frow\">"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Nomor Meja</label>"
-    + "<select class=\"fsel\" id=\"wizMeja\"><option value=\"\">Pilih meja...</option><option>Meja 1</option><option>Meja 2</option><option>Meja 3</option><option>Meja 4</option><option>Meja 5</option><option>Meja 6</option><option>Meja 7</option><option>Meja 8</option></select></div>"
+    + "<select class=\"fsel\" id=\"wizMeja\" onchange=\"wizHideErr('wizMejaErr')\"><option value=\"\">Pilih meja...</option><option>Meja 1</option><option>Meja 2</option><option>Meja 3</option><option>Meja 4</option><option>Meja 5</option><option>Meja 6</option><option>Meja 7</option><option>Meja 8</option></select>"
+    + "<div id=\"wizMejaErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:4px\">Nomor meja wajib dipilih.</div>"
+    + "</div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Durasi</label>"
-    + "<select class=\"fsel\" id=\"wizDurasi\" onchange=\"wizDurasiChange(this.value)\"><option value=\"\">Pilih durasi...</option><option>Open / Loss</option><option>1 Jam</option><option>2 Jam</option><option>3 Jam</option><option>4 Jam</option><option>5 Jam</option><option>6 Jam</option><option>7 Jam</option></select></div>"
+    + "<select class=\"fsel\" id=\"wizDurasi\" onchange=\"wizDurasiChange(this.value)\"><option value=\"\">Pilih durasi...</option><option>Open / Loss</option><option>1 Jam</option><option>2 Jam</option><option>3 Jam</option><option>4 Jam</option><option>5 Jam</option><option>6 Jam</option><option>7 Jam</option></select>"
+    + "<div id=\"wizDurasiErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:4px\">Durasi wajib dipilih.</div>"
+    + "</div>"
     + "</div>"
     + "<div id=\"wizDetailMain\" class=\"fmg\" style=\"display:none\">"
     + "<label class=\"fin-wiz-lbl\">Detail Main <span style=\"color:#a32d2d;text-transform:none;letter-spacing:0\">*</span></label>"
@@ -640,15 +652,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
     + "</div>"
     + "<div id=\"wizKopi\" class=\"fin-dynamic\">"
-    + "<div class=\"fin-info-chip\"><i class=\"ti ti-info-circle\"></i><span>Tambahkan item yang dipesan.</span></div>"
+    + "<div class=\"fin-info-chip\"><i class=\"ti ti-info-circle\"></i><span>Pilih item dari menu dan atur jumlah. Total otomatis terhitung.</span></div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Item Pesanan</label>"
     + "<div class=\"fin-menu-items\" id=\"wizMenuItems\">"
     + "<div class=\"fin-menu-row\">"
-    + "<input class=\"finp\" type=\"text\" placeholder=\"Nama item...\" value=\"Kopi\">"
-    + "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" placeholder=\"Qty\">"
+    + "<select class=\"fsel\" onchange=\"wizCalcTotal()\"><option value=\"\">Pilih item...</option>" + menuOptsHtml + "</select>"
+    + "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">"
     + "<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>"
     + "</div></div>"
     + "<button type=\"button\" class=\"fin-btn-add-item\" onclick=\"wizAddItem()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah Item</button>"
+    + "<div id=\"wizKopiErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:6px\">Pilih minimal 1 item pesanan.</div>"
     + "</div></div>"
     + "<div id=\"wizOther\" class=\"fin-dynamic\">"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Kategori</label>"
@@ -658,7 +671,9 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</select></div></div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Jumlah (Rp)</label>"
     + "<div class=\"fin-inp-pfx\"><span class=\"fin-pfx-lbl\">Rp</span>"
-    + "<input class=\"fin-pfx-inp\" type=\"text\" inputmode=\"numeric\" id=\"wizJumlah\" placeholder=\"0\" oninput=\"wizFmtJ(this)\"></div></div>"
+    + "<input class=\"fin-pfx-inp\" type=\"text\" inputmode=\"numeric\" id=\"wizJumlah\" placeholder=\"0\" oninput=\"wizFmtJ(this)\"></div>"
+    + "<div id=\"wizJumlahErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:4px\">Jumlah harus diisi dan lebih dari 0.</div>"
+    + "</div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Keterangan <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span></label>"
     + "<input class=\"finp\" type=\"text\" id=\"wizKet\" placeholder=\"Catatan tambahan...\"></div>"
     + "</div>"
@@ -701,6 +716,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"><\/script>"
     + "<script>"
     + "const FTK=" + JSON.stringify(token) + ";"
+    + "const WIZ_MENU_OPTS=" + JSON.stringify("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
@@ -768,11 +784,24 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wiz-malam').className='fin-tog-btn'+(w==='malam'?' sel-malam':'');}"
     + "function wizAddItem(){"
     + "var c=document.getElementById('wizMenuItems'),r=document.createElement('div');r.className='fin-menu-row';"
-    + "r.innerHTML='<input class=\"finp\" type=\"text\" placeholder=\"Nama item...\">'"
-    + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\">'"
+    + "r.innerHTML='<select class=\"fsel\" onchange=\"wizCalcTotal()\">'+WIZ_MENU_OPTS+'</select>'"
+    + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">'"
     + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>';"
     + "c.appendChild(r);}"
-    + "function wizRmItem(btn){var rows=document.querySelectorAll('#wizMenuItems .fin-menu-row');if(rows.length>1)btn.closest('.fin-menu-row').remove();}"
+    + "function wizRmItem(btn){var rows=document.querySelectorAll('#wizMenuItems .fin-menu-row');if(rows.length>1){btn.closest('.fin-menu-row').remove();wizCalcTotal();}}"
+    + "function wizCalcTotal(){"
+    + "var total=0;"
+    + "document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){"
+    + "var sel=r.querySelector('select');var qty=r.querySelector('input[type=number]');"
+    + "if(sel&&sel.value&&sel.selectedIndex>0){"
+    + "var opt=sel.options[sel.selectedIndex];"
+    + "var harga=parseInt(opt.dataset.harga)||0;"
+    + "total+=harga*(parseInt(qty?.value)||1);}});"
+    + "var jEl=document.getElementById('wizJumlah');"
+    + "if(jEl){var s=total>0?String(total).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
+    + "jEl.value=s;}"
+    + "wizHideErr('wizJumlahErr');}"
+    + "function wizHideErr(id){var el=document.getElementById(id);if(el)el.style.display='none';}"
     + "function wizFmtJ(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;var s=n>0?String(n):'';el.value=s?s.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
     + "function wizGoTo(n){"
     + "wizS.step=n;"
@@ -805,8 +834,8 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(dr&&dr.value==='Open / Loss'&&dtl&&dtl.value.trim())ket+=' ('+dtl.value.trim()+')';}"
     + "else if(wizS.act==='kopi'&&wizS.tipe==='income'){"
     + "var items=[];document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){"
-    + "var nm=r.querySelector('input[type=text]');var qty=r.querySelector('input[type=number]');"
-    + "if(nm&&nm.value)items.push(qty&&qty.value>1?qty.value+'× '+nm.value:nm.value);});"
+    + "var sel=r.querySelector('select');var qty=r.querySelector('input[type=number]');"
+    + "if(sel&&sel.value){var q=parseInt(qty?.value)||1;items.push(q>1?q+'× '+sel.value:sel.value);}});"
     + "ket=items.join(', ');}"
     + "var ketExtra=(document.getElementById('wizKet')?document.getElementById('wizKet').value:'').trim();"
     + "if(ket&&ketExtra&&ket!==ketExtra)ket=ket+' — '+ketExtra;else if(!ket)ket=ketExtra;"
@@ -832,19 +861,27 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function wizDurasiChange(v){"
     + "var el=document.getElementById('wizDetailMain');"
     + "if(el)el.style.display=v==='Open / Loss'?'':'none';"
-    + "var err=document.getElementById('wizDetailMainErr');if(err)err.style.display='none';}"
+    + "wizHideErr('wizDetailMainErr');wizHideErr('wizDurasiErr');}"
+    + "function wizShowErr(id,msg){"
+    + "var el=document.getElementById(id);"
+    + "if(el){el.textContent=msg;el.style.display='';el.scrollIntoView({block:'nearest'});}}"
     + "function wizNext(){"
     + "if(wizS.step===2){"
+    + "if(wizS.act==='billiard'&&wizS.tipe==='income'){"
+    + "var mj=document.getElementById('wizMeja');"
+    + "if(!mj||!mj.value){wizShowErr('wizMejaErr','Nomor meja wajib dipilih.');return;}"
+    + "var dr=document.getElementById('wizDurasi');"
+    + "if(!dr||!dr.value){wizShowErr('wizDurasiErr','Durasi wajib dipilih.');return;}"
+    + "if(dr.value==='Open / Loss'){"
+    + "var dtl=document.getElementById('wizDetailMainInp');"
+    + "if(!dtl||!dtl.value.trim()){wizShowErr('wizDetailMainErr','Detail main wajib diisi untuk durasi Open / Loss.');if(dtl)dtl.focus();return;}}}"
+    + "if(wizS.act==='kopi'&&wizS.tipe==='income'){"
+    + "var hasItem=false;"
+    + "document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){var s=r.querySelector('select');if(s&&s.value)hasItem=true;});"
+    + "if(!hasItem){wizShowErr('wizKopiErr','Pilih minimal 1 item pesanan.');return;}}"
     + "var jEl=document.getElementById('wizJumlah');"
     + "var jRaw=jEl?jEl.value.replace(/\\./g,''):'';"
-    + "if(!(parseInt(jRaw)>0)){if(jEl)jEl.focus();return;}"
-    + "if(wizS.act==='billiard'&&wizS.tipe==='income'){"
-    + "var dr=document.getElementById('wizDurasi');"
-    + "if(dr&&dr.value==='Open / Loss'){"
-    + "var dtl=document.getElementById('wizDetailMainInp');"
-    + "var err=document.getElementById('wizDetailMainErr');"
-    + "if(!dtl||!dtl.value.trim()){if(err)err.style.display='';if(dtl)dtl.focus();return;}"
-    + "if(err)err.style.display='none';}}"
+    + "if(!(parseInt(jRaw)>0)){wizShowErr('wizJumlahErr','Jumlah harus diisi dan lebih dari 0.');if(jEl)jEl.focus();return;}"
     + "}"
     + "if(wizS.step<3)wizGoTo(wizS.step+1);}"
     + "function wizPrev(){if(wizS.step>1)wizGoTo(wizS.step-1);}"
@@ -1216,6 +1253,97 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "document.getElementById('pill-expense').className='type-pill expense'+(type==='expense'?' active':'');"
     + "document.getElementById('catInput').placeholder=type==='income'?'Nama kategori pemasukan...':'Nama kategori pengeluaran...';"
     + "document.getElementById('catInput').focus();}"
+    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
+    + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
+    + "</script>"
+    + "</body></html>";
+}
+
+// ── Kelola Menu Items ─────────────────────────────────────────
+export function financeMenuPage(token, items = [], hasErr = false, editItem = null) {
+  const rp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+
+  const makeRows = () => items.map((m) => {
+    if (editItem && editItem.id === m.id) {
+      return "<div class=\"kat-row\">"
+        + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:contents\">"
+        + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+        + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
+        + "<div style=\"display:flex;gap:8px;align-items:center;flex:1\">"
+        + "<input class=\"finp\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1\">"
+        + "<input class=\"finp\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:110px\">"
+        + "</div>"
+        + "<div class=\"kat-acts\">"
+        + "<button type=\"submit\" class=\"btn-primary\" style=\"font-size:12px;padding:5px 12px\">Simpan</button>"
+        + "<a href=\"/keuangan/menu?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px\">Batal</a>"
+        + "</div>"
+        + "</form></div>";
+    }
+    return "<div class=\"kat-row\">"
+      + "<div style=\"flex:1\">"
+      + "<div style=\"font-size:13px;font-weight:500;color:var(--txt)\">" + escHtml(m.nama) + "</div>"
+      + "<div style=\"font-size:11px;color:var(--txt3);margin-top:2px\">" + rp(m.harga) + "</div>"
+      + "</div>"
+      + "<div class=\"kat-acts\">"
+      + "<a href=\"/keuangan/menu?ftk=" + token + "&edit=" + m.id + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px\">Edit</a>"
+      + "<a href=\"/keuangan/menu/hapus?ftk=" + token + "&id=" + m.id + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px;color:var(--red);border-color:var(--red)\" onclick=\"return confirm('Hapus item ini?')\">Hapus</a>"
+      + "</div>"
+      + "</div>";
+  }).join("");
+
+  return docHeadV4("Kelola Menu")
+    + "</head><body data-theme=\"light\">"
+    + "<div class=\"layout\">"
+    + buildFinanceSidebar(token)
+    + "<div class=\"main\">"
+    + "<div class=\"topbar\">"
+    + "<div class=\"topbar-left\"><a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Keuangan</a>"
+    + "<div class=\"page-title\">Kelola Menu Kopi / Snack</div></div>"
+    + "</div>"
+    + "<div class=\"content\">"
+
+    + (hasErr ? "<div class=\"alert alert-err\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
+
+    + "<div class=\"content-grid\" style=\"grid-template-columns:1fr 320px;gap:16px\">"
+
+    // List
+    + "<div class=\"kat-card\">"
+    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
+    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> Menu Item</div>"
+    + "<div class=\"count-chip income\">" + items.length + "</div>"
+    + "</div></div>"
+    + "<div class=\"kat-table-head\">"
+    + "<div class=\"kat-th\">Nama &amp; Harga</div>"
+    + "<div class=\"kat-th r\">Aksi</div>"
+    + "</div>"
+    + "<div>" + makeRows() + "</div>"
+    + (items.length === 0 ? "<div style=\"padding:24px;text-align:center;color:var(--txt3);font-size:13px\">Belum ada menu. Tambahkan di bawah.</div>" : "")
+    + "</div>"
+
+    // Add form
+    + "<div class=\"kat-card\" style=\"height:fit-content\">"
+    + "<div class=\"kat-card-header\"><div class=\"kat-type-badge\" style=\"background:#f0f7eb;color:#2d6624\"><i class=\"ti ti-plus\"></i> Tambah Menu</div></div>"
+    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" style=\"padding:16px;display:flex;flex-direction:column;gap:12px\">"
+    + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+    + "<div>"
+    + "<label class=\"fin-wiz-lbl\">Nama Item</label>"
+    + "<input class=\"finp\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required>"
+    + "</div>"
+    + "<div>"
+    + "<label class=\"fin-wiz-lbl\">Harga (Rp)</label>"
+    + "<input class=\"finp\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7000\" required oninput=\"fmtH(this)\">"
+    + "</div>"
+    + "<button type=\"submit\" class=\"btn-primary\" style=\"width:100%\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah</button>"
+    + "</form>"
+    + "</div>"
+
+    + "</div>"
+    + "</div>"
+    + "</div>"
+    + "</div>"
+    + "<script>"
+    + "function fmtH(el){var r=el.value.replace(/\\D/g,'');var n=parseInt(r)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
