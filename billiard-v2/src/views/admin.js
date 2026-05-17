@@ -565,25 +565,29 @@ function buildSidebar(token, activePage) {
     + '</script>';
 }
 
-// ── buildBottomNav — shared bottom nav HTML ───────────────────────────────────
+// ── buildBottomNav — shared bottom nav HTML (revamp v2) ─────────────────────
 function buildBottomNav(token, activePage) {
   const dashActive    = activePage === 'dashboard' ? ' active' : '';
   const membersActive = activePage === 'members'   ? ' active' : '';
+  const opsActive     = activePage === 'operasional' ? ' active' : '';
+  const tkOnclick     = 'try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}';
 
   return '<nav class="bottom-nav">'
     + '<a href="/admin?tk=' + token + '" class="bn-item' + dashActive + '">'
-    + '<span class="bn-icon">🏠</span>Home'
+    + '<span class="bn-icon"><i class="ti ti-layout-dashboard"></i></span>Home'
     + '</a>'
-    + '<a href="/admin/members?tk=' + token + '" class="bn-item bn-green' + membersActive + '">'
-    + '<span class="bn-icon">👥</span>Member'
+    + '<a href="/admin/members?tk=' + token + '" class="bn-item' + membersActive + '">'
+    + '<span class="bn-icon"><i class="ti ti-users"></i></span>Member'
     + '</a>'
-    + '<a href="/operasional" class="bn-item"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">'
-    + '<span class="bn-icon">💼</span>Operasional'
+    + '<a href="/operasional" class="bn-item' + opsActive + '" onclick="' + tkOnclick + '">'
+    + '<span class="bn-icon"><i class="ti ti-briefcase"></i></span>Operasional'
     + '</a>'
-    + '<a href="/admin/reset?tk=' + token + '" class="bn-item bn-red"'
+    + '<a href="/scan" class="bn-item">'
+    + '<span class="bn-icon"><i class="ti ti-qrcode"></i></span>Scan'
+    + '</a>'
+    + '<a href="/admin/reset?tk=' + token + '" class="bn-item danger"'
     + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
-    + '<span class="bn-icon">↺</span>Reset'
+    + '<span class="bn-icon"><i class="ti ti-refresh"></i></span>Reset'
     + '</a>'
     + '</nav>';
 }
@@ -785,7 +789,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=22">'
+    + '<link rel="stylesheet" href="/admin.css?v=23">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1158,7 +1162,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=22">'
+    + '<link rel="stylesheet" href="/admin.css?v=23">'
     + '</head><body>'
 
     + '<div class="layout">'
