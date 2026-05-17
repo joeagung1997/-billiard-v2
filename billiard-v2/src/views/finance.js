@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=11\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=12\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -39,57 +39,97 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
   const isMenu = page === "menu";
   // Sub-menu terbuka otomatis kalau sedang di salah satu halaman operasional
   const subOpen = isKeu || isKat || isMenu;
+  const opsItemCls = "nav-item" + (subOpen ? " open" : "");
 
-  const subItem = (href, icon, label, active) =>
-    "<a href=\"" + href + "\" style=\""
-    + "display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;"
-    + "font-size:12px;font-weight:" + (active ? "600" : "500") + ";color:" + (active ? "var(--accent)" : "var(--txt2)") + ";"
-    + "text-decoration:none;border-radius:7px;margin:1px 8px;transition:background .15s,color .15s;"
-    + "background:" + (active ? "rgba(59,130,246,.12)" : "transparent") + ";"
-    + "\">"
-    + "<i class=\"ti " + icon + "\" style=\"font-size:13px\"></i>" + label + "</a>";
+  const subItem = (href, label, active) =>
+    "<a href=\"" + href + "\" class=\"submenu-item" + (active ? " active" : "") + "\">"
+    + "<div class=\"sub-dot\"></div>" + label + "</a>";
 
   return "<aside class=\"sidebar\">"
-    + "<div class=\"sb-brand\">"
-    + "<div class=\"sb-brand-icon\"><i class=\"ti ti-circle-number-8\"></i></div>"
-    + "<div class=\"sb-brand-name\">" + CONFIG.NAMA_ARENA + "</div>"
-    + "<div class=\"sb-brand-sub\">Admin Panel</div>"
+    // ── Logo ───────────────────────────────────────
+    + "<div class=\"logo-area\">"
+    + "<div class=\"logo-row\">"
+    + "<div class=\"logo-mark\"><i class=\"ti ti-circle-number-8\"></i><div class=\"logo-online\"></div></div>"
+    + "<div class=\"logo-text\">"
+    + "<div class=\"logo-name\">" + CONFIG.NAMA_ARENA + "</div>"
+    + "<div class=\"logo-sub\">Admin Panel</div>"
     + "</div>"
-    + "<div class=\"sb-section\">"
-    + "<div class=\"sb-lbl\">Menu</div>"
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\"><i class=\"ti ti-layout-dashboard\"></i> Dashboard</a>"
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\"><i class=\"ti ti-users\"></i> Kelola Member</a>"
+    + "</div>"
+    + "</div>"
+    + "<div class=\"sidebar-divider\"></div>"
 
-    // Operasional — klik untuk toggle sub-menu, tidak navigasi langsung
-    + "<div class=\"nav-item" + (isKeu || isKat || isMenu ? " active" : "") + "\" onclick=\"toggleKeuSub()\" style=\"cursor:pointer;justify-content:space-between;user-select:none\">"
-    + "<span style=\"display:flex;align-items:center;gap:8px\"><i class=\"ti ti-briefcase\"></i> Operasional</span>"
-    + "<i class=\"ti ti-chevron-down\" id=\"keuChevron\" style=\"font-size:12px;transition:transform .2s;" + (subOpen ? "transform:rotate(180deg)" : "") + "\"></i>"
+    // ── Nav scroll ─────────────────────────────────
+    + "<div class=\"nav-scroll\">"
+
+    // GROUP: UTAMA (link kembali ke admin)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Utama</div>"
+    + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
+    + "<div class=\"nav-item-icon\"><i class=\"ti ti-layout-dashboard\"></i></div>"
+    + "<span class=\"nav-item-text\">Dashboard</span>"
+    + "</a>"
+    + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
+    + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
+    + "<span class=\"nav-item-text\">Kelola Member</span>"
+    + "</a>"
     + "</div>"
 
-    // Sub-menu — hidden by default, auto-open kalau di sub-page
-    + "<div id=\"keuSub\" style=\"overflow:hidden;transition:max-height .25s ease;max-height:" + (subOpen ? "240px" : "0") + "\">"
-    + subItem("/operasional", "ti-wallet", "Dashboard Keuangan", isKeu)
-    + subItem("/operasional/kategori", "ti-tag", "Kelola Kategori", isKat)
-    + subItem("/operasional/menu", "ti-coffee", "Kelola Menu", isMenu)
+    // GROUP: OPERASIONAL (auto-open karena kita di dalamnya)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Operasional</div>"
+    + "<div class=\"" + opsItemCls + "\" onclick=\"toggleSubmenu('ops', this)\">"
+    + "<div class=\"nav-item-icon\"><i class=\"ti ti-briefcase\"></i></div>"
+    + "<span class=\"nav-item-text\">Operasional</span>"
+    + "<i class=\"ti ti-chevron-down nav-chevron\"></i>"
+    + "</div>"
+    + "<div class=\"submenu-wrap\">"
+    + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
+    + subItem("/operasional", "Dashboard Keuangan", isKeu)
+    + subItem("/operasional/kategori", "Kelola Kategori", isKat)
+    + subItem("/operasional/menu", "Kelola Menu", isMenu)
+    + "</div>"
+    + "</div>"
     + "</div>"
 
     + "</div>"
-    + "<div class=\"sb-section\">"
-    + "<div class=\"sb-lbl\">Aksi</div>"
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goReset()\"><i class=\"ti ti-refresh\"></i> Reset Harian</a>"
+
+    // ── Quick Actions ──────────────────────────────
+    + "<div class=\"sidebar-divider\"></div>"
+    + "<div class=\"quick-actions\">"
+    + "<div class=\"nav-group-label\" style=\"padding-bottom:8px\">Aksi Cepat</div>"
+    + "<div class=\"qa-grid\">"
+    + "<a href=\"/scan\" class=\"qa-btn\"><i class=\"ti ti-qrcode\"></i>Scan Member</a>"
+    + "<a href=\"/operasional/tambah\" class=\"qa-btn\"><i class=\"ti ti-plus\"></i>Transaksi</a>"
+    + "<a href=\"#\" class=\"qa-btn\" onclick=\"goReset();return false\"><i class=\"ti ti-refresh\"></i>Reset Harian</a>"
+    + "<button class=\"qa-btn danger\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i>Keluar</button>"
     + "</div>"
-    + "<div class=\"sb-footer\">"
-    + "<div class=\"sb-avatar\">AD</div>"
-    + "<div><div class=\"sb-user-name\">Admin</div><div class=\"sb-user-role\">Administrator</div></div>"
     + "</div>"
+
+    // ── Profile ────────────────────────────────────
+    + "<div class=\"sidebar-bottom\">"
+    + "<div class=\"profile-card\">"
+    + "<div class=\"profile-avatar\">AD</div>"
+    + "<div class=\"profile-info\">"
+    + "<div class=\"profile-name\">Admin</div>"
+    + "<div class=\"profile-role\">Administrator</div>"
+    + "</div>"
+    + "<div class=\"profile-actions\">"
+    + "<button class=\"profile-btn danger\" title=\"Logout\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i></button>"
+    + "</div>"
+    + "</div>"
+    + "</div>"
+
     + "</aside>"
     + "<script>"
-    + "function toggleKeuSub(){"
-    + "var sub=document.getElementById('keuSub');"
-    + "var chev=document.getElementById('keuChevron');"
-    + "var open=sub.style.maxHeight!=='0px'&&sub.style.maxHeight!==''&&sub.style.maxHeight!=='0';"
-    + "sub.style.maxHeight=open?'0':'240px';"
-    + "chev.style.transform=open?'':'rotate(180deg)';}"
+    + "function toggleSubmenu(id,el){"
+    + "var sub=document.getElementById('sub-'+id);"
+    + "var open=sub.classList.contains('open');"
+    + "sub.classList.toggle('open',!open);"
+    + "el.classList.toggle('open',!open);}"
+    + "function adminLogout(){"
+    + "if(!confirm('Keluar dari sesi admin?'))return;"
+    + "try{localStorage.removeItem('warpat_atk')}catch(_){};"
+    + "window.location.href='/';}"
     + "</script>";
 }
 

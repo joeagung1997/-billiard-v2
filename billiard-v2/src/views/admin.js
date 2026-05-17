@@ -467,59 +467,101 @@ function buildAdminCss() {
   ].join('');
 }
 
-// ── buildSidebar — shared sidebar HTML ───────────────────────────────────────
+// ── buildSidebar — shared sidebar HTML (revamp v2) ──────────────────────────
 function buildSidebar(token, activePage) {
-  const dashClass    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
-  const membersClass = 'nav-item' + (activePage === 'members'   ? ' active' : '');
+  const dashCls    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
+  const membersCls = 'nav-item' + (activePage === 'members'   ? ' active' : '');
+  // Persist token onclick (untuk navigate ke /operasional yg gak butuh tk param)
+  const tkOnclick  = 'try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}';
 
   return '<aside class="sidebar">'
-    + '<div class="sb-brand">'
-    + '<div class="sb-brand-icon"><i class="ti ti-circle-number-8"></i></div>'
-    + '<div class="sb-brand-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="sb-brand-sub">Admin Panel</div>'
+    // ── Logo ───────────────────────────────────────
+    + '<div class="logo-area">'
+    + '<div class="logo-row">'
+    + '<div class="logo-mark"><i class="ti ti-circle-number-8"></i><div class="logo-online"></div></div>'
+    + '<div class="logo-text">'
+    + '<div class="logo-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="logo-sub">Admin Panel</div>'
     + '</div>'
-    + '<div class="sb-section">'
-    + '<div class="sb-lbl">Menu</div>'
-    + '<a href="/admin?tk=' + token + '" class="' + dashClass + '"><i class="ti ti-layout-dashboard"></i> Dashboard</a>'
-    + '<a href="/admin/members?tk=' + token + '" class="' + membersClass + '"><i class="ti ti-users"></i> Kelola Member</a>'
+    + '</div>'
+    + '</div>'
+    + '<div class="sidebar-divider"></div>'
 
-    // Operasional — toggle drop-down, tidak navigasi langsung
-    + '<div class="nav-item" onclick="toggleOpsSub()" style="cursor:pointer;justify-content:space-between;user-select:none">'
-    + '<span style="display:flex;align-items:center;gap:8px"><i class="ti ti-briefcase"></i> Operasional</span>'
-    + '<i class="ti ti-chevron-down" id="opsChevron" style="font-size:12px;transition:transform .2s"></i>'
+    // ── Nav scroll ─────────────────────────────────
+    + '<div class="nav-scroll">'
+
+    // GROUP: UTAMA
+    + '<div class="nav-group">'
+    + '<div class="nav-group-label">Utama</div>'
+    + '<a href="/admin?tk=' + token + '" class="' + dashCls + '">'
+    + '<div class="nav-item-icon"><i class="ti ti-layout-dashboard"></i></div>'
+    + '<span class="nav-item-text">Dashboard</span>'
+    + '</a>'
+    + '<a href="/admin/members?tk=' + token + '" class="' + membersCls + '">'
+    + '<div class="nav-item-icon"><i class="ti ti-users"></i></div>'
+    + '<span class="nav-item-text">Kelola Member</span>'
+    + '</a>'
     + '</div>'
 
-    // Sub-menu Operasional — collapsed by default
-    + '<div id="opsSub" style="overflow:hidden;transition:max-height .25s ease;max-height:0">'
-    + '<a href="/operasional" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
-    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
-    + '<i class="ti ti-wallet" style="font-size:13px"></i> Dashboard Keuangan</a>'
-    + '<a href="/operasional/kategori" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
-    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
-    + '<i class="ti ti-tag" style="font-size:13px"></i> Kelola Kategori</a>'
-    + '<a href="/operasional/menu" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
-    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
-    + '<i class="ti ti-coffee" style="font-size:13px"></i> Kelola Menu</a>'
+    // GROUP: OPERASIONAL (expandable submenu)
+    + '<div class="nav-group">'
+    + '<div class="nav-group-label">Operasional</div>'
+    + '<div class="nav-item" onclick="toggleSubmenu(\'ops\', this)">'
+    + '<div class="nav-item-icon"><i class="ti ti-briefcase"></i></div>'
+    + '<span class="nav-item-text">Operasional</span>'
+    + '<i class="ti ti-chevron-down nav-chevron"></i>'
+    + '</div>'
+    + '<div class="submenu-wrap">'
+    + '<div class="submenu" id="sub-ops">'
+    + '<a href="/operasional" class="submenu-item" onclick="' + tkOnclick + '">'
+    + '<div class="sub-dot"></div>Dashboard Keuangan</a>'
+    + '<a href="/operasional/kategori" class="submenu-item" onclick="' + tkOnclick + '">'
+    + '<div class="sub-dot"></div>Kelola Kategori</a>'
+    + '<a href="/operasional/menu" class="submenu-item" onclick="' + tkOnclick + '">'
+    + '<div class="sub-dot"></div>Kelola Menu</a>'
+    + '</div>'
+    + '</div>'
     + '</div>'
 
     + '</div>'
-    + '<div class="sb-section">'
-    + '<div class="sb-lbl">Aksi</div>'
-    + '<a href="/admin/reset?tk=' + token + '" class="nav-item"'
-    + ' onclick="return confirm(\'Reset scan harian semua member?\')"><i class="ti ti-refresh"></i> Reset Harian</a>'
+
+    // ── Quick Actions ──────────────────────────────
+    + '<div class="sidebar-divider"></div>'
+    + '<div class="quick-actions">'
+    + '<div class="nav-group-label" style="padding-bottom:8px">Aksi Cepat</div>'
+    + '<div class="qa-grid">'
+    + '<a href="/scan" class="qa-btn"><i class="ti ti-qrcode"></i>Scan Member</a>'
+    + '<a href="/operasional/tambah" class="qa-btn" onclick="' + tkOnclick + '"><i class="ti ti-plus"></i>Transaksi</a>'
+    + '<a href="/admin/reset?tk=' + token + '" class="qa-btn" onclick="return confirm(\'Reset scan harian semua member?\')"><i class="ti ti-refresh"></i>Reset Harian</a>'
+    + '<button class="qa-btn danger" onclick="adminLogout()"><i class="ti ti-logout"></i>Keluar</button>'
     + '</div>'
-    + '<div class="sb-footer">'
-    + '<div class="sb-avatar">AD</div>'
-    + '<div><div class="sb-user-name">Admin</div><div class="sb-user-role">Administrator</div></div>'
     + '</div>'
+
+    // ── Profile ────────────────────────────────────
+    + '<div class="sidebar-bottom">'
+    + '<div class="profile-card">'
+    + '<div class="profile-avatar">AD</div>'
+    + '<div class="profile-info">'
+    + '<div class="profile-name">Admin</div>'
+    + '<div class="profile-role">Administrator</div>'
+    + '</div>'
+    + '<div class="profile-actions">'
+    + '<button class="profile-btn danger" title="Logout" onclick="adminLogout()"><i class="ti ti-logout"></i></button>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
     + '</aside>'
     + '<script>'
-    + 'function toggleOpsSub(){'
-    + 'var sub=document.getElementById("opsSub");'
-    + 'var chev=document.getElementById("opsChevron");'
-    + 'var open=sub.style.maxHeight!=="0px"&&sub.style.maxHeight!==""&&sub.style.maxHeight!=="0";'
-    + 'sub.style.maxHeight=open?"0":"240px";'
-    + 'chev.style.transform=open?"":"rotate(180deg)";}'
+    + 'function toggleSubmenu(id,el){'
+    + 'var sub=document.getElementById("sub-"+id);'
+    + 'var open=sub.classList.contains("open");'
+    + 'sub.classList.toggle("open",!open);'
+    + 'el.classList.toggle("open",!open);}'
+    + 'function adminLogout(){'
+    + 'if(!confirm("Keluar dari sesi admin?"))return;'
+    + 'try{localStorage.removeItem("warpat_atk")}catch(_){};'
+    + 'window.location.href="/";}'
     + '</script>';
 }
 
@@ -743,7 +785,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=21">'
+    + '<link rel="stylesheet" href="/admin.css?v=22">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1116,7 +1158,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=21">'
+    + '<link rel="stylesheet" href="/admin.css?v=22">'
     + '</head><body>'
 
     + '<div class="layout">'
