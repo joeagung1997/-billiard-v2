@@ -17,7 +17,7 @@ import {
 } from "../utils/format.js";
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
 import { uploadQrToCloudinary } from "./share.js";
-import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, editMemberPage } from "../views/admin.js";
+import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess } from "../views/admin.js";
 
 const router = Router();
 
@@ -116,45 +116,53 @@ router.get("/tambah", requireAdmin, async (req, res) => {
   }
 });
 
-// ── GET /admin/edit ───────────────────────────────────────────
+// ── GET /admin/edit — save member (dari modal inline edit) ───
+// Halaman form standalone sudah dihapus. Edit sekarang inline di
+// modal detail member (/admin/members). Endpoint ini cuma menerima
+// data save via query string lalu redirect kembali.
 router.get("/edit", requireAdmin, async (req, res) => {
-  const { tk }  = res.locals;
-  const kode    = (req.query.kode ?? "").toUpperCase();
+  const { tk } = res.locals;
+  const kode   = (req.query.kode ?? "").toUpperCase();
+  const { nama, tlp } = req.query;
+
+  // Tanpa data nama -> redirect ke kelola member
+  if (!nama?.trim() || !kode) {
+    return res.redirect(`/admin/members?tk=${tk}`);
+  }
 
   try {
     const db  = await readDB();
     const idx = findMemberIndex(db.members, kode);
-    if (idx === -1) return res.redirect(`/admin?tk=${tk}`);
+    if (idx === -1) return res.redirect(`/admin/members?tk=${tk}`);
 
-    const m     = { ...db.members[idx] };
-    const { nama, tlp } = req.query;
+    const m = { ...db.members[idx] };
 
-    if (nama?.trim()) {
-      // Capture sebelum diubah untuk audit log
-      const oldNama = m.nama;
-      const oldTlp  = m.telepon ?? "";
+    // Snapshot sebelum diubah untuk audit log
+    const oldNama = m.nama;
+    const oldTlp  = m.telepon ?? "";
 
-      m.nama = nama.trim();
-      if (validateTelepon(tlp ?? "")) {
-        m.telepon = formatTeleponDisplay(normalizeTelepon(tlp));
-      }
-      await saveMember(m);
-
-      // Catat perubahan ke log
-      const changes = [];
-      if (oldNama !== m.nama)    changes.push(`nama: '${oldNama}' → '${m.nama}'`);
-      if (oldTlp  !== m.telepon) changes.push(`telp: '${oldTlp || "-"}' → '${m.telepon || "-"}'`);
-      if (changes.length) {
-        await appendLog(m.kode, m.nama, "EDIT_MEMBER", changes.join(", "));
-      }
-
-      return res.redirect(`/admin?tk=${tk}`);
+    m.nama = nama.trim();
+    // Telepon: kosongkan kalau input kosong, simpan kalau valid
+    const tlpInput = (tlp ?? "").trim();
+    if (tlpInput === "") {
+      m.telepon = "";
+    } else if (validateTelepon(tlpInput)) {
+      m.telepon = formatTeleponDisplay(normalizeTelepon(tlpInput));
     }
 
-    res.send(editMemberPage(tk, m));
+    await saveMember(m);
+
+    const changes = [];
+    if (oldNama !== m.nama)    changes.push(`nama: '${oldNama}' → '${m.nama}'`);
+    if (oldTlp  !== m.telepon) changes.push(`telp: '${oldTlp || "-"}' → '${m.telepon || "-"}'`);
+    if (changes.length) {
+      await appendLog(m.kode, m.nama, "EDIT_MEMBER", changes.join(", "));
+    }
+
+    res.redirect(`/admin/members?tk=${tk}`);
   } catch (err) {
     console.error("[ADMIN] edit error:", err.message);
-    res.status(500).send("Gagal memuat data member.");
+    res.redirect(`/admin/members?tk=${tk}`);
   }
 });
 

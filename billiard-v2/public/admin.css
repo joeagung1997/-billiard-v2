@@ -1268,6 +1268,38 @@ td          { padding:10px 16px; vertical-align:middle; }
 .m-cell.clickable { cursor:pointer; transition:opacity .12s; }
 .m-cell.clickable:hover .m-nm { color:#2a7a4e; }
 
+/* ── Edit panel di dalam member detail modal ──────────────────── */
+.dt-edit { overflow-y:auto; flex:1; }
+.dt-edit-field { margin-bottom:14px; }
+.dt-edit-field:last-child { margin-bottom:0; }
+.dt-edit-label {
+  display:block; font-size:11px; font-weight:600;
+  color:#777; margin-bottom:6px;
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.dt-edit-opt { color:#bbb; font-weight:400; text-transform:none; letter-spacing:0; }
+.dt-edit-input {
+  width:100%; padding:11px 13px;
+  border:1.5px solid #e2e8e0; border-radius:10px;
+  font-size:14px; font-family:var(--ff); color:#1a2318;
+  background:#fff; outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.dt-edit-input:focus {
+  border-color:#2a7a4e;
+  box-shadow:0 0 0 3px rgba(42,122,78,.1);
+}
+.dt-edit-input.has-prefix { padding-left:54px; }
+.dt-edit-tlp { position:relative; }
+.dt-edit-prefix {
+  position:absolute; left:14px; top:50%;
+  transform:translateY(-50%);
+  font-size:14px; font-weight:600; color:#888;
+  font-family:var(--ff-mono);
+  pointer-events:none;
+}
+.dt-edit-hint { font-size:11px; color:#aaa; margin:5px 0 0; }
+
 /* Responsive */
 @media (max-width:1050px) {
   .fin-stat-grid   { grid-template-columns:repeat(2,1fr); }

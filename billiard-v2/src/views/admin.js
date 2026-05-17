@@ -833,7 +833,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=28">'
+    + '<link rel="stylesheet" href="/admin.css?v=29">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1151,7 +1151,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=25"><\/script>'
+    + '<script src="/dashboard.js?v=26"><\/script>'
     + '</body></html>';
 }
 
@@ -1218,7 +1218,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=28">'
+    + '<link rel="stylesheet" href="/admin.css?v=29">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1329,7 +1329,7 @@ export function memberPage({ db, token, req }) {
     + '</div>'
     + '<button class="dt-xb" aria-label="Tutup" onclick="closeMemberDetail()"><i class="ti ti-x"></i></button>'
     + '</div>'
-    + '<div class="dt-body">'
+    + '<div class="dt-body" id="dtBody">'
     + '<div class="dt-stats">'
     + '<div class="dt-st"><p class="dt-st-v" id="dtKunjungan">0</p><p class="dt-st-l">Kunjungan</p></div>'
     + '<div class="dt-st"><p class="dt-st-v sm" id="dtBergabung">—</p><p class="dt-st-l">Bergabung</p></div>'
@@ -1357,12 +1357,39 @@ export function memberPage({ db, token, req }) {
     + '<div id="dtRiwayat" class="dt-riv"></div>'
     + '</div>'
     + '</div>' // /dt-body
-    + '<div class="dt-ft">'
+
+    // Edit panel (hidden by default — toggle dari tombol Edit)
+    + '<form class="dt-edit" id="dtEditForm" style="display:none" onsubmit="saveDetailEdit(event);return false">'
+    + '<div class="dt-sec">'
+    + '<p class="dt-sec-t">Edit Data Member</p>'
+    + '<div class="dt-edit-field">'
+    + '<label class="dt-edit-label" for="dtEditNama">Nama Lengkap</label>'
+    + '<input id="dtEditNama" type="text" required maxlength="60" class="dt-edit-input" autocomplete="off">'
+    + '</div>'
+    + '<div class="dt-edit-field">'
+    + '<label class="dt-edit-label" for="dtEditTlp">Nomor HP <span class="dt-edit-opt">(opsional)</span></label>'
+    + '<div class="dt-edit-tlp">'
+    + '<span class="dt-edit-prefix">+62</span>'
+    + '<input id="dtEditTlp" type="tel" inputmode="numeric" placeholder="81234567890" class="dt-edit-input has-prefix" autocomplete="off"'
+    + ' oninput="this.value=this.value.replace(/[^0-9]/g,\'\')">'
+    + '</div>'
+    + '<p class="dt-edit-hint">Kosongkan kalau tidak ada nomor</p>'
+    + '</div>'
+    + '</div>'
+    + '</form>'
+
+    + '<div class="dt-ft" id="dtFtView">'
     + '<a class="dt-btn dt-btn-wa" id="dtBtnWa" target="_blank" rel="noopener" style="display:none"><i class="ti ti-brand-whatsapp"></i>WA</a>'
     + '<button type="button" class="dt-btn" id="dtBtnQr"><i class="ti ti-qrcode"></i>QR</button>'
-    + '<a class="dt-btn" id="dtBtnEdit"><i class="ti ti-edit"></i>Edit</a>'
+    + '<button type="button" class="dt-btn" id="dtBtnEdit" onclick="startDetailEdit()"><i class="ti ti-edit"></i>Edit</button>'
     + '<a class="dt-btn dt-btn-main" id="dtBtnReset"><i class="ti ti-refresh"></i>Reset QR</a>'
     + '</div>'
+
+    + '<div class="dt-ft" id="dtFtEdit" style="display:none">'
+    + '<button type="button" class="dt-btn" onclick="cancelDetailEdit()"><i class="ti ti-x"></i>Batal</button>'
+    + '<button type="button" class="dt-btn dt-btn-main" onclick="saveDetailEdit()"><i class="ti ti-check"></i>Simpan Perubahan</button>'
+    + '</div>'
+
     + '</div>'
     + '</div>'
 
@@ -1390,7 +1417,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=25"></script>'
+    + '<script src="/dashboard.js?v=26"></script>'
     + '</body></html>';
 }
 
@@ -1563,34 +1590,5 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
     + '</div></body></html>';
 }
 
-// ── Edit member page ──────────────────────────────────────────
-
-export function editMemberPage(tk, member) {
-  const tlpEdit = (member.telepon ?? '').replace('+62 ', '').replace(/[^0-9]/g, '');
-
-  return docHead('Edit Member')
-    + '<style>' + DARK_BASE
-    + '.kode-tag{font-family:monospace;font-size:12px;color:#22c55e;margin-bottom:20px;display:block}'
-    + '</style>'
-    + '</head><body><div class="card">'
-    + '<a href="/admin?tk=' + tk + '" class="back">← Kembali</a>'
-    + '<h1>Edit Member</h1>'
-    + '<span class="kode-tag">' + member.kode + '</span>'
-    + '<form action="/admin/edit" method="get">'
-    + '<input type="hidden" name="tk" value="' + tk + '">'
-    + '<input type="hidden" name="kode" value="' + member.kode + '">'
-    + '<div class="fw"><label>Nama</label>'
-    + '<input type="text" name="nama" value="' + member.nama.replace(/"/g, '&quot;') + '" required autofocus autocomplete="off">'
-    + '</div>'
-    + '<div class="fw"><label>No. Telepon</label>'
-    + '<div class="tel-wrap"><span class="tel-pre">+62</span>'
-    + '<input type="tel" name="tlp" value="' + tlpEdit + '" placeholder="81234567890"'
-    + ' autocomplete="off" inputmode="numeric"'
-    + ' oninput="this.value=this.value.replace(/[^0-9]/g,\'\')">'
-    + '</div>'
-    + '<p class="hint">Kosongkan jika tidak ingin mengubah nomor</p>'
-    + '</div>'
-    + '<button type="submit">Simpan Perubahan</button>'
-    + '</form>'
-    + '</div></body></html>';
-}
+// editMemberPage() dihapus — edit member sekarang inline via modal
+// detail di /admin/members. GET /admin/edit jadi save-only endpoint.

@@ -112,10 +112,13 @@ const formatDateOnly = (s) => {
   } catch (_) { return String(s); }
 };
 
+let currentDetailMember = null;
+
 window.openMemberDetail = function(kode) {
   if (!Array.isArray(DATA_MEMBER)) return;
   const m = DATA_MEMBER.find((x) => x.kode === kode);
   if (!m) return;
+  currentDetailMember = m;
 
   const isBonus = m.status === "BONUS";
   const isGratis = m.status === "GRATIS";
@@ -226,7 +229,6 @@ window.openMemberDetail = function(kode) {
     closeMemberDetail();
     openModal(m.kode, safeNama, scanUrl, dlUrl, imgUrl);
   };
-  document.getElementById("dtBtnEdit").href  = "/admin/edit?tk=" + TK + "&kode=" + m.kode;
   const resetBtn = document.getElementById("dtBtnReset");
   const resetUrl = "/admin/reset-qr?tk=" + TK + "&kode=" + m.kode;
   resetBtn.href = resetUrl;
@@ -235,12 +237,57 @@ window.openMemberDetail = function(kode) {
   resetBtn.dataset.href = resetUrl;
   resetBtn.onclick = function() { closeMemberDetail(); confirmAction(this); return false; };
 
+  // Pastikan modal kembali ke view mode (kalau sebelumnya ditutup saat edit)
+  cancelDetailEdit();
   document.getElementById("memberDetailOv").classList.add("open");
 };
 
 window.closeMemberDetail = function() {
   const ov = document.getElementById("memberDetailOv");
   if (ov) ov.classList.remove("open");
+  currentDetailMember = null;
+};
+
+// ── Inline edit member (di dalam modal detail) ────────────────
+window.startDetailEdit = function() {
+  const m = currentDetailMember;
+  if (!m) return;
+  // Sembunyikan view mode
+  document.getElementById("dtBody").style.display = "none";
+  document.getElementById("dtFtView").style.display = "none";
+  // Tampilkan edit form + footer edit
+  document.getElementById("dtEditForm").style.display = "";
+  document.getElementById("dtFtEdit").style.display = "";
+  // Populate fields
+  document.getElementById("dtEditNama").value = m.nama || "";
+  document.getElementById("dtEditTlp").value  = (m.telepon || "").replace(/[^0-9]/g, "").replace(/^62/, "");
+  setTimeout(function() { document.getElementById("dtEditNama").focus(); }, 100);
+};
+
+window.cancelDetailEdit = function() {
+  document.getElementById("dtBody").style.display = "";
+  document.getElementById("dtFtView").style.display = "";
+  document.getElementById("dtEditForm").style.display = "none";
+  document.getElementById("dtFtEdit").style.display = "none";
+};
+
+window.saveDetailEdit = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const m = currentDetailMember;
+  if (!m) return;
+  const nama = document.getElementById("dtEditNama").value.trim();
+  const tlp  = document.getElementById("dtEditTlp").value.trim();
+  if (!nama) {
+    alert("Nama wajib diisi.");
+    document.getElementById("dtEditNama").focus();
+    return;
+  }
+  // Submit via redirect URL — backend save lalu redirect kembali ke /admin/members
+  const url = "/admin/edit?tk=" + encodeURIComponent(TK)
+    + "&kode=" + encodeURIComponent(m.kode)
+    + "&nama=" + encodeURIComponent(nama)
+    + "&tlp="  + encodeURIComponent(tlp);
+  window.location.href = url;
 };
 
 // ── Tab switcher ──────────────────────────────────────────────
@@ -405,9 +452,9 @@ const renderMemberRow = (m, idx) => {
         <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
-        <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="icon-btn" data-tip="Edit data member">
+        <button type="button" class="icon-btn" data-tip="Edit data member" onclick="openMemberDetail('${m.kode}');setTimeout(startDetailEdit,30)">
           <i class="ti ti-edit"></i>
-        </a>
+        </button>
         <a href="${hapusUrl}" data-confirm="hapus" data-name="${esc(m.nama)}" data-href="${hapusUrl}" onclick="confirmAction(this);return false" class="icon-btn danger" data-tip="Hapus member">
           <i class="ti ti-trash"></i>
         </a>
@@ -490,7 +537,7 @@ const renderMemberCard = (m) => {
       ${waBtn}
       ${resetQrMcBtn}
       ${klaimBtn}
-      <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="mc-btn">Edit</a>
+      <button type="button" class="mc-btn" onclick="openMemberDetail('${m.kode}');setTimeout(startDetailEdit,30)">Edit</button>
       <a href="${hapusUrlMc}" data-confirm="hapus" data-name="${esc(m.nama)}" data-href="${hapusUrlMc}" onclick="confirmAction(this);return false" class="mc-btn mc-btn-red">Hapus</a>
     </div>
   </div>`;
