@@ -1419,115 +1419,310 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     toppingMap[t.item_id].push(t);
   });
 
-  // Group items by kategori
-  const groups = MENU_KAT_OPTS.map((k) => ({
-    ...k, rows: items.filter((m) => (m.kategori || "minuman") === k.value),
-  })).filter((g) => g.rows.length > 0);
+  // Stats
+  const totalAll = items.length;
+  const totalMin = items.filter((m) => (m.kategori || "minuman") === "minuman").length;
+  const totalMak = items.filter((m) => (m.kategori || "minuman") === "makanan").length;
+  const totalBS  = items.filter((m) => m.best_seller).length;
 
-  const bsBadge = "<span style=\"display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;"
-    + "background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);"
-    + "border-radius:4px;padding:1px 6px;margin-left:6px;white-space:nowrap\">"
-    + "<i class=\"ti ti-star-filled\" style=\"font-size:9px\"></i> Best Seller</span>";
+  // Category icon/color config
+  const katConf = {
+    minuman:         { icon: "ti-coffee", cls: "k-blue",  label: "Minuman"         },
+    makanan:         { icon: "ti-bowl",   cls: "k-amber", label: "Makanan"         },
+    rokok_bungkusan: { icon: "ti-leaf",   cls: "k-red",   label: "Rokok Bungkusan" },
+    rokok_eceran:    { icon: "ti-leaf",   cls: "k-red",   label: "Rokok Eceran"    },
+  };
 
-  const bsCheckbox = (checked) =>
-    "<label style=\"display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--txt2);white-space:nowrap\">"
-    + "<input type=\"hidden\" name=\"best_seller\" value=\"0\">"
-    + "<input type=\"checkbox\" name=\"best_seller\" value=\"1\"" + (checked ? " checked" : "") + " style=\"width:16px;height:16px;accent-color:#f59e0b;cursor:pointer\">"
-    + "<i class=\"ti ti-star\" style=\"font-size:14px;color:#f59e0b\"></i> Best Seller"
-    + "</label>";
-
-  const makeGroupRows = (groupRows) => groupRows.map((m) => {
+  const renderCard = (m, idx) => {
     const itemToppings = toppingMap[m.id] || [];
     if (editItem && editItem.id === m.id) {
-      const isMinuman = (m.kategori || "minuman") === "minuman";
-      return "<div style=\"grid-column:1/-1;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2)\">"
-        + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap\">"
+      const isMin = (m.kategori || "minuman") === "minuman";
+      const bsVal = m.best_seller ? "1" : "0";
+      const bsCls = m.best_seller ? " on" : "";
+      const bsBC  = m.best_seller ? "#c47f1a" : "#e2e8e0";
+      const bsBG  = m.best_seller ? "#faeeda" : "#f9fbf8";
+      const boxBG = m.best_seller ? "#c47f1a" : "#fff";
+      const boxBC = m.best_seller ? "#c47f1a" : "#d4ddd2";
+      const boxCl = m.best_seller ? "#fff"    : "transparent";
+      const lblCl = m.best_seller ? "#c47f1a" : "#7a8c78";
+      return "<div class=\"menu-card-edit\" style=\"grid-column:1/-1\">"
+        + "<form action=\"/keuangan/menu/edit\" method=\"post\">"
         + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
-        + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\">"
-        + katSelect("kategori", m.kategori || "minuman", "min-width:130px")
-        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
-        + (isMinuman
-            ? "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" placeholder=\"Harga Hot\" value=\"" + (m.harga_hot || "") + "\" style=\"width:100px\" oninput=\"fmtH(this)\">"
-            : "")
-        + bsCheckbox(!!m.best_seller)
-        + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 16px;font-size:13px\">Simpan</button>"
-        + "<a href=\"/keuangan/menu\" class=\"btn-del\" style=\"height:42px;display:inline-flex;align-items:center\">Batal</a>"
+        + "<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px\">"
+        + "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\" placeholder=\"Nama item\">"
+        + "<select name=\"kategori\" class=\"mp-input\" style=\"min-width:130px\">"
+        + MENU_KAT_OPTS.map((o) => "<option value=\"" + o.value + "\"" + (o.value === (m.kategori || "minuman") ? " selected" : "") + ">" + o.label + "</option>").join("")
+        + "</select>"
+        + "</div>"
+        + "<div style=\"display:flex;gap:8px;flex-wrap:wrap;align-items:center\">"
+        + "<div class=\"mp-pfield\" style=\"flex:1;min-width:120px\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required oninput=\"fmtH(this)\" placeholder=\"Harga\"></div>"
+        + (isMin ? "<div class=\"mp-pfield\" style=\"flex:1;min-width:120px\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_hot\" value=\"" + (m.harga_hot || "") + "\" oninput=\"fmtH(this)\" placeholder=\"Harga Hot (opsional)\"></div>" : "")
+        + "<input type=\"hidden\" name=\"best_seller\" value=\"" + bsVal + "\">"
+        + "<div class=\"mp-bs-chk" + bsCls + "\" onclick=\"mpToggleBS(this)\" style=\"border-color:" + bsBC + ";background:" + bsBG + "\">"
+        + "<div class=\"mp-bs-box\" style=\"background:" + boxBG + ";border-color:" + boxBC + ";color:" + boxCl + "\"><i class=\"ti ti-check\"></i></div>"
+        + "<div class=\"mp-bs-lbl\" style=\"color:" + lblCl + "\"><i class=\"ti ti-star\" style=\"font-size:13px\"></i> Best Seller</div>"
+        + "</div>"
+        + "<button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
+        + "<a href=\"/keuangan/menu\" class=\"mp-btn-cancel\">Batal</a>"
+        + "</div>"
         + "</form>"
-        // Topping management section for edit mode
-        + (itemToppings.length || (m.kategori || "minuman") === "makanan"
-            ? "<div style=\"margin-top:10px;padding-top:10px;border-top:1px solid var(--border)\">"
-            + "<div style=\"font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px\">Topping</div>"
-            + (itemToppings.length
-                ? "<div style=\"display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px\">"
-                + itemToppings.map((t) =>
-                    "<div style=\"display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);font-size:11px;color:var(--txt)\">"
-                    + escHtml(t.nama) + " <span style=\"color:var(--txt2)\">+Rp " + Number(t.harga).toLocaleString("id-ID") + "</span>"
-                    + "<a href=\"/keuangan/menu/topping/hapus?id=" + t.id + "\" style=\"color:var(--red);margin-left:2px;text-decoration:none\" title=\"Hapus\" onclick=\"return confirm('Hapus topping " + escHtml(t.nama) + "?')\">✕</a>"
-                    + "</div>"
-                  ).join("")
-                + "</div>"
-                : "")
-            + "<form action=\"/keuangan/menu/topping/tambah\" method=\"post\" style=\"display:flex;gap:6px;align-items:center;flex-wrap:wrap\">"
-            + "<input type=\"hidden\" name=\"item_id\" value=\"" + m.id + "\">"
-            + "<input class=\"cat-input\" type=\"text\" name=\"nama\" placeholder=\"Nama topping\" required style=\"flex:1;min-width:120px\">"
-            + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga\" required style=\"width:90px\" oninput=\"fmtH(this)\">"
-            + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 12px;font-size:12px\"><i class=\"ti ti-plus\"></i> Tambah</button>"
-            + "</form></div>"
+        + "<div class=\"mp-topping-sec\">"
+        + "<div class=\"mp-topping-lbl\">Topping</div>"
+        + (itemToppings.length
+            ? "<div class=\"mp-topping-tags\">"
+              + itemToppings.map((t) =>
+                  "<div class=\"mp-topping-tag\">" + escHtml(t.nama)
+                  + " <span>+Rp " + Number(t.harga).toLocaleString("id-ID") + "</span>"
+                  + "<a href=\"/keuangan/menu/topping/hapus?id=" + t.id + "\" class=\"mp-topping-del\" onclick=\"return confirm('Hapus topping " + escHtml(t.nama) + "?')\">✕</a>"
+                  + "</div>"
+                ).join("") + "</div>"
             : "")
+        + "<form action=\"/keuangan/menu/topping/tambah\" method=\"post\" style=\"display:flex;gap:6px;flex-wrap:wrap;margin-top:8px\">"
+        + "<input type=\"hidden\" name=\"item_id\" value=\"" + m.id + "\">"
+        + "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama topping\" required style=\"flex:1;min-width:120px\">"
+        + "<div class=\"mp-pfield\" style=\"width:110px\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga\" placeholder=\"Harga\" required oninput=\"fmtH(this)\"></div>"
+        + "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+        + "</form>"
+        + "</div>"
         + "</div>";
     }
+    const itemTops = toppingMap[m.id] || [];
+    const bsRibbon = m.best_seller ? "<div class=\"mp-ribbon\"><i class=\"ti ti-star\"></i> Best Seller</div>" : "";
+    const topBadge = itemTops.length ? "<span class=\"mp-top-badge\">" + itemTops.length + " topping</span>" : "";
     const priceHtml = m.harga_hot
-      ? "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">❄ " + rpFmt(m.harga) + " / ☕ " + rpFmt(m.harga_hot) + "</div>"
-      : "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>";
-    const toppingBadge = itemToppings.length
-      ? "<span style=\"font-size:10px;color:var(--txt2);margin-left:6px\">" + itemToppings.length + " topping</span>"
-      : "";
-    return "<div class=\"kat-row menu-row\" data-harga=\"" + m.harga + "\" data-bs=\"" + (m.best_seller ? "1" : "0") + "\">"
-      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + (m.best_seller ? bsBadge : "") + toppingBadge + "</div>"
-      + priceHtml
-      + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
-      + "<a href=\"/keuangan/menu?edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
-      + "<a href=\"/keuangan/menu/hapus?id=" + m.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
-      + "</div></div>";
+      ? "<div class=\"mp-price-vars\">"
+        + "<div class=\"mp-pv-row\"><span class=\"mp-pv-lbl\"><i class=\"ti ti-sun\"></i> Normal</span><span class=\"mp-pv-val\" style=\"color:#2660a4\">" + rpFmt(m.harga) + "</span></div>"
+        + "<div class=\"mp-pv-row\"><span class=\"mp-pv-lbl\"><i class=\"ti ti-flame\"></i> Hot</span><span class=\"mp-pv-val\" style=\"color:#c47f1a\">" + rpFmt(m.harga_hot) + "</span></div>"
+        + "</div>"
+      : "<div class=\"mp-price-normal\">" + rpFmt(m.harga) + "</div>";
+    return "<div class=\"menu-card\" data-cat=\"" + escHtml(m.kategori || "minuman") + "\" data-bs=\"" + (m.best_seller ? "1" : "0") + "\" data-harga=\"" + m.harga + "\" data-idx=\"" + idx + "\" data-nama=\"" + escHtml(m.nama.toLowerCase()) + "\">"
+      + bsRibbon
+      + "<div class=\"mp-card-name\">" + escHtml(m.nama) + topBadge + "</div>"
+      + "<div class=\"mp-price-wrap\">" + priceHtml + "</div>"
+      + "<div class=\"mp-card-actions\">"
+      + "<a href=\"/keuangan/menu?edit=" + m.id + "\" class=\"mp-btn-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
+      + "<a href=\"/keuangan/menu/hapus?id=" + m.id + "\" class=\"mp-btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i></a>"
+      + "</div>"
+      + "</div>";
+  };
+
+  const sections = MENU_KAT_OPTS.map((k) => {
+    const conf = katConf[k.value] || { icon: "ti-dots", cls: "k-blue" };
+    const rows = items.filter((m) => (m.kategori || "minuman") === k.value);
+    const cardsHtml = rows.length
+      ? rows.map((m, i) => renderCard(m, items.indexOf(m))).join("")
+      : "<div class=\"mp-sec-empty\" style=\"grid-column:1/-1\"><i class=\"ti ti-basket-off\"></i>Belum ada item</div>";
+    return "<div class=\"mp-sec\" id=\"sec-" + k.value + "\" data-cat=\"" + k.value + "\">"
+      + "<div class=\"mp-sec-hdr\" onclick=\"toggleSection('" + k.value + "')\">"
+      + "<div class=\"mp-sec-left\">"
+      + "<div class=\"mp-sec-icon " + conf.cls + "\"><i class=\"ti " + conf.icon + "\"></i></div>"
+      + "<span class=\"mp-sec-title\">" + conf.label + "</span>"
+      + "<span class=\"mp-sec-badge\" id=\"badge-" + k.value + "\">" + rows.length + " item</span>"
+      + "</div>"
+      + "<i class=\"ti ti-chevron-down mp-sec-chev\" id=\"chev-" + k.value + "\"></i>"
+      + "</div>"
+      + "<div class=\"mp-grid\" id=\"grid-" + k.value + "\">" + cardsHtml + "</div>"
+      + "<div class=\"mp-pagination\" id=\"pag-" + k.value + "\" style=\"display:none\"></div>"
+      + "</div>";
   }).join("");
 
-  const extraCss = [
-    ".kat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
-    ".kat-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border)}",
-    ".kat-header-left{display:flex;align-items:center;gap:8px}",
-    ".kat-type-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}",
-    ".kat-type-badge.income{color:var(--accent)}",
-    ".count-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}",
-    ".count-chip.income{background:var(--green-bg);color:var(--accent)}",
-    ".kat-table-head{display:grid;grid-template-columns:1fr 120px 130px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
-    ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
-    ".kat-th.r{text-align:right}",
-    ".kat-row{display:grid;grid-template-columns:1fr 120px 130px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s;gap:8px}",
-    ".kat-row:last-child{border-bottom:none}",
-    ".kat-row:hover{background:var(--surface2)}",
-    ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
-    ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
-    ".kat-dot.income{background:var(--green)}",
-    ".kat-act{display:flex;justify-content:flex-end}",
-    ".btn-del{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(184,48,48,.25);background:var(--red-bg);color:var(--red);text-decoration:none;transition:opacity .15s;white-space:nowrap}",
-    ".btn-del:hover{opacity:.75}",
-    ".btn-del i{font-size:12px}",
-    ".kat-empty{padding:24px 18px;text-align:center;font-size:12px;color:var(--txt3)}",
-    ".kat-empty i{font-size:24px;display:block;margin-bottom:6px;opacity:.35}",
-    ".add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px}",
-    ".cat-input{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;height:42px}",
-    ".cat-input:focus{border-color:var(--accent);background:var(--surface)}",
-    ".cat-input::placeholder{color:var(--txt3)}",
-    ".menu-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}",
-    "@media(max-width:700px){.menu-grid{grid-template-columns:1fr}}",
-    ".pag-btn{min-width:32px;height:32px;padding:0 8px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);color:var(--txt2);font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;transition:all .15s}",
-    ".pag-btn:hover:not([disabled]){background:var(--accent);color:#fff;border-color:var(--accent)}",
-    ".pag-btn[disabled]{opacity:.35;cursor:default}",
-    ".pag-btn.pag-active{background:var(--accent);color:#fff;border-color:var(--accent)}",
+  const addPanel = "<div class=\"mp-add-panel\">"
+    + "<div class=\"mp-add-hdr\">"
+    + "<div class=\"mp-add-title\"><i class=\"ti ti-circle-plus\"></i> Tambah Menu Baru</div>"
+    + "<div class=\"mp-add-sub\">Isi detail item lalu klik Tambah</div>"
+    + "</div>"
+    + "<div class=\"mp-add-body\">"
+    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" id=\"addMenuForm\">"
+    + "<div class=\"mp-fg\"><label class=\"mp-lbl\">Nama Item</label>"
+    + "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required></div>"
+    + "<div class=\"mp-fg\"><label class=\"mp-lbl\">Kategori</label>"
+    + "<select class=\"mp-input\" name=\"kategori\" id=\"addKat\" onchange=\"onAddKatChange()\">"
+    + MENU_KAT_OPTS.map((o) => "<option value=\"" + o.value + "\">" + o.label + "</option>").join("")
+    + "</select></div>"
+    + "<div class=\"mp-fg\"><label class=\"mp-lbl\">Harga (Rp)</label>"
+    + "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga\" placeholder=\"7.000\" required oninput=\"fmtH(this)\"></div></div>"
+    + "<div class=\"mp-fg\" id=\"hotToggleWrap\">"
+    + "<div class=\"mp-hot-toggle\" id=\"hotToggle\" onclick=\"toggleHot()\">"
+    + "<i class=\"ti ti-flame mp-ht-icon\"></i><span class=\"mp-ht-text\">Ada varian Hot / Panas?</span>"
+    + "<div class=\"mp-ht-switch\"><div class=\"mp-ht-knob\"></div></div>"
+    + "</div>"
+    + "<div class=\"mp-hot-price\" id=\"hotPriceWrap\">"
+    + "<label class=\"mp-lbl\" style=\"margin-top:10px\">Harga Varian Hot (Rp)</label>"
+    + "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_hot\" id=\"addHargaHot\" placeholder=\"6.000\" oninput=\"fmtH(this)\"></div>"
+    + "</div></div>"
+    + "<div class=\"mp-fg\">"
+    + "<input type=\"hidden\" name=\"best_seller\" value=\"0\">"
+    + "<div class=\"mp-bs-chk\" id=\"addBsCheck\" onclick=\"toggleBS()\">"
+    + "<div class=\"mp-bs-box\" id=\"addBsBox\"><i class=\"ti ti-check\"></i></div>"
+    + "<div class=\"mp-bs-lbl\"><i class=\"ti ti-star\" style=\"font-size:13px\"></i> Tandai sebagai Best Seller</div>"
+    + "</div></div>"
+    + "<div class=\"mp-add-footer\"><button type=\"submit\" class=\"mp-btn-add\"><i class=\"ti ti-plus\"></i> Tambah ke Menu</button></div>"
+    + "</form></div></div>";
+
+  const css = [
+    ".main-wrap,.page{background:#f4f6f3!important}",
+    ".mp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}",
+    ".mp-stat{background:#fff;border:1px solid #e2e8e0;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}",
+    ".mp-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:10px 10px 0 0;background:#3a7d2c}",
+    ".mp-stat.amber::before{background:#c47f1a}.mp-stat.blue::before{background:#2660a4}",
+    ".mp-stat-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}",
+    ".mp-stat-icon.green{background:#eaf3de;color:#2d6624}.mp-stat-icon.amber{background:#faeeda;color:#c47f1a}.mp-stat-icon.blue{background:#e6f1fb;color:#2660a4}",
+    ".mp-stat-lbl{font-size:10px;font-weight:700;color:#7a8c78;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}",
+    ".mp-stat-val{font-size:20px;font-weight:700;color:#1a2318;font-family:'DM Mono',monospace;line-height:1}",
+    ".mp-stat-sub{font-size:11px;color:#7a8c78;margin-top:2px}",
+    ".mp-toolbar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8e0;border-radius:10px;padding:12px 16px;margin-bottom:20px;flex-wrap:wrap}",
+    ".mp-search{position:relative;flex:1;min-width:150px}",
+    ".mp-search i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#7a8c78;font-size:15px}",
+    ".mp-search-inp{width:100%;padding:8px 10px 8px 34px;border:1px solid #e2e8e0;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:#1a2318;outline:none;background:#f9fbf8}",
+    ".mp-search-inp:focus{border-color:#3a7d2c;background:#fff}",
+    ".mp-cat-tabs{display:flex;gap:4px;flex-wrap:wrap}",
+    ".mp-tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;color:#7a8c78;cursor:pointer;border:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}",
+    ".mp-tab:hover{background:#f4f6f3;color:#1a2318}.mp-tab.active{background:#eaf3de;color:#2d6624;border-color:rgba(45,102,36,.2);font-weight:600}",
+    ".mp-tab-cnt{font-size:10px;background:rgba(0,0,0,.08);padding:1px 5px;border-radius:10px}.mp-tab.active .mp-tab-cnt{background:rgba(45,102,36,.15)}",
+    ".mp-sort{padding:8px 12px;border:1px solid #e2e8e0;border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;color:#1a2318;background:#f9fbf8;outline:none;cursor:pointer}",
+    ".mp-content{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:flex-start}",
+    "@media(max-width:1100px){.mp-content{grid-template-columns:1fr}.mp-stats{grid-template-columns:repeat(2,1fr)}.mp-add-panel{position:static!important}}",
+    ".mp-sections{display:flex;flex-direction:column;gap:16px}",
+    ".mp-sec{background:#fff;border:1px solid #e2e8e0;border-radius:12px;overflow:hidden}",
+    ".mp-sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f0f3ef;background:#f9fbf8;cursor:pointer;user-select:none}",
+    ".mp-sec-hdr:hover{background:#f4f7f2}",
+    ".mp-sec-left{display:flex;align-items:center;gap:10px}",
+    ".mp-sec-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}",
+    ".mp-sec-icon.k-blue{background:#e6f1fb;color:#2660a4}.mp-sec-icon.k-amber{background:#faeeda;color:#c47f1a}.mp-sec-icon.k-red{background:#fcebeb;color:#a32d2d}",
+    ".mp-sec-title{font-size:13px;font-weight:600;color:#1a2318}",
+    ".mp-sec-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#e2e8e0;color:#7a8c78}",
+    ".mp-sec-chev{font-size:16px;color:#b0bfae;transition:transform .2s}.mp-sec-hdr.collapsed .mp-sec-chev{transform:rotate(-90deg)}",
+    ".mp-grid{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}",
+    ".menu-card{background:#f9fbf8;border:1px solid #e2e8e0;border-radius:10px;padding:14px;position:relative;transition:all .15s}",
+    ".menu-card:hover{border-color:#b4d4a0;background:#f4f9f0;box-shadow:0 2px 8px rgba(45,102,36,.08)}",
+    ".mp-ribbon{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:3px;background:#faeeda;color:#c47f1a;font-size:9px;font-weight:700;padding:3px 7px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase}",
+    ".mp-ribbon i{font-size:10px}",
+    ".mp-card-name{font-size:13px;font-weight:600;color:#1a2318;margin-bottom:6px;padding-right:56px;line-height:1.3}",
+    ".mp-top-badge{display:inline-block;font-size:9px;font-weight:600;color:#7a8c78;background:#f0f3ef;border-radius:10px;padding:1px 6px;margin-left:4px;vertical-align:middle}",
+    ".mp-price-wrap{margin-bottom:10px}",
+    ".mp-price-normal{font-size:14px;font-weight:700;color:#2d6624;font-family:'DM Mono',monospace}",
+    ".mp-price-vars{display:flex;flex-direction:column;gap:2px}",
+    ".mp-pv-row{display:flex;align-items:center;justify-content:space-between}",
+    ".mp-pv-lbl{font-size:10px;color:#7a8c78;display:flex;align-items:center;gap:3px}.mp-pv-lbl i{font-size:11px}",
+    ".mp-pv-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace}",
+    ".mp-card-actions{display:flex;gap:5px}",
+    ".mp-btn-edit{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px;background:#fff;border:1px solid #d4ddd2;border-radius:7px;font-size:11px;font-weight:500;color:#1a2318;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-decoration:none}",
+    ".mp-btn-edit:hover{background:#eef1ed;border-color:#b0bfae}.mp-btn-edit i{font-size:13px}",
+    ".mp-btn-del{width:30px;display:flex;align-items:center;justify-content:center;background:#fef5f5;border:1px solid #f7c1c1;border-radius:7px;font-size:13px;color:#a32d2d;cursor:pointer;transition:all .15s;text-decoration:none}",
+    ".mp-btn-del:hover{background:#fcebeb}",
+    ".menu-card-edit{background:#fff;border:1.5px solid #3a7d2c;border-radius:10px;padding:16px;grid-column:1/-1}",
+    ".mp-topping-sec{margin-top:12px;padding-top:12px;border-top:1px solid #f0f3ef}",
+    ".mp-topping-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7a8c78;margin-bottom:8px}",
+    ".mp-topping-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}",
+    ".mp-topping-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;border:1px solid #e2e8e0;font-size:11px;color:#1a2318}",
+    ".mp-topping-tag span{color:#7a8c78}.mp-topping-del{color:#a32d2d;margin-left:2px;text-decoration:none;font-size:11px}",
+    ".mp-sec-empty{padding:24px;text-align:center;color:#b0bfae;font-size:12px}",
+    ".mp-sec-empty i{font-size:24px;display:block;margin-bottom:6px;opacity:.3}",
+    ".mp-add-panel{position:sticky;top:28px;background:#fff;border:1px solid #e2e8e0;border-radius:12px;overflow:hidden}",
+    ".mp-add-hdr{padding:16px 18px;border-bottom:1px solid #f0f3ef;background:#f9fbf8}",
+    ".mp-add-title{font-size:13px;font-weight:600;color:#1a2318;display:flex;align-items:center;gap:7px}.mp-add-title i{font-size:16px;color:#2d6624}",
+    ".mp-add-sub{font-size:11px;color:#7a8c78;margin-top:3px}",
+    ".mp-add-body{padding:18px}",
+    ".mp-fg{margin-bottom:14px}",
+    ".mp-lbl{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#7a8c78;margin-bottom:7px;display:block}",
+    ".mp-input{width:100%;padding:9px 12px;border:1.5px solid #e2e8e0;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:#1a2318;outline:none;background:#f9fbf8;transition:border-color .15s}",
+    ".mp-input:focus{border-color:#3a7d2c;background:#fff}.mp-input::placeholder{color:#b0bfae}",
+    ".mp-pfield{display:flex;align-items:center;border:1.5px solid #e2e8e0;border-radius:8px;background:#f9fbf8;overflow:hidden;transition:border-color .15s}",
+    ".mp-pfield:focus-within{border-color:#3a7d2c;background:#fff}",
+    ".mp-pfx{padding:9px 10px;font-size:12px;font-weight:600;color:#7a8c78;background:#f0f3ef;border-right:1px solid #e2e8e0;white-space:nowrap}",
+    ".mp-pinp{flex:1;padding:9px 10px;border:none;background:transparent;font-size:13px;font-family:'DM Mono',monospace;color:#1a2318;outline:none;min-width:0}",
+    ".mp-hot-toggle{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f9fbf8;border:1.5px solid #e2e8e0;border-radius:8px;cursor:pointer;transition:all .15s}",
+    ".mp-hot-toggle:hover{border-color:#b4d4a0}.mp-hot-toggle.on{border-color:#c47f1a;background:#faeeda}",
+    ".mp-ht-icon{font-size:18px;color:#7a8c78}.mp-hot-toggle.on .mp-ht-icon{color:#c47f1a}",
+    ".mp-ht-text{flex:1;font-size:12px;font-weight:500;color:#7a8c78}.mp-hot-toggle.on .mp-ht-text{color:#c47f1a}",
+    ".mp-ht-switch{width:32px;height:18px;background:#d4ddd2;border-radius:99px;position:relative;transition:background .2s;flex-shrink:0}",
+    ".mp-hot-toggle.on .mp-ht-switch{background:#c47f1a}",
+    ".mp-ht-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}",
+    ".mp-hot-toggle.on .mp-ht-knob{transform:translateX(14px)}",
+    ".mp-hot-price{overflow:hidden;max-height:0;opacity:0;transition:max-height .3s ease,opacity .25s ease}",
+    ".mp-hot-price.show{max-height:80px;opacity:1;margin-top:12px}",
+    ".mp-bs-chk{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f9fbf8;border:1.5px solid #e2e8e0;border-radius:8px;cursor:pointer;transition:all .15s}",
+    ".mp-bs-chk:hover{border-color:#c47f1a}.mp-bs-chk.on{border-color:#c47f1a;background:#faeeda}",
+    ".mp-bs-box{width:16px;height:16px;border-radius:4px;border:1.5px solid #d4ddd2;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .15s;flex-shrink:0}",
+    ".mp-bs-chk.on .mp-bs-box{background:#c47f1a;border-color:#c47f1a;color:#fff}",
+    ".mp-bs-lbl{font-size:12px;font-weight:500;color:#7a8c78;display:flex;align-items:center;gap:5px}",
+    ".mp-bs-chk.on .mp-bs-lbl{color:#c47f1a}",
+    ".mp-add-footer{padding:14px 18px;border-top:1px solid #f0f3ef}",
+    ".mp-btn-add{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;background:#2d6624;border:none;border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;color:#fff;cursor:pointer;font-weight:600;transition:background .15s}",
+    ".mp-btn-add:hover{background:#255519}.mp-btn-add i{font-size:16px}",
+    ".mp-btn-save{padding:8px 16px;background:#2d6624;border:none;border-radius:8px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;color:#fff;cursor:pointer;white-space:nowrap;height:40px}",
+    ".mp-btn-save:hover{background:#255519}",
+    ".mp-btn-cancel{padding:8px 16px;background:#f4f6f3;border:1px solid #e2e8e0;border-radius:8px;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;color:#7a8c78;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;height:40px}",
+    ".mp-btn-cancel:hover{background:#eef1ed}",
+    ".mp-pagination{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 14px;border-top:1px solid #f0f3ef}",
+    ".mp-pag-btn{min-width:32px;height:32px;padding:0 8px;border-radius:7px;border:1px solid #e2e8e0;background:#f9fbf8;color:#7a8c78;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}",
+    ".mp-pag-btn:hover:not([disabled]){background:#2d6624;color:#fff;border-color:#2d6624}",
+    ".mp-pag-btn[disabled]{opacity:.35;cursor:default}.mp-pag-btn.active{background:#2d6624;color:#fff;border-color:#2d6624}",
+    ".mp-err{background:#fef5f5;color:#a32d2d;border:1px solid #f7c1c1;border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}",
   ].join("");
 
+  const js = ""
+    + "function fmtH(el){var r=el.value.replace(/\\D/g,'');var n=parseInt(r)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
+    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
+    + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
+    + "function toggleSection(cat){var grid=document.getElementById('grid-'+cat);var hdr=document.querySelector('#sec-'+cat+' .mp-sec-hdr');var pag=document.getElementById('pag-'+cat);var open=grid.style.display!=='none';grid.style.display=open?'none':'';if(pag)pag.style.display=open?'none':'';hdr.classList.toggle('collapsed',open);}"
+    // Hot toggle (add form)
+    + "var hotOn=false;"
+    + "function toggleHot(){hotOn=!hotOn;document.getElementById('hotToggle').classList.toggle('on',hotOn);document.getElementById('hotPriceWrap').classList.toggle('show',hotOn);var h=document.getElementById('addHargaHot');if(!hotOn&&h)h.value='';}"
+    + "function onAddKatChange(){var kat=document.getElementById('addKat').value;var w=document.getElementById('hotToggleWrap');w.style.display=kat==='minuman'?'':'none';if(kat!=='minuman'&&hotOn)toggleHot();}"
+    // BS toggle (add form)
+    + "var bsOn=false;"
+    + "function toggleBS(){bsOn=!bsOn;var el=document.getElementById('addBsCheck');el.classList.toggle('on',bsOn);var box=document.getElementById('addBsBox');box.style.background=bsOn?'#c47f1a':'#fff';box.style.borderColor=bsOn?'#c47f1a':'#d4ddd2';box.style.color=bsOn?'#fff':'transparent';var frm=document.getElementById('addMenuForm');var inp=frm.querySelector('input[name=best_seller]');if(inp)inp.value=bsOn?'1':'0';}"
+    // BS toggle (edit forms)
+    + "function mpToggleBS(el){var on=!el.classList.contains('on');el.classList.toggle('on',on);var box=el.querySelector('.mp-bs-box');if(box){box.style.background=on?'#c47f1a':'#fff';box.style.borderColor=on?'#c47f1a':'#d4ddd2';box.style.color=on?'#fff':'transparent';}var lbl=el.querySelector('.mp-bs-lbl');if(lbl)lbl.style.color=on?'#c47f1a':'#7a8c78';el.style.borderColor=on?'#c47f1a':'#e2e8e0';el.style.background=on?'#faeeda':'#f9fbf8';var frm=el.closest('form');if(frm){var hi=frm.querySelector('input[name=best_seller]');if(hi)hi.value=on?'1':'0';}}"
+    // Filter state
+    + "var curCat='all',curSearch='',curSort='default';"
+    + "function filterCat(cat,btn){curCat=cat;document.querySelectorAll('.mp-tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');applyMenuFilter();}"
+    + "function filterMenu(v){curSearch=v.toLowerCase();applyMenuFilter();}"
+    + "function sortMenu(v){curSort=v;applyMenuFilter();}"
+    + "var mpPS={};"
+    + "function mpGoPage(btn){mpPS[btn.dataset.cat]=parseInt(btn.dataset.page);applyMenuFilter();}"
+    + "function applyMenuFilter(){"
+    + "document.querySelectorAll('.mp-sec').forEach(function(sec){"
+    + "var cat=sec.dataset.cat;"
+    + "var grid=document.getElementById('grid-'+cat);"
+    + "if(!grid||grid.style.display==='none')return;"
+    + "var cards=Array.from(grid.querySelectorAll('.menu-card'));"
+    + "if(curSort==='name-az')cards.sort(function(a,b){return(a.dataset.nama||'').localeCompare(b.dataset.nama||'');});"
+    + "else if(curSort==='name-za')cards.sort(function(a,b){return(b.dataset.nama||'').localeCompare(a.dataset.nama||'');});"
+    + "else if(curSort==='price-hl')cards.sort(function(a,b){return parseInt(b.dataset.harga||0)-parseInt(a.dataset.harga||0);});"
+    + "else if(curSort==='price-lh')cards.sort(function(a,b){return parseInt(a.dataset.harga||0)-parseInt(b.dataset.harga||0);});"
+    + "else cards.sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);});"
+    + "cards.forEach(function(c){grid.appendChild(c);});"
+    + "var visible=cards.filter(function(c){if(curSearch&&(c.dataset.nama||'').indexOf(curSearch)<0)return false;if(curCat==='bestseller'&&c.dataset.bs!=='1')return false;if(curCat!=='all'&&curCat!=='bestseller'&&c.dataset.cat!==curCat)return false;return true;});"
+    + "var PAGE=10;var page=mpPS[cat]||1;"
+    + "var total=Math.max(1,Math.ceil(visible.length/PAGE));if(page>total)page=total;mpPS[cat]=page;"
+    + "var s=(page-1)*PAGE,e=s+PAGE;"
+    + "cards.forEach(function(c){c.style.display=visible.indexOf(c)>=s&&visible.indexOf(c)<e?'':'none';});"
+    + "var badge=document.getElementById('badge-'+cat);if(badge)badge.textContent=visible.length+' item';"
+    + "sec.style.display=(curCat!=='all'&&curCat!=='bestseller'&&cat!==curCat)?'none':'';"
+    + "var pd=document.getElementById('pag-'+cat);if(pd){"
+    + "if(total<=1){pd.style.display='none';}else{"
+    + "pd.style.display='flex';"
+    + "var b='<button onclick=\"mpGoPage(this)\" data-cat=\"'+cat+'\" data-page=\"'+(page-1)+'\" class=\"mp-pag-btn\"'+(page<=1?' disabled':'')+'>&#8249;</button>';"
+    + "for(var p=1;p<=total;p++)b+='<button onclick=\"mpGoPage(this)\" data-cat=\"'+cat+'\" data-page=\"'+p+'\" class=\"mp-pag-btn'+(p===page?' active':'')+'\">'+p+'</button>';"
+    + "b+='<button onclick=\"mpGoPage(this)\" data-cat=\"'+cat+'\" data-page=\"'+(page+1)+'\" class=\"mp-pag-btn\"'+(page>=total?' disabled':'')+'>&#8250;</button>';"
+    + "pd.innerHTML=b;}}});"
+    // update global stat counters
+    + "var all=document.querySelectorAll('.menu-card');var tot=all.length;"
+    + "var el;el=document.getElementById('statTotal');if(el)el.textContent=tot;"
+    + "el=document.getElementById('statMin');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='minuman';}).length;"
+    + "el=document.getElementById('statMak');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='makanan';}).length;"
+    + "el=document.getElementById('statBS');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.bs==='1';}).length;"
+    + "el=document.getElementById('cntAll');if(el)el.textContent=tot;"
+    + "el=document.getElementById('cntMin');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='minuman';}).length;"
+    + "el=document.getElementById('cntMak');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='makanan';}).length;"
+    + "}"
+    + "(function(){onAddKatChange();applyMenuFilter();})();";
+
   return docHeadV4("Kelola Menu")
-    + "<style>" + extraCss + "</style>"
+    + "<style>" + css + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "menu")
@@ -1536,175 +1731,47 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-coffee\"></i></div>"
     + "<div><div class=\"topbar-name\">Kelola Menu</div><div class=\"topbar-label\">Kopi / Snack</div></div>"
-    + "</div>"
-    + "</header>"
+    + "</div></header>"
     + "<div class=\"page\">"
-
-    + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
-    + "<a href=\"/keuangan\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
-    + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
+    + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:#7a8c78;margin-bottom:18px\">"
+    + "<a href=\"/keuangan\" style=\"color:#2d6624;text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "</div>"
-
-    + "<div style=\"margin-bottom:20px\">"
-    + "<div class=\"page-title\" style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Menu Kopi / Snack</div>"
-    + "<div style=\"font-size:13px;color:var(--txt3)\">Kelola item menu dan harga yang tersedia di kasir.</div>"
+    + "<div style=\"font-size:20px;font-weight:700;color:#1a2318;margin-bottom:4px\">Menu Kopi / Snack</div>"
+    + "<div style=\"font-size:13px;color:#6b7c69;margin-bottom:22px\">Kelola item menu dan harga yang tersedia di kasir</div>"
+    + (hasErr ? "<div class=\"mp-err\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
+    // Stats
+    + "<div class=\"mp-stats\">"
+    + "<div class=\"mp-stat\"><div class=\"mp-stat-icon green\"><i class=\"ti ti-list\"></i></div>"
+    + "<div><div class=\"mp-stat-lbl\">Total Menu</div><div class=\"mp-stat-val\" id=\"statTotal\">" + totalAll + "</div><div class=\"mp-stat-sub\">Semua kategori</div></div></div>"
+    + "<div class=\"mp-stat amber\"><div class=\"mp-stat-icon amber\"><i class=\"ti ti-coffee\"></i></div>"
+    + "<div><div class=\"mp-stat-lbl\">Minuman</div><div class=\"mp-stat-val\" id=\"statMin\">" + totalMin + "</div><div class=\"mp-stat-sub\">Item tersedia</div></div></div>"
+    + "<div class=\"mp-stat blue\"><div class=\"mp-stat-icon blue\"><i class=\"ti ti-bowl\"></i></div>"
+    + "<div><div class=\"mp-stat-lbl\">Makanan</div><div class=\"mp-stat-val\" id=\"statMak\">" + totalMak + "</div><div class=\"mp-stat-sub\">Item tersedia</div></div></div>"
+    + "<div class=\"mp-stat\"><div class=\"mp-stat-icon green\"><i class=\"ti ti-star\"></i></div>"
+    + "<div><div class=\"mp-stat-lbl\">Best Seller</div><div class=\"mp-stat-val\" id=\"statBS\">" + totalBS + "</div><div class=\"mp-stat-sub\">Paling sering dipesan</div></div></div>"
     + "</div>"
-
-    + (hasErr ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
-
-    + "<div class=\"menu-grid\">"
-
-    // Grouped list cards
-    + "<div style=\"display:flex;flex-direction:column;gap:16px\">"
-
-    // Filter bar
-    + "<div style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap\">"
-    + "<button id=\"btnBs\" onclick=\"toggleBsFilter()\" style=\"display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(245,158,11,.3);background:transparent;color:var(--txt2);transition:all .15s\">"
-    + "<i class=\"ti ti-star\" style=\"font-size:13px;color:#f59e0b\"></i> Best Seller</button>"
-    + "<button id=\"btnSort\" onclick=\"toggleSort()\" style=\"display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);transition:all .15s\">"
-    + "<i class=\"ti ti-arrows-sort\" style=\"font-size:13px\"></i> Harga <span id=\"sortLabel\">Default</span></button>"
+    // Toolbar
+    + "<div class=\"mp-toolbar\">"
+    + "<div class=\"mp-search\"><i class=\"ti ti-search\"></i><input class=\"mp-search-inp\" type=\"text\" placeholder=\"Cari nama menu...\" oninput=\"filterMenu(this.value)\"></div>"
+    + "<div class=\"mp-cat-tabs\">"
+    + "<button class=\"mp-tab active\" onclick=\"filterCat('all',this)\"><i class=\"ti ti-apps\" style=\"font-size:13px\"></i> Semua <span class=\"mp-tab-cnt\" id=\"cntAll\">" + totalAll + "</span></button>"
+    + "<button class=\"mp-tab\" onclick=\"filterCat('minuman',this)\"><i class=\"ti ti-coffee\" style=\"font-size:13px\"></i> Minuman <span class=\"mp-tab-cnt\" id=\"cntMin\">" + totalMin + "</span></button>"
+    + "<button class=\"mp-tab\" onclick=\"filterCat('makanan',this)\"><i class=\"ti ti-bowl\" style=\"font-size:13px\"></i> Makanan <span class=\"mp-tab-cnt\" id=\"cntMak\">" + totalMak + "</span></button>"
+    + "<button class=\"mp-tab\" onclick=\"filterCat('bestseller',this)\"><i class=\"ti ti-star\" style=\"font-size:13px\"></i> Best Seller</button>"
     + "</div>"
-    + (groups.length === 0
-        ? "<div class=\"kat-card\"><div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Belum ada item menu. Tambahkan di sebelah kanan.</div></div>"
-        : groups.map((g) =>
-            "<div class=\"kat-card\">"
-            + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
-            + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> " + g.label + "</div>"
-            + "<div class=\"count-chip income\">" + g.rows.length + " item</div>"
-            + "</div></div>"
-            + "<div class=\"kat-table-head\">"
-            + "<div class=\"kat-th\">Nama</div>"
-            + "<div class=\"kat-th\">Harga</div>"
-            + "<div class=\"kat-th r\">Aksi</div>"
-            + "</div>"
-            + "<div class=\"kat-rows\">" + (g.rows.length ? makeGroupRows(g.rows) : "<div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Tidak ada item.</div>") + "</div>"
-            + "<div class=\"menu-pagination\" style=\"display:none;align-items:center;justify-content:center;gap:4px;padding:10px 14px;border-top:1px solid var(--border)\"></div>"
-            + "</div>"
-          ).join("")
-      )
+    + "<select class=\"mp-sort\" onchange=\"sortMenu(this.value)\">"
+    + "<option value=\"default\">Urutan Input</option>"
+    + "<option value=\"name-az\">Nama A–Z</option>"
+    + "<option value=\"name-za\">Nama Z–A</option>"
+    + "<option value=\"price-hl\">Harga Termahal</option>"
+    + "<option value=\"price-lh\">Harga Termurah</option>"
+    + "</select></div>"
+    // Content
+    + "<div class=\"mp-content\">"
+    + "<div class=\"mp-sections\">" + sections + "</div>"
+    + addPanel
     + "</div>"
-
-    // Add form card
-    + "<div class=\"add-card\">"
-    + "<div style=\"font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:6px\">"
-    + "<i class=\"ti ti-plus\" style=\"font-size:14px;color:var(--accent)\"></i> Tambah Menu</div>"
-    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" style=\"display:flex;flex-direction:column;gap:12px\">"
-    + ""
-    + "<div>"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Nama Item</label>"
-    + "<input class=\"cat-input\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required>"
-    + "</div>"
-    + "<div>"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Kategori</label>"
-    + katSelect("kategori", "minuman")
-    + "</div>"
-    + "<div>"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
-    + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7.000\" required oninput=\"fmtH(this)\">"
-    + "</div>"
-    + "<div id=\"addHotWrap\">"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Varian Hot (Rp) <span style=\"text-transform:none;font-weight:400;font-size:10px;color:var(--txt3)\">(opsional — isi jika ada pilihan hot)</span></label>"
-    + "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" id=\"addHargaHot\" placeholder=\"kosongkan jika tidak ada varian hot\" oninput=\"fmtH(this)\">"
-    + "</div>"
-    + "<div style=\"padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md)\">"
-    + bsCheckbox(false)
-    + "</div>"
-    + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;font-size:13px\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah</button>"
-    + "</form>"
-    + "</div>"
-
-    + "</div>"
-    + "</div>"
-    + "</div>"
-    + "</div>"
-    + "<script>"
-    + "function fmtH(el){var r=el.value.replace(/\\D/g,'');var n=parseInt(r)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
-    + "(function(){var addKatSel=document.querySelector('form[action=\"/keuangan/menu/tambah\"] select[name=kategori]');var hotWrap=document.getElementById('addHotWrap');"
-    + "function toggleHot(){if(addKatSel&&hotWrap){hotWrap.style.display=addKatSel.value==='minuman'?'':'none';}}"
-    + "if(addKatSel){addKatSel.addEventListener('change',toggleHot);toggleHot();}"
-    + "})();"
-    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
-    + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
-    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
-
-    // Filter state
-    + "var bsActive=false,sortDesc=false;"
-
-    // Toggle best seller filter
-    + "function toggleBsFilter(){"
-    + "bsActive=!bsActive;"
-    + "var btn=document.getElementById('btnBs');"
-    + "btn.style.background=bsActive?'rgba(245,158,11,.15)':'transparent';"
-    + "btn.style.color=bsActive?'#f59e0b':'var(--txt2)';"
-    + "btn.style.borderColor=bsActive?'#f59e0b':'rgba(245,158,11,.3)';"
-    + "applyFilter();}"
-
-    // Toggle sort by price
-    + "function toggleSort(){"
-    + "sortDesc=!sortDesc;"
-    + "var btn=document.getElementById('btnSort');"
-    + "btn.style.background=sortDesc?'rgba(59,130,246,.12)':'transparent';"
-    + "btn.style.color=sortDesc?'var(--accent)':'var(--txt2)';"
-    + "btn.style.borderColor=sortDesc?'var(--accent)':'var(--border2)';"
-    + "document.getElementById('sortLabel').textContent=sortDesc?'Mahal → Murah':'Default';"
-    + "applyFilter();}"
-
-    // Pagination state
-    + "var PAGE_SIZE=10;var pageState={};"
-    + "function goPage(ci,page){pageState[ci]=page;applyFilter();}"
-    // Apply filter + sort + pagination per card
-    + "function applyFilter(){"
-    + "var ci=0;"
-    + "document.querySelectorAll('.kat-card').forEach(function(card){"
-    + "var cIdx=ci++;"
-    + "var container=card.querySelector('.kat-rows');"
-    + "if(!container)return;"
-    + "var rows=Array.from(container.querySelectorAll('.menu-row'));"
-    // Sort
-    + "if(sortDesc){"
-    + "rows.sort(function(a,b){return parseInt(b.dataset.harga||0)-parseInt(a.dataset.harga||0);});"
-    + "}else{"
-    + "rows.sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);});}"
-    + "rows.forEach(function(r){container.appendChild(r);});"
-    // Filtered visible rows
-    + "var visible=rows.filter(function(r){return !bsActive||(r.dataset.bs==='1');});"
-    // Pagination calc
-    + "var page=pageState[cIdx]||1;"
-    + "var totalPages=Math.max(1,Math.ceil(visible.length/PAGE_SIZE));"
-    + "if(page>totalPages)page=totalPages;"
-    + "pageState[cIdx]=page;"
-    + "var start=(page-1)*PAGE_SIZE,end=start+PAGE_SIZE;"
-    // Show/hide rows
-    + "rows.forEach(function(r){"
-    + "var vi=visible.indexOf(r);"
-    + "r.style.display=(vi>=start&&vi<end)?'':'none';});"
-    // Empty state
-    + "var empty=container.querySelector('.menu-filter-empty');"
-    + "if(visible.length===0&&!empty){"
-    + "var e=document.createElement('div');e.className='kat-empty menu-filter-empty';"
-    + "e.innerHTML='<i class=\"ti ti-filter-off\" style=\"font-size:22px;display:block;margin-bottom:6px;opacity:.35\"></i>Tidak ada item yang cocok.';"
-    + "container.appendChild(e);"
-    + "}else if(visible.length>0&&empty){empty.remove();}"
-    // Pagination buttons
-    + "var pagDiv=card.querySelector('.menu-pagination');"
-    + "if(pagDiv){"
-    + "if(totalPages<=1){pagDiv.style.display='none';}"
-    + "else{"
-    + "pagDiv.style.display='flex';"
-    + "var btns='<button onclick=\"goPage('+cIdx+','+(page-1)+')\" class=\"pag-btn\"'+(page<=1?' disabled':'')+'>‹</button>';"
-    + "for(var p=1;p<=totalPages;p++){btns+='<button onclick=\"goPage('+cIdx+','+p+')\" class=\"pag-btn'+(p===page?' pag-active':'')+'\">'+p+'</button>';}"
-    + "btns+='<button onclick=\"goPage('+cIdx+','+(page+1)+')\" class=\"pag-btn\"'+(page>=totalPages?' disabled':'')+'>›</button>';"
-    + "pagDiv.innerHTML=btns;}}"
-    // Hide card if all filtered out
-    + "card.style.display=(visible.length===0&&bsActive)?'none':'';});"
-    + "}"
-
-    // Stamp original index then trigger initial pagination
-    + "(function(){"
-    + "document.querySelectorAll('.menu-row').forEach(function(r,i){r.dataset.idx=i;});"
-    + "applyFilter();"
-    + "})();"
-
-    + "</script>"
+    + "</div></div></div>"
+    + "<script>" + js + "</script>"
     + "</body></html>";
 }
