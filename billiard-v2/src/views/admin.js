@@ -531,7 +531,7 @@ function buildSidebar(token, activePage) {
     + '<div class="nav-group-label" style="padding-bottom:8px">Aksi Cepat</div>'
     + '<div class="qa-grid">'
     + '<a href="/scan" class="qa-btn"><i class="ti ti-qrcode"></i>Scan Member</a>'
-    + '<a href="/operasional/tambah" class="qa-btn" onclick="' + tkOnclick + '"><i class="ti ti-plus"></i>Transaksi</a>'
+    + '<a href="/operasional" class="qa-btn" onclick="' + tkOnclick + '"><i class="ti ti-plus"></i>Transaksi</a>'
     + '<a href="/admin/reset?tk=' + token + '" class="qa-btn" onclick="return confirm(\'Reset scan harian semua member?\')"><i class="ti ti-refresh"></i>Reset Harian</a>'
     + '<button class="qa-btn danger" onclick="adminLogout()"><i class="ti ti-logout"></i>Keluar</button>'
     + '</div>'
@@ -646,19 +646,30 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   const nowWib   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   const curBulan = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
 
+  // Operational day = periode 24h dimulai jam 2 pagi WIB.
+  // Aktivitas antara 00:00-02:00 dihitung sebagai hari sebelumnya.
+  const opDay = (date) => {
+    const w = new Date(new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    if (w.getHours() < 2) w.setDate(w.getDate() - 1);
+    return w.getFullYear() + '-' + String(w.getMonth() + 1).padStart(2, '0') + '-' + String(w.getDate()).padStart(2, '0');
+  };
+  const todayOp = opDay(new Date());
+
   const stats = {
     total:    members.length,
-    scan:     members.filter((m) => m.sudahScanHariIni).length,
+    // Reset otomatis jam 2 pagi: hitung member dengan scan dalam operational day ini
+    scan:     members.filter((m) => m.tanggalScanTerakhir && opDay(m.tanggalScanTerakhir) === todayOp).length,
     reward:   members.filter((m) => m.status === 'GRATIS').length,
     aktif:    members.filter((m) => m.totalMain > 0).length,
-    bariBaru: members.filter((m) => m.tanggalDaftar && new Date(m.tanggalDaftar).toISOString().startsWith(curBulan)).length,
+    // Reset otomatis jam 2 pagi: hitung member yang daftar dalam operational day ini
+    bariBaru: members.filter((m) => m.tanggalDaftar && opDay(m.tanggalDaftar) === todayOp).length,
   };
 
   const hostBase  = req.protocol + '://' + req.get('host');
 
-  // Data JSON untuk JS client
+  // Data JSON untuk JS client — pakai operational day (sejak jam 2 pagi)
   const dataScan = members
-    .filter((m) => m.sudahScanHariIni && m.tanggalScanTerakhir)
+    .filter((m) => m.tanggalScanTerakhir && opDay(m.tanggalScanTerakhir) === todayOp)
     .sort((a, b) => new Date(b.tanggalScanTerakhir) - new Date(a.tanggalScanTerakhir))
     .map(({ nama, kode, tanggalScanTerakhir }) => ({
       nama, kode,
@@ -800,14 +811,14 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   const recentTrxHtml = recentTrx.length
     ? recentTrx.map(function(t) {
         const isIn = t.jenis === 'pemasukan';
-        return '<div class="fin-row">'
-          + '<div class="fin-left">'
-          + '<div class="fin-dot" style="background:' + (isIn ? 'var(--green)' : 'var(--red)') + '"></div>'
-          + '<div>'
-          + '<div class="fin-type">' + (t.keterangan || t.kategori || (isIn ? 'Pemasukan' : 'Pengeluaran')) + '</div>'
-          + '<div class="fin-desc">' + (t.tanggal || bulanLabel) + '</div>'
+        return '<div class="df-row">'
+          + '<div class="df-left">'
+          + '<div class="df-dot" style="background:' + (isIn ? 'var(--green)' : 'var(--red)') + '"></div>'
+          + '<div class="df-info">'
+          + '<div class="df-type">' + (t.keterangan || t.kategori || (isIn ? 'Pemasukan' : 'Pengeluaran')) + '</div>'
+          + '<div class="df-desc">' + (t.tanggal || bulanLabel) + '</div>'
           + '</div></div>'
-          + '<div class="fin-amount ' + (isIn ? 'income' : 'expense') + '">'
+          + '<div class="df-amount ' + (isIn ? 'income' : 'expense') + '">'
           + (isIn ? '+' : '−') + rpFmt(t.jumlah)
           + '</div></div>';
       }).join('')
@@ -820,7 +831,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=24">'
+    + '<link rel="stylesheet" href="/admin.css?v=25">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -889,7 +900,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="stat-label">Member Baru'
     + '<div class="stat-icon blue"><i class="ti ti-user-plus"></i></div></div>'
     + '<div class="stat-value">' + stats.bariBaru + '</div>'
-    + '<div class="stat-footer">Daftar ' + bulanLabel + '</div></div>'
+    + '<div class="stat-footer">Daftar hari ini (sejak 02:00)</div></div>'
 
     + '</div>'
 
@@ -1013,9 +1024,9 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">Detail <i class="ti ti-arrow-right" style="font-size:12px"></i></a>'
     + '</div>'
     + recentTrxHtml
-    + '<div class="fin-total">'
-    + '<div class="fin-total-label">Saldo Bersih ' + bulanLabel + '</div>'
-    + '<div class="fin-total-val"' + (saldoBulan < 0 ? ' style="color:var(--red)"' : '') + '>' + rpFmt(saldoBulan) + '</div>'
+    + '<div class="df-total">'
+    + '<div class="df-total-label">Saldo Bersih ' + bulanLabel + '</div>'
+    + '<div class="df-total-val"' + (saldoBulan < 0 ? ' style="color:var(--red)"' : '') + '>' + rpFmt(saldoBulan) + '</div>'
     + '</div>'
     + '</div>'
 
@@ -1193,7 +1204,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=24">'
+    + '<link rel="stylesheet" href="/admin.css?v=25">'
     + '</head><body>'
 
     + '<div class="layout">'

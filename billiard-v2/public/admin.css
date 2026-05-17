@@ -521,19 +521,21 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .tab-body.on { display:block; }
 
 /* ── Finance rows ────────────────────────────────────────────────── */
-.fin-row    { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f3ef; }
-.fin-row:last-of-type { border-bottom:none; }
-.fin-left   { display:flex; align-items:center; gap:10px; }
-.fin-dot    { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.fin-type   { font-size:13px; font-weight:500; color:var(--txt); }
-.fin-desc   { font-size:11px; color:var(--txt3); }
-.fin-amount { font-size:14px; font-weight:600; font-family:var(--ff-mono); }
-.fin-amount.income  { color:var(--accent); }
-.fin-amount.expense { color:var(--red); }
-.fin-amount.neutral { color:var(--txt3); }
-.fin-total       { margin-top:14px; padding-top:14px; border-top:1px solid #f0f3ef; display:flex; justify-content:space-between; align-items:center; }
-.fin-total-label { font-size:12px; font-weight:600; color:var(--txt3); }
-.fin-total-val   { font-size:16px; font-weight:600; color:var(--accent); font-family:var(--ff-mono); }
+/* Riwayat Keuangan card di admin dashboard (BUKAN di /operasional) */
+.df-row     { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f3ef; gap:12px; }
+.df-row:last-of-type { border-bottom:none; }
+.df-left    { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.df-dot     { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.df-info    { flex:1; min-width:0; }
+.df-type    { font-size:13px; font-weight:500; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.df-desc    { font-size:11px; color:var(--txt3); }
+.df-amount  { font-size:14px; font-weight:600; font-family:var(--ff-mono); flex-shrink:0; white-space:nowrap; }
+.df-amount.income  { color:var(--accent); }
+.df-amount.expense { color:var(--red); }
+.df-amount.neutral { color:var(--txt3); }
+.df-total        { margin-top:14px; padding-top:14px; border-top:1px solid #f0f3ef; display:flex; justify-content:space-between; align-items:center; }
+.df-total-label  { font-size:12px; font-weight:600; color:var(--txt3); }
+.df-total-val    { font-size:16px; font-weight:600; color:var(--accent); font-family:var(--ff-mono); }
 
 /* ── Empty state ─────────────────────────────────────────────────── */
 .empty-state   { text-align:center; padding:32px 0; color:var(--txt3); font-size:13px; }

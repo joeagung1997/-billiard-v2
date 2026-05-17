@@ -11,7 +11,7 @@ import {
 import { CONFIG } from "../config.js";
 import {
   financeDashboard,
-  financeFormPage, financeEditPage, financeKategoriPage, financeMenuPage,
+  financeEditPage, financeKategoriPage, financeMenuPage,
 } from "../views/finance.js";
 
 const router = Router();
@@ -35,18 +35,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ── GET /operasional/tambah — form tambah transaksi ──────────────
-router.get("/tambah", async (req, res) => {
-  try {
-    const kategori = await readKategori();
-    res.send(financeFormPage("", kategori));
-  } catch (err) {
-    console.error("[FINANCE] tambah GET error:", err.message);
-    res.status(500).send("Kesalahan server.");
-  }
-});
+// ── GET /operasional/tambah — redirect ke dashboard (modal wizard) ───
+// Form tambah standalone sudah dihapus. Catat transaksi sekarang via
+// modal wizard "Catat Transaksi" di halaman dashboard /operasional.
+router.get("/tambah", (_req, res) => res.redirect("/operasional"));
 
-// ── POST /operasional/tambah — simpan transaksi ──────────────────
+// ── POST /operasional/tambah — simpan transaksi (dari modal wizard) ──
 router.post("/tambah", async (req, res) => {
   const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
   const tanggal = (datetime ?? "").slice(0, 10);
@@ -54,10 +48,10 @@ router.post("/tambah", async (req, res) => {
 
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
   if (!jenis || !tanggal || !kategori || jumlahNum <= 0) {
-    return res.redirect("/operasional/tambah?err=1");
+    return res.redirect("/operasional");
   }
   if (jenis !== "pemasukan" && jenis !== "pengeluaran") {
-    return res.redirect("/operasional/tambah?err=1");
+    return res.redirect("/operasional");
   }
 
   try {
@@ -75,7 +69,7 @@ router.post("/tambah", async (req, res) => {
     res.redirect("/operasional");
   } catch (err) {
     console.error("[FINANCE] tambah POST error:", err.message);
-    res.redirect("/operasional/tambah?err=1");
+    res.redirect("/operasional");
   }
 });
 

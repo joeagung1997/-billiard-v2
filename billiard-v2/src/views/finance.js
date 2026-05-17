@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=14\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=15\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -99,7 +99,7 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<div class=\"nav-group-label\" style=\"padding-bottom:8px\">Aksi Cepat</div>"
     + "<div class=\"qa-grid\">"
     + "<a href=\"/scan\" class=\"qa-btn\"><i class=\"ti ti-qrcode\"></i>Scan Member</a>"
-    + "<a href=\"/operasional/tambah\" class=\"qa-btn\"><i class=\"ti ti-plus\"></i>Transaksi</a>"
+    + "<a href=\"/operasional\" class=\"qa-btn\"><i class=\"ti ti-plus\"></i>Transaksi</a>"
     + "<a href=\"#\" class=\"qa-btn\" onclick=\"goReset();return false\"><i class=\"ti ti-refresh\"></i>Reset Harian</a>"
     + "<button class=\"qa-btn danger\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i>Keluar</button>"
     + "</div>"
@@ -1132,93 +1132,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "})();"
     + "</script>"
     + buildFinanceBottomNav()
-    + "</body></html>";
-}
-
-// ── Form tambah transaksi ─────────────────────────────────────
-export function financeFormPage(token, kategoriList = []) {
-  const today   = new Date().toISOString().slice(0, 10);
-  const nowTime = new Date().toTimeString().slice(0, 5);
-
-  const grpIn  = kategoriList.filter((k) => k.jenis === "pemasukan")
-    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
-  const grpOut = kategoriList.filter((k) => k.jenis === "pengeluaran")
-    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
-
-  return docHead("Tambah Transaksi")
-    + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
-    + "</head><body>"
-    + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/operasional\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
-    + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Tambah Transaksi</h1>"
-    + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Catat pemasukan atau pengeluaran</p>"
-
-    + "<form action=\"/operasional/tambah\" method=\"post\" id=\"frm\">"
-    + ""
-
-    // Jenis
-    + "<div class=\"fw\"><label>Jenis</label>"
-    + "<div class=\"jenis-toggle\">"
-    + "<div class=\"jenis-btn active-in\" id=\"btnIn\" onclick=\"setJenis('pemasukan')\">↑ Pemasukan</div>"
-    + "<div class=\"jenis-btn\" id=\"btnOut\" onclick=\"setJenis('pengeluaran')\">↓ Pengeluaran</div>"
-    + "</div>"
-    + "<input type=\"hidden\" name=\"jenis\" id=\"jenis\" value=\"pemasukan\">"
-    + "</div>"
-
-    // Waktu
-    + "<div class=\"fw\"><label>Waktu</label>"
-    + "<div class=\"jenis-toggle\">"
-    + "<div class=\"jenis-btn active-in\" id=\"btnSiang\" onclick=\"setWaktu('siang')\">☀️ Siang</div>"
-    + "<div class=\"jenis-btn\" id=\"btnMalam\" onclick=\"setWaktu('malam')\">🌙 Malam</div>"
-    + "</div>"
-    + "<input type=\"hidden\" name=\"waktu\" id=\"waktu\" value=\"siang\">"
-    + "</div>"
-
-    // Tanggal + Jam
-    + "<div class=\"fw\"><label>Tanggal &amp; Jam</label>"
-    + "<input type=\"datetime-local\" name=\"datetime\" value=\"" + today + "T" + nowTime + "\" required>"
-    + "</div>"
-
-    // Kategori
-    + "<div class=\"fw\"><label>Kategori</label>"
-    + "<select name=\"kategori\" class=\"inp\" id=\"kategori\">"
-    + "<optgroup label=\"Pemasukan\" id=\"grpIn\">" + grpIn + "</optgroup>"
-    + "<optgroup label=\"Pengeluaran\" id=\"grpOut\" style=\"display:none\">" + grpOut + "</optgroup>"
-    + "</select></div>"
-
-    // Keterangan
-    + "<div class=\"fw\"><label>Keterangan</label>"
-    + "<input type=\"text\" name=\"keterangan\" placeholder=\"contoh: Meja 2 — 3 jam\" autocomplete=\"off\"></div>"
-
-    // Jumlah (auto-format)
-    + "<div class=\"fw\"><label>Jumlah (Rp)</label>"
-    + "<input type=\"text\" name=\"jumlah\" id=\"jumlahDisp\" inputmode=\"numeric\""
-    + " placeholder=\"0\" autocomplete=\"off\" oninput=\"fmtJumlah(this)\" required>"
-    + "</div>"
-
-    + "<button class=\"btn-submit\" type=\"submit\">Simpan Transaksi</button>"
-    + "</form></div>"
-
-    + "<script>"
-    + "function fmtJumlah(el){"
-    + "var raw=el.value.replace(/\\D/g,'');"
-    + "el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
-    + "}"
-    + "function setWaktu(w){"
-    + "document.getElementById('waktu').value=w;"
-    + "var s=w==='siang';"
-    + "document.getElementById('btnSiang').className='jenis-btn'+(s?' active-in':'');"
-    + "document.getElementById('btnMalam').className='jenis-btn'+(!s?' active-in':'');"
-    + "}"
-    + "function setJenis(j){"
-    + "document.getElementById('jenis').value=j;"
-    + "var isIn=j==='pemasukan';"
-    + "document.getElementById('btnIn').className='jenis-btn'+(isIn?' active-in':'');"
-    + "document.getElementById('btnOut').className='jenis-btn'+(!isIn?' active-out':'');"
-    + "document.getElementById('grpIn').style.display=isIn?'':'none';"
-    + "document.getElementById('grpOut').style.display=isIn?'none':'';"
-    + "document.getElementById('kategori').selectedIndex=0;}"
-    + "</script>"
     + "</body></html>";
 }
 
