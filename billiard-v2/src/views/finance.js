@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=13\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=14\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -130,6 +130,60 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + "if(!confirm('Keluar dari sesi admin?'))return;"
     + "try{localStorage.removeItem('warpat_atk')}catch(_){};"
     + "window.location.href='/';}"
+    + "</script>";
+}
+
+// ── Bottom nav untuk halaman /operasional/* (mobile) ─────────────
+// Menggunakan goAdmin/goMembers (baca token dari localStorage) karena
+// halaman finance tidak punya admin token di server-side.
+function buildFinanceBottomNav() {
+  return "<nav class=\"bottom-nav\">"
+    + "<a href=\"#\" class=\"bn-item\" onclick=\"goAdmin();return false\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-layout-dashboard\"></i></span>Home"
+    + "</a>"
+    + "<a href=\"#\" class=\"bn-item\" onclick=\"goMembers();return false\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-users\"></i></span>Member"
+    + "</a>"
+    + "<button type=\"button\" class=\"bn-item active\" onclick=\"openBnSheet()\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-briefcase\"></i></span>Operasional"
+    + "</button>"
+    + "<a href=\"/scan\" class=\"bn-item\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
+    + "</a>"
+    + "<a href=\"#\" class=\"bn-item danger\" onclick=\"goReset();return false\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-refresh\"></i></span>Reset"
+    + "</a>"
+    + "</nav>"
+
+    // ── Bottom sheet sub-menu Operasional ──────────────────────
+    + "<div class=\"bn-sheet-overlay\" id=\"bnSheetOv\" onclick=\"closeBnSheet()\"></div>"
+    + "<div class=\"bn-sheet\" id=\"bnSheet\" role=\"dialog\" aria-label=\"Sub-menu Operasional\">"
+    + "<div class=\"bn-sheet-handle\"></div>"
+    + "<div class=\"bn-sheet-title\">Operasional</div>"
+    + "<a href=\"/operasional\" class=\"bn-sheet-item\">"
+    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-wallet\"></i></div>"
+    + "<div><div class=\"bn-sheet-name\">Dashboard Keuangan</div>"
+    + "<div class=\"bn-sheet-sub\">Pemasukan, pengeluaran &amp; saldo</div></div>"
+    + "</a>"
+    + "<a href=\"/operasional/kategori\" class=\"bn-sheet-item\">"
+    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-tag\"></i></div>"
+    + "<div><div class=\"bn-sheet-name\">Kelola Kategori</div>"
+    + "<div class=\"bn-sheet-sub\">Atur kategori pemasukan &amp; pengeluaran</div></div>"
+    + "</a>"
+    + "<a href=\"/operasional/menu\" class=\"bn-sheet-item\">"
+    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-coffee\"></i></div>"
+    + "<div><div class=\"bn-sheet-name\">Kelola Menu</div>"
+    + "<div class=\"bn-sheet-sub\">Kopi, snack, rokok &amp; topping</div></div>"
+    + "</a>"
+    + "</div>"
+
+    + "<script>"
+    + "function openBnSheet(){"
+    + "document.getElementById('bnSheet').classList.add('open');"
+    + "document.getElementById('bnSheetOv').classList.add('open');}"
+    + "function closeBnSheet(){"
+    + "document.getElementById('bnSheet').classList.remove('open');"
+    + "document.getElementById('bnSheetOv').classList.remove('open');}"
     + "</script>";
 }
 
@@ -1077,6 +1131,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}});"
     + "})();"
     + "</script>"
+    + buildFinanceBottomNav()
     + "</body></html>";
 }
 
@@ -1433,6 +1488,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
     + "</script>"
+    + buildFinanceBottomNav()
     + "</body></html>";
 }
 
@@ -1818,5 +1874,6 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "</div>"
     + "</div></div></div>"
     + "<script>" + js + "</script>"
+    + buildFinanceBottomNav()
     + "</body></html>";
 }

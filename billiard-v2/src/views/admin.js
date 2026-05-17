@@ -579,9 +579,9 @@ function buildBottomNav(token, activePage) {
     + '<a href="/admin/members?tk=' + token + '" class="bn-item' + membersActive + '">'
     + '<span class="bn-icon"><i class="ti ti-users"></i></span>Member'
     + '</a>'
-    + '<a href="/operasional" class="bn-item' + opsActive + '" onclick="' + tkOnclick + '">'
+    + '<button type="button" class="bn-item' + opsActive + '" onclick="' + tkOnclick + ';openBnSheet()">'
     + '<span class="bn-icon"><i class="ti ti-briefcase"></i></span>Operasional'
-    + '</a>'
+    + '</button>'
     + '<a href="/scan" class="bn-item">'
     + '<span class="bn-icon"><i class="ti ti-qrcode"></i></span>Scan'
     + '</a>'
@@ -589,7 +589,38 @@ function buildBottomNav(token, activePage) {
     + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
     + '<span class="bn-icon"><i class="ti ti-refresh"></i></span>Reset'
     + '</a>'
-    + '</nav>';
+    + '</nav>'
+
+    // ── Bottom sheet sub-menu Operasional ──────────────────────
+    + '<div class="bn-sheet-overlay" id="bnSheetOv" onclick="closeBnSheet()"></div>'
+    + '<div class="bn-sheet" id="bnSheet" role="dialog" aria-label="Sub-menu Operasional">'
+    + '<div class="bn-sheet-handle"></div>'
+    + '<div class="bn-sheet-title">Operasional</div>'
+    + '<a href="/operasional" class="bn-sheet-item">'
+    + '<div class="bn-sheet-icon"><i class="ti ti-wallet"></i></div>'
+    + '<div><div class="bn-sheet-name">Dashboard Keuangan</div>'
+    + '<div class="bn-sheet-sub">Pemasukan, pengeluaran &amp; saldo</div></div>'
+    + '</a>'
+    + '<a href="/operasional/kategori" class="bn-sheet-item">'
+    + '<div class="bn-sheet-icon"><i class="ti ti-tag"></i></div>'
+    + '<div><div class="bn-sheet-name">Kelola Kategori</div>'
+    + '<div class="bn-sheet-sub">Atur kategori pemasukan &amp; pengeluaran</div></div>'
+    + '</a>'
+    + '<a href="/operasional/menu" class="bn-sheet-item">'
+    + '<div class="bn-sheet-icon"><i class="ti ti-coffee"></i></div>'
+    + '<div><div class="bn-sheet-name">Kelola Menu</div>'
+    + '<div class="bn-sheet-sub">Kopi, snack, rokok &amp; topping</div></div>'
+    + '</a>'
+    + '</div>'
+
+    + '<script>'
+    + 'function openBnSheet(){'
+    + 'document.getElementById("bnSheet").classList.add("open");'
+    + 'document.getElementById("bnSheetOv").classList.add("open");}'
+    + 'function closeBnSheet(){'
+    + 'document.getElementById("bnSheet").classList.remove("open");'
+    + 'document.getElementById("bnSheetOv").classList.remove("open");}'
+    + '</script>';
 }
 
 // ── buildModal — shared modal overlay HTML ────────────────────────────────────
@@ -789,7 +820,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=23">'
+    + '<link rel="stylesheet" href="/admin.css?v=24">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1162,7 +1193,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=23">'
+    + '<link rel="stylesheet" href="/admin.css?v=24">'
     + '</head><body>'
 
     + '<div class="layout">'
