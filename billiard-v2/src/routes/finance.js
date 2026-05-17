@@ -1,5 +1,5 @@
 // src/routes/finance.js
-// ── Routes: /keuangan (pemasukan & pengeluaran) ───────────────
+// ── Routes: /operasional (pemasukan & pengeluaran) ───────────────
 
 import { Router } from "express";
 import {
@@ -19,7 +19,7 @@ const router = Router();
 // Set ftk kosong di semua route (tidak butuh PIN lagi)
 router.use((req, res, next) => { res.locals.ftk = ""; next(); });
 
-// ── GET /keuangan — dashboard ─────────────────────────────────
+// ── GET /operasional — dashboard ─────────────────────────────────
 router.get("/", async (req, res) => {
   try {
     const [transaksi, kategoriList, menuItems, toppings] = await Promise.all([readTransaksi(), readKategori(), readMenuItems(), readMenuToppings()]);
@@ -35,7 +35,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ── GET /keuangan/tambah — form tambah transaksi ──────────────
+// ── GET /operasional/tambah — form tambah transaksi ──────────────
 router.get("/tambah", async (req, res) => {
   try {
     const kategori = await readKategori();
@@ -46,7 +46,7 @@ router.get("/tambah", async (req, res) => {
   }
 });
 
-// ── POST /keuangan/tambah — simpan transaksi ──────────────────
+// ── POST /operasional/tambah — simpan transaksi ──────────────────
 router.post("/tambah", async (req, res) => {
   const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
   const tanggal = (datetime ?? "").slice(0, 10);
@@ -54,10 +54,10 @@ router.post("/tambah", async (req, res) => {
 
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
   if (!jenis || !tanggal || !kategori || jumlahNum <= 0) {
-    return res.redirect("/keuangan/tambah?err=1");
+    return res.redirect("/operasional/tambah?err=1");
   }
   if (jenis !== "pemasukan" && jenis !== "pengeluaran") {
-    return res.redirect("/keuangan/tambah?err=1");
+    return res.redirect("/operasional/tambah?err=1");
   }
 
   try {
@@ -72,30 +72,30 @@ router.post("/tambah", async (req, res) => {
       jumlah:     jumlahNum,
       createdAt:  new Date().toISOString(),
     });
-    res.redirect("/keuangan");
+    res.redirect("/operasional");
   } catch (err) {
     console.error("[FINANCE] tambah POST error:", err.message);
-    res.redirect("/keuangan/tambah?err=1");
+    res.redirect("/operasional/tambah?err=1");
   }
 });
 
-// ── GET /keuangan/edit — form edit transaksi ──────────────────
+// ── GET /operasional/edit — form edit transaksi ──────────────────
 router.get("/edit", async (req, res) => {
   const id = (req.query.id ?? "").trim();
-  if (!id) return res.redirect("/keuangan");
+  if (!id) return res.redirect("/operasional");
 
   try {
     const [semua, kategori] = await Promise.all([readTransaksi(), readKategori()]);
     const t = semua.find((x) => x.id === id);
-    if (!t) return res.redirect("/keuangan");
+    if (!t) return res.redirect("/operasional");
     res.send(financeEditPage("", t, kategori));
   } catch (err) {
     console.error("[FINANCE] edit GET error:", err.message);
-    res.redirect("/keuangan");
+    res.redirect("/operasional");
   }
 });
 
-// ── POST /keuangan/edit — simpan perubahan transaksi ──────────
+// ── POST /operasional/edit — simpan perubahan transaksi ──────────
 router.post("/edit", async (req, res) => {
   const { id, jenis, datetime, kategori, keterangan, jumlah } = req.body;
   const tanggal = (datetime ?? "").slice(0, 10);
@@ -103,7 +103,7 @@ router.post("/edit", async (req, res) => {
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
 
   if (!id || !jenis || !tanggal || !kategori || jumlahNum <= 0) {
-    return res.redirect("/keuangan");
+    return res.redirect("/operasional");
   }
 
   try {
@@ -117,14 +117,14 @@ router.post("/edit", async (req, res) => {
       keterangan: (keterangan ?? "").trim().slice(0, 200),
       jumlah:     jumlahNum,
     });
-    res.redirect("/keuangan");
+    res.redirect("/operasional");
   } catch (err) {
     console.error("[FINANCE] edit POST error:", err.message);
-    res.redirect("/keuangan");
+    res.redirect("/operasional");
   }
 });
 
-// ── GET /keuangan/kategori — kelola kategori ──────────────────
+// ── GET /operasional/kategori — kelola kategori ──────────────────
 router.get("/kategori", async (req, res) => {
   try {
     const kategori = await readKategori();
@@ -135,25 +135,25 @@ router.get("/kategori", async (req, res) => {
   }
 });
 
-// ── POST /keuangan/kategori/tambah ───────────────────────────
+// ── POST /operasional/kategori/tambah ───────────────────────────
 router.post("/kategori/tambah", async (req, res) => {
   const nama  = (req.body.nama  ?? "").trim();
   const jenis = req.body.jenis  ?? "";
 
   if (!nama || !["pemasukan", "pengeluaran"].includes(jenis)) {
-    return res.redirect("/keuangan/kategori?err=1");
+    return res.redirect("/operasional/kategori?err=1");
   }
 
   try {
     await addKategori(nama, jenis);
-    res.redirect("/keuangan/kategori");
+    res.redirect("/operasional/kategori");
   } catch (err) {
     console.error("[FINANCE] kategori tambah error:", err.message);
-    res.redirect("/keuangan/kategori?err=1");
+    res.redirect("/operasional/kategori?err=1");
   }
 });
 
-// ── GET /keuangan/kategori/hapus — hapus kategori ────────────
+// ── GET /operasional/kategori/hapus — hapus kategori ────────────
 router.get("/kategori/hapus", async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
@@ -161,10 +161,10 @@ router.get("/kategori/hapus", async (req, res) => {
       console.error("[FINANCE] kategori hapus error:", err.message);
     }
   }
-  res.redirect("/keuangan/kategori");
+  res.redirect("/operasional/kategori");
 });
 
-// ── GET /keuangan/menu — kelola menu item kopi/snack ─────────
+// ── GET /operasional/menu — kelola menu item kopi/snack ─────────
 router.get("/menu", async (req, res) => {
   try {
     const [items, toppings] = await Promise.all([readMenuItems(), readMenuToppings()]);
@@ -177,24 +177,24 @@ router.get("/menu", async (req, res) => {
   }
 });
 
-// ── POST /keuangan/menu/tambah ────────────────────────────────
+// ── POST /operasional/menu/tambah ────────────────────────────────
 router.post("/menu/tambah", async (req, res) => {
   const nama       = (req.body.nama     ?? "").trim();
   const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
   const hargaHot   = parseInt((req.body.harga_hot ?? "").replace(/\D/g, "")) || null;
   const kategori   = (req.body.kategori ?? "minuman").trim();
   const bestSeller = [].concat(req.body.best_seller ?? "0").includes("1");
-  if (!nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
+  if (!nama || harga <= 0) return res.redirect("/operasional/menu?err=1");
   try {
     await addMenuItem(nama, harga, kategori, bestSeller, hargaHot || null);
-    res.redirect("/keuangan/menu");
+    res.redirect("/operasional/menu");
   } catch (err) {
     console.error("[FINANCE] menu tambah error:", err.message);
-    res.redirect("/keuangan/menu?err=1");
+    res.redirect("/operasional/menu?err=1");
   }
 });
 
-// ── POST /keuangan/menu/edit ──────────────────────────────────
+// ── POST /operasional/menu/edit ──────────────────────────────────
 router.post("/menu/edit", async (req, res) => {
   const id         = parseInt(req.body.id) || 0;
   const nama       = (req.body.nama     ?? "").trim();
@@ -202,17 +202,17 @@ router.post("/menu/edit", async (req, res) => {
   const hargaHot   = parseInt((req.body.harga_hot ?? "").replace(/\D/g, "")) || null;
   const kategori   = (req.body.kategori ?? "minuman").trim();
   const bestSeller = [].concat(req.body.best_seller ?? "0").includes("1");
-  if (!id || !nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
+  if (!id || !nama || harga <= 0) return res.redirect("/operasional/menu?err=1");
   try {
     await updateMenuItem(id, nama, harga, kategori, bestSeller, hargaHot || null);
-    res.redirect("/keuangan/menu");
+    res.redirect("/operasional/menu");
   } catch (err) {
     console.error("[FINANCE] menu edit error:", err.message);
-    res.redirect("/keuangan/menu?err=1");
+    res.redirect("/operasional/menu?err=1");
   }
 });
 
-// ── GET /keuangan/menu/hapus ──────────────────────────────────
+// ── GET /operasional/menu/hapus ──────────────────────────────────
 router.get("/menu/hapus", async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
@@ -220,25 +220,25 @@ router.get("/menu/hapus", async (req, res) => {
       console.error("[FINANCE] menu hapus error:", err.message);
     }
   }
-  res.redirect("/keuangan/menu");
+  res.redirect("/operasional/menu");
 });
 
-// ── POST /keuangan/menu/topping/tambah ────────────────────────
+// ── POST /operasional/menu/topping/tambah ────────────────────────
 router.post("/menu/topping/tambah", async (req, res) => {
   const itemId = parseInt(req.body.item_id) || 0;
   const nama   = (req.body.nama  ?? "").trim();
   const harga  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
-  if (!itemId || !nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
+  if (!itemId || !nama || harga <= 0) return res.redirect("/operasional/menu?err=1");
   try {
     await addMenuTopping(itemId, nama, harga);
-    res.redirect("/keuangan/menu");
+    res.redirect("/operasional/menu");
   } catch (err) {
     console.error("[FINANCE] topping tambah error:", err.message);
-    res.redirect("/keuangan/menu?err=1");
+    res.redirect("/operasional/menu?err=1");
   }
 });
 
-// ── GET /keuangan/menu/topping/hapus ─────────────────────────
+// ── GET /operasional/menu/topping/hapus ─────────────────────────
 router.get("/menu/topping/hapus", async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
@@ -246,7 +246,7 @@ router.get("/menu/topping/hapus", async (req, res) => {
       console.error("[FINANCE] topping hapus error:", err.message);
     }
   }
-  res.redirect("/keuangan/menu");
+  res.redirect("/operasional/menu");
 });
 
 export default router;

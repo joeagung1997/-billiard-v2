@@ -50,7 +50,9 @@ app.get("/api/v1/openapi.json", (_req, res) => res.json(swaggerSpec));
 app.use("/", scanRouter);
 app.use("/admin", adminRouter);
 app.use("/admin", qrRouter);
-app.use("/keuangan", financeRouter);
+app.use("/operasional", financeRouter);
+// Backward-compat: redirect URL lama /keuangan/* ke /operasional/*
+app.use("/keuangan", (req, res) => res.redirect(308, "/operasional" + req.url));
 app.use("/", shareRouter);
 
 // ── Home ──────────────────────────────────────────────────────

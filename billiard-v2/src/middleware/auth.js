@@ -22,7 +22,7 @@ export const requireFinance = (req, res, next) => {
   const pin = verifyToken(ftk);
 
   if (!pin || pin !== CONFIG.FINANCE_PIN) {
-    return res.redirect("/keuangan");
+    return res.redirect("/operasional");
   }
 
   res.locals.ftk = ftk;

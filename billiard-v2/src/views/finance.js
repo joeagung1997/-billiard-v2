@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=10\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=11\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -68,9 +68,9 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
 
     // Sub-menu — hidden by default, auto-open kalau di sub-page
     + "<div id=\"keuSub\" style=\"overflow:hidden;transition:max-height .25s ease;max-height:" + (subOpen ? "240px" : "0") + "\">"
-    + subItem("/keuangan", "ti-wallet", "Dashboard Keuangan", isKeu)
-    + subItem("/keuangan/kategori", "ti-tag", "Kelola Kategori", isKat)
-    + subItem("/keuangan/menu", "ti-coffee", "Kelola Menu", isMenu)
+    + subItem("/operasional", "ti-wallet", "Dashboard Keuangan", isKeu)
+    + subItem("/operasional/kategori", "ti-tag", "Kelola Kategori", isKat)
+    + subItem("/operasional/menu", "ti-coffee", "Kelola Menu", isMenu)
     + "</div>"
 
     + "</div>"
@@ -303,7 +303,7 @@ export function financeLoginPage(showErr) {
     +     "<button class=\"np-btn\" onclick=\"press('0')\">0</button>"
     +     "<button class=\"np-btn go-btn\" onclick=\"go()\">→</button>"
     +   "</div>"
-    +   "<form id=\"pf\" action=\"/keuangan/login\" method=\"post\">"
+    +   "<form id=\"pf\" action=\"/operasional/login\" method=\"post\">"
     +     "<input type=\"hidden\" name=\"pin\" id=\"pi\">"
     +   "</form>"
     +   "<div class=\"login-footer\">Gunakan keyboard atau tap angka di atas</div>"
@@ -450,7 +450,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
       + "<i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>"
       + (isIn ? "Masuk" : "Keluar") + "</span></div>"
       + "<div class=\"fr-td right fr-act\">"
-      + "<a href=\"/keuangan/edit?id=" + t.id + "\" class=\"icon-btn\" title=\"Edit\"><i class=\"ti ti-edit\"></i></a>"
+      + "<a href=\"/operasional/edit?id=" + t.id + "\" class=\"icon-btn\" title=\"Edit\"><i class=\"ti ti-edit\"></i></a>"
       + "</div>"
       + "</div>";
   };
@@ -507,7 +507,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div><div class=\"page-title\">Keuangan</div>"
     + "<div class=\"page-sub\">Laporan pemasukan, pengeluaran &amp; saldo — " + bulanLabel + "</div></div>"
     + "<div class=\"topbar-actions\">"
-    + "<a href=\"/keuangan/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
+    + "<a href=\"/operasional/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
     + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
     + "</div></div>"
 
@@ -749,7 +749,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-sb-row\"><span>Keterangan</span><span class=\"fin-sb-val\" id=\"sumKet\">—</span></div>"
     + "<div class=\"fin-sb-total\"><span>Total</span><span class=\"fin-sb-total-val\" id=\"sumTotal\">Rp 0</span></div>"
     + "</div></div>"
-    + "<form id=\"wizForm\" action=\"/keuangan/tambah\" method=\"post\" style=\"display:none\">"
+    + "<form id=\"wizForm\" action=\"/operasional/tambah\" method=\"post\" style=\"display:none\">"
     + ""
     + "<input type=\"hidden\" name=\"jenis\" id=\"wizFJenis\" value=\"pemasukan\">"
     + "<input type=\"hidden\" name=\"waktu\" id=\"wizFWaktu\" value=\"siang\">"
@@ -786,7 +786,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "var j=document.getElementById('fJenis').value;"
     + "var d=document.getElementById('fTglDari').value;"
     + "var s=document.getElementById('fTglSampai').value;"
-    + "var url='/keuangan?bulan='+b;"
+    + "var url='/operasional?bulan='+b;"
     + "if(j)url+='&jenis='+j;"
     + "if(d)url+='&tgl_dari='+d;"
     + "if(s)url+='&tgl_sampai='+s;"
@@ -800,7 +800,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function clearTgl(){"
     + "var b=document.getElementById('fBulan').value;"
     + "var j=document.getElementById('fJenis').value;"
-    + "var url='/keuangan?bulan='+b;"
+    + "var url='/operasional?bulan='+b;"
     + "if(j)url+='&jenis='+j;"
     + "window.location.href=url;}"
     + "function setPeriode(p){"
@@ -808,7 +808,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "var j=document.getElementById('fJenis').value;"
     + "var today=new Date();"
     + "var ymd=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};"
-    + "var url='/keuangan?bulan='+b;"
+    + "var url='/operasional?bulan='+b;"
     + "if(j)url+='&jenis='+j;"
     + "if(p==='hari'){url+='&tgl_dari='+ymd(today)+'&tgl_sampai='+ymd(today);}"
     + "else if(p==='minggu'){var dow=today.getDay()===0?6:today.getDay()-1;var mon=new Date(today);mon.setDate(today.getDate()-dow);url+='&tgl_dari='+ymd(mon)+'&tgl_sampai='+ymd(today);}"
@@ -1054,11 +1054,11 @@ export function financeFormPage(token, kategoriList = []) {
     + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
     + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/keuangan\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
+    + "<a href=\"/operasional\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Tambah Transaksi</h1>"
     + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Catat pemasukan atau pengeluaran</p>"
 
-    + "<form action=\"/keuangan/tambah\" method=\"post\" id=\"frm\">"
+    + "<form action=\"/operasional/tambah\" method=\"post\" id=\"frm\">"
     + ""
 
     // Jenis
@@ -1142,11 +1142,11 @@ export function financeEditPage(token, t, kategoriList = []) {
     + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
     + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/keuangan\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
+    + "<a href=\"/operasional\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Edit Transaksi</h1>"
     + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Ubah data transaksi</p>"
 
-    + "<form action=\"/keuangan/edit\" method=\"post\" id=\"frm\">"
+    + "<form action=\"/operasional/edit\" method=\"post\" id=\"frm\">"
     + ""
     + "<input type=\"hidden\" name=\"id\" value=\"" + t.id + "\">"
 
@@ -1233,7 +1233,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
         "<div class=\"kat-row\">"
         + "<div class=\"kat-name\"><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
         + "<div class=\"kat-act\">"
-        + "<a href=\"/keuangan/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
+        + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
         + "</div></div>"
       ).join("")
     : "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada kategori</div>";
@@ -1314,7 +1314,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
 
     // Breadcrumb
     + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
-    + "<a href=\"/keuangan\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
+    + "<a href=\"/operasional\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
     + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "</div>"
 
@@ -1345,7 +1345,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "<div class=\"type-pill income active\" id=\"pill-income\" onclick=\"selectType('income')\"><i class=\"ti ti-arrow-up\" style=\"font-size:12px\"></i> Pemasukan</div>"
     + "<div class=\"type-pill expense\" id=\"pill-expense\" onclick=\"selectType('expense')\"><i class=\"ti ti-arrow-down\" style=\"font-size:12px\"></i> Pengeluaran</div>"
     + "</div>"
-    + "<form action=\"/keuangan/kategori/tambah\" method=\"post\">"
+    + "<form action=\"/operasional/kategori/tambah\" method=\"post\">"
     + ""
     + "<input type=\"hidden\" name=\"jenis\" id=\"jenisInput\" value=\"pemasukan\">"
     + "<div class=\"add-form\">"
@@ -1451,7 +1451,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
       const boxCl = m.best_seller ? "#fff"    : "transparent";
       const lblCl = m.best_seller ? "#c47f1a" : "#7a8c78";
       return "<div class=\"menu-card-edit\" style=\"grid-column:1/-1\">"
-        + "<form action=\"/keuangan/menu/edit\" method=\"post\">"
+        + "<form action=\"/operasional/menu/edit\" method=\"post\">"
         + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
         + "<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px\">"
         + "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\" placeholder=\"Nama item\">"
@@ -1468,7 +1468,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
         + "<div class=\"mp-bs-lbl\" style=\"color:" + lblCl + "\"><i class=\"ti ti-star\" style=\"font-size:13px\"></i> Best Seller</div>"
         + "</div>"
         + "<button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
-        + "<a href=\"/keuangan/menu\" class=\"mp-btn-cancel\">Batal</a>"
+        + "<a href=\"/operasional/menu\" class=\"mp-btn-cancel\">Batal</a>"
         + "</div>"
         + "</form>"
         + "<div class=\"mp-topping-sec\">"
@@ -1478,11 +1478,11 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
               + itemToppings.map((t) =>
                   "<div class=\"mp-topping-tag\">" + escHtml(t.nama)
                   + " <span>+Rp " + Number(t.harga).toLocaleString("id-ID") + "</span>"
-                  + "<a href=\"/keuangan/menu/topping/hapus?id=" + t.id + "\" class=\"mp-topping-del\" onclick=\"return confirm('Hapus topping " + escHtml(t.nama) + "?')\">✕</a>"
+                  + "<a href=\"/operasional/menu/topping/hapus?id=" + t.id + "\" class=\"mp-topping-del\" onclick=\"return confirm('Hapus topping " + escHtml(t.nama) + "?')\">✕</a>"
                   + "</div>"
                 ).join("") + "</div>"
             : "")
-        + "<form action=\"/keuangan/menu/topping/tambah\" method=\"post\" style=\"display:flex;gap:6px;flex-wrap:wrap;margin-top:8px\">"
+        + "<form action=\"/operasional/menu/topping/tambah\" method=\"post\" style=\"display:flex;gap:6px;flex-wrap:wrap;margin-top:8px\">"
         + "<input type=\"hidden\" name=\"item_id\" value=\"" + m.id + "\">"
         + "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama topping\" required style=\"flex:1;min-width:120px\">"
         + "<div class=\"mp-pfield\" style=\"width:110px\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga\" placeholder=\"Harga\" required oninput=\"fmtH(this)\"></div>"
@@ -1505,8 +1505,8 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
       + "<div class=\"mp-card-name\">" + escHtml(m.nama) + topBadge + "</div>"
       + "<div class=\"mp-price-wrap\">" + priceHtml + "</div>"
       + "<div class=\"mp-card-actions\">"
-      + "<a href=\"/keuangan/menu?edit=" + m.id + "\" class=\"mp-btn-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
-      + "<a href=\"/keuangan/menu/hapus?id=" + m.id + "\" class=\"mp-btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i></a>"
+      + "<a href=\"/operasional/menu?edit=" + m.id + "\" class=\"mp-btn-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
+      + "<a href=\"/operasional/menu/hapus?id=" + m.id + "\" class=\"mp-btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i></a>"
       + "</div>"
       + "</div>";
   };
@@ -1537,7 +1537,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "<div class=\"mp-add-sub\">Isi detail item lalu klik Tambah</div>"
     + "</div>"
     + "<div class=\"mp-add-body\">"
-    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" id=\"addMenuForm\">"
+    + "<form action=\"/operasional/menu/tambah\" method=\"post\" id=\"addMenuForm\">"
     + "<div class=\"mp-fg\"><label class=\"mp-lbl\">Nama Item</label>"
     + "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required></div>"
     + "<div class=\"mp-fg\"><label class=\"mp-lbl\">Kategori</label>"
@@ -1739,7 +1739,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "</div></header>"
     + "<div class=\"page\">"
     + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:#7a8c78;margin-bottom:18px\">"
-    + "<a href=\"/keuangan\" style=\"color:#2d6624;text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
+    + "<a href=\"/operasional\" style=\"color:#2d6624;text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "</div>"
     + "<div style=\"font-size:20px;font-weight:700;color:#1a2318;margin-bottom:4px\">Menu Kopi / Snack</div>"
     + "<div style=\"font-size:13px;color:#6b7c69;margin-bottom:22px\">Kelola item menu dan harga yang tersedia di kasir</div>"
