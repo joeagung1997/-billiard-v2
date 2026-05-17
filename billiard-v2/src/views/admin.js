@@ -378,6 +378,36 @@ function buildAdminCss() {
     '.trend-title { font-size:var(--fs-sm); font-weight:var(--fw-bk); color:var(--txt); margin-bottom:2px; }',
     '.trend-sub { font-size:var(--fs-xs); color:var(--txt3); }',
     '.trend-bars { display:flex; gap:4px; align-items:flex-end; }',
+    '.chart-title-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 6px rgba(58,125,44,.5); flex-shrink:0; }',
+    '.date-range-row { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border2); border-radius:9px; padding:6px 10px; flex-shrink:0; }',
+    '.date-inp { border:none; background:transparent; font-size:12px; font-family:monospace; color:var(--txt); outline:none; width:100px; }',
+    '.date-apply-btn { display:flex; align-items:center; gap:4px; padding:4px 10px; background:var(--green); border:none; border-radius:6px; font-size:11px; font-weight:600; font-family:var(--ff); color:#fff; cursor:pointer; white-space:nowrap; }',
+    '.date-apply-btn:hover { opacity:.85; }',
+    '.period-toggle { display:flex; gap:2px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:3px; margin-bottom:14px; width:fit-content; }',
+    '.period-btn { padding:5px 12px; border-radius:6px; font-size:11px; font-weight:500; color:var(--txt3); cursor:pointer; border:none; background:transparent; font-family:var(--ff); }',
+    '.period-btn:hover { color:var(--txt); }',
+    '.period-btn.active { background:var(--surface); color:var(--green); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,.08); }',
+    '.chart-tooltip-box { position:absolute; background:#0f2010; color:#fff; border-radius:8px; padding:8px 12px; font-size:12px; pointer-events:none; display:none; z-index:10; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.3); }',
+    '.chart-tooltip-box::after { content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-left:5px solid transparent; border-right:5px solid transparent; border-top:5px solid #0f2010; }',
+    '.cstat-grid { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--border); }',
+    '.cstat-item { padding:13px 16px; border-right:1px solid var(--border); }',
+    '.cstat-item:last-child { border-right:none; }',
+    '.cstat-lbl { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--txt3); margin-bottom:6px; display:flex; align-items:center; gap:5px; }',
+    '.cstat-val { font-size:17px; font-weight:600; color:var(--txt); line-height:1; margin-bottom:3px; }',
+    '.cstat-sub { font-size:11px; color:var(--txt3); }',
+    '.cstat-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; margin-top:4px; }',
+    '.cbadge-neu { background:var(--surface2); color:var(--txt3); }',
+    '.heatmap-sec { padding:12px 16px; border-bottom:1px solid var(--border); }',
+    '.hm-title { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--txt3); margin-bottom:8px; }',
+    '.hm-days-row { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }',
+    '.hm-day-lbl { font-size:8px; color:var(--txt3); text-align:center; font-weight:500; }',
+    '.hm-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }',
+    '.hm-cell { aspect-ratio:1; border-radius:3px; background:var(--border); cursor:pointer; transition:transform .1s; position:relative; }',
+    '.hm-cell:hover { transform:scale(1.2); z-index:1; }',
+    '.hm-cell.lv1 { background:#c8e6b4; }',
+    '.hm-cell.lv2 { background:#8bc97a; }',
+    '.hm-cell.lv3 { background:#3a7d2c; }',
+    '.hm-cell.lv4 { background:#255519; box-shadow:0 0 6px rgba(37,85,25,.4); }',
 
     // ── Mobile card layout ────────────────────────────────────
     '.mc { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden; transition:border-color .15s; }',
@@ -613,6 +643,25 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   // ── Chart data ───────────────────────────────────────────────
   const allChartLabels = JSON.stringify(trendDays.map((d) => d.lbl));
   const allChartData   = JSON.stringify(trendDays.map((d) => d.count));
+  // Heatmap 28 hari
+  const heatmap28 = [];
+  for (let hi = 27; hi >= 0; hi--) {
+    const hd = new Date(nowWib);
+    hd.setDate(hd.getDate() - hi);
+    const hymd = hd.getFullYear() + '-'
+      + String(hd.getMonth() + 1).padStart(2, '0') + '-'
+      + String(hd.getDate()).padStart(2, '0');
+    const hcnt = log.filter((l) => {
+      if (l.aksi !== 'SCAN') return false;
+      const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const lymd = ld.getFullYear() + '-'
+        + String(ld.getMonth() + 1).padStart(2, '0') + '-'
+        + String(ld.getDate()).padStart(2, '0');
+      return lymd === hymd;
+    }).length;
+    heatmap28.push(hcnt);
+  }
+  const heatmapJson = JSON.stringify(heatmap28);
   // default view: 7 hari
   const trend7 = trendDays.slice(-7);
   const totalScan7 = trend7.reduce((s, d) => s + d.count, 0);
@@ -761,29 +810,53 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     // ── Content grid ────────────────────────────────────────────
     + '<div class="content-grid">'
 
-    // Chart card
-    + '<div class="card">'
-    + '<div class="card-header" style="flex-wrap:wrap;gap:10px"><div>'
-    + '<div class="card-title">Trend Kunjungan</div>'
-    + '<div class="card-sub" id="chartSub">7 hari terakhir — total ' + totalScan7 + ' kunjungan</div>'
-    + '</div>'
-    + '<div class="trend-range-wrap">'
-    + '<label style="font-size:11px;color:var(--txt3);font-weight:500">Dari</label>'
-    + '<input type="date" id="dateFrom" class="date-inp" value="' + trendDays[23].ymd + '">'
+    // Chart card — revamped
+    + '<div class="card" style="overflow:visible">'
+    + '<div style="padding:18px 20px 0">'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap">'
+    + '<div>'
+    + '<div style="font-size:15px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+    + '<div class="chart-title-dot"></div>Trend Kunjungan</div>'
+    + '<div style="font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:5px">'
+    + '<i class="ti ti-calendar-stats" style="font-size:13px"></i>'
+    + '<span id="chartSub"></span>'
+    + '</div></div>'
+    + '<div class="date-range-row">'
+    + '<i class="ti ti-calendar" style="font-size:14px;color:var(--txt3)"></i>'
+    + '<input class="date-inp" type="date" id="dateFrom" value="' + trendDays[16].ymd + '">'
     + '<span style="font-size:11px;color:var(--txt3)">—</span>'
-    + '<label style="font-size:11px;color:var(--txt3);font-weight:500">Sampai</label>'
-    + '<input type="date" id="dateTo" class="date-inp" value="' + trendDays[29].ymd + '">'
-    + '<button class="trend-pill on" onclick="applyDateRange()">Terapkan</button>'
+    + '<input class="date-inp" type="date" id="dateTo" value="' + trendDays[29].ymd + '">'
+    + '<button class="date-apply-btn" onclick="applyDateRange()">'
+    + '<i class="ti ti-check" style="font-size:11px"></i> Terapkan</button>'
+    + '</div></div>'
+    + '<div class="period-toggle">'
+    + '<button class="period-btn" onclick="setPeriod(7,this)">7 Hari</button>'
+    + '<button class="period-btn active" onclick="setPeriod(14,this)">14 Hari</button>'
+    + '<button class="period-btn" onclick="setPeriod(30,this)">30 Hari</button>'
+    + '<button class="period-btn" onclick="setPeriod(0,this)">Custom</button>'
     + '</div>'
     + '</div>'
-    + '<div class="chart-wrap"><canvas id="trendChart"></canvas></div>'
-    + '<div class="chart-meta">'
-    + '<div class="chart-meta-item"><div class="cmi-label">Hari Terbaik</div>'
-    + '<div class="cmi-val" id="metaBest">' + bestDayLbl + '</div></div>'
-    + '<div class="chart-meta-item"><div class="cmi-label">Rata-rata / hari</div>'
-    + '<div class="cmi-val" id="metaAvg">' + avgVisit + ' kunjungan</div></div>'
-    + '<div class="chart-meta-item"><div class="cmi-label">Total Periode</div>'
-    + '<div class="cmi-val" id="metaTotal">' + totalScan7 + ' kunjungan</div></div>'
+    + '<div style="position:relative;padding:4px 20px 14px;height:240px">'
+    + '<canvas id="trendChart" role="img"></canvas>'
+    + '<div class="chart-tooltip-box" id="chartTooltip">'
+    + '<div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px" id="ttDate"></div>'
+    + '<div style="font-weight:600;color:#7dcf6a" id="ttVal"></div>'
+    + '</div></div>'
+    + '<div class="cstat-grid">'
+    + '<div class="cstat-item"><div class="cstat-lbl"><i class="ti ti-trophy" style="color:#c47f1a"></i> Hari Terbaik</div>'
+    + '<div class="cstat-val" id="metaBest">' + bestDayLbl + '</div>'
+    + '<div class="cstat-sub">kunjungan terbanyak</div></div>'
+    + '<div class="cstat-item"><div class="cstat-lbl"><i class="ti ti-chart-bar" style="color:#2660a4"></i> Rata-rata / Hari</div>'
+    + '<div class="cstat-val" id="metaAvg">' + avgVisit + '</div>'
+    + '<div class="cstat-sub">kunjungan / hari</div></div>'
+    + '<div class="cstat-item"><div class="cstat-lbl"><i class="ti ti-sum" style="color:var(--green)"></i> Total Periode</div>'
+    + '<div class="cstat-val" id="metaTotal">' + totalScan7 + '</div>'
+    + '<div class="cstat-sub">kunjungan</div></div>'
+    + '<div class="cstat-item"><div class="cstat-lbl"><i class="ti ti-users" style="color:var(--txt3)"></i> Member Aktif</div>'
+    + '<div class="cstat-val">' + stats.scan + ' <span style="font-size:13px;color:var(--txt3);font-weight:400">/ ' + stats.total + '</span></div>'
+    + '<div class="cstat-sub">scan hari ini</div>'
+    + '<div class="cstat-badge cbadge-neu">' + scanPct + '% hadir</div>'
+    + '</div>'
     + '</div>'
     + '</div>'
 
@@ -791,9 +864,18 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="card">'
     + '<div class="card-header"><div>'
     + '<div class="card-title">Member Terdaftar</div>'
-    + '<div class="card-sub">' + stats.total + ' aktif</div>'
+    + '<div class="card-sub">' + stats.total + ' terdaftar</div>'
     + '</div>'
     + '<a href="/admin/members?tk=' + token + '" class="link-btn">Kelola <i class="ti ti-arrow-right" style="font-size:12px"></i></a>'
+    + '</div>'
+    + '<div class="heatmap-sec">'
+    + '<div class="hm-title">Aktivitas 4 Minggu Terakhir</div>'
+    + '<div class="hm-days-row">'
+    + '<div class="hm-day-lbl">M</div><div class="hm-day-lbl">S</div><div class="hm-day-lbl">S</div>'
+    + '<div class="hm-day-lbl">R</div><div class="hm-day-lbl">K</div><div class="hm-day-lbl">J</div>'
+    + '<div class="hm-day-lbl">S</div>'
+    + '</div>'
+    + '<div class="hm-grid" id="hmGrid"></div>'
     + '</div>'
     + topMembersHtml
     + '<div class="progress-wrap">'
@@ -857,24 +939,64 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + 'const ALL_LABELS  = ' + allChartLabels             + ';'
     + 'const ALL_DATA    = ' + allChartData               + ';'
     + 'const ALL_YMD     = ' + JSON.stringify(trendDays.map((d) => d.ymd)) + ';'
+    + 'const ALL_HM=' + heatmapJson + ';'
     + 'var trendChart;'
     + '(function(){'
-    + 'var ctx=document.getElementById("trendChart");'
-    + 'if(!ctx)return;'
-    + 'var init7=ALL_LABELS.slice(-7);var init7d=ALL_DATA.slice(-7);'
-    + 'trendChart=new Chart(ctx,{'
+    + 'var cvs=document.getElementById("trendChart");'
+    + 'if(!cvs)return;'
+    + 'var ctx=cvs.getContext("2d");'
+    + 'var grad=ctx.createLinearGradient(0,0,0,220);'
+    + 'grad.addColorStop(0,"rgba(58,125,44,0.18)");'
+    + 'grad.addColorStop(0.6,"rgba(58,125,44,0.05)");'
+    + 'grad.addColorStop(1,"rgba(58,125,44,0)");'
+    + 'var init=ALL_LABELS.slice(-14);var initd=ALL_DATA.slice(-14);'
+    + 'trendChart=new Chart(cvs,{'
     + 'type:"line",'
-    + 'data:{labels:init7,datasets:[{'
-    + 'label:"Kunjungan",data:init7d,'
-    + 'borderColor:"#3a7d2c",backgroundColor:"rgba(58,125,44,0.08)",'
-    + 'tension:0.4,fill:true,pointBackgroundColor:"#3a7d2c",'
-    + 'pointRadius:4,pointHoverRadius:6,borderWidth:2'
-    + '}]},'
+    + 'data:{labels:init,datasets:[{label:"Kunjungan",data:initd,'
+    + 'borderColor:"#3a7d2c",backgroundColor:grad,'
+    + 'tension:0.45,fill:true,'
+    + 'pointBackgroundColor:"#fff",pointBorderColor:"#3a7d2c",pointBorderWidth:2,'
+    + 'pointRadius:5,pointHoverRadius:7,'
+    + 'pointHoverBackgroundColor:"#3a7d2c",pointHoverBorderColor:"#fff",pointHoverBorderWidth:2,'
+    + 'borderWidth:2.5}]},'
     + 'options:{responsive:true,maintainAspectRatio:false,'
-    + 'plugins:{legend:{display:false}},'
-    + 'scales:{x:{grid:{display:false},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78"}},'
-    + 'y:{beginAtZero:true,grid:{color:"#f0f3ef"},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78",stepSize:1}}}'
+    + 'interaction:{mode:"index",intersect:false},'
+    + 'plugins:{legend:{display:false},tooltip:{enabled:false,external:ttExternal}},'
+    + 'scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78"}},'
+    + 'y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.04)"},border:{display:false},ticks:{font:{size:11,family:"DM Sans"},color:"#7a8c78",stepSize:1,padding:8}}}'
     + '}});'
+    + '})();'
+    + 'function ttExternal(context){'
+    + '  var tt=document.getElementById("chartTooltip");'
+    + '  var tip=context.tooltip;'
+    + '  if(tip.opacity===0){tt.style.display="none";return;}'
+    + '  var dp=tip.dataPoints[0];'
+    + '  document.getElementById("ttDate").textContent=dp.label;'
+    + '  document.getElementById("ttVal").textContent=dp.raw+" kunjungan";'
+    + '  tt.style.display="block";'
+    + '  tt.style.left=tip.caretX-tt.offsetWidth/2+"px";'
+    + '  tt.style.top=tip.caretY-tt.offsetHeight-12+"px";'
+    + '}'
+    + 'function setPeriod(n,btn){'
+    + '  document.querySelectorAll(".period-btn").forEach(function(b){b.classList.remove("active");});'
+    + '  btn.classList.add("active");'
+    + '  if(n===0)return;'
+    + '  var to=ALL_YMD[ALL_YMD.length-1];'
+    + '  var from=ALL_YMD[Math.max(0,ALL_YMD.length-n)];'
+    + '  document.getElementById("dateFrom").value=from;'
+    + '  document.getElementById("dateTo").value=to;'
+    + '  applyDateRange();'
+    + '}'
+    + '(function(){'
+    + '  var grid=document.getElementById("hmGrid");'
+    + '  if(!grid||!ALL_HM)return;'
+    + '  var cls=["","lv1","lv2","lv3","lv4"];'
+    + '  ALL_HM.forEach(function(v){'
+    + '    var c=document.createElement("div");'
+    + '    c.className="hm-cell"+(v>0?" "+cls[Math.min(v,4)]:"");'
+    + '    c.title=v+" kunjungan";'
+    + '    grid.appendChild(c);'
+    + '  });'
     + '})();'
     + 'function fmtDate(s){var p=s.split("-");return p[2]+"-"+p[1]+"-"+p[0];}'
     + 'function applyDateRange(){'
@@ -908,10 +1030,10 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '  var sub=document.getElementById("chartSub");'
     + '  if(sub)sub.textContent=fmtDate(from)+" s/d "+fmtDate(to)+" — total "+total+" kunjungan";'
     + '  var mb=document.getElementById("metaBest");if(mb)mb.textContent=best;'
-    + '  var ma=document.getElementById("metaAvg");if(ma)ma.textContent=avg+" kunjungan";'
-    + '  var mt=document.getElementById("metaTotal");if(mt)mt.textContent=total+" kunjungan";'
+    + '  var ma=document.getElementById("metaAvg");if(ma)ma.textContent=avg;'
+    + '  var mt=document.getElementById("metaTotal");if(mt)mt.textContent=total;'
     + '}'
-    + 'applyDateRange();'
+    + 'setPeriod(14,document.querySelector(".period-btn.active"));'
     + '<\/script>'
     + '<script src="/dashboard.js?v=21"><\/script>'
     + '</body></html>';
