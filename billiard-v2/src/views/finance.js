@@ -493,7 +493,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div><div class=\"page-title\">Keuangan</div>"
     + "<div class=\"page-sub\">Laporan pemasukan, pengeluaran &amp; saldo — " + bulanLabel + "</div></div>"
     + "<div class=\"topbar-actions\">"
-    + "<a href=\"/keuangan/kategori"\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
+    + "<a href=\"/keuangan/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
     + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
     + "</div></div>"
 
@@ -955,7 +955,7 @@ export function financeFormPage(token, kategoriList = []) {
     + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
     + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/keuangan"\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
+    + "<a href=\"/keuangan\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Tambah Transaksi</h1>"
     + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Catat pemasukan atau pengeluaran</p>"
 
@@ -1043,7 +1043,7 @@ export function financeEditPage(token, t, kategoriList = []) {
     + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
     + "</head><body>"
     + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/keuangan"\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
+    + "<a href=\"/keuangan\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
     + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Edit Transaksi</h1>"
     + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Ubah data transaksi</p>"
 
@@ -1215,7 +1215,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
 
     // Breadcrumb
     + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
-    + "<a href=\"/keuangan"\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
+    + "<a href=\"/keuangan\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
     + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "</div>"
 
@@ -1333,7 +1333,7 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
         + katSelect("kategori", m.kategori || "minuman", "width:140px")
         + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:90px\" oninput=\"fmtH(this)\">"
         + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 14px;font-size:13px\">Simpan</button>"
-        + "<a href=\"/keuangan/menu"\" class=\"btn-del\">Batal</a>"
+        + "<a href=\"/keuangan/menu\" class=\"btn-del\">Batal</a>"
         + "</form></div>";
     }
     return "<div class=\"kat-row\">"
@@ -1391,7 +1391,7 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "<div class=\"page\">"
 
     + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
-    + "<a href=\"/keuangan"\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
+    + "<a href=\"/keuangan\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
     + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "</div>"
 
