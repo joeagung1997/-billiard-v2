@@ -47,6 +47,8 @@ const rowToTransaksi = (row) => ({
   keterangan: row.keterangan  ?? "",
   jumlah:     Number(row.jumlah),
   createdAt:  row.created_at  ?? null,
+  voidedAt:   row.voided_at   ?? null,
+  voidReason: row.void_reason ?? "",
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -198,17 +200,18 @@ export const deleteTransaksi = async (id) => {
   await query("DELETE FROM transaksi WHERE id = $1", [id]);
 };
 
-export const updateTransaksi = async (item) => {
-  await query(
-    `UPDATE transaksi SET tanggal=$1, jam=$2, jenis=$3, waktu=$4, kategori=$5, keterangan=$6, jumlah=$7
-     WHERE id=$8`,
-    [
-      item.tanggal, item.jam ?? "",
-      item.jenis, item.waktu ?? "siang",
-      item.kategori ?? "", item.keterangan ?? "",
-      item.jumlah, item.id,
-    ]
+// Soft void: tandai transaksi sebagai dibatalkan dengan alasan.
+// Transaksi tetap tersimpan untuk audit trail, tapi dikecualikan dari
+// perhitungan stats (pemasukan/pengeluaran/saldo). Idempotent —
+// voiding transaksi yang sudah voided tidak menimpa data lama.
+export const voidTransaksi = async (id, reason) => {
+  const res = await query(
+    `UPDATE transaksi
+       SET voided_at = NOW(), void_reason = $2
+     WHERE id = $1 AND voided_at IS NULL`,
+    [id, (reason ?? "").trim().slice(0, 200)]
   );
+  return res.rowCount > 0;
 };
 
 // ── Kategori ──────────────────────────────────────────────────

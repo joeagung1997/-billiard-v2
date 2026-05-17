@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=15\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=16\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -459,20 +459,25 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ? sorted.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
     : sorted;
 
-  // Summary
-  const pemasukan   = filtered.filter((t) => t.jenis === "pemasukan");
-  const pengeluaran = filtered.filter((t) => t.jenis === "pengeluaran");
+  // Voided transaksi DIKECUALIKAN dari semua perhitungan stats.
+  // Tetap ditampilkan di tabel dengan styling khusus.
+  const activeFiltered = filtered.filter((t) => !t.voidedAt);
+  const voidedCount    = filtered.length - activeFiltered.length;
+
+  // Summary (exclude voided)
+  const pemasukan   = activeFiltered.filter((t) => t.jenis === "pemasukan");
+  const pengeluaran = activeFiltered.filter((t) => t.jenis === "pengeluaran");
   const totalIn     = pemasukan.reduce((s, t) => s + t.jumlah, 0);
   const totalOut    = pengeluaran.reduce((s, t) => s + t.jumlah, 0);
   const saldo       = totalIn - totalOut;
   const margin      = totalIn > 0 ? ((saldo / totalIn) * 100).toFixed(1) : "0";
 
-  // Perbandingan bulan lalu untuk badge "vs Apr 2026"
+  // Perbandingan bulan lalu untuk badge "vs Apr 2026" (exclude voided)
   const prevDate    = new Date(bFilter + "-01");
   prevDate.setMonth(prevDate.getMonth() - 1);
   const prevBulan   = prevDate.getFullYear() + "-" + String(prevDate.getMonth() + 1).padStart(2, "0");
   const prevLabel   = prevDate.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
-  const prevIn      = transaksi.filter((t) => t.tanggal.slice(0, 7) === prevBulan && t.jenis === "pemasukan")
+  const prevIn      = transaksi.filter((t) => !t.voidedAt && t.tanggal.slice(0, 7) === prevBulan && t.jenis === "pemasukan")
                                .reduce((s, t) => s + t.jumlah, 0);
   const inDelta     = prevIn > 0 ? Math.round(((totalIn - prevIn) / prevIn) * 100) : 0;
 
@@ -493,10 +498,10 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     "<option value=\"" + escHtml(k) + "\">" + escHtml(k) + "</option>"
   ).join("");
 
-  // ── Weekly breakdown for bar chart ───────────────────────────
+  // ── Weekly breakdown for bar chart (exclude voided) ─────────
   const weekIn  = [0, 0, 0, 0];
   const weekOut = [0, 0, 0, 0];
-  filtered.forEach(function(t) {
+  activeFiltered.forEach(function(t) {
     const day = parseInt((t.tanggal || "").split("-")[2] || "1", 10);
     const wi  = Math.min(Math.floor((day - 1) / 7), 3);
     if (t.jenis === "pemasukan")    weekIn[wi]  += t.jumlah;
@@ -529,23 +534,36 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   // ── Transaction rows ────────────────────────────────────────
   const makeRow = function(t) {
     const isIn    = t.jenis === "pemasukan";
+    const isVoid  = !!t.voidedAt;
     const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
       day: "numeric", month: "short", year: "numeric",
     });
-    return "<div class=\"fin-row\">"
+    const rowCls   = "fin-row" + (isVoid ? " trx-voided" : "");
+    const reasonHt = isVoid
+      ? "<div class=\"trx-void-reason\" title=\"Dibatalkan: " + escHtml(t.voidReason || "—") + "\">"
+        + "<i class=\"ti ti-ban\"></i> Dibatalkan: " + escHtml(t.voidReason || "—") + "</div>"
+      : "";
+    const aksiHt = isVoid
+      ? "<span class=\"trx-void-badge\">VOID</span>"
+      : "<button type=\"button\" class=\"icon-btn danger\" title=\"Batalkan transaksi\""
+        + " data-id=\"" + escHtml(t.id) + "\""
+        + " data-desc=\"" + escHtml(t.keterangan || t.kategori || "(tanpa keterangan)") + "\""
+        + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
+        + " onclick=\"openVoidModal(this)\">"
+        + "<i class=\"ti ti-ban\"></i></button>";
+    return "<div class=\"" + rowCls + "\">"
       + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">" + escHtml(t.keterangan || "—") + "</div>"
       + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "") + "</div>"
+      + reasonHt
       + "</div>"
       + "<div class=\"fr-td\"><span class=\"cat-tag\">" + escHtml(t.kategori || "—") + "</span></div>"
       + "<div class=\"fr-td right " + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
       + "<div class=\"fr-td\"><span class=\"t-badge " + (isIn ? "in" : "out") + "\">"
       + "<i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>"
       + (isIn ? "Masuk" : "Keluar") + "</span></div>"
-      + "<div class=\"fr-td right fr-act\">"
-      + "<a href=\"/operasional/edit?id=" + t.id + "\" class=\"icon-btn\" title=\"Edit\"><i class=\"ti ti-edit\"></i></a>"
-      + "</div>"
+      + "<div class=\"fr-td right fr-act\">" + aksiHt + "</div>"
       + "</div>";
   };
 
@@ -661,8 +679,8 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-stat-card trx\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Transaksi</div>"
     + "<div class=\"fin-stat-icon trx\"><i class=\"ti ti-receipt\"></i></div></div>"
-    + "<div class=\"fin-stat-val\">" + filtered.length + "</div>"
-    + "<div class=\"fin-stat-foot\">Total catatan</div></div>"
+    + "<div class=\"fin-stat-val\">" + activeFiltered.length + "</div>"
+    + "<div class=\"fin-stat-foot\">" + (voidedCount > 0 ? voidedCount + " dibatalkan" : "Total catatan aktif") + "</div></div>"
 
     + "</div>"
 
@@ -730,7 +748,9 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + rows
     + "<div class=\"fin-tbl-footer\">"
     + "<div class=\"fin-tf-left\">"
-    + "<span>" + sortedTbl.length + " transaksi</span>"
+    + "<span>" + sortedTbl.length + " transaksi"
+    + (voidedCount > 0 ? " <span style=\"color:#a32d2d\">(" + voidedCount + " dibatalkan)</span>" : "")
+    + "</span>"
     + "<span style=\"color:#e2e8e0\">|</span>"
     + "<span>Saldo: <span class=\"fin-tf-saldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
     + "</div>"
@@ -868,6 +888,40 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
     + "</div>"
 
+    // ── Modal Void Transaksi ────────────────────────────────────
+    + "<div class=\"overlay\" id=\"voidOverlay\" onclick=\"if(event.target===this)closeVoidModal()\">"
+    + "<div class=\"over-modal\" style=\"width:420px\">"
+    + "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:14px\">"
+    + "<div style=\"width:36px;height:36px;border-radius:9px;background:#fcebeb;display:flex;align-items:center;justify-content:center;color:#a32d2d\"><i class=\"ti ti-ban\" style=\"font-size:18px\"></i></div>"
+    + "<div><div style=\"font-size:16px;font-weight:600;color:#1a2318\">Batalkan Transaksi</div>"
+    + "<div style=\"font-size:11px;color:#7a8c78;margin-top:1px\">Tidak bisa dibatalkan kembali</div></div>"
+    + "</div>"
+    + "<div style=\"background:#f9fbf8;border:1px solid #e2e8e0;border-radius:9px;padding:12px 14px;margin-bottom:14px\">"
+    + "<div style=\"display:flex;justify-content:space-between;gap:12px;margin-bottom:6px\">"
+    + "<span style=\"font-size:11px;color:#7a8c78;text-transform:uppercase;letter-spacing:.08em\">Keterangan</span>"
+    + "<span id=\"voidDesc\" style=\"font-size:13px;color:#1a2318;font-weight:500;text-align:right\">—</span>"
+    + "</div>"
+    + "<div style=\"display:flex;justify-content:space-between;gap:12px\">"
+    + "<span style=\"font-size:11px;color:#7a8c78;text-transform:uppercase;letter-spacing:.08em\">Jumlah</span>"
+    + "<span id=\"voidAmount\" style=\"font-size:14px;font-weight:700;color:#1a2318;font-family:'DM Mono',monospace\">—</span>"
+    + "</div>"
+    + "</div>"
+    + "<form id=\"voidForm\" action=\"/operasional/void\" method=\"post\">"
+    + "<input type=\"hidden\" name=\"id\" id=\"voidId\">"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7a8c78;margin-bottom:8px;display:block\">"
+    + "Alasan Pembatalan <span style=\"color:#a32d2d;text-transform:none;letter-spacing:0\">*</span></label>"
+    + "<input class=\"finp\" type=\"text\" name=\"reason\" id=\"voidReason\" required maxlength=\"200\""
+    + " placeholder=\"contoh: salah input nominal, kategori salah, ...\""
+    + " style=\"width:100%;padding:10px 12px;border:1.5px solid #e2e8e0;border-radius:9px;font-size:13px;font-family:inherit;color:#1a2318;outline:none;background:#fff\">"
+    + "<div style=\"display:flex;justify-content:flex-end;gap:8px;margin-top:16px\">"
+    + "<button type=\"button\" class=\"fin-btn-back\" onclick=\"closeVoidModal()\">Tutup</button>"
+    + "<button type=\"submit\" style=\"display:flex;align-items:center;gap:6px;padding:9px 16px;background:#a32d2d;border:none;border-radius:9px;font-size:13px;color:#fff;cursor:pointer;font-weight:600;font-family:inherit\">"
+    + "<i class=\"ti ti-ban\" style=\"font-size:14px\"></i> Konfirmasi Batalkan</button>"
+    + "</div>"
+    + "</form>"
+    + "</div>"
+    + "</div>"
+
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"><\/script>"
     + "<script>"
     + "const WIZ_MENU_OPTS=" + safeJson("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
@@ -926,6 +980,14 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "r.style.display=txt.indexOf(q)>=0?'':'none';});}"
     + "function openTrxModal(){document.getElementById('trxOverlay').classList.add('open');wizGoTo(1);}"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
+    + "function openVoidModal(btn){"
+    + "document.getElementById('voidId').value=btn.dataset.id;"
+    + "document.getElementById('voidDesc').textContent=btn.dataset.desc;"
+    + "document.getElementById('voidAmount').textContent=btn.dataset.amount;"
+    + "document.getElementById('voidReason').value='';"
+    + "document.getElementById('voidOverlay').classList.add('open');"
+    + "setTimeout(function(){document.getElementById('voidReason').focus();},150);}"
+    + "function closeVoidModal(){document.getElementById('voidOverlay').classList.remove('open');}"
     + "var wizS={step:1,tipe:'income',act:'billiard',waktu:'siang'};"
     + "function wizSetTipe(t){wizS.tipe=t;"
     + "document.getElementById('wiz-income').className='fin-tog-btn'+(t==='income'?' sel-income':'');"
@@ -1132,98 +1194,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "})();"
     + "</script>"
     + buildFinanceBottomNav()
-    + "</body></html>";
-}
-
-// ── Form edit transaksi ───────────────────────────────────────
-export function financeEditPage(token, t, kategoriList = []) {
-  const isIn    = t.jenis === "pemasukan";
-  const isSiang = (t.waktu ?? "siang") === "siang";
-
-  const makeOpts = (list, selected) =>
-    list.map((k) => "<option" + (k.nama === selected ? " selected" : "") + ">" + escHtml(k.nama) + "</option>").join("");
-
-  const grpIn  = makeOpts(kategoriList.filter((k) => k.jenis === "pemasukan"),  isIn  ? t.kategori : "");
-  const grpOut = makeOpts(kategoriList.filter((k) => k.jenis === "pengeluaran"), !isIn ? t.kategori : "");
-
-  return docHead("Edit Transaksi")
-    + "<style>body{display:flex;align-items:flex-start;justify-content:center;padding:20px}</style>"
-    + "</head><body>"
-    + "<div class=\"form-card\" style=\"margin-top:20px\">"
-    + "<a href=\"/operasional\" class=\"back-link\" style=\"margin-bottom:18px;display:inline-flex\">← Kembali</a>"
-    + "<h1 style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Edit Transaksi</h1>"
-    + "<p style=\"font-size:12px;color:var(--txt3);margin-bottom:20px\">Ubah data transaksi</p>"
-
-    + "<form action=\"/operasional/edit\" method=\"post\" id=\"frm\">"
-    + ""
-    + "<input type=\"hidden\" name=\"id\" value=\"" + t.id + "\">"
-
-    // Jenis
-    + "<div class=\"fw\"><label>Jenis</label>"
-    + "<div class=\"jenis-toggle\">"
-    + "<div class=\"jenis-btn" + (isIn ? " active-in" : "") + "\" id=\"btnIn\" onclick=\"setJenis('pemasukan')\">↑ Pemasukan</div>"
-    + "<div class=\"jenis-btn" + (!isIn ? " active-out" : "") + "\" id=\"btnOut\" onclick=\"setJenis('pengeluaran')\">↓ Pengeluaran</div>"
-    + "</div>"
-    + "<input type=\"hidden\" name=\"jenis\" id=\"jenis\" value=\"" + t.jenis + "\">"
-    + "</div>"
-
-    // Waktu
-    + "<div class=\"fw\"><label>Waktu</label>"
-    + "<div class=\"jenis-toggle\">"
-    + "<div class=\"jenis-btn" + (isSiang ? " active-in" : "") + "\" id=\"btnSiang\" onclick=\"setWaktu('siang')\">☀️ Siang</div>"
-    + "<div class=\"jenis-btn" + (!isSiang ? " active-in" : "") + "\" id=\"btnMalam\" onclick=\"setWaktu('malam')\">🌙 Malam</div>"
-    + "</div>"
-    + "<input type=\"hidden\" name=\"waktu\" id=\"waktu\" value=\"" + (t.waktu ?? "siang") + "\">"
-    + "</div>"
-
-    // Tanggal + Jam
-    + "<div class=\"fw\"><label>Tanggal &amp; Jam</label>"
-    + "<input type=\"datetime-local\" name=\"datetime\" value=\"" + t.tanggal + "T" + (t.jam || "00:00") + "\" required>"
-    + "</div>"
-
-    // Kategori
-    + "<div class=\"fw\"><label>Kategori</label>"
-    + "<select name=\"kategori\" class=\"inp\" id=\"kategori\">"
-    + "<optgroup label=\"Pemasukan\" id=\"grpIn\"" + (!isIn ? " style=\"display:none\"" : "") + ">"
-    + grpIn + "</optgroup>"
-    + "<optgroup label=\"Pengeluaran\" id=\"grpOut\"" + (isIn ? " style=\"display:none\"" : "") + ">"
-    + grpOut + "</optgroup>"
-    + "</select></div>"
-
-    // Keterangan
-    + "<div class=\"fw\"><label>Keterangan</label>"
-    + "<input type=\"text\" name=\"keterangan\" value=\"" + escHtml(t.keterangan) + "\" autocomplete=\"off\"></div>"
-
-    // Jumlah (auto-format)
-    + "<div class=\"fw\"><label>Jumlah (Rp)</label>"
-    + "<input type=\"text\" name=\"jumlah\" id=\"jumlahDisp\" inputmode=\"numeric\""
-    + " value=\"" + String(t.jumlah).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "\""
-    + " autocomplete=\"off\" oninput=\"fmtJumlah(this)\" required>"
-    + "</div>"
-
-    + "<button class=\"btn-submit\" type=\"submit\">Simpan Perubahan</button>"
-    + "</form></div>"
-
-    + "<script>"
-    + "function fmtJumlah(el){"
-    + "var raw=el.value.replace(/\\D/g,'');"
-    + "el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
-    + "}"
-    + "function setWaktu(w){"
-    + "document.getElementById('waktu').value=w;"
-    + "var s=w==='siang';"
-    + "document.getElementById('btnSiang').className='jenis-btn'+(s?' active-in':'');"
-    + "document.getElementById('btnMalam').className='jenis-btn'+(!s?' active-in':'');"
-    + "}"
-    + "function setJenis(j){"
-    + "document.getElementById('jenis').value=j;"
-    + "var isIn=j==='pemasukan';"
-    + "document.getElementById('btnIn').className='jenis-btn'+(isIn?' active-in':'');"
-    + "document.getElementById('btnOut').className='jenis-btn'+(!isIn?' active-out':'');"
-    + "document.getElementById('grpIn').style.display=isIn?'':'none';"
-    + "document.getElementById('grpOut').style.display=isIn?'none':'';"
-    + "document.getElementById('kategori').selectedIndex=0;}"
-    + "</script>"
     + "</body></html>";
 }
 

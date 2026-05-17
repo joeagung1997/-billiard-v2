@@ -3,7 +3,7 @@
 
 import { Router } from "express";
 import {
-  readTransaksi, appendTransaksi, updateTransaksi,
+  readTransaksi, appendTransaksi, voidTransaksi,
   readKategori, addKategori, deleteKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
@@ -11,7 +11,7 @@ import {
 import { CONFIG } from "../config.js";
 import {
   financeDashboard,
-  financeEditPage, financeKategoriPage, financeMenuPage,
+  financeKategoriPage, financeMenuPage,
 } from "../views/finance.js";
 
 const router = Router();
@@ -73,47 +73,20 @@ router.post("/tambah", async (req, res) => {
   }
 });
 
-// ── GET /operasional/edit — form edit transaksi ──────────────────
-router.get("/edit", async (req, res) => {
-  const id = (req.query.id ?? "").trim();
-  if (!id) return res.redirect("/operasional");
+// ── POST /operasional/void — soft void transaksi (immutable) ────────
+// Transaksi tidak boleh di-edit. Untuk koreksi: void yg salah +
+// input transaksi baru yg benar. Audit trail tetap utuh.
+router.post("/void", async (req, res) => {
+  const id     = (req.body.id ?? "").trim();
+  const reason = (req.body.reason ?? "").trim();
+
+  if (!id || !reason) return res.redirect("/operasional");
 
   try {
-    const [semua, kategori] = await Promise.all([readTransaksi(), readKategori()]);
-    const t = semua.find((x) => x.id === id);
-    if (!t) return res.redirect("/operasional");
-    res.send(financeEditPage("", t, kategori));
-  } catch (err) {
-    console.error("[FINANCE] edit GET error:", err.message);
-    res.redirect("/operasional");
-  }
-});
-
-// ── POST /operasional/edit — simpan perubahan transaksi ──────────
-router.post("/edit", async (req, res) => {
-  const { id, jenis, datetime, kategori, keterangan, jumlah } = req.body;
-  const tanggal = (datetime ?? "").slice(0, 10);
-  const jam     = (datetime ?? "").slice(11, 16);
-  const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
-
-  if (!id || !jenis || !tanggal || !kategori || jumlahNum <= 0) {
-    return res.redirect("/operasional");
-  }
-
-  try {
-    await updateTransaksi({
-      id,
-      tanggal:    tanggal.slice(0, 10),
-      jam:        (jam ?? "").slice(0, 5),
-      jenis,
-      waktu:      ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
-      kategori:   (kategori ?? "").trim(),
-      keterangan: (keterangan ?? "").trim().slice(0, 200),
-      jumlah:     jumlahNum,
-    });
+    await voidTransaksi(id, reason);
     res.redirect("/operasional");
   } catch (err) {
-    console.error("[FINANCE] edit POST error:", err.message);
+    console.error("[FINANCE] void error:", err.message);
     res.redirect("/operasional");
   }
 });

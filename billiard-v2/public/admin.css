@@ -961,8 +961,40 @@ td          { padding:10px 16px; vertical-align:middle; }
 .amt-out          { font-family:var(--ff-mono); font-weight:600; color:var(--red); }
 
 .fin-tbl-footer   { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-top:1px solid var(--border); background:#f9fbf8; }
-.fin-tf-left      { font-size:12px; color:var(--txt3); display:flex; align-items:center; gap:8px; }
+.fin-tf-left      { font-size:12px; color:var(--txt3); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .fin-tf-saldo     { font-weight:600; font-family:var(--ff-mono); }
+
+/* ── Voided transaksi (soft-void) ───────────────────────────── */
+.fin-row.trx-voided {
+  background:#fef5f5;
+  opacity:.72;
+}
+.fin-row.trx-voided:hover { background:#fcebeb; opacity:1; }
+.fin-row.trx-voided .fr-desc-title,
+.fin-row.trx-voided .amt-in,
+.fin-row.trx-voided .amt-out { text-decoration:line-through; text-decoration-color:#a32d2d; text-decoration-thickness:1.5px; }
+.fin-row.trx-voided .cat-tag { background:#fcebeb; color:#a32d2d; }
+.fin-row.trx-voided .t-badge.in,
+.fin-row.trx-voided .t-badge.out { background:#fcebeb; color:#a32d2d; }
+
+.trx-void-reason {
+  display:inline-flex; align-items:center; gap:4px;
+  margin-top:4px; padding:2px 8px;
+  background:#fcebeb; color:#a32d2d;
+  border-radius:5px;
+  font-size:10px; font-weight:600;
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.trx-void-reason i { font-size:11px; flex-shrink:0; }
+.trx-void-badge {
+  display:inline-flex; align-items:center;
+  padding:3px 8px; border-radius:5px;
+  background:#a32d2d; color:#fff;
+  font-size:10px; font-weight:700; letter-spacing:.1em;
+}
+
+.icon-btn.danger { color:#a32d2d; }
+.icon-btn.danger:hover { background:#fcebeb; color:#a32d2d; }
 
 /* Responsive */
 @media (max-width:1050px) {
