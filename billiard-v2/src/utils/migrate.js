@@ -4,13 +4,14 @@
 import { query } from "./postgres.js";
 
 const DEFAULT_MENU_ITEMS = [
-  { nama: "Kopi",         harga: 5000  },
-  { nama: "Kopi Susu",   harga: 7000  },
-  { nama: "Teh Manis",   harga: 5000  },
-  { nama: "Air Mineral", harga: 3000  },
-  { nama: "Mie Instan",  harga: 8000  },
-  { nama: "Gorengan",    harga: 2000  },
-  { nama: "Rokok",       harga: 25000 },
+  { nama: "Kopi",              harga: 5000,  kategori: "minuman"        },
+  { nama: "Kopi Susu",         harga: 7000,  kategori: "minuman"        },
+  { nama: "Teh Manis",         harga: 5000,  kategori: "minuman"        },
+  { nama: "Air Mineral",       harga: 3000,  kategori: "minuman"        },
+  { nama: "Mie Instan",        harga: 8000,  kategori: "makanan"        },
+  { nama: "Gorengan",          harga: 2000,  kategori: "makanan"        },
+  { nama: "Rokok Bungkusan",   harga: 25000, kategori: "rokok_bungkusan" },
+  { nama: "Rokok Eceran",      harga: 2000,  kategori: "rokok_eceran"   },
 ];
 
 const DEFAULT_KATEGORI = [
@@ -103,11 +104,14 @@ export const runMigrations = async () => {
     );
   }
 
+  // ── Kolom kategori di menu_items (idempotent) ─────────────────
+  await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kategori TEXT DEFAULT 'minuman'`);
+
   // ── Insert default menu items (skip jika sudah ada) ──────────
   for (const m of DEFAULT_MENU_ITEMS) {
     await query(
-      `INSERT INTO menu_items (nama, harga) VALUES ($1, $2) ON CONFLICT (nama) DO NOTHING`,
-      [m.nama, m.harga]
+      `INSERT INTO menu_items (nama, harga, kategori) VALUES ($1, $2, $3) ON CONFLICT (nama) DO NOTHING`,
+      [m.nama, m.harga, m.kategori]
     );
   }
 

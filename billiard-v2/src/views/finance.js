@@ -287,11 +287,17 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const tDari    = tglDari    || "";
   const tSampai  = tglSampai  || "";
 
-  // Menu items untuk wizard Kopi/Snack
-  const menuOptsHtml = menuItems.map((m) =>
-    "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + m.harga + "\">"
-    + escHtml(m.nama) + " — Rp " + Number(m.harga).toLocaleString("id-ID") + "</option>"
-  ).join("");
+  // Menu items untuk wizard Kopi/Snack — dikelompokkan by kategori
+  const menuOptsHtml = MENU_KAT_OPTS.map((k) => {
+    const kRows = menuItems.filter((m) => (m.kategori || "minuman") === k.value);
+    if (!kRows.length) return "";
+    return "<optgroup label=\"" + k.label + "\">"
+      + kRows.map((m) =>
+          "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + m.harga + "\">"
+          + escHtml(m.nama) + " — Rp " + Number(m.harga).toLocaleString("id-ID") + "</option>"
+        ).join("")
+      + "</optgroup>";
+  }).join("");
 
   // Kategori optgroups untuk modal
   const modalGrpIn  = kategoriList.filter((k) => k.jenis === "pemasukan")
@@ -1261,31 +1267,52 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
 }
 
 // ── Kelola Menu Items ─────────────────────────────────────────
+const MENU_KAT_OPTS = [
+  { value: "minuman",         label: "Minuman"          },
+  { value: "makanan",         label: "Makanan"          },
+  { value: "rokok_bungkusan", label: "Rokok Bungkusan"  },
+  { value: "rokok_eceran",    label: "Rokok Eceran"     },
+];
+
+const katLabel = (v) => MENU_KAT_OPTS.find((o) => o.value === v)?.label ?? v;
+
+function katSelect(name, selected = "minuman", extraStyle = "") {
+  return "<select name=\"" + name + "\" class=\"cat-input\" style=\"" + extraStyle + "\">"
+    + MENU_KAT_OPTS.map((o) =>
+        "<option value=\"" + o.value + "\"" + (o.value === selected ? " selected" : "") + ">" + o.label + "</option>"
+      ).join("")
+    + "</select>";
+}
+
 export function financeMenuPage(token, items = [], hasErr = false, editItem = null) {
   const rpFmt = (n) => "Rp " + Number(n).toLocaleString("id-ID");
 
-  const makeRows = () => items.length === 0
-    ? "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada menu. Tambahkan di form kanan.</div>"
-    : items.map((m) => {
-      if (editItem && editItem.id === m.id) {
-        return "<div class=\"kat-row\" style=\"grid-template-columns:1fr auto\">"
-          + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%\">"
-          + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
-          + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
-          + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1\">"
-          + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
-          + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 14px;font-size:13px\">Simpan</button>"
-          + "<a href=\"/keuangan/menu?ftk=" + token + "\" class=\"btn-del\">Batal</a>"
-          + "</form></div>";
-      }
-      return "<div class=\"kat-row\">"
-        + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + "</div>"
-        + "<div style=\"font-size:11px;color:var(--txt3);font-family:var(--ff-mono)\">" + rpFmt(m.harga) + "</div>"
-        + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
-        + "<a href=\"/keuangan/menu?ftk=" + token + "&edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
-        + "<a href=\"/keuangan/menu/hapus?ftk=" + token + "&id=" + m.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus item ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
-        + "</div></div>";
-    }).join("");
+  // Group items by kategori
+  const groups = MENU_KAT_OPTS.map((k) => ({
+    ...k, rows: items.filter((m) => (m.kategori || "minuman") === k.value),
+  })).filter((g) => g.rows.length > 0);
+
+  const makeGroupRows = (groupRows) => groupRows.map((m) => {
+    if (editItem && editItem.id === m.id) {
+      return "<div class=\"kat-row edit-row\">"
+        + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap\">"
+        + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+        + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
+        + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:120px\">"
+        + katSelect("kategori", m.kategori || "minuman", "width:140px")
+        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:90px\" oninput=\"fmtH(this)\">"
+        + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 14px;font-size:13px\">Simpan</button>"
+        + "<a href=\"/keuangan/menu?ftk=" + token + "\" class=\"btn-del\">Batal</a>"
+        + "</form></div>";
+    }
+    return "<div class=\"kat-row\">"
+      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + "</div>"
+      + "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>"
+      + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
+      + "<a href=\"/keuangan/menu?ftk=" + token + "&edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
+      + "<a href=\"/keuangan/menu/hapus?ftk=" + token + "&id=" + m.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
+      + "</div></div>";
+  }).join("");
 
   const extraCss = [
     ".kat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
@@ -1346,18 +1373,25 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
 
     + "<div class=\"menu-grid\">"
 
-    // List card
-    + "<div class=\"kat-card\">"
-    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
-    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> Daftar Menu</div>"
-    + "<div class=\"count-chip income\">" + items.length + " item</div>"
-    + "</div></div>"
-    + "<div class=\"kat-table-head\">"
-    + "<div class=\"kat-th\">Nama</div>"
-    + "<div class=\"kat-th\">Harga</div>"
-    + "<div class=\"kat-th r\">Aksi</div>"
-    + "</div>"
-    + "<div>" + makeRows() + "</div>"
+    // Grouped list cards
+    + "<div style=\"display:flex;flex-direction:column;gap:16px\">"
+    + (groups.length === 0
+        ? "<div class=\"kat-card\"><div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Belum ada item menu. Tambahkan di sebelah kanan.</div></div>"
+        : groups.map((g) =>
+            "<div class=\"kat-card\">"
+            + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
+            + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> " + g.label + "</div>"
+            + "<div class=\"count-chip income\">" + g.rows.length + " item</div>"
+            + "</div></div>"
+            + "<div class=\"kat-table-head\">"
+            + "<div class=\"kat-th\">Nama</div>"
+            + "<div class=\"kat-th\">Harga</div>"
+            + "<div class=\"kat-th r\">Aksi</div>"
+            + "</div>"
+            + "<div>" + (g.rows.length ? makeGroupRows(g.rows) : "<div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Tidak ada item.</div>") + "</div>"
+            + "</div>"
+          ).join("")
+      )
     + "</div>"
 
     // Add form card
@@ -1369,6 +1403,10 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "<div>"
     + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Nama Item</label>"
     + "<input class=\"cat-input\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required>"
+    + "</div>"
+    + "<div>"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Kategori</label>"
+    + katSelect("kategori", "minuman")
     + "</div>"
     + "<div>"
     + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
