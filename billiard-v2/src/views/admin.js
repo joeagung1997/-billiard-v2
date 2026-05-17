@@ -548,7 +548,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     scan:     members.filter((m) => m.sudahScanHariIni).length,
     reward:   members.filter((m) => m.status === 'GRATIS').length,
     aktif:    members.filter((m) => m.totalMain > 0).length,
-    bariBaru: members.filter((m) => m.tanggalDaftar && String(m.tanggalDaftar).startsWith(curBulan)).length,
+    bariBaru: members.filter((m) => m.tanggalDaftar && new Date(m.tanggalDaftar).toISOString().startsWith(curBulan)).length,
   };
 
   const hostBase  = req.protocol + '://' + req.get('host');
@@ -1047,7 +1047,7 @@ export function memberPage({ db, token, req }) {
   const nowWibM  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   const curBulanM = nowWibM.getFullYear() + '-' + String(nowWibM.getMonth() + 1).padStart(2, '0');
   const bulanLabelM = nowWibM.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-  const memberBaruCount = members.filter((m) => m.tanggalDaftar && String(m.tanggalDaftar).startsWith(curBulanM)).length;
+  const memberBaruCount = members.filter((m) => m.tanggalDaftar && new Date(m.tanggalDaftar).toISOString().startsWith(curBulanM)).length;
 
   const dataMember = members.map((m) => {
     const d = m.tanggalScanTerakhir ? new Date(m.tanggalScanTerakhir) : null;
@@ -1065,7 +1065,7 @@ export function memberPage({ db, token, req }) {
       aktif:         m.aktif ?? false,
       tglDaftar:     m.tanggalDaftar         ? formatTanggalPendek(m.tanggalDaftar)         : '—',
       tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalJam(m.tanggalScanTerakhir)      : '—',
-      bulanScan:     m.tanggalDaftar ? String(m.tanggalDaftar).slice(0, 7) : '',
+      bulanScan:     m.tanggalDaftar ? new Date(m.tanggalDaftar).toISOString().slice(0, 7) : '',
       bonusEarnedAt: m.bonusEarnedAt ?? null,
       bonusSisaHari,
     };
