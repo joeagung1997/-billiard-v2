@@ -33,7 +33,21 @@ function docHeadV4(title) {
     + "<link rel=\"stylesheet\" href=\"/admin.css?v=8\">";
 }
 
-function buildFinanceSidebar(ftk) {
+function buildFinanceSidebar(ftk, page = "keuangan") {
+  const isKeu = page === "keuangan";
+  const isKat = page === "kategori";
+  const isMenu = page === "menu";
+  const subOpen = isKat || isMenu; // sub-menu always open on sub-pages
+
+  const subItem = (href, icon, label, active) =>
+    "<a href=\"" + href + "\" style=\""
+    + "display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;"
+    + "font-size:12px;font-weight:" + (active ? "600" : "500") + ";color:" + (active ? "var(--accent)" : "var(--txt2)") + ";"
+    + "text-decoration:none;border-radius:7px;margin:1px 8px;transition:background .15s,color .15s;"
+    + "background:" + (active ? "rgba(59,130,246,.12)" : "transparent") + ";"
+    + "\">"
+    + "<i class=\"ti " + icon + "\" style=\"font-size:13px\"></i>" + label + "</a>";
+
   return "<aside class=\"sidebar\">"
     + "<div class=\"sb-brand\">"
     + "<div class=\"sb-brand-icon\"><i class=\"ti ti-circle-number-8\"></i></div>"
@@ -44,9 +58,20 @@ function buildFinanceSidebar(ftk) {
     + "<div class=\"sb-lbl\">Menu</div>"
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\"><i class=\"ti ti-layout-dashboard\"></i> Dashboard</a>"
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\"><i class=\"ti ti-users\"></i> Kelola Member</a>"
-    + "<a href=\"/keuangan?ftk=" + ftk + "\" class=\"nav-item active\"><i class=\"ti ti-wallet\"></i> Keuangan</a>"
-    + "<a href=\"/keuangan/kategori?ftk=" + ftk + "\" class=\"nav-item\"><i class=\"ti ti-tag\"></i> Kelola Kategori</a>"
-    + "<a href=\"/keuangan/menu?ftk=" + ftk + "\" class=\"nav-item\"><i class=\"ti ti-coffee\"></i> Kelola Menu</a>"
+
+    // Keuangan parent — always active (we're always on a keuangan page)
+    + "<a href=\"/keuangan?ftk=" + ftk + "\" class=\"nav-item" + (isKeu ? " active" : "") + "\"><i class=\"ti ti-wallet\"></i> Keuangan</a>"
+
+    // Sub-menu (always visible on keuangan pages)
+    + "<div style=\"margin-bottom:2px\">"
+    + "<div style=\"display:flex;align-items:center;gap:6px;padding:4px 12px 2px 24px;\">"
+    + "<div style=\"width:1px;height:12px;background:var(--border2)\"></div>"
+    + "<span style=\"font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)\">Sub Menu</span>"
+    + "</div>"
+    + subItem("/keuangan/kategori?ftk=" + ftk, "ti-tag", "Kelola Kategori", isKat)
+    + subItem("/keuangan/menu?ftk=" + ftk, "ti-coffee", "Kelola Menu", isMenu)
+    + "</div>"
+
     + "</div>"
     + "<div class=\"sb-section\">"
     + "<div class=\"sb-lbl\">Aksi</div>"
@@ -440,7 +465,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token)
+    + buildFinanceSidebar(token, "keuangan")
     + "<div class=\"main-wrap\">"
 
     // Mobile topbar
@@ -1168,7 +1193,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token)
+    + buildFinanceSidebar(token, "kategori")
     + "<div class=\"main-wrap\">"
 
     // Mobile topbar
@@ -1349,7 +1374,7 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "<style>" + extraCss + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token)
+    + buildFinanceSidebar(token, "menu")
     + "<div class=\"main-wrap\">"
     + "<header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
