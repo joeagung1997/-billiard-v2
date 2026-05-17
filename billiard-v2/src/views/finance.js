@@ -1349,7 +1349,7 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
         + "<a href=\"/keuangan/menu\" class=\"btn-del\" style=\"height:42px;display:inline-flex;align-items:center\">Batal</a>"
         + "</form></div>";
     }
-    return "<div class=\"kat-row\">"
+    return "<div class=\"kat-row menu-row\" data-harga=\"" + m.harga + "\" data-bs=\"" + (m.best_seller ? "1" : "0") + "\">"
       + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + (m.best_seller ? bsBadge : "") + "</div>"
       + "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>"
       + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
@@ -1419,6 +1419,14 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
 
     // Grouped list cards
     + "<div style=\"display:flex;flex-direction:column;gap:16px\">"
+
+    // Filter bar
+    + "<div style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap\">"
+    + "<button id=\"btnBs\" onclick=\"toggleBsFilter()\" style=\"display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(245,158,11,.3);background:transparent;color:var(--txt2);transition:all .15s\">"
+    + "<i class=\"ti ti-star\" style=\"font-size:13px;color:#f59e0b\"></i> Best Seller</button>"
+    + "<button id=\"btnSort\" onclick=\"toggleSort()\" style=\"display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);transition:all .15s\">"
+    + "<i class=\"ti ti-arrows-sort\" style=\"font-size:13px\"></i> Harga <span id=\"sortLabel\">Default</span></button>"
+    + "</div>"
     + (groups.length === 0
         ? "<div class=\"kat-card\"><div class=\"kat-empty\"><i class=\"ti ti-basket-off\"></i>Belum ada item menu. Tambahkan di sebelah kanan.</div></div>"
         : groups.map((g) =>
@@ -1472,6 +1480,67 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
+
+    // Filter state
+    + "var bsActive=false,sortDesc=false;"
+
+    // Toggle best seller filter
+    + "function toggleBsFilter(){"
+    + "bsActive=!bsActive;"
+    + "var btn=document.getElementById('btnBs');"
+    + "btn.style.background=bsActive?'rgba(245,158,11,.15)':'transparent';"
+    + "btn.style.color=bsActive?'#f59e0b':'var(--txt2)';"
+    + "btn.style.borderColor=bsActive?'#f59e0b':'rgba(245,158,11,.3)';"
+    + "applyFilter();}"
+
+    // Toggle sort by price
+    + "function toggleSort(){"
+    + "sortDesc=!sortDesc;"
+    + "var btn=document.getElementById('btnSort');"
+    + "btn.style.background=sortDesc?'rgba(59,130,246,.12)':'transparent';"
+    + "btn.style.color=sortDesc?'var(--accent)':'var(--txt2)';"
+    + "btn.style.borderColor=sortDesc?'var(--accent)':'var(--border2)';"
+    + "document.getElementById('sortLabel').textContent=sortDesc?'Mahal → Murah':'Default';"
+    + "applyFilter();}"
+
+    // Apply filter + sort to all menu-row elements
+    + "function applyFilter(){"
+    // Sort per card container
+    + "document.querySelectorAll('.kat-card').forEach(function(card){"
+    + "var container=card.querySelector('.kat-card > div:last-child');"
+    + "if(!container)return;"
+    + "var rows=Array.from(container.querySelectorAll('.menu-row'));"
+    + "if(sortDesc){"
+    + "rows.sort(function(a,b){return parseInt(b.dataset.harga||0)-parseInt(a.dataset.harga||0);});"
+    + "rows.forEach(function(r){container.appendChild(r);});}"
+    + "else{"
+    // Restore original order (by data-original-index)
+    + "rows.sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);});"
+    + "rows.forEach(function(r){container.appendChild(r);});}"
+    // Filter visibility
+    + "rows.forEach(function(r){"
+    + "var show=!bsActive||(r.dataset.bs==='1');"
+    + "r.style.display=show?'':'none';});"
+    // Show empty state if all hidden
+    + "var visible=rows.filter(function(r){return r.style.display!=='none';}).length;"
+    + "var empty=container.querySelector('.menu-filter-empty');"
+    + "if(visible===0&&!empty){"
+    + "var e=document.createElement('div');e.className='kat-empty menu-filter-empty';"
+    + "e.innerHTML='<i class=\"ti ti-filter-off\" style=\"font-size:22px;display:block;margin-bottom:6px;opacity:.35\"></i>Tidak ada item yang cocok.';"
+    + "container.appendChild(e);}"
+    + "else if(visible>0&&empty){empty.remove();}"
+    + "});"
+    // Toggle card visibility if ALL rows are hidden by filter
+    + "document.querySelectorAll('.kat-card').forEach(function(card){"
+    + "var rows=Array.from(card.querySelectorAll('.menu-row'));"
+    + "var anyVisible=rows.length===0||rows.some(function(r){return r.style.display!=='none';});"
+    + "card.style.display=anyVisible?'':'none';});}"
+
+    // Stamp original index for stable restore
+    + "(function(){"
+    + "document.querySelectorAll('.menu-row').forEach(function(r,i){r.dataset.idx=i;});"
+    + "})();"
+
     + "</script>"
     + "</body></html>";
 }
