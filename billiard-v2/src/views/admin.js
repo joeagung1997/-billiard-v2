@@ -1065,7 +1065,7 @@ export function memberPage({ db, token, req }) {
       aktif:         m.aktif ?? false,
       tglDaftar:     m.tanggalDaftar         ? formatTanggalPendek(m.tanggalDaftar)         : '—',
       tglTerakhir:   m.tanggalScanTerakhir   ? formatTanggalJam(m.tanggalScanTerakhir)      : '—',
-      bulanScan:     d ? (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')) : '',
+      bulanScan:     m.tanggalDaftar ? String(m.tanggalDaftar).slice(0, 7) : '',
       bonusEarnedAt: m.bonusEarnedAt ?? null,
       bonusSisaHari,
     };
