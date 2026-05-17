@@ -1445,7 +1445,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
         + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
         + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\">"
         + katSelect("kategori", m.kategori || "minuman", "min-width:130px")
-        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga Ice\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+        + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"Harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
         + (isMinuman
             ? "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" placeholder=\"Harga Hot\" value=\"" + (m.harga_hot || "") + "\" style=\"width:100px\" oninput=\"fmtH(this)\">"
             : "")
@@ -1594,12 +1594,12 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + katSelect("kategori", "minuman")
     + "</div>"
     + "<div>"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Ice / Default (Rp)</label>"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
     + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7.000\" required oninput=\"fmtH(this)\">"
     + "</div>"
     + "<div id=\"addHotWrap\">"
-    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Hot (Rp) <span style=\"text-transform:none;font-weight:400;font-size:10px;color:var(--txt3)\">(opsional, khusus minuman)</span></label>"
-    + "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" id=\"addHargaHot\" placeholder=\"0 = tidak ada varian hot\" oninput=\"fmtH(this)\">"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga Varian Hot (Rp) <span style=\"text-transform:none;font-weight:400;font-size:10px;color:var(--txt3)\">(opsional — isi jika ada pilihan hot)</span></label>"
+    + "<input class=\"cat-input\" type=\"text\" name=\"harga_hot\" id=\"addHargaHot\" placeholder=\"kosongkan jika tidak ada varian hot\" oninput=\"fmtH(this)\">"
     + "</div>"
     + "<div style=\"padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md)\">"
     + bsCheckbox(false)
