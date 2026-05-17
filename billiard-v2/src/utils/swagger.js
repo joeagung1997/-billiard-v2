@@ -87,6 +87,8 @@ Endpoint \`POST /api/v1/checkin\` **tidak** memerlukan JWT — cukup sertakan \`
           kategori:   { type: "string",  example: "Sewa Meja" },
           keterangan: { type: "string",  example: "Meja 3 - 2 jam" },
           jumlah:     { type: "integer", example: 50000 },
+          voidedAt:   { type: "string",  format: "date-time", nullable: true, description: "Timestamp jika transaksi sudah dibatalkan (soft void)" },
+          voidReason: { type: "string",  example: "", description: "Alasan pembatalan, kosong jika belum dibatalkan" },
         },
       },
       TransaksiInput: {
@@ -362,29 +364,32 @@ Endpoint \`POST /api/v1/checkin\` **tidak** memerlukan JWT — cukup sertakan \`
       },
     },
 
-    "/transaksi/{id}": {
-      put: {
+    "/transaksi/{id}/void": {
+      post: {
         tags: ["Keuangan"],
-        summary: "Update transaksi",
+        summary: "Batalkan (soft void) transaksi",
+        description: "Transaksi tidak boleh di-edit atau di-hard-delete. Untuk koreksi, void transaksi yang salah lalu POST /transaksi baru. Voided transaksi tetap tersimpan untuk audit trail tapi dikecualikan dari stats keuangan.",
         security: [{ BearerAuth: [] }],
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/TransaksiInput" } } },
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["reason"],
+                properties: {
+                  reason: { type: "string", maxLength: 200, example: "Salah input nominal" },
+                },
+              },
+            },
+          },
         },
         responses: {
-          200: { description: "Transaksi berhasil diupdate", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Transaksi" } } } } } },
+          200: { description: "Transaksi berhasil dibatalkan", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" }, reason: { type: "string" } } } } } },
+          400: { description: "Reason tidak diisi", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
           404: { description: "Transaksi tidak ditemukan", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
-        },
-      },
-      delete: {
-        tags: ["Keuangan"],
-        summary: "Hapus transaksi",
-        security: [{ BearerAuth: [] }],
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
-        responses: {
-          200: { description: "Transaksi berhasil dihapus", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } } },
-          404: { description: "Transaksi tidak ditemukan", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          409: { description: "Transaksi sudah dibatalkan sebelumnya", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
     },

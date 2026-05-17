@@ -5,7 +5,7 @@ import { Router } from "express";
 import {
   readDB, readLog, readTransaksi, readKategori,
   saveMember, deleteMember, createMember, findMember, findMemberIndex,
-  appendLog, appendTransaksi, updateTransaksi, deleteTransaksi,
+  appendLog, appendTransaksi, voidTransaksi,
   addKategori, deleteKategori, checkBonusExpiry,
 } from "../utils/db.js";
 import { requireApiAuth, signToken } from "../middleware/apiAuth.js";
@@ -335,58 +335,38 @@ router.post("/transaksi", requireApiAuth(["finance", "admin"]), async (req, res)
   }
 });
 
-// ── PUT /api/v1/transaksi/:id — update transaksi ─────────────
-router.put("/transaksi/:id", requireApiAuth(["finance", "admin"]), async (req, res) => {
+// Transaksi sekarang immutable — tidak ada PUT (edit) atau DELETE (hard delete).
+// Untuk koreksi, void transaksi yg salah lalu POST transaksi baru yg benar.
+
+// ── POST /api/v1/transaksi/:id/void — soft void transaksi ─────────
+router.post("/transaksi/:id/void", requireApiAuth(["finance", "admin"]), async (req, res) => {
   try {
     const { id } = req.params;
-    const { jenis, tanggal, jam = "", waktu = "siang", kategori, keterangan = "", jumlah } = req.body ?? {};
+    const reason = (req.body?.reason ?? "").trim();
 
-    if (!jenis || !tanggal || !kategori || !jumlah) {
-      return err(res, "Field 'jenis', 'tanggal', 'kategori', 'jumlah' wajib diisi.");
-    }
-    const jumlahNum = parseInt(jumlah);
-    if (!jumlahNum || jumlahNum <= 0) return err(res, "Field 'jumlah' harus angka positif.");
+    if (!reason) return err(res, "Field 'reason' wajib diisi (alasan pembatalan).");
 
-    // Cek transaksi ada
     const semua = await readTransaksi();
-    if (!semua.find((t) => t.id === id)) {
-      return err(res, `Transaksi '${id}' tidak ditemukan.`, 404);
-    }
+    const t = semua.find((x) => x.id === id);
+    if (!t) return err(res, `Transaksi '${id}' tidak ditemukan.`, 404);
+    if (t.voidedAt) return err(res, `Transaksi '${id}' sudah dibatalkan sebelumnya.`, 409);
 
-    const item = {
-      id,
-      tanggal:    tanggal.slice(0, 10),
-      jam:        jam.slice(0, 5),
-      jenis,
-      waktu:      ["siang", "malam"].includes(waktu) ? waktu : "siang",
-      kategori:   kategori.trim(),
-      keterangan: keterangan.trim().slice(0, 200),
-      jumlah:     jumlahNum,
-    };
-
-    await updateTransaksi(item);
-    return ok(res, { data: item });
+    const ok2 = await voidTransaksi(id, reason);
+    if (!ok2) return err(res, "Gagal void transaksi.", 500);
+    return ok(res, { message: `Transaksi '${id}' berhasil dibatalkan.`, reason });
   } catch (e) {
-    console.error("[API] PUT /transaksi/:id:", e.message);
-    return err(res, "Gagal update transaksi.", 500);
+    console.error("[API] POST /transaksi/:id/void:", e.message);
+    return err(res, "Gagal void transaksi.", 500);
   }
 });
 
-// ── DELETE /api/v1/transaksi/:id — hapus transaksi ───────────
-router.delete("/transaksi/:id", requireApiAuth(["finance", "admin"]), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const semua = await readTransaksi();
-    if (!semua.find((t) => t.id === id)) {
-      return err(res, `Transaksi '${id}' tidak ditemukan.`, 404);
-    }
-    await deleteTransaksi(id);
-    return ok(res, { message: `Transaksi '${id}' berhasil dihapus.` });
-  } catch (e) {
-    console.error("[API] DELETE /transaksi/:id:", e.message);
-    return err(res, "Gagal hapus transaksi.", 500);
-  }
-});
+// ── PUT/DELETE /transaksi/:id — DEPRECATED (transaksi immutable) ──
+router.put("/transaksi/:id", requireApiAuth(["finance", "admin"]), (_req, res) =>
+  err(res, "Transaksi tidak boleh di-edit. Gunakan POST /transaksi/:id/void lalu POST /transaksi untuk koreksi.", 405)
+);
+router.delete("/transaksi/:id", requireApiAuth(["finance", "admin"]), (_req, res) =>
+  err(res, "Hard delete tidak diizinkan. Gunakan POST /transaksi/:id/void.", 405)
+);
 
 // ── GET /api/v1/kategori ─────────────────────────────────────
 router.get("/kategori", requireApiAuth(["finance", "admin"]), async (req, res) => {
