@@ -96,12 +96,15 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);
   await query(`ALTER TABLE members   ADD COLUMN IF NOT EXISTS bonus_earned_at TIMESTAMPTZ`);
 
-  // ── Insert default kategori (skip jika sudah ada) ──────────
-  for (const k of DEFAULT_KATEGORI) {
-    await query(
-      `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
-      [k.nama, k.jenis]
-    );
+  // ── Insert default kategori hanya jika tabel masih kosong ───
+  const katCount = await query("SELECT COUNT(*) FROM kategori");
+  if (parseInt(katCount.rows[0].count) === 0) {
+    for (const k of DEFAULT_KATEGORI) {
+      await query(
+        `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
+        [k.nama, k.jenis]
+      );
+    }
   }
 
   // ── Kolom tambahan menu_items (idempotent) ───────────────────────
@@ -119,12 +122,15 @@ export const runMigrations = async () => {
     )
   `);
 
-  // ── Insert default menu items (skip jika sudah ada) ──────────
-  for (const m of DEFAULT_MENU_ITEMS) {
-    await query(
-      `INSERT INTO menu_items (nama, harga, kategori) VALUES ($1, $2, $3) ON CONFLICT (nama) DO NOTHING`,
-      [m.nama, m.harga, m.kategori]
-    );
+  // ── Insert default menu items hanya jika tabel masih kosong ─
+  const menuCount = await query("SELECT COUNT(*) FROM menu_items");
+  if (parseInt(menuCount.rows[0].count) === 0) {
+    for (const m of DEFAULT_MENU_ITEMS) {
+      await query(
+        `INSERT INTO menu_items (nama, harga, kategori) VALUES ($1, $2, $3) ON CONFLICT (nama) DO NOTHING`,
+        [m.nama, m.harga, m.kategori]
+      );
+    }
   }
 
   // ── Index untuk performa query ──────────────────────────────
