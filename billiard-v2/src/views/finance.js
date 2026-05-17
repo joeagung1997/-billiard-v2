@@ -30,7 +30,7 @@ function docHeadV4(title) {
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=9\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=10\">";
 }
 
 function buildFinanceSidebar(ftk, page = "keuangan") {
@@ -472,12 +472,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const isBulanIni   = !tDari && bFilter === curBulan;
   const periodeKey   = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
 
-  const chartLabelsJson = JSON.stringify(["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]);
-  const chartInJson     = JSON.stringify(weekIn);
-  const chartOutJson    = JSON.stringify(weekOut);
-  const donutValsJson   = JSON.stringify(donutVals);
-  const donutLabelsJson = JSON.stringify(donutLabels);
-  const donutColorsJson = JSON.stringify(donutColors);
+  // Safe JSON serializer untuk embed di <script> — escape `<` agar tidak
+  // memutus tag </script> kalau data user mengandung karakter HTML.
+  const safeJson = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
+
+  const chartLabelsJson = safeJson(["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]);
+  const chartInJson     = safeJson(weekIn);
+  const chartOutJson    = safeJson(weekOut);
+  const donutValsJson   = safeJson(donutVals);
+  const donutLabelsJson = safeJson(donutLabels);
+  const donutColorsJson = safeJson(donutColors);
 
   return docHeadV4("Keuangan")
     + "</head><body>"
@@ -772,8 +776,8 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"><\/script>"
     + "<script>"
-    + "const WIZ_MENU_OPTS=" + JSON.stringify("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
-    + "const WIZ_TOPPINGS=" + JSON.stringify(toppingsByName) + ";"
+    + "const WIZ_MENU_OPTS=" + safeJson("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
+    + "const WIZ_TOPPINGS=" + safeJson(toppingsByName) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
@@ -840,7 +844,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wiz-siang').className='fin-tog-btn'+(w==='siang'?' sel-siang':'');"
     + "document.getElementById('wiz-malam').className='fin-tog-btn'+(w==='malam'?' sel-malam':'');}"
     + "var WIZ_EXTRAS_HTML="
-    + JSON.stringify(
+    + safeJson(
         '<div class="wiz-extras" style="grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px">'
         + '<div class="wiz-temp" style="display:none;flex-direction:row;gap:6px;align-items:center">'
         + '<span style="font-size:11px;color:var(--txt2)">Suhu:</span>'
