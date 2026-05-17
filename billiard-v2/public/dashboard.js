@@ -168,14 +168,25 @@ window.openMemberDetail = function(kode) {
     phoneWa.style.display = "none";
   }
 
-  // Reward count row (totalGratis)
-  const bonusRow = document.getElementById("dtBonusRow");
-  if (m.totalGratis > 0) {
-    document.getElementById("dtBonusVal").textContent = m.totalGratis + "× reward";
-    bonusRow.style.display = "";
+  // Reward stats: total didapat (lifetime) + status terbaru
+  const claimed = m.totalGratis || 0;
+  const pending = isBonus ? 1 : 0;
+  const totalReward = claimed + pending;
+  document.getElementById("dtRewardTotal").innerHTML = totalReward > 0
+    ? `<span>${totalReward}× reward</span>` + (totalReward > 0
+        ? ` <span style="color:#aaa;font-weight:400;font-size:11px">· ${claimed} diklaim, ${pending} pending</span>`
+        : "")
+    : `<span style="color:#bbb;font-weight:400">Belum ada</span>`;
+
+  let statusHtml;
+  if (pending > 0) {
+    statusHtml = `<span class="dt-status warn"><i class="ti ti-clock"></i>Belum Diklaim</span>`;
+  } else if (claimed > 0) {
+    statusHtml = `<span class="dt-status ok"><i class="ti ti-circle-check-filled"></i>Sudah Diklaim Semua</span>`;
   } else {
-    bonusRow.style.display = "none";
+    statusHtml = `<span class="dt-status muted">—</span>`;
   }
+  document.getElementById("dtRewardStatus").innerHTML = statusHtml;
 
   // Bonus expiry warning
   const warnEl = document.getElementById("dtBonusWarn");

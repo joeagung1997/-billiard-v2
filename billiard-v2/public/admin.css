@@ -1300,6 +1300,18 @@ td          { padding:10px 16px; vertical-align:middle; }
 }
 .dt-edit-hint { font-size:11px; color:#aaa; margin:5px 0 0; }
 
+/* Status badge di info row (reward, dll) */
+.dt-status {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 9px; border-radius:20px;
+  font-size:11px; font-weight:600; margin-top:2px;
+  border:1px solid transparent; white-space:nowrap;
+}
+.dt-status i { font-size:11px; }
+.dt-status.ok    { background:#eaf5ee; color:#2a7a4e; border-color:#cfe7d6; }
+.dt-status.warn  { background:#fffbf0; color:#a07010; border-color:#fde8b0; }
+.dt-status.muted { color:#bbb; }
+
 /* Responsive */
 @media (max-width:1050px) {
   .fin-stat-grid   { grid-template-columns:repeat(2,1fr); }

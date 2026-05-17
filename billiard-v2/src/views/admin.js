@@ -687,7 +687,10 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
 
   const dataLog = log.map(({ nama, aksi, detail, ts }) => ({
     nama, aksi, detail: detail ?? '',
-    tgl: new Date(ts).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
+    tgl: new Date(ts).toLocaleString('id-ID', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+    }),
   }));
 
   const now = new Date().toLocaleString('id-ID', {
@@ -833,7 +836,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=29">'
+    + '<link rel="stylesheet" href="/admin.css?v=30">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1151,7 +1154,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=26"><\/script>'
+    + '<script src="/dashboard.js?v=27"><\/script>'
     + '</body></html>';
 }
 
@@ -1218,7 +1221,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=29">'
+    + '<link rel="stylesheet" href="/admin.css?v=30">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1346,9 +1349,13 @@ export function memberPage({ db, token, req }) {
     + '<div class="dt-inf-ic"><i class="ti ti-qrcode"></i></div>'
     + '<div class="dt-inf-body"><p class="dt-inf-l">Kode Member</p><p class="dt-inf-v mono" id="dtKode">—</p></div>'
     + '</div>'
-    + '<div class="dt-inf-row" id="dtBonusRow" style="display:none">'
+    + '<div class="dt-inf-row">'
     + '<div class="dt-inf-ic"><i class="ti ti-gift"></i></div>'
-    + '<div class="dt-inf-body"><p class="dt-inf-l">Reward Diklaim</p><p class="dt-inf-v" id="dtBonusVal">—</p></div>'
+    + '<div class="dt-inf-body"><p class="dt-inf-l">Total Reward Didapat</p><p class="dt-inf-v" id="dtRewardTotal">—</p></div>'
+    + '</div>'
+    + '<div class="dt-inf-row">'
+    + '<div class="dt-inf-ic"><i class="ti ti-circle-check"></i></div>'
+    + '<div class="dt-inf-body"><p class="dt-inf-l">Status Reward</p><div id="dtRewardStatus"></div></div>'
     + '</div>'
     + '</div>'
     + '<div class="dt-sec">'
@@ -1417,7 +1424,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=26"></script>'
+    + '<script src="/dashboard.js?v=27"></script>'
     + '</body></html>';
 }
 
