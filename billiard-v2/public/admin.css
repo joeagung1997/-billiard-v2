@@ -996,6 +996,106 @@ td          { padding:10px 16px; vertical-align:middle; }
 .icon-btn.danger { color:#a32d2d; }
 .icon-btn.danger:hover { background:#fcebeb; color:#a32d2d; }
 
+/* ── CSS Tooltip (data-tip attribute) ──────────────────────────── */
+[data-tip] { position:relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position:absolute;
+  bottom:calc(100% + 8px); left:50%;
+  transform:translateX(-50%) translateY(4px);
+  background:#0f2010; color:#fff;
+  padding:5px 10px; border-radius:6px;
+  font-size:11px; font-weight:500;
+  white-space:nowrap; letter-spacing:.01em;
+  opacity:0; visibility:hidden;
+  pointer-events:none; z-index:90;
+  transition:opacity .15s, transform .15s, visibility 0s .15s;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+[data-tip]::before {
+  content:'';
+  position:absolute;
+  bottom:calc(100% + 3px); left:50%;
+  transform:translateX(-50%) translateY(4px);
+  border:5px solid transparent;
+  border-top-color:#0f2010;
+  opacity:0; visibility:hidden;
+  pointer-events:none; z-index:90;
+  transition:opacity .15s, transform .15s, visibility 0s .15s;
+}
+[data-tip]:hover::after, [data-tip]:hover::before {
+  opacity:1; visibility:visible;
+  transform:translateX(-50%) translateY(0);
+  transition:opacity .15s, transform .15s;
+}
+/* Disable tooltip di mobile (no hover) supaya gak nyangkut */
+@media (hover:none) {
+  [data-tip]::after, [data-tip]::before { display:none; }
+}
+
+/* ── Custom confirm modal ──────────────────────────────────────── */
+.confirm-ov {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(10,20,10,.55);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px;
+  opacity:0; visibility:hidden;
+  transition:opacity .2s, visibility 0s .2s;
+}
+.confirm-ov.open {
+  opacity:1; visibility:visible;
+  transition:opacity .2s, visibility 0s;
+}
+.confirm-box {
+  background:#fff; border-radius:14px;
+  width:100%; max-width:380px;
+  padding:24px 22px;
+  transform:translateY(8px) scale(.98);
+  transition:transform .2s cubic-bezier(.23,1,.32,1);
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.confirm-ov.open .confirm-box { transform:translateY(0) scale(1); }
+.confirm-icon {
+  width:56px; height:56px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+  margin:0 auto 14px;
+}
+.confirm-icon i { font-size:26px; }
+.confirm-title {
+  font-size:17px; font-weight:600;
+  color:#1a2318; text-align:center;
+  margin-bottom:8px;
+}
+.confirm-msg {
+  font-size:13px; color:#556070;
+  text-align:center; line-height:1.55;
+  margin-bottom:20px;
+}
+.confirm-actions {
+  display:flex; gap:8px; justify-content:stretch;
+}
+.confirm-actions > button {
+  flex:1;
+  padding:11px 16px; border-radius:9px;
+  font-size:13px; font-weight:600;
+  cursor:pointer; border:none;
+  font-family:var(--ff);
+  transition:background .15s, transform .1s;
+}
+.confirm-actions > button:active { transform:scale(.98); }
+.btn-confirm-cancel {
+  background:#f4f6f3; color:#556070;
+  border:1px solid #e2e8e0 !important;
+}
+.btn-confirm-cancel:hover { background:#eaeee6; color:#1a2318; }
+.btn-confirm-ok.danger  { background:#a32d2d; color:#fff; }
+.btn-confirm-ok.danger:hover  { background:#8a2424; }
+.btn-confirm-ok.warn    { background:#c47f1a; color:#fff; }
+.btn-confirm-ok.warn:hover    { background:#a36815; }
+.btn-confirm-ok.primary { background:#2d6624; color:#fff; }
+.btn-confirm-ok.primary:hover { background:#255519; }
+
 /* Responsive */
 @media (max-width:1050px) {
   .fin-stat-grid   { grid-template-columns:repeat(2,1fr); }

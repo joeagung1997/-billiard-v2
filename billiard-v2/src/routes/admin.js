@@ -130,11 +130,24 @@ router.get("/edit", requireAdmin, async (req, res) => {
     const { nama, tlp } = req.query;
 
     if (nama?.trim()) {
+      // Capture sebelum diubah untuk audit log
+      const oldNama = m.nama;
+      const oldTlp  = m.telepon ?? "";
+
       m.nama = nama.trim();
       if (validateTelepon(tlp ?? "")) {
         m.telepon = formatTeleponDisplay(normalizeTelepon(tlp));
       }
       await saveMember(m);
+
+      // Catat perubahan ke log
+      const changes = [];
+      if (oldNama !== m.nama)    changes.push(`nama: '${oldNama}' → '${m.nama}'`);
+      if (oldTlp  !== m.telepon) changes.push(`telp: '${oldTlp || "-"}' → '${m.telepon || "-"}'`);
+      if (changes.length) {
+        await appendLog(m.kode, m.nama, "EDIT_MEMBER", changes.join(", "));
+      }
+
       return res.redirect(`/admin?tk=${tk}`);
     }
 
@@ -150,7 +163,15 @@ router.get("/hapus", requireAdmin, async (req, res) => {
   const { tk }  = res.locals;
   const kode    = (req.query.kode ?? "").toUpperCase();
   try {
+    // Capture nama sebelum hapus untuk audit log
+    const db = await readDB();
+    const m  = findMember(db.members, kode);
+    const namaSnapshot = m?.nama ?? "(unknown)";
+
     await deleteMember(kode);
+    await appendLog(kode, namaSnapshot, "DELETE_MEMBER",
+      `Total main: ${m?.totalMain ?? 0}, total gratis: ${m?.totalGratis ?? 0}`);
+
     res.redirect(`/admin?tk=${tk}`);
   } catch (err) {
     console.error("[ADMIN] hapus error:", err.message);

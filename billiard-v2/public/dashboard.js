@@ -33,6 +33,67 @@ try {
   }
 } catch (_) {}
 
+// ── Confirm modal — replace native confirm() dgn UI yg lebih bagus ──
+const CONFIRM_PRESET = {
+  hapus: {
+    icon: "ti-trash",
+    iconBg: "#fcebeb",
+    iconColor: "#a32d2d",
+    title: "Hapus Member",
+    msg: (n) => `Member <b>${n}</b> akan dihapus <b style="color:#a32d2d">permanen</b> dari sistem. Aksi ini tidak bisa dibatalkan. Yakin?`,
+    okText: "Ya, Hapus",
+    okStyle: "danger",
+  },
+  resetqr: {
+    icon: "ti-refresh",
+    iconBg: "#fef3e1",
+    iconColor: "#c47f1a",
+    title: "Reset QR Member",
+    msg: (n) => `QR member <b>${n}</b> akan diganti dengan kode baru. Kartu QR lama <b style="color:#c47f1a">tidak bisa dipakai lagi</b>. Yakin?`,
+    okText: "Ya, Reset QR",
+    okStyle: "warn",
+  },
+  klaim: {
+    icon: "ti-gift",
+    iconBg: "#faf0d3",
+    iconColor: "#8a6800",
+    title: "Klaim Bonus",
+    msg: (n) => `Klaim bonus untuk <b>${n}</b>? Progress sesi akan direset ke 0.`,
+    okText: "Ya, Klaim",
+    okStyle: "primary",
+  },
+};
+
+window.confirmAction = function(el) {
+  const kind = el.dataset.confirm;
+  const name = el.dataset.name || "member ini";
+  const href = el.dataset.href;
+  const p = CONFIRM_PRESET[kind];
+  if (!p) { window.location.href = href; return; }
+
+  const ov  = document.getElementById("confirmOv");
+  if (!ov) { if (confirm(p.title + "\n\n" + name)) window.location.href = href; return; }
+
+  document.getElementById("confirmIcon").innerHTML = '<i class="ti ' + p.icon + '"></i>';
+  document.getElementById("confirmIcon").style.background = p.iconBg;
+  document.getElementById("confirmIcon").style.color = p.iconColor;
+  document.getElementById("confirmTitle").textContent = p.title;
+  document.getElementById("confirmMsg").innerHTML = p.msg(name);
+  const okBtn = document.getElementById("confirmOk");
+  okBtn.textContent = p.okText;
+  okBtn.className = "btn-confirm-ok " + p.okStyle;
+  okBtn.onclick = function() {
+    closeConfirm();
+    window.location.href = href;
+  };
+  ov.classList.add("open");
+};
+
+window.closeConfirm = function() {
+  const ov = document.getElementById("confirmOv");
+  if (ov) ov.classList.remove("open");
+};
+
 // ── Tab switcher ──────────────────────────────────────────────
 const TAB_IDS = ["scan", "lb", "log"];
 
@@ -159,6 +220,8 @@ const renderMemberRow = (m, idx) => {
     ? `grid-template-columns:40px 1fr 110px 110px 90px 110px 200px;background:rgba(201,168,76,.06);border-left:3px solid #C9A84C`
     : `grid-template-columns:40px 1fr 110px 110px 90px 110px 200px`;
 
+  const hapusUrl = `/admin/hapus?tk=${TK}&kode=${m.kode}`;
+
   return `<div class="tbl-row" style="${rowStyle}">
     <div class="tbl-td"><span class="row-num">${idx + 1}</span></div>
     <div class="tbl-td">
@@ -166,7 +229,7 @@ const renderMemberRow = (m, idx) => {
         <div class="m-av ${color}">${initials(m.nama)}</div>
         <div>
           <div class="m-nm">${esc(m.nama)}${hadirDot}</div>
-          <div class="m-id">${esc(m.kode)} &middot; ${esc(m.telepon || "—")}</div>
+          <div class="m-id">${esc(m.kode)}</div>
           ${bonusExpiry}
         </div>
       </div>
@@ -177,20 +240,18 @@ const renderMemberRow = (m, idx) => {
     <div class="tbl-td r" style="font-size:12px;color:var(--txt2)">${m.tglTerakhir === '—' ? '<span style="color:var(--txt3)">—</span>' : m.tglTerakhir}</div>
     <div class="tbl-td r">
       <div class="act-cell">
-        ${isBonus ? `<a href="${klaimUrl}" onclick="${klaimConfirm}" class="icon-btn" title="Klaim Bonus" style="background:#C9A84C;color:#000;font-weight:700;font-size:13px">🎁</a>` : ""}
-        <button class="icon-btn" title="Lihat QR" onclick="${qrClick}">
+        ${isBonus ? `<a href="${klaimUrl}" data-confirm="klaim" data-name="${esc(m.nama)}" data-href="${klaimUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Klaim Bonus" style="background:#C9A84C;color:#000;font-weight:700;font-size:13px">🎁</a>` : ""}
+        <button class="icon-btn" data-tip="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        ${waNum ? `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" title="Kirim WA" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
-        <a href="${resetQrUrl}" onclick="${resetQrConfirm}" class="icon-btn" title="Reset QR (kartu hilang)">
+        ${waNum ? `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
+        <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
-        <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="icon-btn" title="Edit">
+        <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="icon-btn" data-tip="Edit data member">
           <i class="ti ti-edit"></i>
         </a>
-        <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
-           onclick="return confirm('Hapus member ${safeNama}?')"
-           class="icon-btn danger" title="Hapus">
+        <a href="${hapusUrl}" data-confirm="hapus" data-name="${esc(m.nama)}" data-href="${hapusUrl}" onclick="confirmAction(this);return false" class="icon-btn danger" data-tip="Hapus member">
           <i class="ti ti-trash"></i>
         </a>
       </div>
@@ -233,10 +294,12 @@ const renderMemberCard = (m) => {
     ? `<div style="font-size:10px;color:#f59e0b;margin-top:4px;text-align:center">⏳ Hangus dalam ${m.bonusSisaHari} hari</div>`
     : "";
 
+  const klaimUrlMc = `/admin/klaim?tk=${TK}&kode=${m.kode}`;
+  const resetQrUrlMc = `/admin/reset-qr?tk=${TK}&kode=${m.kode}`;
+  const hapusUrlMc   = `/admin/hapus?tk=${TK}&kode=${m.kode}`;
+
   const klaimBtn = (isBonus || isGratis)
-    ? `<a href="/admin/klaim?tk=${TK}&kode=${m.kode}"
-          onclick="return confirm('Klaim bonus ${safeNama}? Progress sesi akan direset ke 0.')"
-          class="mc-btn mc-btn-gold">🎁 Klaim Bonus</a>`
+    ? `<a href="${klaimUrlMc}" data-confirm="klaim" data-name="${esc(m.nama)}" data-href="${klaimUrlMc}" onclick="confirmAction(this);return false" class="mc-btn mc-btn-gold">🎁 Klaim Bonus</a>`
     : "";
 
   const waBtn = waNum
@@ -246,9 +309,7 @@ const renderMemberCard = (m) => {
   const waShareBtn = `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener"
       class="mc-btn mc-btn-wa">📤 Kirim QR</a>`;
 
-  const resetQrMcBtn = `<a href="/admin/reset-qr?tk=${TK}&kode=${m.kode}"
-      onclick="return confirm('Reset QR member ${safeNama}? Kode lama tidak bisa dipakai lagi.')"
-      class="mc-btn" title="Reset QR (kartu hilang)">🔄 Reset QR</a>`;
+  const resetQrMcBtn = `<a href="${resetQrUrlMc}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrlMc}" onclick="confirmAction(this);return false" class="mc-btn">🔄 Reset QR</a>`;
 
   return `<div class="mc ${m.aktif ? "aktif" : "nonaktif"}">
     <div class="mc-top">
@@ -273,9 +334,7 @@ const renderMemberCard = (m) => {
       ${resetQrMcBtn}
       ${klaimBtn}
       <a href="/admin/edit?tk=${TK}&kode=${m.kode}" class="mc-btn">Edit</a>
-      <a href="/admin/hapus?tk=${TK}&kode=${m.kode}"
-         onclick="return confirm('Hapus member ${safeNama}?')"
-         class="mc-btn mc-btn-red">Hapus</a>
+      <a href="${hapusUrlMc}" data-confirm="hapus" data-name="${esc(m.nama)}" data-href="${hapusUrlMc}" onclick="confirmAction(this);return false" class="mc-btn mc-btn-red">Hapus</a>
     </div>
   </div>`;
 };

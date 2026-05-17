@@ -831,7 +831,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=26">'
+    + '<link rel="stylesheet" href="/admin.css?v=27">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1149,7 +1149,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=21"><\/script>'
+    + '<script src="/dashboard.js?v=22"><\/script>'
     + '</body></html>';
 }
 
@@ -1215,7 +1215,7 @@ export function memberPage({ db, token, req }) {
     + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=26">'
+    + '<link rel="stylesheet" href="/admin.css?v=27">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1314,6 +1314,19 @@ export function memberPage({ db, token, req }) {
     + buildBottomNav(token, 'members')
     + buildModal()
 
+    // ── Confirm modal (custom, untuk hapus/reset QR/klaim) ─────
+    + '<div class="confirm-ov" id="confirmOv" onclick="if(event.target===this)closeConfirm()">'
+    + '<div class="confirm-box">'
+    + '<div class="confirm-icon" id="confirmIcon"><i class="ti ti-alert-triangle"></i></div>'
+    + '<div class="confirm-title" id="confirmTitle">Konfirmasi</div>'
+    + '<div class="confirm-msg" id="confirmMsg">Apakah Anda yakin?</div>'
+    + '<div class="confirm-actions">'
+    + '<button type="button" class="btn-confirm-cancel" onclick="closeConfirm()">Batal</button>'
+    + '<button type="button" class="btn-confirm-ok danger" id="confirmOk">Yakin</button>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
     + '<div class="toast" id="toast">✓ Disalin!</div>'
 
     + '<script>'
@@ -1325,7 +1338,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=22"></script>'
+    + '<script src="/dashboard.js?v=23"></script>'
     + '</body></html>';
 }
 
