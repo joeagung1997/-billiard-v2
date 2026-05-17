@@ -1262,79 +1262,119 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
 
 // ── Kelola Menu Items ─────────────────────────────────────────
 export function financeMenuPage(token, items = [], hasErr = false, editItem = null) {
-  const rp = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+  const rpFmt = (n) => "Rp " + Number(n).toLocaleString("id-ID");
 
-  const makeRows = () => items.map((m) => {
-    if (editItem && editItem.id === m.id) {
+  const makeRows = () => items.length === 0
+    ? "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada menu. Tambahkan di form kanan.</div>"
+    : items.map((m) => {
+      if (editItem && editItem.id === m.id) {
+        return "<div class=\"kat-row\" style=\"grid-template-columns:1fr auto\">"
+          + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:flex;gap:8px;align-items:center;width:100%\">"
+          + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
+          + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
+          + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1\">"
+          + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+          + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 14px;font-size:13px\">Simpan</button>"
+          + "<a href=\"/keuangan/menu?ftk=" + token + "\" class=\"btn-del\">Batal</a>"
+          + "</form></div>";
+      }
       return "<div class=\"kat-row\">"
-        + "<form action=\"/keuangan/menu/edit\" method=\"post\" style=\"display:contents\">"
-        + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
-        + "<input type=\"hidden\" name=\"id\" value=\"" + m.id + "\">"
-        + "<div style=\"display:flex;gap:8px;align-items:center;flex:1\">"
-        + "<input class=\"finp\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1\">"
-        + "<input class=\"finp\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:110px\">"
-        + "</div>"
-        + "<div class=\"kat-acts\">"
-        + "<button type=\"submit\" class=\"btn-primary\" style=\"font-size:12px;padding:5px 12px\">Simpan</button>"
-        + "<a href=\"/keuangan/menu?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px\">Batal</a>"
-        + "</div>"
-        + "</form></div>";
-    }
-    return "<div class=\"kat-row\">"
-      + "<div style=\"flex:1\">"
-      + "<div style=\"font-size:13px;font-weight:500;color:var(--txt)\">" + escHtml(m.nama) + "</div>"
-      + "<div style=\"font-size:11px;color:var(--txt3);margin-top:2px\">" + rp(m.harga) + "</div>"
-      + "</div>"
-      + "<div class=\"kat-acts\">"
-      + "<a href=\"/keuangan/menu?ftk=" + token + "&edit=" + m.id + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px\">Edit</a>"
-      + "<a href=\"/keuangan/menu/hapus?ftk=" + token + "&id=" + m.id + "\" class=\"btn-outline\" style=\"font-size:12px;padding:5px 12px;color:var(--red);border-color:var(--red)\" onclick=\"return confirm('Hapus item ini?')\">Hapus</a>"
-      + "</div>"
-      + "</div>";
-  }).join("");
+        + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + "</div>"
+        + "<div style=\"font-size:11px;color:var(--txt3);font-family:var(--ff-mono)\">" + rpFmt(m.harga) + "</div>"
+        + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
+        + "<a href=\"/keuangan/menu?ftk=" + token + "&edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
+        + "<a href=\"/keuangan/menu/hapus?ftk=" + token + "&id=" + m.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus item ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
+        + "</div></div>";
+    }).join("");
+
+  const extraCss = [
+    ".kat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
+    ".kat-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border)}",
+    ".kat-header-left{display:flex;align-items:center;gap:8px}",
+    ".kat-type-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}",
+    ".kat-type-badge.income{color:var(--accent)}",
+    ".count-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}",
+    ".count-chip.income{background:var(--green-bg);color:var(--accent)}",
+    ".kat-table-head{display:grid;grid-template-columns:1fr 120px 130px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
+    ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
+    ".kat-th.r{text-align:right}",
+    ".kat-row{display:grid;grid-template-columns:1fr 120px 130px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s;gap:8px}",
+    ".kat-row:last-child{border-bottom:none}",
+    ".kat-row:hover{background:var(--surface2)}",
+    ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
+    ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
+    ".kat-dot.income{background:var(--green)}",
+    ".kat-act{display:flex;justify-content:flex-end}",
+    ".btn-del{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(184,48,48,.25);background:var(--red-bg);color:var(--red);text-decoration:none;transition:opacity .15s;white-space:nowrap}",
+    ".btn-del:hover{opacity:.75}",
+    ".btn-del i{font-size:12px}",
+    ".kat-empty{padding:24px 18px;text-align:center;font-size:12px;color:var(--txt3)}",
+    ".kat-empty i{font-size:24px;display:block;margin-bottom:6px;opacity:.35}",
+    ".add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px}",
+    ".cat-input{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;height:42px}",
+    ".cat-input:focus{border-color:var(--accent);background:var(--surface)}",
+    ".cat-input::placeholder{color:var(--txt3)}",
+    ".menu-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}",
+    "@media(max-width:700px){.menu-grid{grid-template-columns:1fr}}",
+  ].join("");
 
   return docHeadV4("Kelola Menu")
-    + "</head><body data-theme=\"light\">"
+    + "<style>" + extraCss + "</style>"
+    + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token)
-    + "<div class=\"main\">"
-    + "<div class=\"topbar\">"
-    + "<div class=\"topbar-left\"><a href=\"/keuangan?ftk=" + token + "\" class=\"back-link\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Keuangan</a>"
-    + "<div class=\"page-title\">Kelola Menu Kopi / Snack</div></div>"
+    + "<div class=\"main-wrap\">"
+    + "<header class=\"topbar\">"
+    + "<div class=\"topbar-brand\">"
+    + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-coffee\"></i></div>"
+    + "<div><div class=\"topbar-name\">Kelola Menu</div><div class=\"topbar-label\">Kopi / Snack</div></div>"
     + "</div>"
-    + "<div class=\"content\">"
+    + "</header>"
+    + "<div class=\"page\">"
 
-    + (hasErr ? "<div class=\"alert alert-err\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
+    + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
+    + "<a href=\"/keuangan?ftk=" + token + "\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
+    + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
+    + "</div>"
 
-    + "<div class=\"content-grid\" style=\"grid-template-columns:1fr 320px;gap:16px\">"
+    + "<div style=\"margin-bottom:20px\">"
+    + "<div class=\"page-title\" style=\"font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px\">Menu Kopi / Snack</div>"
+    + "<div style=\"font-size:13px;color:var(--txt3)\">Kelola item menu dan harga yang tersedia di kasir.</div>"
+    + "</div>"
 
-    // List
+    + (hasErr ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
+
+    + "<div class=\"menu-grid\">"
+
+    // List card
     + "<div class=\"kat-card\">"
     + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
-    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> Menu Item</div>"
-    + "<div class=\"count-chip income\">" + items.length + "</div>"
+    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-coffee\"></i> Daftar Menu</div>"
+    + "<div class=\"count-chip income\">" + items.length + " item</div>"
     + "</div></div>"
     + "<div class=\"kat-table-head\">"
-    + "<div class=\"kat-th\">Nama &amp; Harga</div>"
+    + "<div class=\"kat-th\">Nama</div>"
+    + "<div class=\"kat-th\">Harga</div>"
     + "<div class=\"kat-th r\">Aksi</div>"
     + "</div>"
     + "<div>" + makeRows() + "</div>"
-    + (items.length === 0 ? "<div style=\"padding:24px;text-align:center;color:var(--txt3);font-size:13px\">Belum ada menu. Tambahkan di bawah.</div>" : "")
     + "</div>"
 
-    // Add form
-    + "<div class=\"kat-card\" style=\"height:fit-content\">"
-    + "<div class=\"kat-card-header\"><div class=\"kat-type-badge\" style=\"background:#f0f7eb;color:#2d6624\"><i class=\"ti ti-plus\"></i> Tambah Menu</div></div>"
-    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" style=\"padding:16px;display:flex;flex-direction:column;gap:12px\">"
+    // Add form card
+    + "<div class=\"add-card\">"
+    + "<div style=\"font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:6px\">"
+    + "<i class=\"ti ti-plus\" style=\"font-size:14px;color:var(--accent)\"></i> Tambah Menu</div>"
+    + "<form action=\"/keuangan/menu/tambah\" method=\"post\" style=\"display:flex;flex-direction:column;gap:12px\">"
     + "<input type=\"hidden\" name=\"ftk\" value=\"" + token + "\">"
     + "<div>"
-    + "<label class=\"fin-wiz-lbl\">Nama Item</label>"
-    + "<input class=\"finp\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required>"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Nama Item</label>"
+    + "<input class=\"cat-input\" type=\"text\" name=\"nama\" placeholder=\"contoh: Kopi Susu\" required>"
     + "</div>"
     + "<div>"
-    + "<label class=\"fin-wiz-lbl\">Harga (Rp)</label>"
-    + "<input class=\"finp\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7000\" required oninput=\"fmtH(this)\">"
+    + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
+    + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7.000\" required oninput=\"fmtH(this)\">"
     + "</div>"
-    + "<button type=\"submit\" class=\"btn-primary\" style=\"width:100%\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah</button>"
+    + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;font-size:13px\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah</button>"
     + "</form>"
     + "</div>"
 
