@@ -567,7 +567,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     const ymd = d.getFullYear() + '-'
       + String(d.getMonth() + 1).padStart(2, '0') + '-'
       + String(d.getDate()).padStart(2, '0');
-    const lbl = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
+    const lbl = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
     const isToday = (i === 0);
     const count = log.filter((l) => {
       if (l.aksi !== 'SCAN') return false;
@@ -881,9 +881,20 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '  var from=document.getElementById("dateFrom").value;'
     + '  var to=document.getElementById("dateTo").value;'
     + '  if(!from||!to||from>to)return;'
+    + '  var lookup={};'
+    + '  for(var i=0;i<ALL_YMD.length;i++){lookup[ALL_YMD[i]]={lbl:ALL_LABELS[i],cnt:ALL_DATA[i]};}'
     + '  var labels=[],data=[];'
-    + '  for(var i=0;i<ALL_YMD.length;i++){'
-    + '    if(ALL_YMD[i]>=from&&ALL_YMD[i]<=to){labels.push(ALL_LABELS[i]);data.push(ALL_DATA[i]);}'
+    + '  var cur=new Date(from+"T00:00:00");'
+    + '  var end=new Date(to+"T00:00:00");'
+    + '  while(cur<=end){'
+    + '    var y=cur.getFullYear();'
+    + '    var mo=String(cur.getMonth()+1).padStart(2,"0");'
+    + '    var dd=String(cur.getDate()).padStart(2,"0");'
+    + '    var ymd=y+"-"+mo+"-"+dd;'
+    + '    var info=lookup[ymd];'
+    + '    var lbl=info?info.lbl:cur.toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"});'
+    + '    labels.push(lbl);data.push(info?info.cnt:0);'
+    + '    cur.setDate(cur.getDate()+1);'
     + '  }'
     + '  if(trendChart){'
     + '    trendChart.data.labels=labels.length?labels:["Tidak ada data"];'
