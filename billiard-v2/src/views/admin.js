@@ -482,8 +482,26 @@ function buildSidebar(token, activePage) {
     + '<div class="sb-lbl">Menu</div>'
     + '<a href="/admin?tk=' + token + '" class="' + dashClass + '"><i class="ti ti-layout-dashboard"></i> Dashboard</a>'
     + '<a href="/admin/members?tk=' + token + '" class="' + membersClass + '"><i class="ti ti-users"></i> Kelola Member</a>'
-    + '<a href="/operasional" class="nav-item"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-briefcase"></i> Operasional</a>'
+
+    // Operasional — toggle drop-down, tidak navigasi langsung
+    + '<div class="nav-item" onclick="toggleOpsSub()" style="cursor:pointer;justify-content:space-between;user-select:none">'
+    + '<span style="display:flex;align-items:center;gap:8px"><i class="ti ti-briefcase"></i> Operasional</span>'
+    + '<i class="ti ti-chevron-down" id="opsChevron" style="font-size:12px;transition:transform .2s"></i>'
+    + '</div>'
+
+    // Sub-menu Operasional — collapsed by default
+    + '<div id="opsSub" style="overflow:hidden;transition:max-height .25s ease;max-height:0">'
+    + '<a href="/operasional" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
+    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
+    + '<i class="ti ti-wallet" style="font-size:13px"></i> Dashboard Keuangan</a>'
+    + '<a href="/operasional/kategori" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
+    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
+    + '<i class="ti ti-tag" style="font-size:13px"></i> Kelola Kategori</a>'
+    + '<a href="/operasional/menu" onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"'
+    + ' style="display:flex;align-items:center;gap:8px;padding:7px 12px 7px 36px;font-size:12px;font-weight:500;color:var(--txt2);text-decoration:none;border-radius:7px;margin:1px 8px">'
+    + '<i class="ti ti-coffee" style="font-size:13px"></i> Kelola Menu</a>'
+    + '</div>'
+
     + '</div>'
     + '<div class="sb-section">'
     + '<div class="sb-lbl">Aksi</div>'
@@ -494,7 +512,15 @@ function buildSidebar(token, activePage) {
     + '<div class="sb-avatar">AD</div>'
     + '<div><div class="sb-user-name">Admin</div><div class="sb-user-role">Administrator</div></div>'
     + '</div>'
-    + '</aside>';
+    + '</aside>'
+    + '<script>'
+    + 'function toggleOpsSub(){'
+    + 'var sub=document.getElementById("opsSub");'
+    + 'var chev=document.getElementById("opsChevron");'
+    + 'var open=sub.style.maxHeight!=="0px"&&sub.style.maxHeight!==""&&sub.style.maxHeight!=="0";'
+    + 'sub.style.maxHeight=open?"0":"240px";'
+    + 'chev.style.transform=open?"":"rotate(180deg)";}'
+    + '</script>';
 }
 
 // ── buildBottomNav — shared bottom nav HTML ───────────────────────────────────
