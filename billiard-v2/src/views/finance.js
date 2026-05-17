@@ -918,7 +918,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(!cb||!cb.checked)return;"
     + "var topH=parseInt(cb.dataset.topHarga||'0');"
     + "var topQEl=lbl.querySelector('input[type=number]');"
-    + "total+=topH*(parseInt(topQEl?topQEl.value:'1')||1);}});"
+    + "total+=topH*(parseInt(topQEl?topQEl.value:'1')||1);});}});"
     + "var jEl=document.getElementById('wizJumlah');"
     + "if(jEl){var s=total>0?String(total).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
     + "jEl.value=s;}"
