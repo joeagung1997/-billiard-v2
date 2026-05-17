@@ -37,8 +37,8 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
   const isKeu = page === "keuangan";
   const isKat = page === "kategori";
   const isMenu = page === "menu";
-  // Sub-menu terbuka otomatis kalau sedang di halaman sub (kategori/menu)
-  const subOpen = isKat || isMenu;
+  // Sub-menu terbuka otomatis kalau sedang di salah satu halaman operasional
+  const subOpen = isKeu || isKat || isMenu;
 
   const subItem = (href, icon, label, active) =>
     "<a href=\"" + href + "\" style=\""
@@ -60,14 +60,15 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\"><i class=\"ti ti-layout-dashboard\"></i> Dashboard</a>"
     + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\"><i class=\"ti ti-users\"></i> Kelola Member</a>"
 
-    // Keuangan — klik untuk toggle sub-menu, tidak navigasi langsung
+    // Operasional — klik untuk toggle sub-menu, tidak navigasi langsung
     + "<div class=\"nav-item" + (isKeu || isKat || isMenu ? " active" : "") + "\" onclick=\"toggleKeuSub()\" style=\"cursor:pointer;justify-content:space-between;user-select:none\">"
-    + "<span style=\"display:flex;align-items:center;gap:8px\"><i class=\"ti ti-wallet\"></i> Keuangan</span>"
+    + "<span style=\"display:flex;align-items:center;gap:8px\"><i class=\"ti ti-briefcase\"></i> Operasional</span>"
     + "<i class=\"ti ti-chevron-down\" id=\"keuChevron\" style=\"font-size:12px;transition:transform .2s;" + (subOpen ? "transform:rotate(180deg)" : "") + "\"></i>"
     + "</div>"
 
     // Sub-menu — hidden by default, auto-open kalau di sub-page
-    + "<div id=\"keuSub\" style=\"overflow:hidden;transition:max-height .25s ease;max-height:" + (subOpen ? "200px" : "0") + "\">"
+    + "<div id=\"keuSub\" style=\"overflow:hidden;transition:max-height .25s ease;max-height:" + (subOpen ? "240px" : "0") + "\">"
+    + subItem("/keuangan", "ti-wallet", "Dashboard Keuangan", isKeu)
     + subItem("/keuangan/kategori", "ti-tag", "Kelola Kategori", isKat)
     + subItem("/keuangan/menu", "ti-coffee", "Kelola Menu", isMenu)
     + "</div>"
@@ -87,7 +88,7 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + "var sub=document.getElementById('keuSub');"
     + "var chev=document.getElementById('keuChevron');"
     + "var open=sub.style.maxHeight!=='0px'&&sub.style.maxHeight!==''&&sub.style.maxHeight!=='0';"
-    + "sub.style.maxHeight=open?'0':'200px';"
+    + "sub.style.maxHeight=open?'0':'240px';"
     + "chev.style.transform=open?'':'rotate(180deg)';}"
     + "</script>";
 }
