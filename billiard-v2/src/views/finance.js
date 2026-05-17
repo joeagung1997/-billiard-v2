@@ -277,13 +277,19 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [] }) {
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
   const jFilter  = jenisFilter || "";
   const tDari    = tglDari    || "";
   const tSampai  = tglSampai  || "";
+
+  // Kategori optgroups untuk modal
+  const modalGrpIn  = kategoriList.filter((k) => k.jenis === "pemasukan")
+    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
+  const modalGrpOut = kategoriList.filter((k) => k.jenis === "pengeluaran")
+    .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
 
   // Filter & sort — bulan + jenis untuk stats; date range untuk tabel
   const filtered = transaksi.filter((t) => {
@@ -573,7 +579,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<span style=\"color:#e2e8e0\">|</span>"
     + "<span>Saldo: <span class=\"fin-tf-saldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
     + "</div>"
-    + "<div><a href=\"/keuangan/tambah?ftk=" + token + "\" class=\"btn-outline\" style=\"font-size:12px;padding:6px 12px\"><i class=\"ti ti-plus\" style=\"font-size:13px\"></i> Tambah Manual</a></div>"
     + "</div>"
     + "</div>"
 
@@ -604,13 +609,22 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
     + "<input type=\"hidden\" name=\"jenis\" id=\"trxJenis\" value=\"pemasukan\">"
     + "</div>"
+    + "<div class=\"fmg\">"
+    + "<label class=\"flbl\">Waktu</label>"
+    + "<div class=\"type-tog\">"
+    + "<div class=\"type-opt sel-in\" id=\"mopt-siang\" onclick=\"setWaktuModal('siang')\">&#9728; Siang</div>"
+    + "<div class=\"type-opt\" id=\"mopt-malam\" onclick=\"setWaktuModal('malam')\">&#9790; Malam</div>"
+    + "</div>"
+    + "<input type=\"hidden\" name=\"waktu\" id=\"trxWaktu\" value=\"siang\">"
+    + "</div>"
     + "<div class=\"frow\">"
-    + "<div class=\"fmg\"><label class=\"flbl\">Jumlah (Rp)</label><input class=\"finp\" type=\"number\" name=\"jumlah\" placeholder=\"0\" required min=\"0\"></div>"
-    + "<div class=\"fmg\"><label class=\"flbl\">Tanggal</label><input class=\"finp\" type=\"date\" name=\"tanggal\" value=\"" + new Date().toISOString().slice(0, 10) + "\"></div>"
+    + "<div class=\"fmg\"><label class=\"flbl\">Jumlah (Rp)</label><input class=\"finp\" type=\"text\" name=\"jumlah\" inputmode=\"numeric\" placeholder=\"0\" required oninput=\"fmtJumlahM(this)\"></div>"
+    + "<div class=\"fmg\"><label class=\"flbl\">Tanggal &amp; Jam</label><input class=\"finp\" type=\"datetime-local\" name=\"datetime\" value=\"" + new Date().toISOString().slice(0, 16) + "\"></div>"
     + "</div>"
     + "<div class=\"fmg\"><label class=\"flbl\">Kategori</label>"
-    + "<select class=\"fsel\" name=\"kategori\">"
-    + "<option>Pendaftaran Member</option><option>Sewa Meja</option><option>Operasional</option><option>Lainnya</option>"
+    + "<select class=\"fsel\" name=\"kategori\" id=\"mKategori\">"
+    + "<optgroup label=\"Pemasukan\" id=\"mGrpIn\">" + modalGrpIn + "</optgroup>"
+    + "<optgroup label=\"Pengeluaran\" id=\"mGrpOut\" style=\"display:none\">" + modalGrpOut + "</optgroup>"
     + "</select></div>"
     + "<div class=\"fmg\"><label class=\"flbl\">Keterangan</label><input class=\"finp\" type=\"text\" name=\"keterangan\" placeholder=\"Deskripsi transaksi...\"></div>"
     + "<div class=\"mfooter\">"
@@ -681,7 +695,20 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function selectTipe(t){"
     + "document.getElementById('trxJenis').value=t;"
     + "document.getElementById('opt-in').className='type-opt'+(t==='pemasukan'?' sel-in':'');"
-    + "document.getElementById('opt-out').className='type-opt'+(t==='pengeluaran'?' sel-out':'');}"
+    + "document.getElementById('opt-out').className='type-opt'+(t==='pengeluaran'?' sel-out':'');"
+    + "var isIn=t==='pemasukan';"
+    + "var gi=document.getElementById('mGrpIn'),go=document.getElementById('mGrpOut');"
+    + "if(gi)gi.style.display=isIn?'':'none';"
+    + "if(go)go.style.display=isIn?'none':'';"
+    + "var ks=document.getElementById('mKategori');if(ks)ks.selectedIndex=0;}"
+    + "function setWaktuModal(w){"
+    + "document.getElementById('trxWaktu').value=w;"
+    + "document.getElementById('mopt-siang').className='type-opt'+(w==='siang'?' sel-in':'');"
+    + "document.getElementById('mopt-malam').className='type-opt'+(w==='malam'?' sel-in':'');}"
+    + "function fmtJumlahM(el){"
+    + "var raw=el.value.replace(/\\D/g,'');"
+    + "el.value=raw?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';"
+    + "}"
     // Charts
     + "(function(){"
     + "var bc=document.getElementById('barChart');"
