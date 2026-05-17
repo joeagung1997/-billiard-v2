@@ -104,8 +104,9 @@ export const runMigrations = async () => {
     );
   }
 
-  // ── Kolom kategori di menu_items (idempotent) ─────────────────
-  await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kategori TEXT DEFAULT 'minuman'`);
+  // ── Kolom kategori & best_seller di menu_items (idempotent) ─────
+  await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kategori    TEXT    DEFAULT 'minuman'`);
+  await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS best_seller BOOLEAN DEFAULT FALSE`);
 
   // ── Insert default menu items (skip jika sudah ada) ──────────
   for (const m of DEFAULT_MENU_ITEMS) {

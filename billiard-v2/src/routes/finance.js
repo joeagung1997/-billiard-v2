@@ -178,12 +178,13 @@ router.get("/menu", async (req, res) => {
 
 // ── POST /keuangan/menu/tambah ────────────────────────────────
 router.post("/menu/tambah", async (req, res) => {
-  const nama     = (req.body.nama     ?? "").trim();
-  const harga    = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
-  const kategori = (req.body.kategori ?? "minuman").trim();
+  const nama       = (req.body.nama     ?? "").trim();
+  const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  const kategori   = (req.body.kategori ?? "minuman").trim();
+  const bestSeller = req.body.best_seller === "1";
   if (!nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
   try {
-    await addMenuItem(nama, harga, kategori);
+    await addMenuItem(nama, harga, kategori, bestSeller);
     res.redirect("/keuangan/menu");
   } catch (err) {
     console.error("[FINANCE] menu tambah error:", err.message);
@@ -193,13 +194,14 @@ router.post("/menu/tambah", async (req, res) => {
 
 // ── POST /keuangan/menu/edit ──────────────────────────────────
 router.post("/menu/edit", async (req, res) => {
-  const id       = parseInt(req.body.id) || 0;
-  const nama     = (req.body.nama     ?? "").trim();
-  const harga    = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
-  const kategori = (req.body.kategori ?? "minuman").trim();
+  const id         = parseInt(req.body.id) || 0;
+  const nama       = (req.body.nama     ?? "").trim();
+  const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  const kategori   = (req.body.kategori ?? "minuman").trim();
+  const bestSeller = req.body.best_seller === "1";
   if (!id || !nama || harga <= 0) return res.redirect("/keuangan/menu?err=1");
   try {
-    await updateMenuItem(id, nama, harga, kategori);
+    await updateMenuItem(id, nama, harga, kategori, bestSeller);
     res.redirect("/keuangan/menu");
   } catch (err) {
     console.error("[FINANCE] menu edit error:", err.message);

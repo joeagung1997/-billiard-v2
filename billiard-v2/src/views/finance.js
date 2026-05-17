@@ -1323,6 +1323,18 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     ...k, rows: items.filter((m) => (m.kategori || "minuman") === k.value),
   })).filter((g) => g.rows.length > 0);
 
+  const bsBadge = "<span style=\"display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;"
+    + "background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);"
+    + "border-radius:4px;padding:1px 6px;margin-left:6px;white-space:nowrap\">"
+    + "<i class=\"ti ti-star-filled\" style=\"font-size:9px\"></i> Best Seller</span>";
+
+  const bsCheckbox = (checked) =>
+    "<label style=\"display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--txt2);white-space:nowrap\">"
+    + "<input type=\"hidden\" name=\"best_seller\" value=\"0\">"
+    + "<input type=\"checkbox\" name=\"best_seller\" value=\"1\"" + (checked ? " checked" : "") + " style=\"width:16px;height:16px;accent-color:#f59e0b;cursor:pointer\">"
+    + "<i class=\"ti ti-star\" style=\"font-size:14px;color:#f59e0b\"></i> Best Seller"
+    + "</label>";
+
   const makeGroupRows = (groupRows) => groupRows.map((m) => {
     if (editItem && editItem.id === m.id) {
       // grid-column:1/-1 agar form span semua kolom, tidak terpotong overflow:hidden
@@ -1332,12 +1344,13 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
         + "<input class=\"cat-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(m.nama) + "\" required style=\"flex:1;min-width:140px\">"
         + katSelect("kategori", m.kategori || "minuman", "min-width:130px")
         + "<input class=\"cat-input\" type=\"text\" name=\"harga\" value=\"" + m.harga + "\" required style=\"width:100px\" oninput=\"fmtH(this)\">"
+        + bsCheckbox(!!m.best_seller)
         + "<button type=\"submit\" class=\"btn-primary\" style=\"white-space:nowrap;height:42px;padding:0 16px;font-size:13px\">Simpan</button>"
         + "<a href=\"/keuangan/menu\" class=\"btn-del\" style=\"height:42px;display:inline-flex;align-items:center\">Batal</a>"
         + "</form></div>";
     }
     return "<div class=\"kat-row\">"
-      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + "</div>"
+      + "<div class=\"kat-name\"><div class=\"kat-dot income\"></div>" + escHtml(m.nama) + (m.best_seller ? bsBadge : "") + "</div>"
       + "<div style=\"font-size:12px;font-family:var(--ff-mono);color:var(--txt)\">" + rpFmt(m.harga) + "</div>"
       + "<div class=\"kat-act\" style=\"display:flex;gap:6px\">"
       + "<a href=\"/keuangan/menu?edit=" + m.id + "\" class=\"btn-del\" style=\"border-color:rgba(30,100,180,.25);background:rgba(30,100,180,.08);color:var(--accent)\"><i class=\"ti ti-pencil\"></i> Edit</a>"
@@ -1442,6 +1455,9 @@ export function financeMenuPage(token, items = [], hasErr = false, editItem = nu
     + "<div>"
     + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:block\">Harga (Rp)</label>"
     + "<input class=\"cat-input\" type=\"text\" name=\"harga\" placeholder=\"contoh: 7.000\" required oninput=\"fmtH(this)\">"
+    + "</div>"
+    + "<div style=\"padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md)\">"
+    + bsCheckbox(false)
     + "</div>"
     + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;font-size:13px\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah</button>"
     + "</form>"
