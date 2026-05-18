@@ -89,7 +89,7 @@ router.post("/members", requireApiAuth(["admin"]), async (req, res) => {
     const newMember = createMember(kode, nama.trim(), teleponFmt);
 
     await saveMember(newMember);
-    await appendLog(kode, newMember.nama, "DAFTAR", "Member baru via API");
+    await appendLog(kode, newMember.nama, "DAFTAR_MEMBER", "Member baru via API");
 
     // Upload QR ke Cloudinary (best-effort)
     try {

@@ -902,6 +902,8 @@ td          { padding:10px 16px; vertical-align:middle; }
 .hm-cell.lv2 { background:#8bc97a; }
 .hm-cell.lv3 { background:#3a7d2c; }
 .hm-cell.lv4 { background:#255519; box-shadow:0 0 6px rgba(37,85,25,.4); }
+.hm-cell.hm-future { background:transparent; border:1px dashed var(--border); opacity:.5; cursor:default; }
+.hm-cell.hm-future:hover { transform:none; }
 
 @media (max-width:768px) {
   .cstat-grid { grid-template-columns:repeat(2,1fr); }
