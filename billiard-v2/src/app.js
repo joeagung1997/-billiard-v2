@@ -56,19 +56,8 @@ app.use("/keuangan", (req, res) => res.redirect(308, "/operasional" + req.url));
 app.use("/", shareRouter);
 
 // ── Home ──────────────────────────────────────────────────────
-app.get("/", (req, res) => {
-  res.send(`<!DOCTYPE html><html lang="id"><head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${CONFIG.NAMA_ARENA}</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:sans-serif;background:#070d18;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.card{background:#0c1526;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center}.ic{font-size:40px;margin-bottom:12px}h1{font-size:18px;font-weight:700;color:#e8edf5;margin-bottom:8px}p{font-size:13px;color:#4a5e78;margin-bottom:16px}.btn{display:inline-block;background:#2563eb;color:#fff;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;text-decoration:none}</style>
-  </head><body><div class="card">
-  <div class="ic">🎱</div>
-  <h1>${CONFIG.NAMA_ARENA}</h1>
-  <p>Sistem member berjalan normal.</p>
-  <a href="/admin" class="btn">Dashboard Admin</a>
-  </div></body></html>`);
-});
+// Landing page disajikan via public/index.html (static file).
+// Express static middleware otomatis handle GET / -> public/index.html.
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((req, res) => {

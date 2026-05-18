@@ -46,156 +46,179 @@ function docHead(title) {
 
 export function adminLoginPage(showError) {
   const errHtml = showError
-    ? '<div class="err-msg"><span>⚠ PIN salah. Silakan coba lagi.</span></div>'
-    : '';
+    ? '<div class="error-box show"><i class="ti ti-alert-circle"></i><span>PIN salah. Silakan coba lagi.</span></div>'
+    : '<div class="error-box"><i class="ti ti-alert-circle"></i><span>PIN salah. Silakan coba lagi.</span></div>';
 
+  // ── Split-panel design: kiri dark hero, kanan form numpad PIN ──
   const css = [
-    '*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }',
-    'body {',
-    '  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;',
-    '  background: #050b15;',
-    '  min-height: 100vh;',
-    '  display: flex; align-items: center; justify-content: center;',
-    '  padding: 20px; overflow: hidden;',
+    ':root{',
+    '  --g1:#081209;--g2:#0f1e10;--g3:#1a3a1e;',
+    '  --green:#2d6624;--green-lt:#3a7d2c;--green-xlt:#5abe68;',
+    '  --gold:#C9A84C;--gold-lt:#E8C96A;',
+    '  --text:#EEF2ED;--muted:rgba(238,242,237,0.45);',
     '}',
-    // background glow blobs
-    '.bg-glow { position:fixed; inset:0; pointer-events:none; z-index:0; }',
-    '.bg-glow::before { content:""; position:absolute; top:-15%; left:50%; transform:translateX(-50%);',
-    '  width:640px; height:640px;',
-    '  background:radial-gradient(circle, rgba(37,99,235,.13) 0%, transparent 68%);',
-    '  border-radius:50%; }',
-    '.bg-glow::after { content:""; position:absolute; bottom:-10%; right:-10%;',
-    '  width:420px; height:420px;',
-    '  background:radial-gradient(circle, rgba(34,197,94,.07) 0%, transparent 70%);',
-    '  border-radius:50%; }',
-    // card
-    '.card {',
-    '  position:relative; z-index:1;',
-    '  background: linear-gradient(150deg, #0e1b2e 0%, #090f1c 100%);',
-    '  border: 1px solid rgba(255,255,255,.07);',
-    '  border-radius: 26px;',
-    '  padding: 36px 28px 28px;',
-    '  width: 100%; max-width: 340px;',
-    '  text-align: center;',
-    '  box-shadow: 0 40px 90px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.05);',
-    '  animation: cardIn .45s cubic-bezier(.16,1,.3,1) both;',
-    '}',
-    '@keyframes cardIn { from{opacity:0;transform:translateY(28px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }',
-    // icon box
-    '.icon-box {',
-    '  width:68px; height:68px; margin:0 auto 18px;',
-    '  background: linear-gradient(135deg,#1a3c72,#0e2245);',
-    '  border:1px solid rgba(59,130,246,.22);',
-    '  border-radius:20px;',
-    '  display:flex; align-items:center; justify-content:center;',
-    '  font-size:30px;',
-    '  box-shadow:0 8px 28px rgba(37,99,235,.22);',
-    '}',
-    '.arena-lbl { font-size:10px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#3b82f6; margin-bottom:7px; }',
-    'h1 { font-size:22px; font-weight:700; color:#e8edf5; margin-bottom:4px; }',
-    '.sub { font-size:13px; color:#4a5e78; margin-bottom:26px; }',
-    // dots
-    '.pin-dots { display:flex; justify-content:center; gap:11px; margin-bottom:24px; }',
-    '.dot {',
-    '  width:13px; height:13px; border-radius:50%;',
-    '  background:#162030; border:2px solid #253a58;',
-    '  transition:all .15s cubic-bezier(.34,1.56,.64,1);',
-    '}',
-    '.dot.filled {',
-    '  background:#3b82f6; border-color:#3b82f6;',
-    '  transform:scale(1.18);',
-    '  box-shadow:0 0 10px rgba(59,130,246,.55);',
-    '}',
-    // error
-    '.err-msg {',
-    '  background:rgba(239,68,68,.1); color:#f87171;',
-    '  border:1px solid rgba(239,68,68,.2); border-radius:10px;',
-    '  padding:10px 12px; font-size:12px; font-weight:500;',
-    '  margin-bottom:18px;',
-    '  animation:shake .45s cubic-bezier(.36,.07,.19,.97);',
-    '}',
-    '@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }',
-    // numpad
-    '.numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:0; }',
-    '.np-btn {',
-    '  background:#0f1e30; border:1px solid #1c3352;',
-    '  border-radius:14px; color:#e8edf5;',
-    '  font-size:20px; font-weight:600;',
-    '  padding:17px 10px; cursor:pointer;',
-    '  transition:background .12s, transform .1s;',
-    '  font-family:inherit; touch-action:manipulation; user-select:none; line-height:1;',
-    '}',
-    '.np-btn:hover { background:#162840; border-color:#2a4a74; }',
-    '.np-btn:active { transform:scale(.9); opacity:.8; }',
-    '.del-btn { color:#475569; font-size:16px; }',
-    '.go-btn {',
-    '  background:linear-gradient(135deg,#2563eb,#1d4ed8);',
-    '  border-color:#3b82f6; color:#fff;',
-    '  box-shadow:0 4px 18px rgba(37,99,235,.32);',
-    '  font-size:18px;',
-    '}',
-    '.go-btn:hover { background:linear-gradient(135deg,#3b82f6,#2563eb); }',
-    // footer hint
-    '.login-footer { margin-top:22px; font-size:11px; color:#253040; }',
-    '#pinInput { display:none; }',
+    '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
+    'body{font-family:"Outfit",sans-serif;background:var(--g1);min-height:100vh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}',
+    'body::after{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:0.5}',
+
+    /* ── Left panel ── */
+    '.left-panel{flex:1;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden}',
+    '.left-panel::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 20%,rgba(45,102,36,0.28) 0%,transparent 55%),radial-gradient(ellipse 60% 50% at 80% 80%,rgba(58,125,44,0.18) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 50% 50%,rgba(26,58,30,0.2) 0%,transparent 60%);background-color:#0a1a0c}',
+    '.left-panel::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 80% 80% at 40% 50%,black 20%,transparent 75%);mask-image:radial-gradient(ellipse 80% 80% at 40% 50%,black 20%,transparent 75%)}',
+    '.left-content,.left-bottom{position:relative;z-index:1}',
+
+    '.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:60px;animation:fadeSlide .5s ease both}',
+    '.brand-ball{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2a2a2a,#090909);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 2px 10px rgba(0,0,0,0.5)}',
+    '.brand-ball::before{content:"";position:absolute;inset:26%;border-radius:50%;background:rgba(255,255,255,0.9)}',
+    '.brand-ball::after{content:"8";position:absolute;font-size:10px;font-weight:700;color:#111;font-family:"Outfit",sans-serif}',
+    '.brand-name{font-family:"Cormorant Garamond",serif;font-size:17px;font-weight:700;color:var(--text);letter-spacing:0.04em}',
+
+    '.left-headline{font-family:"Cormorant Garamond",serif;font-size:clamp(40px,5vw,62px);font-weight:700;line-height:1.05;letter-spacing:-0.02em;margin-bottom:18px;color:var(--text);animation:fadeSlide .55s ease 0.1s both}',
+    '.left-headline em{font-style:italic;color:var(--gold-lt)}',
+    '.left-sub{font-size:15px;color:var(--muted);line-height:1.65;max-width:400px;animation:fadeSlide .6s ease 0.2s both}',
+
+    '.feat-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;animation:fadeSlide .65s ease 0.3s both}',
+    '.feat-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:12px;color:rgba(238,242,237,0.65)}',
+    '.feat-pill i{font-size:13px;color:var(--green-xlt)}',
+
+    '.left-stats{display:flex;gap:32px;animation:fadeSlide .7s ease 0.4s both}',
+    '.ls-val{font-family:"DM Mono",monospace;font-size:24px;font-weight:500;color:var(--gold-lt)}',
+    '.ls-label{font-size:11px;color:var(--muted);margin-top:3px}',
+
+    '.deco-ball{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 30%,#222,#050505);border:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;pointer-events:none;animation:floatB ease-in-out infinite}',
+    '.deco-ball::before{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,0.85)}',
+    '.deco-ball::after{content:"8";position:absolute;font-family:"Outfit",sans-serif;font-weight:700;color:#111}',
+    '.db1{width:80px;height:80px;top:15%;right:12%;opacity:0.15;animation-duration:14s}',
+    '.db1::before{inset:28%}.db1::after{font-size:15px}',
+    '.db2{width:50px;height:50px;bottom:25%;right:25%;opacity:0.1;animation-duration:18s;animation-delay:-6s}',
+    '.db2::before{inset:28%}.db2::after{font-size:10px}',
+    '.db3{width:30px;height:30px;top:55%;right:8%;opacity:0.08;animation-duration:22s;animation-delay:-11s}',
+    '.db3::before{inset:28%}.db3::after{font-size:7px}',
+
+    /* ── Right panel ── */
+    '.right-panel{width:460px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:60px 48px;position:relative;z-index:10}',
+    '.right-panel::before{content:"";position:absolute;top:0;left:-1px;bottom:0;width:1px;background:linear-gradient(to bottom,transparent 0%,rgba(201,168,76,0.3) 20%,rgba(201,168,76,0.15) 50%,rgba(45,102,36,0.2) 80%,transparent 100%)}',
+
+    '.form-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#9aaa98;margin-bottom:10px;display:flex;align-items:center;gap:6px;animation:formFade .5s ease both}',
+    '.form-eyebrow::before{content:"";width:16px;height:1.5px;background:var(--green);border-radius:99px}',
+    '.form-title{font-family:"Cormorant Garamond",serif;font-size:36px;font-weight:700;color:#1a2318;letter-spacing:-0.02em;line-height:1.1;margin-bottom:6px;animation:formFade .55s ease 0.05s both}',
+    '.form-sub{font-size:13px;color:#7a8c78;margin-bottom:30px;animation:formFade .6s ease 0.1s both}',
+
+    /* PIN dots */
+    '.pin-dots{display:flex;justify-content:center;gap:11px;margin-bottom:22px;animation:formFade .65s ease 0.2s both}',
+    '.dot{width:13px;height:13px;border-radius:50%;background:#E4EBE5;border:2px solid #C0CFC1;transition:all .15s cubic-bezier(.34,1.56,.64,1)}',
+    '.dot.filled{background:var(--green);border-color:var(--green);transform:scale(1.18);box-shadow:0 0 10px rgba(45,102,36,.45)}',
+
+    /* Error box */
+    '.error-box{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;margin-bottom:18px;font-size:13px;color:#DC2626;opacity:0;transform:translateY(-4px);transition:all .25s;pointer-events:none;max-height:0;overflow:hidden;padding-top:0;padding-bottom:0;margin-bottom:0}',
+    '.error-box.show{opacity:1;transform:translateY(0);pointer-events:all;max-height:60px;padding:11px 13px;margin-bottom:18px;animation:shake .45s cubic-bezier(.36,.07,.19,.97)}',
+    '.error-box i{font-size:15px;flex-shrink:0;margin-top:1px}',
+    '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}',
+
+    /* Numpad */
+    '.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;animation:formFade .65s ease 0.25s both}',
+    '.np-btn{background:#F8FAF8;border:1.5px solid #DDE5DE;border-radius:12px;color:#1a2318;font-size:19px;font-weight:600;padding:15px 10px;cursor:pointer;transition:background .12s,transform .1s,border-color .12s;font-family:"Outfit",sans-serif;touch-action:manipulation;user-select:none;line-height:1}',
+    '.np-btn:hover{background:#EEF2EE;border-color:#C0CFC1}',
+    '.np-btn:active{transform:scale(.94);opacity:.85}',
+    '.np-btn.del-btn{color:#9aaa98;font-size:17px}',
+    '.np-btn.go-btn{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 4px 14px rgba(45,102,36,.25);font-size:17px}',
+    '.np-btn.go-btn:hover{background:var(--green-lt);border-color:var(--green-lt);box-shadow:0 6px 18px rgba(45,102,36,.35)}',
+
+    /* Divider + back link */
+    '.form-divider{display:flex;align-items:center;gap:12px;margin:18px 0;animation:formFade .65s ease 0.3s both}',
+    '.form-divider::before,.form-divider::after{content:"";flex:1;height:1px;background:#E4EBE5}',
+    '.form-divider span{font-size:11px;color:#9aaa98;white-space:nowrap}',
+    '.back-link{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px solid #DDE5DE;border-radius:10px;font-size:13px;font-weight:500;color:#5a6e58;text-decoration:none;transition:all .15s;animation:formFade .65s ease 0.35s both}',
+    '.back-link:hover{background:#F8FAF8;border-color:#C0CFC1;color:#1a2318}',
+
+    '.form-bottom{margin-top:22px;text-align:center;animation:formFade .65s ease 0.4s both}',
+    '.form-bottom p{font-size:11px;color:#9aaa98;line-height:1.6}',
+
+    /* Animations */
+    '@keyframes fadeSlide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}',
+    '@keyframes formFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes floatB{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(8px,-12px) rotate(8deg)}66%{transform:translate(-5px,-20px) rotate(-5deg)}}',
+
+    '@media (max-width:820px){.left-panel{display:none}.right-panel{width:100%;padding:40px 28px}}',
   ].join('');
 
   const script = [
-    'var _pin = "", MAX = 6;',
-    'function press(n) { if (_pin.length >= MAX) return; _pin += n; upd(); }',
-    'function del()     { _pin = _pin.slice(0,-1); upd(); }',
-    'function upd() {',
-    '  for (var i=0;i<MAX;i++) {',
-    '    var d = document.getElementById("d"+i);',
-    '    if(d) d.classList.toggle("filled", i<_pin.length);',
-    '  }',
-    '}',
-    'function go() {',
-    '  if (!_pin.length) return;',
-    '  document.getElementById("pi").value = _pin;',
-    '  document.getElementById("pf").submit();',
-    '}',
-    'document.addEventListener("keydown", function(e){',
-    '  if(e.key>="0"&&e.key<="9") press(e.key);',
-    '  else if(e.key==="Backspace") del();',
-    '  else if(e.key==="Enter") go();',
+    'var _pin="",MAX=6;',
+    'function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}',
+    'function del(){_pin=_pin.slice(0,-1);upd();}',
+    'function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById("d"+i);if(d)d.classList.toggle("filled",i<_pin.length);}}',
+    'function go(){if(!_pin.length)return;document.getElementById("pi").value=_pin;document.getElementById("pf").submit();}',
+    'document.addEventListener("keydown",function(e){',
+    'if(e.key>="0"&&e.key<="9")press(e.key);',
+    'else if(e.key==="Backspace")del();',
+    'else if(e.key==="Enter")go();',
     '});',
   ].join('');
 
-  const dots = [0,1,2,3,4,5].map(function(i) {
-    return '<div class="dot" id="d' + i + '"></div>';
-  }).join('');
+  const dots = [0,1,2,3,4,5].map(function(i) { return '<div class="dot" id="d' + i + '"></div>'; }).join('');
 
-  return docHead('Admin Login')
+  return '<!DOCTYPE html><html lang="id"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">'
+    + '<title>Masuk — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<style>' + css + '</style>'
     + '</head><body>'
-    + '<div class="bg-glow"></div>'
-    + '<div class="card">'
-    +   '<div class="icon-box">🎱</div>'
-    +   '<div class="arena-lbl">' + CONFIG.NAMA_ARENA + '</div>'
-    +   '<h1>Admin Panel</h1>'
-    +   '<p class="sub">Masukkan PIN untuk akses</p>'
-    +   errHtml
-    +   '<div class="pin-dots">' + dots + '</div>'
-    +   '<div class="numpad">'
-    +     '<button class="np-btn" onclick="press(\'1\')">1</button>'
-    +     '<button class="np-btn" onclick="press(\'2\')">2</button>'
-    +     '<button class="np-btn" onclick="press(\'3\')">3</button>'
-    +     '<button class="np-btn" onclick="press(\'4\')">4</button>'
-    +     '<button class="np-btn" onclick="press(\'5\')">5</button>'
-    +     '<button class="np-btn" onclick="press(\'6\')">6</button>'
-    +     '<button class="np-btn" onclick="press(\'7\')">7</button>'
-    +     '<button class="np-btn" onclick="press(\'8\')">8</button>'
-    +     '<button class="np-btn" onclick="press(\'9\')">9</button>'
-    +     '<button class="np-btn del-btn" onclick="del()">⌫</button>'
-    +     '<button class="np-btn" onclick="press(\'0\')">0</button>'
-    +     '<button class="np-btn go-btn" onclick="go()">→</button>'
-    +   '</div>'
-    +   '<form id="pf" action="/admin/login" method="post">'
-    +     '<input type="hidden" name="pin" id="pi">'
-    +   '</form>'
-    +   '<div class="login-footer">Gunakan keyboard atau tap angka di atas</div>'
+
+    // LEFT PANEL — hero
+    + '<div class="left-panel">'
+    + '<div class="left-content">'
+    + '<div class="brand-row"><div class="brand-ball"></div><span class="brand-name">' + CONFIG.NAMA_ARENA + '</span></div>'
+    + '<h1 class="left-headline">Sistem<br>Manajemen<br>Billiard <em>Cerdas</em></h1>'
+    + '<p class="left-sub">Dashboard lengkap untuk mengelola member, keuangan, dan operasional billiard Anda dari satu tempat.</p>'
+    + '<div class="feat-pills">'
+    + '<div class="feat-pill"><i class="ti ti-users"></i> Kelola Member</div>'
+    + '<div class="feat-pill"><i class="ti ti-qrcode"></i> QR Check-in</div>'
+    + '<div class="feat-pill"><i class="ti ti-wallet"></i> Keuangan</div>'
+    + '<div class="feat-pill"><i class="ti ti-chart-bar"></i> Laporan</div>'
+    + '<div class="feat-pill"><i class="ti ti-coffee"></i> Menu</div>'
     + '</div>'
+    + '</div>'
+    + '<div class="left-bottom">'
+    + '<div class="left-stats">'
+    + '<div class="ls-item"><div class="ls-val">100%</div><div class="ls-label">Digital</div></div>'
+    + '<div class="ls-item"><div class="ls-val">Real-time</div><div class="ls-label">Laporan</div></div>'
+    + '<div class="ls-item"><div class="ls-val">QR</div><div class="ls-label">Check-in</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="deco-ball db1"></div>'
+    + '<div class="deco-ball db2"></div>'
+    + '<div class="deco-ball db3"></div>'
+    + '</div>'
+
+    // RIGHT PANEL — login form (PIN numpad)
+    + '<div class="right-panel">'
+    + '<div class="form-eyebrow">Admin Panel</div>'
+    + '<h2 class="form-title">Selamat<br>Datang</h2>'
+    + '<p class="form-sub">Masukkan PIN admin untuk akses dashboard.</p>'
+    + errHtml
+    + '<div class="pin-dots">' + dots + '</div>'
+    + '<div class="numpad">'
+    + '<button type="button" class="np-btn" onclick="press(\'1\')">1</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'2\')">2</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'3\')">3</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'4\')">4</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'5\')">5</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'6\')">6</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'7\')">7</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'8\')">8</button>'
+    + '<button type="button" class="np-btn" onclick="press(\'9\')">9</button>'
+    + '<button type="button" class="np-btn del-btn" onclick="del()" aria-label="Hapus"><i class="ti ti-backspace"></i></button>'
+    + '<button type="button" class="np-btn" onclick="press(\'0\')">0</button>'
+    + '<button type="button" class="np-btn go-btn" onclick="go()" aria-label="Masuk"><i class="ti ti-arrow-right"></i></button>'
+    + '</div>'
+    + '<form id="pf" action="/admin/login" method="post"><input type="hidden" name="pin" id="pi"></form>'
+    + '<div class="form-divider"><span>atau</span></div>'
+    + '<a href="/" class="back-link"><i class="ti ti-arrow-left" style="font-size:15px"></i> Kembali ke Halaman Utama</a>'
+    + '<div class="form-bottom"><p>Tap angka atau pakai keyboard.<br>Tekan Enter atau ➜ untuk masuk.</p></div>'
+    + '</div>'
+
     + '<script>' + script + '<\/script>'
     + '</body></html>';
 }
