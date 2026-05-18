@@ -512,13 +512,141 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
 /* ── Tabs ────────────────────────────────────────────────────────── */
-.tab-row { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; }
-.tab     { padding:8px 14px; font-size:12px; font-weight:500; color:var(--txt3); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s; }
-.tab.on, .tab.active, .tab-btn.on { color:var(--accent); border-bottom-color:var(--accent); }
+/* ── Aktivitas Hari Ini — Ghost outline tabs (revamp v3) ─────── */
+.tab-wrap { padding:12px 20px 14px; border-bottom:1px solid #f0f0f0; }
+.tab-row  { display:flex; gap:6px; border-bottom:none; margin-bottom:0; }
+.tab-btn {
+  flex:1; font-size:12px; font-weight:500;
+  padding:7px 0; border:1.5px solid #e8e8e8; border-radius:20px;
+  cursor:pointer; color:#aaa; background:#fff;
+  transition:all .18s; text-align:center; white-space:nowrap;
+  font-family:var(--ff);
+}
+.tab-btn.on { border-color:#2a7a4e; color:#2a7a4e; background:#f0faf4; font-weight:600; }
+.tab-btn:hover:not(.on) { border-color:#ccc; color:#777; }
+
+/* Legacy fallback (kalau ada page yg masih pakai .tab plain) */
+.tab     { padding:8px 14px; font-size:12px; font-weight:500; color:var(--txt3); cursor:pointer; border-bottom:2px solid transparent; transition:color .15s; }
+.tab.on, .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 .tab:hover { color:var(--accent); }
-.tab-btn   { flex:1; padding:10px 8px; font-size:12px; font-weight:500; color:var(--txt3); cursor:pointer; border-bottom:2px solid transparent; text-align:center; white-space:nowrap; }
-.tab-body  { display:none; }
+
+.tab-body { display:none; }
 .tab-body.on { display:block; }
+.log-panel { display:none; }
+.log-panel.on { display:block; }
+
+/* ── Log/Scan/Leaderboard list items (revamp v3) ─────────────── */
+.log-list { flex:1; overflow-y:auto; max-height:420px; }
+.log-item {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:10px 20px; border-bottom:1px solid #f7f7f7;
+  transition:background .1s;
+}
+.log-item:last-child { border:none; }
+.log-item:hover { background:#fafafa; }
+.log-av {
+  width:34px; height:34px; border-radius:10px;
+  background:#eef6f1; color:#2a7a4e;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; flex-shrink:0;
+  letter-spacing:.02em;
+}
+.log-av.muted { background:#f5f5f5; color:#aaa; }
+.log-body { flex:1; min-width:0; }
+.log-name {
+  font-size:13px; font-weight:500; color:#222;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.log-sub  { font-size:11px; color:#aaa; margin-top:2px; word-break:break-word; }
+.log-time { font-size:11px; color:#ccc; white-space:nowrap; flex-shrink:0; margin-top:1px; }
+
+/* Chip badges untuk log */
+.chip {
+  font-size:10px; padding:2px 8px; border-radius:20px;
+  font-weight:500; white-space:nowrap;
+  display:inline-flex; align-items:center;
+}
+.ch-scan   { background:#e8f5ee; color:#1a7a40; }
+.ch-edit   { background:#e8f0fb; color:#2a5bbf; }
+.ch-hapus  { background:#fdecea; color:#cc3333; }
+.ch-bonus  { background:#fff8e6; color:#b07a10; }
+.ch-reward { background:#fff0fa; color:#a030a0; }
+.ch-reset  { background:#f0f0f0; color:#666; }
+
+/* Leaderboard items (revamp v3) */
+.lb-item {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 20px; border-bottom:1px solid #f7f7f7;
+}
+.lb-item:last-child { border:none; }
+.lb-rank {
+  width:22px; text-align:center;
+  font-size:13px; font-weight:600; color:#bbb;
+  flex-shrink:0;
+}
+.lb-rank.gold   { color:#c89a10; }
+.lb-rank.silver { color:#999; }
+.lb-rank.bronze { color:#b87333; }
+.lb-av {
+  width:34px; height:34px; border-radius:10px;
+  background:#eef6f1; color:#2a7a4e;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; flex-shrink:0;
+}
+.lb-av.muted { background:#f5f5f5; color:#aaa; }
+.lb-info { flex:1; min-width:0; }
+.lb-name { font-size:13px; font-weight:500; color:#222; }
+.lb-sub  { font-size:11px; color:#bbb; margin-top:1px; }
+.lb-pts  { font-size:13px; font-weight:600; color:#2a7a4e; white-space:nowrap; }
+.lb-pts.muted { color:#bbb; }
+
+/* ── Riwayat Keuangan (revamp v3) — fin-* baru, beda dari df-* ── */
+.fin-body  { padding:16px 20px; display:flex; flex-direction:column; flex:1; }
+.fin-month { font-size:11px; color:#aaa; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; font-weight:500; }
+.fin-list  { display:flex; flex-direction:column; }
+.fin-item  { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f5f5f5; }
+.fin-item:last-of-type { border:none; }
+.fin-ic {
+  width:38px; height:38px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; font-size:18px;
+}
+.fin-ic.green { background:#eef6f1; color:#2a7a4e; }
+.fin-ic.amber { background:#fff8e6; color:#b07a10; }
+.fin-ic.blue  { background:#e8f0fb; color:#2a5bbf; }
+.fin-ic.red   { background:#fdecea; color:#cc3333; }
+.fin-info  { flex:1; min-width:0; }
+.fin-label { font-size:13px; font-weight:500; color:#222; word-break:break-word; }
+.fin-date  { font-size:11px; color:#bbb; margin-top:1px; }
+.fin-amt   { font-size:14px; font-weight:600; white-space:nowrap; font-family:var(--ff-mono); }
+.fin-amt.income  { color:#1a7a40; }
+.fin-amt.expense { color:#cc3333; }
+
+.saldo-box {
+  margin:12px 20px 20px;
+  background:#0d2b1e; border-radius:14px;
+  padding:16px 18px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.saldo-label  { font-size:12px; color:rgba(255,255,255,.5); }
+.saldo-val    { font-size:22px; font-weight:600; color:#6de0a0; letter-spacing:-.02em; margin-top:3px; font-family:var(--ff-mono); }
+.saldo-val.neg { color:#ff8a8a; }
+.saldo-period { font-size:11px; color:rgba(255,255,255,.35); margin-top:2px; }
+.saldo-icon {
+  width:42px; height:42px; border-radius:50%;
+  background:rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.saldo-icon i { font-size:20px; color:#6de0a0; }
+
+.detail-link {
+  font-size:12px; color:#2a7a4e;
+  display:inline-flex; align-items:center; gap:3px;
+  cursor:pointer; border:none; background:none;
+  text-decoration:none; font-weight:500;
+  font-family:var(--ff);
+}
+.detail-link:hover { color:#1f5c3a; }
 
 /* ── Finance rows ────────────────────────────────────────────────── */
 /* Riwayat Keuangan card di admin dashboard (BUKAN di /operasional) */

@@ -305,10 +305,12 @@ window.saveDetailEdit = function(e) {
 const TAB_IDS = ["scan", "lb", "log"];
 
 const switchTab = (id) => {
-  document.querySelectorAll(".tab-row .tab").forEach((btn, i) =>
+  // Support both old (.tab) and new (.tab-btn) markup
+  document.querySelectorAll(".tab-row .tab, .tab-row .tab-btn").forEach((btn, i) =>
     btn.classList.toggle("on", TAB_IDS[i] === id)
   );
-  document.querySelectorAll(".tab-body").forEach((panel) =>
+  // Support both old (.tab-body) and new (.log-panel) markup
+  document.querySelectorAll(".tab-body, .log-panel").forEach((panel) =>
     panel.classList.remove("on")
   );
   document.getElementById(`tab-${id}`)?.classList.add("on");
@@ -330,54 +332,60 @@ const WA_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">
 
 // ── Render helpers ────────────────────────────────────────────
 
+// Helper: initials dari nama (max 2 huruf)
+const logInitials = (s) => {
+  const w = (s || "").trim().split(/\s+/).slice(0, 2);
+  return w.map((x) => (x[0] || "").toUpperCase()).join("") || "?";
+};
+
 const renderScan = ({ nama, kode, jam }) =>
-  `<div class="list-item">
-    <div class="list-main">
-      <div class="list-name">${esc(nama)}</div>
-      <div class="list-sub">${esc(kode)}</div>
+  `<div class="log-item">
+    <div class="log-av">${logInitials(nama)}</div>
+    <div class="log-body">
+      <div class="log-name">${esc(nama)} <span class="chip ch-scan">Scan</span></div>
+      <div class="log-sub">${esc(kode)}</div>
     </div>
-    <span class="badge badge-green">${esc(jam)}</span>
+    <div class="log-time">${esc(jam)}</div>
   </div>`;
 
-const MEDALS = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"];
-
-const renderLb = ({ nama, kode, total, reward }, idx) =>
-  `<div class="list-item">
-    <span class="lb-rank">${MEDALS[idx] ?? idx + 1}</span>
-    <div class="list-main">
-      <div class="list-name">${esc(nama)}</div>
-      <div class="list-sub">${esc(kode)}</div>
+const renderLb = ({ nama, kode, total, reward }, idx) => {
+  const rankCls = idx === 0 ? " gold" : idx === 1 ? " silver" : idx === 2 ? " bronze" : "";
+  const isEmpty = total === 0;
+  const ptsCls = isEmpty ? " muted" : "";
+  const avCls  = isEmpty ? " muted" : "";
+  return `<div class="lb-item">
+    <div class="lb-rank${rankCls}">${idx + 1}</div>
+    <div class="lb-av${avCls}">${logInitials(nama)}</div>
+    <div class="lb-info">
+      <div class="lb-name">${esc(nama)}</div>
+      <div class="lb-sub">${total} kunjungan${reward ? " · " + reward + "× reward" : ""}</div>
     </div>
-    <div style="text-align:right;flex-shrink:0">
-      <div class="lb-score">${total} <span class="lb-score-lbl">kunjungan</span></div>
-      <div style="font-size:var(--fs-xs);color:var(--txt3);margin-top:2px">${reward ?? 0}× reward</div>
-    </div>
+    <div class="lb-pts${ptsCls}">${total} pts</div>
   </div>`;
+};
 
-const LOG_BADGE = {
-  SCAN:          `<span class="badge badge-green">✓ Scan</span>`,
-  BONUS_EARNED:  `<span class="badge badge-gold">🎁 Bonus Earned</span>`,
-  BONUS_KLAIM:   `<span class="badge badge-gold" style="background:rgba(201,168,76,.25)">✅ Bonus Diklaim</span>`,
-  BONUS_EXPIRED: `<span class="badge badge-red" style="background:rgba(239,68,68,.15);color:#f87171">⏰ Bonus Hangus</span>`,
-  REWARD_GRATIS: `<span class="badge badge-gold">🎁 Reward</span>`,
-  SCAN_RESET:    `<span class="badge badge-blue">↺ Reset Scan</span>`,
-  EDIT_MEMBER:   `<span class="badge" style="background:rgba(38,96,164,.15);color:#2660a4">✏ Edit Member</span>`,
-  DELETE_MEMBER: `<span class="badge badge-red" style="background:rgba(163,45,45,.15);color:#a32d2d">🗑 Hapus Member</span>`,
-  RESET_QR:      `<span class="badge" style="background:rgba(196,127,26,.15);color:#c47f1a">🔄 Reset QR</span>`,
+// Mapping aksi -> chip class + label
+const LOG_CHIP = {
+  SCAN:          { cls: "ch-scan",   label: "Scan" },
+  BONUS_EARNED:  { cls: "ch-bonus",  label: "Bonus Earned" },
+  BONUS_KLAIM:   { cls: "ch-bonus",  label: "Bonus Diklaim" },
+  BONUS_EXPIRED: { cls: "ch-hapus",  label: "Bonus Hangus" },
+  REWARD_GRATIS: { cls: "ch-reward", label: "Reward" },
+  SCAN_RESET:    { cls: "ch-reset",  label: "Reset Scan" },
+  EDIT_MEMBER:   { cls: "ch-edit",   label: "Edit Member" },
+  DELETE_MEMBER: { cls: "ch-hapus",  label: "Hapus" },
+  RESET_QR:      { cls: "ch-reset",  label: "Reset QR" },
 };
 
 const renderLog = ({ nama, aksi, detail, tgl }) => {
-  // Fallback: tampilkan aksi mentah (bukan default ke 'Scan' yg misleading)
-  const badge = LOG_BADGE[aksi]
-    || `<span class="badge" style="background:var(--surface2);color:var(--txt2)">${esc(aksi || "—")}</span>`;
-  return `<div class="list-item">
-    <div class="list-main">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <span class="list-name">${esc(nama)}</span>${badge}
-      </div>
-      <div style="font-size:var(--fs-xs);color:var(--txt3);margin-top:3px">${esc(detail)}</div>
+  const c = LOG_CHIP[aksi] || { cls: "ch-reset", label: aksi || "—" };
+  return `<div class="log-item">
+    <div class="log-av">${logInitials(nama)}</div>
+    <div class="log-body">
+      <div class="log-name">${esc(nama)} <span class="chip ${c.cls}">${esc(c.label)}</span></div>
+      ${detail ? `<div class="log-sub">${esc(detail)}</div>` : ""}
     </div>
-    <span style="font-size:var(--fs-xs);color:var(--txt3);flex-shrink:0;text-align:right">${esc(tgl)}</span>
+    <div class="log-time">${esc(tgl)}</div>
   </div>`;
 };
 

@@ -810,23 +810,37 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
       }).join('')
     : '<div class="empty-state"><i class="ti ti-users"></i>Belum ada member</div>';
 
-  // ── Finance rows card HTML ────────────────────────────────────
-  const recentTrx = transaksi.slice(-5).reverse();
+  // ── Finance rows card HTML (revamp v3) ─────────────────────────
+  // Mapping kategori -> icon + warna box (matching mockup)
+  const finIcon = (t) => {
+    const cat = (t.kategori || '').toLowerCase();
+    const ket = (t.keterangan || '').toLowerCase();
+    if (cat.includes('sewa') || ket.includes('meja')) return { cls: 'green', icon: 'ti-armchair' };
+    if (cat.includes('makan') || cat.includes('minum') || cat.includes('kopi') || ket.includes('kopi') || ket.includes('mie')) return { cls: 'amber', icon: 'ti-coffee' };
+    if (cat.includes('rokok')) return { cls: 'amber', icon: 'ti-cigarette' };
+    if (cat.includes('turnamen')) return { cls: 'blue', icon: 'ti-trophy' };
+    if (t.jenis === 'pengeluaran') return { cls: 'red', icon: 'ti-arrow-down-circle' };
+    return { cls: 'green', icon: 'ti-receipt' };
+  };
+  const recentTrx = transaksi.filter((t) => !t.voidedAt).slice(-5).reverse();
   const recentTrxHtml = recentTrx.length
     ? recentTrx.map(function(t) {
         const isIn = t.jenis === 'pemasukan';
-        return '<div class="df-row">'
-          + '<div class="df-left">'
-          + '<div class="df-dot" style="background:' + (isIn ? 'var(--green)' : 'var(--red)') + '"></div>'
-          + '<div class="df-info">'
-          + '<div class="df-type">' + (t.keterangan || t.kategori || (isIn ? 'Pemasukan' : 'Pengeluaran')) + '</div>'
-          + '<div class="df-desc">' + (t.tanggal || bulanLabel) + '</div>'
-          + '</div></div>'
-          + '<div class="df-amount ' + (isIn ? 'income' : 'expense') + '">'
+        const ic = finIcon(t);
+        const label = t.keterangan || t.kategori || (isIn ? 'Pemasukan' : 'Pengeluaran');
+        const dateTxt = (t.tanggal || bulanLabel) + (t.jam ? ' · ' + t.jam : '');
+        return '<div class="fin-item">'
+          + '<div class="fin-ic ' + ic.cls + '"><i class="ti ' + ic.icon + '"></i></div>'
+          + '<div class="fin-info">'
+          + '<div class="fin-label">' + label + '</div>'
+          + '<div class="fin-date">' + dateTxt + '</div>'
+          + '</div>'
+          + '<div class="fin-amt ' + (isIn ? 'income' : 'expense') + '">'
           + (isIn ? '+' : '−') + rpFmt(t.jumlah)
-          + '</div></div>';
+          + '</div>'
+          + '</div>';
       }).join('')
-    : '<div class="empty-state"><i class="ti ti-receipt"></i>Belum ada transaksi</div>';
+    : '<div class="empty-state" style="padding:32px 0"><i class="ti ti-receipt"></i>Belum ada transaksi</div>';
 
   const scanPct = stats.total > 0 ? Math.round(stats.scan / stats.total * 100) : 0;
 
@@ -836,7 +850,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=30">'
+    + '<link rel="stylesheet" href="/admin.css?v=31">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1008,30 +1022,42 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     // ── Bottom grid ─────────────────────────────────────────────
     + '<div class="bottom-grid">'
 
-    // Activity tabs card
-    + '<div class="card">'
-    + '<div class="card-header"><div class="card-title">Aktivitas Hari Ini</div></div>'
-    + '<div class="tab-row">'
-    + '<div class="tab on" onclick="switchTab(\'scan\')">Scan</div>'
-    + '<div class="tab" onclick="switchTab(\'lb\')">Leaderboard</div>'
-    + '<div class="tab" onclick="switchTab(\'log\')">Log</div>'
-    + '</div>'
-    + '<div id="tab-scan" class="tab-body on"><div id="scan-list"></div></div>'
-    + '<div id="tab-lb"   class="tab-body"><div id="lb-list"></div></div>'
-    + '<div id="tab-log"  class="tab-body"><div id="log-list"></div></div>'
-    + '</div>'
-
-    // Finance rows card
+    // Activity tabs card (revamp v3 — ghost outline tabs)
     + '<div class="card">'
     + '<div class="card-header">'
-    + '<div class="card-title">Riwayat Keuangan</div>'
-    + '<a href="/operasional" class="link-btn"'
+    + '<div class="card-title">Aktivitas hari ini</div>'
+    + '<span style="font-size:11px;color:#bbb">' + nowWib.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }) + '</span>'
+    + '</div>'
+    + '<div class="tab-wrap">'
+    + '<div class="tab-row">'
+    + '<button type="button" class="tab-btn on" onclick="switchTab(\'scan\')">Scan</button>'
+    + '<button type="button" class="tab-btn" onclick="switchTab(\'lb\')">Leaderboard</button>'
+    + '<button type="button" class="tab-btn" onclick="switchTab(\'log\')">Log</button>'
+    + '</div>'
+    + '</div>'
+    + '<div id="tab-scan" class="log-panel on"><div class="log-list"><div id="scan-list"></div></div></div>'
+    + '<div id="tab-lb"   class="log-panel"><div class="log-list"><div id="lb-list"></div></div></div>'
+    + '<div id="tab-log"  class="log-panel"><div class="log-list"><div id="log-list"></div></div></div>'
+    + '</div>'
+
+    // Riwayat Keuangan card (revamp v3 — fin-item + saldo-box dark green)
+    + '<div class="card" style="display:flex;flex-direction:column">'
+    + '<div class="card-header">'
+    + '<div class="card-title">Riwayat keuangan</div>'
+    + '<a href="/operasional" class="detail-link"'
     + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}">Detail <i class="ti ti-arrow-right" style="font-size:12px"></i></a>'
     + '</div>'
-    + recentTrxHtml
-    + '<div class="df-total">'
-    + '<div class="df-total-label">Saldo Bersih ' + bulanLabel + '</div>'
-    + '<div class="df-total-val"' + (saldoBulan < 0 ? ' style="color:var(--red)"' : '') + '>' + rpFmt(saldoBulan) + '</div>'
+    + '<div class="fin-body">'
+    + '<div class="fin-month">' + bulanLabel + '</div>'
+    + '<div class="fin-list">' + recentTrxHtml + '</div>'
+    + '</div>'
+    + '<div class="saldo-box">'
+    + '<div>'
+    + '<div class="saldo-label">Saldo bersih</div>'
+    + '<div class="saldo-val' + (saldoBulan < 0 ? ' neg' : '') + '">' + (saldoBulan < 0 ? '−' : '') + rpFmt(Math.abs(saldoBulan)) + '</div>'
+    + '<div class="saldo-period">' + bulanLabel + ' · ' + recentTrx.length + ' transaksi terbaru</div>'
+    + '</div>'
+    + '<div class="saldo-icon"><i class="ti ti-trending-' + (saldoBulan >= 0 ? 'up' : 'down') + '"></i></div>'
     + '</div>'
     + '</div>'
 
@@ -1154,7 +1180,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=27"><\/script>'
+    + '<script src="/dashboard.js?v=28"><\/script>'
     + '</body></html>';
 }
 
@@ -1221,7 +1247,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=30">'
+    + '<link rel="stylesheet" href="/admin.css?v=31">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1424,7 +1450,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=27"></script>'
+    + '<script src="/dashboard.js?v=28"></script>'
     + '</body></html>';
 }
 
