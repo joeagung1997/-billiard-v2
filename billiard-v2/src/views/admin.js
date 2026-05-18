@@ -1230,7 +1230,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=33"><\/script>'
+    + '<script src="/dashboard.js?v=34"><\/script>'
     + '</body></html>';
 }
 
@@ -1500,7 +1500,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=33"></script>'
+    + '<script src="/dashboard.js?v=34"></script>'
     + '</body></html>';
 }
 
