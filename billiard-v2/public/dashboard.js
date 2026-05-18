@@ -541,10 +541,8 @@ const renderMemberCard = (m) => {
     ? `<a href="${klaimUrlMc}" data-confirm="klaim" data-name="${esc(m.nama)}" data-href="${klaimUrlMc}" onclick="confirmAction(this);return false" class="mc-btn mc-btn-gold">🎁 Klaim Bonus</a>`
     : "";
 
-  const waBtn = waNum
-    ? `<button type="button" onclick="openWA('${waNum}','')" class="mc-btn mc-btn-wa">WA</button>`
-    : "";
-
+  // Tombol "WA" standalone dihapus — redundant dengan "Kirim QR".
+  // User cuma butuh satu tombol untuk kirim ke WA member.
   const waShareBtn = waNum
     ? `<button type="button" onclick="openWA('${waNum}','${waShareMsg}')" class="mc-btn mc-btn-wa">📤 Kirim QR</button>`
     : "";
@@ -570,7 +568,6 @@ const renderMemberCard = (m) => {
     </div>
     <div class="mc-btm">
       ${waShareBtn}
-      ${waBtn}
       ${resetQrMcBtn}
       ${klaimBtn}
       <button type="button" class="mc-btn" onclick="openMemberDetail('${m.kode}');setTimeout(startDetailEdit,30)">Edit</button>
