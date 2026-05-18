@@ -156,7 +156,9 @@ window.openMemberDetail = function(kode) {
     phoneEl.classList.add("link");
     phoneEl.classList.remove("muted");
     if (waNum) {
-      phoneWa.href = "https://api.whatsapp.com/send?phone=" + waNum;
+      phoneWa.onclick = function() { return openWA(waNum, ""); };
+      phoneWa.removeAttribute("href");
+      phoneWa.style.cursor = "pointer";
       phoneWa.style.display = "";
     } else {
       phoneWa.style.display = "none";
@@ -219,13 +221,15 @@ window.openMemberDetail = function(kode) {
     </div>`).join("");
   }
 
-  // Footer actions — direct chat ke nomor member dengan text + URL
+  // Footer actions — direct chat ke nomor member via openWA() helper
   const waBtn = document.getElementById("dtBtnWa");
   if (waNum) {
     const baseUrl  = (HOST || "").replace("http://", "https://");
     const shareUrl = baseUrl + "/member/" + m.kode;
     const msg = encodeURIComponent("Halo " + m.nama + "! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: " + shareUrl);
-    waBtn.href = "https://api.whatsapp.com/send?phone=" + waNum + "&text=" + msg;
+    waBtn.onclick = function() { return openWA(waNum, msg); };
+    waBtn.removeAttribute("href");
+    waBtn.style.cursor = "pointer";
     waBtn.style.display = "";
   } else {
     waBtn.style.display = "none";
@@ -324,11 +328,20 @@ const esc = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-// ── WA icon SVG ───────────────────────────────────────────────
-const WA_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">
-  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.549 4.103 1.508 5.827L0 24l6.335-1.482A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.003-1.368l-.36-.214-3.732.873.916-3.641-.235-.374A9.818 9.818 0 1112 21.818z"/>
-</svg>`;
+// ── WA opener — JS-driven biar reliable di Samsung Internet / A07 ─
+// Strategi: coba whatsapp:// (direct app scheme) dulu, fallback ke
+// api.whatsapp.com kalau gagal. Encode otomatis pesan + URL.
+window.openWA = function(num, msg) {
+  num = String(num || "").replace(/\D/g, "");
+  msg = msg || "";
+  if (!num) return false;
+  const apiUrl = "https://api.whatsapp.com/send?phone=" + num + (msg ? "&text=" + msg : "");
+  // window.open dalam user-event handler — lebih reliable trigger
+  // app intent di Samsung Internet daripada <a target=_blank>.
+  const w = window.open(apiUrl, "_blank");
+  if (!w) window.location.href = apiUrl; // fallback bila popup blocker
+  return false;
+};
 
 // ── Render helpers ────────────────────────────────────────────
 
@@ -467,7 +480,7 @@ const renderMemberRow = (m, idx) => {
         <button class="icon-btn" data-tip="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        ${waNum ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&amp;text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px;font-size:16px"><i class="ti ti-brand-whatsapp" style="pointer-events:none"></i></a>` : ""}
+        ${waNum ? `<button type="button" onclick="openWA('${waNum}','${waShareMsg}')" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px;font-size:16px"><i class="ti ti-brand-whatsapp" style="pointer-events:none"></i></button>` : ""}
         <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
@@ -526,12 +539,11 @@ const renderMemberCard = (m) => {
     : "";
 
   const waBtn = waNum
-    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}" target="_blank" rel="noopener" class="mc-btn mc-btn-wa">WA</a>`
+    ? `<button type="button" onclick="openWA('${waNum}','')" class="mc-btn mc-btn-wa">WA</button>`
     : "";
 
   const waShareBtn = waNum
-    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&amp;text=${waShareMsg}" target="_blank" rel="noopener"
-        class="mc-btn mc-btn-wa">📤 Kirim QR</a>`
+    ? `<button type="button" onclick="openWA('${waNum}','${waShareMsg}')" class="mc-btn mc-btn-wa">📤 Kirim QR</button>`
     : "";
 
   const resetQrMcBtn = `<a href="${resetQrUrlMc}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrlMc}" onclick="confirmAction(this);return false" class="mc-btn">🔄 Reset QR</a>`;
@@ -794,9 +806,15 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl, waNum) => {
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
   const waEl = document.getElementById("modalWa");
-  waEl.href = waNum
-    ? `https://api.whatsapp.com/send?phone=${waNum}&text=${msg}`
-    : `https://api.whatsapp.com/send?text=${msg}`;
+  if (waNum) {
+    waEl.onclick = function() { return openWA(waNum, msg); };
+    waEl.removeAttribute("href");
+    waEl.style.cursor = "pointer";
+  } else {
+    // Tanpa nomor — fallback ke api.whatsapp.com text-only (contact picker)
+    waEl.onclick = null;
+    waEl.href = `https://api.whatsapp.com/send?text=${msg}`;
+  }
 
   document.getElementById("modalOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
