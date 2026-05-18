@@ -128,62 +128,159 @@
     .feat-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
     .feat-desc { font-size: 13px; font-weight: 300; color: var(--text-muted); line-height: 1.65; }
 
-    /* HOW IT WORKS */
-    .steps-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-    .steps-list { display: flex; flex-direction: column; gap: 0; }
-    .step-item { display: flex; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
-    .step-item:first-child { border-top: 1px solid var(--border); }
-    .step-item.active .step-content-title { color: var(--green); }
-    .step-item.active .step-num-wrap { background: var(--green); border-color: var(--green); }
-    .step-item.active .step-num-wrap span { color: #fff; }
-    .step-num-wrap { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-mid); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; transition: all 0.2s; }
-    .step-num-wrap span { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); transition: color 0.2s; }
-    .step-content-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; transition: color 0.2s; }
-    .step-content-desc { font-size: 13px; font-weight: 300; color: var(--text-muted); line-height: 1.65; }
-    .step-visual { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; position: sticky; top: 100px; }
-    .sv-content { text-align: center; padding: 40px; }
+    /* ─────────────────────────────────────────────────────────
+       HOW IT WORKS — Step Visuals revamp (2x2 grid full mock)
+       ───────────────────────────────────────────────────────── */
+    .sv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .sv { background: var(--white); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: relative; }
+    .sv-label { display: flex; align-items: center; gap: 8px; padding: 14px 18px 0; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+    .sv-num { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; width: 22px; height: 22px; border-radius: 50%; background: var(--green-soft); color: var(--green); border: 1px solid var(--green-mid); display: flex; align-items: center; justify-content: center; }
+    .sv-body { padding: 18px 18px 22px; }
 
-    /* Step 1 form */
-    .sv-form-mock { width: 100%; max-width: 280px; }
-    .sfm-field { margin-bottom: 10px; }
-    .sfm-label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-    .sfm-input { height: 34px; background: var(--white); border: 1px solid var(--border); border-radius: 7px; padding: 0 10px; display: flex; align-items: center; font-size: 12px; color: var(--text); }
-    .sfm-input.filled { border-color: var(--green-mid); background: var(--green-soft); color: var(--green); }
-    .sfm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .sfm-btn { width: 100%; height: 34px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; margin-top: 14px; gap: 6px; }
+    /* ── STEP 1 — Daftarkan Member ── */
+    .step1-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .modal-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .modal-bar-title { font-size: 12px; font-weight: 600; color: var(--text); }
+    .modal-dots { display: flex; gap: 4px; }
+    .mdot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .ff-label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .ff-input { height: 36px; border: 1px solid var(--border-mid); border-radius: 8px; padding: 0 11px; display: flex; align-items: center; font-size: 12px; background: var(--white); gap: 7px; color: var(--text); }
+    .ff-input i { font-size: 12px; color: var(--text-muted); }
+    .ff-input.filled { border-color: var(--green-mid); background: var(--green-soft); color: var(--green); }
+    .ff-input.filled i { color: var(--green); }
+    .ff-select { height: 36px; border: 1px solid var(--border-mid); border-radius: 8px; padding: 0 11px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; background: var(--white); color: var(--text); }
+    .ff-select i { font-size: 11px; color: var(--text-muted); }
+    .form-btn { width: 100%; height: 38px; background: var(--green); border-radius: 9px; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 600; color: #fff; margin-top: 10px; box-shadow: 0 2px 8px rgba(31,92,40,0.2); }
+    .qr-result { margin-top: 12px; padding: 12px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; gap: 12px; }
+    .qr-mini-box { width: 40px; height: 40px; flex-shrink: 0; background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+    .qr-mini-box svg { width: 100%; height: 100%; }
+    .qr-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .qr-sub  { font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+    .qr-badge { margin-left: auto; display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; background: var(--green-soft); border: 1px solid var(--green-mid); font-size: 9px; font-weight: 600; color: var(--green); }
+    .qr-badge i { font-size: 10px; }
 
-    /* Step 2 QR scan */
-    .sv-scan-mock { text-align: center; }
-    .ssm-phone { width: 140px; margin: 0 auto; background: var(--text); border-radius: 20px; padding: 12px 10px; border: 2px solid #2a2a2a; }
-    .ssm-screen { background: var(--white); border-radius: 12px; overflow: hidden; padding: 8px; }
-    .ssm-qr { width: 80px; height: 80px; margin: 0 auto 6px; background: #fff; border-radius: 5px; padding: 5px; }
-    .ssm-name { font-size: 10px; font-weight: 600; color: var(--text); text-align: center; }
-    .ssm-id { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--green); text-align: center; }
-    .ssm-check { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 10px; font-weight: 600; color: var(--green); }
-    .ssm-check-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; }
+    /* ── STEP 2 — Scan Saat Datang ── */
+    .scan-wrap { display: flex; gap: 14px; align-items: flex-start; }
+    .phone-mock { flex-shrink: 0; width: 130px; background: var(--text); border-radius: 20px; padding: 10px 8px; border: 2px solid #1a1a1a; box-shadow: 0 8px 24px rgba(0,0,0,0.15); position: relative; }
+    .phone-notch { width: 36px; height: 5px; border-radius: 99px; background: #1a1a1a; margin: 0 auto 8px; }
+    .phone-screen { background: var(--white); border-radius: 12px; overflow: hidden; }
+    .ps-header { background: var(--text); padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; }
+    .ps-header span { font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 0.06em; }
+    .ps-dot { width: 5px; height: 5px; border-radius: 50%; background: #5ABE68; box-shadow: 0 0 5px rgba(90,190,104,0.6); }
+    .ps-body { padding: 10px; text-align: center; }
+    .ps-qr { width: 80px; height: 80px; margin: 0 auto 7px; background: var(--white); border-radius: 6px; padding: 5px; border: 1px solid var(--border); }
+    .ps-qr svg { width: 100%; height: 100%; }
+    .ps-name { font-size: 10px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .ps-id { font-family: 'DM Mono', monospace; font-size: 7px; color: var(--green); margin-bottom: 6px; }
+    .ps-dots { display: flex; gap: 2px; margin-bottom: 6px; }
+    .psd { flex: 1; height: 3px; border-radius: 99px; background: var(--border); }
+    .psd.on { background: var(--green); }
+    .psd.free { background: #C9A84C; }
+    .ps-status { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 0; background: var(--green-soft); border-radius: 0 0 12px 12px; font-size: 8px; font-weight: 600; color: var(--green); }
+    .ps-status i { font-size: 10px; }
+    .scan-right { flex: 1; min-width: 0; }
+    .scanner-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .sb-label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    .sb-scan-area { height: 56px; background: var(--white); border: 1.5px dashed var(--border-mid); border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-muted); font-size: 11px; }
+    .sb-scan-area.active { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+    .sb-scan-area i { font-size: 18px; }
+    .scan-result { background: var(--green-soft); border: 1px solid var(--green-mid); border-radius: 10px; padding: 11px 12px; display: flex; align-items: center; gap: 10px; }
+    .sr-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 15px; color: #fff; flex-shrink: 0; }
+    .sr-name { font-size: 13px; font-weight: 600; color: var(--green); }
+    .sr-meta { font-size: 10px; color: var(--text-mid); margin-top: 2px; }
+    .sr-time { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+    .scan-log { margin-top: 8px; }
+    .sl-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .sl-item:last-child { border-bottom: none; }
+    .sl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-mid); flex-shrink: 0; }
+    .sl-dot.on { background: var(--green); }
+    .sl-name { font-size: 11px; color: var(--text-mid); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sl-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+    .sl-badge { font-size: 8px; font-weight: 600; padding: 2px 6px; border-radius: 99px; background: var(--green-soft); color: var(--green); }
 
-    /* Step 3 transaction */
-    .sv-trx-mock { width: 100%; max-width: 280px; }
-    .stm-header { display: flex; gap: 6px; margin-bottom: 10px; }
-    .stm-pill { flex: 1; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; border: 1.5px solid var(--border); color: var(--text-muted); gap: 4px; }
-    .stm-pill.active { background: var(--green-soft); border-color: var(--green-mid); color: var(--green); }
-    .stm-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: center; }
-    .stm-row:last-child { border-bottom: none; }
-    .stm-name { font-size: 11px; color: var(--text); }
-    .stm-meta { font-size: 9px; color: var(--text-muted); }
-    .stm-amt { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
+    /* ── STEP 3 — Catat Transaksi ── */
+    .trx-steps { display: flex; gap: 0; margin-bottom: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .ts-step { flex: 1; padding: 8px 10px; text-align: center; font-size: 9px; font-weight: 500; color: var(--text-muted); border-right: 1px solid var(--border); position: relative; }
+    .ts-step:last-child { border-right: none; }
+    .ts-step.done { color: var(--green); }
+    .ts-step.active { background: var(--white); color: var(--text); font-weight: 600; }
+    .ts-step.done::before { content: '✓'; display: block; font-size: 10px; font-weight: 700; color: var(--green); margin-bottom: 1px; }
+    .ts-step.active .ts-num { width: 14px; height: 14px; border-radius: 50%; background: var(--green); color: #fff; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 2px; }
+    .act-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+    .at-btn { flex: 1; padding: 8px 6px; border: 1.5px solid var(--border); border-radius: 9px; text-align: center; font-size: 10px; font-weight: 500; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .at-btn i { font-size: 16px; }
+    .at-btn.active { border-color: var(--green-mid); background: var(--green-soft); color: var(--green); }
+    .trx-items { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+    .ti-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    .ti-row:last-child { border-bottom: none; }
+    .ti-left { display: flex; align-items: center; gap: 8px; }
+    .ti-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .ti-name { font-size: 11px; font-weight: 500; color: var(--text); }
+    .ti-meta { font-size: 9px; color: var(--text-muted); }
+    .ti-amt { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
+    .pay-row { display: flex; gap: 5px; margin-bottom: 10px; }
+    .pay-opt { flex: 1; padding: 7px 5px; border: 1.5px solid var(--border); border-radius: 8px; text-align: center; font-size: 9px; font-weight: 500; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .pay-opt i { font-size: 14px; }
+    .pay-opt.active { border-color: var(--green-mid); background: var(--green-soft); color: var(--green); }
+    .total-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--text); border-radius: 9px; }
+    .tr-label { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5); }
+    .tr-val { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 600; color: #4ADE80; }
 
-    /* Step 4 dashboard */
-    .sv-dash-mock { width: 100%; max-width: 280px; }
-    .sdm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .sdm-title { font-size: 12px; font-weight: 600; color: var(--text); }
-    .sdm-sub { font-size: 9px; color: var(--text-muted); }
-    .sdm-chart { display: flex; align-items: flex-end; gap: 4px; height: 70px; margin-bottom: 12px; background: var(--bg); border-radius: 8px; padding: 8px; }
-    .sdm-bar { flex: 1; border-radius: 3px 3px 0 0; transition: height 0.3s; }
-    .sdm-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
-    .sdm-stat { background: var(--bg); border-radius: 7px; padding: 8px; text-align: center; }
-    .sdm-sv { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 600; color: var(--text); }
-    .sdm-sl { font-size: 9px; color: var(--text-muted); }
+    /* ── STEP 4 — Pantau & Analisis ── */
+    .mini-dash { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .md-topbar { height: 32px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; padding: 0 12px; }
+    .md-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .md-title { font-size: 9px; font-weight: 500; color: var(--text-muted); margin-left: 2px; flex: 1; }
+    .md-live { display: flex; align-items: center; gap: 3px; font-size: 8px; font-weight: 600; color: var(--green); }
+    .md-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #5ABE68; animation: blink 1.5s ease-in-out infinite; }
+    .md-stats { display: grid; grid-template-columns: repeat(4,1fr); border-bottom: 1px solid var(--border); }
+    .md-stat { padding: 8px 10px; border-right: 1px solid var(--border); position: relative; }
+    .md-stat:last-child { border-right: none; }
+    .md-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 99px 99px 0 0; }
+    .md-stat.g::before { background: var(--green); }
+    .md-stat.a::before { background: #C47F1A; }
+    .md-stat.b::before { background: #2660A4; }
+    .md-stat-lbl { font-size: 7px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+    .md-stat-val { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 600; color: var(--text); line-height: 1; }
+    .md-stat-sub { font-size: 7px; color: var(--text-muted); margin-top: 2px; }
+    .md-sum { display: flex; background: var(--text); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .md-sum-item { flex: 1; padding: 8px 10px; border-right: 1px solid rgba(255,255,255,0.06); }
+    .md-sum-item:last-child { border-right: none; }
+    .md-sum-lbl { font-size: 7px; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+    .md-sum-val { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: #fff; }
+    .md-sum-val.up { color: #4ADE80; }
+    .md-sum-val.dn { color: #F87171; }
+    .md-content { display: flex; gap: 0; }
+    .md-chart { flex: 1; padding: 10px 12px; border-right: 1px solid var(--border); }
+    .md-chart-lbl { font-size: 8px; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .md-chart-lbl span { color: var(--text-muted); font-weight: 400; }
+    .chart-line-area { height: 52px; position: relative; background: var(--bg); border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+    .chart-fill { position: absolute; bottom: 0; left: 0; right: 0; top: 0; background: linear-gradient(to top, rgba(31,92,40,0.1), transparent); }
+    .chart-line { position: absolute; bottom: 0; left: 0; right: 0; height: 52px; }
+    .chart-x-labels { display: flex; justify-content: space-between; }
+    .cxl { font-size: 7px; color: var(--text-muted); }
+    .trend-stats { display: flex; gap: 8px; margin-top: 8px; }
+    .ts-item { flex: 1; }
+    .tsi-lbl { font-size: 8px; color: var(--text-muted); margin-bottom: 2px; }
+    .tsi-val { font-size: 11px; font-weight: 600; color: var(--text); }
+    .md-heatmap { width: 100px; padding: 10px; }
+    .hm-label { font-size: 8px; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
+    .hm-days { display: flex; gap: 2px; margin-bottom: 3px; }
+    .hm-day { font-size: 6px; color: var(--text-muted); flex: 1; text-align: center; }
+    .hm-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+    .hmc { aspect-ratio: 1; border-radius: 2px; background: var(--border); }
+    .hmc.l1 { background: var(--green-mid); }
+    .hmc.l2 { background: #7DC988; }
+    .hmc.l3 { background: var(--green); box-shadow: 0 0 4px rgba(31,92,40,0.3); }
+    .md-donut { padding: 10px 12px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border); }
+    .donut-svg { width: 44px; height: 44px; flex-shrink: 0; }
+    .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .dl-item { display: flex; align-items: center; gap: 5px; font-size: 9px; }
+    .dl-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
+    .dl-name { color: var(--text-mid); flex: 1; }
+    .dl-pct { font-family: 'DM Mono', monospace; color: var(--text); font-weight: 500; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     /* MEMBER CARD SECTION */
     .card-section { padding: 100px 40px; background: var(--text); color: var(--white); }
@@ -273,7 +370,9 @@
       .section { padding: 80px 20px; }
       .feat-grid { grid-template-columns: 1fr 1fr; }
       .feat-head { grid-template-columns: 1fr; gap: 28px; margin-bottom: 40px; }
-      .steps-layout { grid-template-columns: 1fr; gap: 40px; }
+      .sv-grid { grid-template-columns: 1fr; gap: 14px; }
+      .scan-wrap { flex-direction: column; }
+      .phone-mock { width: 100%; max-width: 200px; margin: 0 auto; }
       .step-visual { position: static; }
       .card-section { padding: 80px 20px; }
       .card-section-inner { grid-template-columns: 1fr; gap: 40px; }
@@ -458,118 +557,284 @@
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
+<!-- HOW IT WORKS — 2x2 grid full detailed step visuals -->
 <section id="cara-kerja" class="section">
   <div class="section-inner">
-    <div class="steps-layout">
-      <div>
-        <div class="reveal">
-          <div class="section-eyebrow">Cara Kerja</div>
-          <h2 class="section-title" style="margin-bottom:36px;">Mudah<br>digunakan</h2>
+    <div class="reveal" style="text-align:center;margin-bottom:48px;">
+      <div class="section-eyebrow" style="justify-content:center">Cara Kerja</div>
+      <h2 class="section-title">Mudah digunakan,<br><em>langsung produktif</em></h2>
+      <p class="section-sub" style="margin:14px auto 0">Empat langkah singkat — dari daftar member sampai pantau laporan keuangan.</p>
+    </div>
+
+    <div class="sv-grid reveal">
+
+      <!-- STEP 1 — Daftarkan Member -->
+      <div class="sv">
+        <div class="sv-label">
+          <div class="sv-num">01</div>
+          Daftarkan Member
         </div>
-        <div class="steps-list reveal">
-          <div class="step-item active" onclick="setStep(0, this)">
-            <div class="step-num-wrap"><span>01</span></div>
-            <div class="step-content">
-              <div class="step-content-title">Daftarkan Member</div>
-              <div class="step-content-desc">Isi nama, nomor HP, dan tipe keanggotaan. Kartu digital dengan QR otomatis dibuat.</div>
+        <div class="sv-body">
+          <div class="step1-wrap">
+            <div class="modal-bar">
+              <div class="modal-bar-title">Tambah Member Baru</div>
+              <div class="modal-dots"><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div></div>
             </div>
+            <div class="form-row">
+              <div class="form-field">
+                <div class="ff-label">Nama Lengkap</div>
+                <div class="ff-input filled"><i class="ti ti-user"></i>Rizky Hidayat</div>
+              </div>
+              <div class="form-field">
+                <div class="ff-label">No. HP</div>
+                <div class="ff-input filled"><i class="ti ti-phone"></i>0812-3456-7890</div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <div class="ff-label">Tipe Member</div>
+                <div class="ff-select">
+                  <span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-crown" style="font-size:11px;color:#C47F1A;"></i>Regular</span>
+                  <i class="ti ti-chevron-down"></i>
+                </div>
+              </div>
+              <div class="form-field">
+                <div class="ff-label">Status</div>
+                <div class="ff-input filled"><i class="ti ti-circle-check"></i>Aktif</div>
+              </div>
+            </div>
+            <div class="form-btn"><i class="ti ti-check" style="font-size:14px;"></i>Simpan Member</div>
           </div>
-          <div class="step-item" onclick="setStep(1, this)">
-            <div class="step-num-wrap"><span>02</span></div>
-            <div class="step-content">
-              <div class="step-content-title">Scan Saat Datang</div>
-              <div class="step-content-desc">Member tunjukkan kartu digital. Kasir scan QR, check-in tercatat otomatis.</div>
+          <div class="qr-result">
+            <div class="qr-mini-box">
+              <svg viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-label="QR mini">
+                <rect width="15" height="15" fill="white"/>
+                <rect x="0" y="0" width="5" height="5" fill="#111"/><rect x="1" y="1" width="3" height="3" fill="white"/><rect x="2" y="2" width="1" height="1" fill="#111"/>
+                <rect x="10" y="0" width="5" height="5" fill="#111"/><rect x="11" y="1" width="3" height="3" fill="white"/><rect x="12" y="2" width="1" height="1" fill="#111"/>
+                <rect x="0" y="10" width="5" height="5" fill="#111"/><rect x="1" y="11" width="3" height="3" fill="white"/><rect x="2" y="12" width="1" height="1" fill="#111"/>
+                <rect x="6" y="0" fill="#111" width="1" height="1"/><rect x="7" y="1" fill="#111" width="1" height="1"/><rect x="8" y="0" fill="#111" width="1" height="1"/>
+                <rect x="6" y="6" fill="#111" width="1" height="1"/><rect x="8" y="7" fill="#111" width="1" height="1"/><rect x="7" y="8" fill="#111" width="1" height="1"/>
+                <rect x="10" y="6" fill="#111" width="1" height="1"/><rect x="12" y="7" fill="#111" width="1" height="1"/><rect x="11" y="8" fill="#111" width="1" height="1"/>
+                <rect x="6" y="10" fill="#111" width="1" height="1"/><rect x="8" y="11" fill="#111" width="1" height="1"/><rect x="7" y="12" fill="#111" width="1" height="1"/>
+              </svg>
             </div>
-          </div>
-          <div class="step-item" onclick="setStep(2, this)">
-            <div class="step-num-wrap"><span>03</span></div>
-            <div class="step-content">
-              <div class="step-content-title">Catat Transaksi</div>
-              <div class="step-content-desc">Catat sewa meja, kopi, atau pengeluaran dengan alur 3 langkah yang cepat.</div>
+            <div>
+              <div class="qr-name">Rizky Hidayat</div>
+              <div class="qr-sub">JMB-0526-RH · Regular</div>
             </div>
-          </div>
-          <div class="step-item" onclick="setStep(3, this)">
-            <div class="step-num-wrap"><span>04</span></div>
-            <div class="step-content">
-              <div class="step-content-title">Pantau &amp; Analisis</div>
-              <div class="step-content-desc">Dashboard real-time dan laporan bulanan siap diunduh kapan saja.</div>
-            </div>
+            <div class="qr-badge"><i class="ti ti-qrcode"></i>Kartu dibuat</div>
           </div>
         </div>
       </div>
 
-      <div class="step-visual" id="stepVisual">
-        <div id="sv0" class="sv-content">
-          <div class="sv-form-mock">
-            <div class="sfm-row">
-              <div class="sfm-field"><div class="sfm-label">Nama Lengkap</div><div class="sfm-input filled">Rizky Hidayat</div></div>
-              <div class="sfm-field"><div class="sfm-label">No. HP</div><div class="sfm-input filled">0812-3456-7890</div></div>
-            </div>
-            <div class="sfm-row">
-              <div class="sfm-field"><div class="sfm-label">Tipe Member</div><div class="sfm-input">Regular ▾</div></div>
-              <div class="sfm-field"><div class="sfm-label">Status</div><div class="sfm-input filled">Aktif</div></div>
-            </div>
-            <div class="sfm-btn"><i class="ti ti-check" style="font-size:13px;"></i> Simpan Member</div>
-          </div>
+      <!-- STEP 2 — Scan Saat Datang -->
+      <div class="sv">
+        <div class="sv-label">
+          <div class="sv-num">02</div>
+          Scan Saat Datang
         </div>
-        <div id="sv1" class="sv-content" style="display:none;">
-          <div class="sv-scan-mock">
-            <div class="ssm-phone">
-              <div class="ssm-screen">
-                <div class="ssm-qr">
-                  <svg viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-                    <rect width="15" height="15" fill="white"/>
-                    <rect x="0" y="0" width="5" height="5" fill="#111"/><rect x="1" y="1" width="3" height="3" fill="white"/><rect x="2" y="2" width="1" height="1" fill="#111"/>
-                    <rect x="10" y="0" width="5" height="5" fill="#111"/><rect x="11" y="1" width="3" height="3" fill="white"/><rect x="12" y="2" width="1" height="1" fill="#111"/>
-                    <rect x="0" y="10" width="5" height="5" fill="#111"/><rect x="1" y="11" width="3" height="3" fill="white"/><rect x="2" y="12" width="1" height="1" fill="#111"/>
-                    <rect x="6" y="0" fill="#111" width="1" height="1"/><rect x="7" y="1" fill="#111" width="1" height="1"/>
-                    <rect x="6" y="6" fill="#111" width="1" height="1"/><rect x="8" y="6" fill="#111" width="1" height="1"/>
-                    <rect x="7" y="7" fill="#111" width="1" height="1"/>
-                  </svg>
+        <div class="sv-body">
+          <div class="scan-wrap">
+            <div class="phone-mock">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="ps-header">
+                  <span>WARPAT</span>
+                  <div class="ps-dot"></div>
                 </div>
-                <div class="ssm-name">Rizky Hidayat</div>
-                <div class="ssm-id">JMB-0526-TN</div>
-                <div class="ssm-check">
-                  <div class="ssm-check-dot"><i class="ti ti-check" style="font-size:8px; color:#fff;"></i></div>
-                  Check-in berhasil
+                <div class="ps-body">
+                  <div class="ps-qr">
+                    <svg viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-label="QR di layar">
+                      <rect width="15" height="15" fill="white"/>
+                      <rect x="0" y="0" width="5" height="5" fill="#111"/><rect x="1" y="1" width="3" height="3" fill="white"/><rect x="2" y="2" width="1" height="1" fill="#111"/>
+                      <rect x="10" y="0" width="5" height="5" fill="#111"/><rect x="11" y="1" width="3" height="3" fill="white"/><rect x="12" y="2" width="1" height="1" fill="#111"/>
+                      <rect x="0" y="10" width="5" height="5" fill="#111"/><rect x="1" y="11" width="3" height="3" fill="white"/><rect x="2" y="12" width="1" height="1" fill="#111"/>
+                      <rect x="6" y="0" fill="#111" width="1" height="1"/><rect x="8" y="1" fill="#111" width="1" height="1"/>
+                      <rect x="6" y="6" fill="#111" width="1" height="1"/><rect x="9" y="7" fill="#111" width="1" height="1"/>
+                      <rect x="11" y="6" fill="#111" width="1" height="1"/><rect x="13" y="7" fill="#111" width="1" height="1"/>
+                    </svg>
+                  </div>
+                  <div class="ps-name">Rizky Hidayat</div>
+                  <div class="ps-id">JMB-0526-RH</div>
+                  <div class="ps-dots">
+                    <div class="psd on"></div><div class="psd on"></div>
+                    <div class="psd"></div><div class="psd"></div>
+                    <div class="psd"></div><div class="psd"></div>
+                    <div class="psd"></div><div class="psd"></div>
+                    <div class="psd free"></div>
+                  </div>
+                </div>
+                <div class="ps-status"><i class="ti ti-check"></i>Check-in berhasil</div>
+              </div>
+            </div>
+
+            <div class="scan-right">
+              <div class="scanner-box">
+                <div class="sb-label">Scanner Kasir</div>
+                <div class="sb-scan-area active"><i class="ti ti-scan"></i>Arahkan kamera ke QR</div>
+              </div>
+              <div class="scan-result">
+                <div class="sr-icon"><i class="ti ti-check"></i></div>
+                <div>
+                  <div class="sr-name">Rizky Hidayat</div>
+                  <div class="sr-meta">Regular · Sesi ke-3</div>
+                </div>
+                <div class="sr-time">08:15</div>
+              </div>
+              <div class="scan-log">
+                <div class="sl-item">
+                  <div class="sl-dot on"></div>
+                  <div class="sl-name">Rizky Hidayat</div>
+                  <div class="sl-time">08:15</div>
+                  <div class="sl-badge">Hadir</div>
+                </div>
+                <div class="sl-item">
+                  <div class="sl-dot on"></div>
+                  <div class="sl-name">Andi Nugroho</div>
+                  <div class="sl-time">07:42</div>
+                  <div class="sl-badge">Hadir</div>
+                </div>
+                <div class="sl-item">
+                  <div class="sl-dot"></div>
+                  <div class="sl-name">Budi Santoso</div>
+                  <div class="sl-time">—</div>
+                  <div class="sl-badge" style="background:var(--bg);color:var(--text-muted);border:1px solid var(--border);">Belum</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div id="sv2" class="sv-content" style="display:none;">
-          <div class="sv-trx-mock">
-            <div class="stm-header">
-              <div class="stm-pill active"><i class="ti ti-circle-number-8" style="font-size:12px;"></i> Billiard</div>
-              <div class="stm-pill"><i class="ti ti-coffee" style="font-size:12px;"></i> Kopi</div>
-              <div class="stm-pill"><i class="ti ti-dots" style="font-size:12px;"></i> Lain</div>
+      </div>
+
+      <!-- STEP 3 — Catat Transaksi -->
+      <div class="sv">
+        <div class="sv-label">
+          <div class="sv-num">03</div>
+          Catat Transaksi
+        </div>
+        <div class="sv-body">
+          <div class="trx-steps">
+            <div class="ts-step done">Inisiasi</div>
+            <div class="ts-step done">Detail</div>
+            <div class="ts-step active"><div class="ts-num">3</div>Konfirmasi</div>
+          </div>
+          <div class="act-toggle">
+            <div class="at-btn active"><i class="ti ti-circle-number-8"></i>Billiard</div>
+            <div class="at-btn"><i class="ti ti-coffee"></i>Kopi</div>
+            <div class="at-btn"><i class="ti ti-dots-circle-horizontal"></i>Lainnya</div>
+          </div>
+          <div class="trx-items">
+            <div class="ti-row">
+              <div class="ti-left">
+                <div class="ti-dot"></div>
+                <div>
+                  <div class="ti-name">Meja 2 — 2 Jam</div>
+                  <div class="ti-meta">Rizky Hidayat · Siang</div>
+                </div>
+              </div>
+              <div class="ti-amt">+Rp 40.000</div>
             </div>
-            <div class="stm-row"><div><div class="stm-name">Meja 1 — 2 jam</div><div class="stm-meta">Rizky Hidayat</div></div><div class="stm-amt">+Rp 40.000</div></div>
-            <div class="stm-row"><div><div class="stm-name">Kopi Susu × 2</div><div class="stm-meta">Extra item</div></div><div class="stm-amt">+Rp 12.000</div></div>
-            <div class="stm-row" style="border-top:1.5px solid var(--border-mid); padding-top:10px;"><div><div class="stm-name" style="font-weight:600;">Total</div><div class="stm-meta">Tunai</div></div><div class="stm-amt" style="font-size:14px;">+Rp 52.000</div></div>
+            <div class="ti-row">
+              <div class="ti-left">
+                <div class="ti-dot" style="background:#C47F1A;"></div>
+                <div>
+                  <div class="ti-name">Kopi Susu × 2</div>
+                  <div class="ti-meta">Extra item</div>
+                </div>
+              </div>
+              <div class="ti-amt">+Rp 12.000</div>
+            </div>
+          </div>
+          <div class="pay-row">
+            <div class="pay-opt active"><i class="ti ti-cash"></i>Tunai</div>
+            <div class="pay-opt"><i class="ti ti-building-bank"></i>Transfer</div>
+            <div class="pay-opt"><i class="ti ti-qrcode"></i>QRIS</div>
+          </div>
+          <div class="total-row">
+            <div><div class="tr-label">Total Pembayaran</div></div>
+            <div class="tr-val">Rp 52.000</div>
           </div>
         </div>
-        <div id="sv3" class="sv-content" style="display:none;">
-          <div class="sv-dash-mock">
-            <div class="sdm-header"><div><div class="sdm-title">Trend Kunjungan</div><div class="sdm-sub">7 hari terakhir</div></div></div>
-            <div class="sdm-chart">
-              <div class="sdm-bar" style="height:10%; background:var(--border);"></div>
-              <div class="sdm-bar" style="height:10%; background:var(--border);"></div>
-              <div class="sdm-bar" style="height:10%; background:var(--border);"></div>
-              <div class="sdm-bar" style="height:20%; background:var(--green-mid);"></div>
-              <div class="sdm-bar" style="height:35%; background:var(--green-mid);"></div>
-              <div class="sdm-bar" style="height:90%; background:var(--green);"></div>
-              <div class="sdm-bar" style="height:55%; background:var(--green-mid);"></div>
+      </div>
+
+      <!-- STEP 4 — Pantau & Analisis -->
+      <div class="sv">
+        <div class="sv-label">
+          <div class="sv-num">04</div>
+          Pantau &amp; Analisis
+        </div>
+        <div class="sv-body">
+          <div class="mini-dash">
+            <div class="md-topbar">
+              <div class="md-dot" style="background:#ef4444;"></div>
+              <div class="md-dot" style="background:#f59e0b;"></div>
+              <div class="md-dot" style="background:#10b981;"></div>
+              <span class="md-title">Dashboard · Warpat Jombang</span>
+              <div class="md-live"><div class="md-live-dot"></div>Live</div>
             </div>
-            <div class="sdm-stats">
-              <div class="sdm-stat"><div class="sdm-sv">Sab</div><div class="sdm-sl">Terbaik</div></div>
-              <div class="sdm-stat"><div class="sdm-sv">0.4</div><div class="sdm-sl">Rata-rata</div></div>
-              <div class="sdm-stat"><div class="sdm-sv">3</div><div class="sdm-sl">Total</div></div>
+            <div class="md-stats">
+              <div class="md-stat g"><div class="md-stat-lbl">Member</div><div class="md-stat-val">3</div><div class="md-stat-sub">Terdaftar</div></div>
+              <div class="md-stat a"><div class="md-stat-lbl">Scan Hari Ini</div><div class="md-stat-val">2</div><div class="md-stat-sub">dari 3</div></div>
+              <div class="md-stat b"><div class="md-stat-lbl">Pendapatan</div><div class="md-stat-val">52rb</div><div class="md-stat-sub">Hari ini</div></div>
+              <div class="md-stat"><div class="md-stat-lbl">Transaksi</div><div class="md-stat-val">4</div><div class="md-stat-sub">Total</div></div>
+            </div>
+            <div class="md-sum">
+              <div class="md-sum-item"><div class="md-sum-lbl">Pemasukan</div><div class="md-sum-val up">Rp 164rb</div></div>
+              <div class="md-sum-item"><div class="md-sum-lbl">Pengeluaran</div><div class="md-sum-val dn">Rp 0</div></div>
+              <div class="md-sum-item"><div class="md-sum-lbl">Saldo Bersih</div><div class="md-sum-val">Rp 164rb</div></div>
+            </div>
+            <div class="md-content">
+              <div class="md-chart">
+                <div class="md-chart-lbl">Trend Kunjungan<span>7 hari</span></div>
+                <div class="chart-line-area">
+                  <div class="chart-fill"></div>
+                  <svg class="chart-line" viewBox="0 0 200 52" preserveAspectRatio="none" aria-label="Grafik trend">
+                    <polyline points="0,48 28,48 56,44 84,40 112,28 140,10 170,22 200,22"
+                      fill="none" stroke="#1F5C28" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                    <circle cx="140" cy="10" r="3" fill="#1F5C28"/>
+                    <circle cx="170" cy="22" r="2.5" fill="#1F5C28" opacity="0.6"/>
+                  </svg>
+                </div>
+                <div class="chart-x-labels">
+                  <span class="cxl">Sen</span><span class="cxl">Sel</span><span class="cxl">Rab</span>
+                  <span class="cxl">Kam</span><span class="cxl">Jum</span><span class="cxl">Sab</span><span class="cxl">Min</span>
+                </div>
+                <div class="trend-stats">
+                  <div class="ts-item"><div class="tsi-lbl">Terbaik</div><div class="tsi-val">Sab 16</div></div>
+                  <div class="ts-item"><div class="tsi-lbl">Rata-rata</div><div class="tsi-val">0.4/hari</div></div>
+                  <div class="ts-item"><div class="tsi-lbl">Total</div><div class="tsi-val">3 visit</div></div>
+                </div>
+              </div>
+              <div class="md-heatmap">
+                <div class="hm-label">4 Minggu</div>
+                <div class="hm-days">
+                  <div class="hm-day">M</div><div class="hm-day">S</div><div class="hm-day">S</div>
+                  <div class="hm-day">R</div><div class="hm-day">K</div><div class="hm-day">J</div><div class="hm-day">S</div>
+                </div>
+                <div class="hm-grid">
+                  <div class="hmc"></div><div class="hmc"></div><div class="hmc"></div><div class="hmc"></div><div class="hmc"></div><div class="hmc l1"></div><div class="hmc"></div>
+                  <div class="hmc"></div><div class="hmc l1"></div><div class="hmc"></div><div class="hmc"></div><div class="hmc l1"></div><div class="hmc"></div><div class="hmc"></div>
+                  <div class="hmc"></div><div class="hmc"></div><div class="hmc l2"></div><div class="hmc"></div><div class="hmc l1"></div><div class="hmc l3"></div><div class="hmc l2"></div>
+                  <div class="hmc l1"></div><div class="hmc"></div><div class="hmc l2"></div><div class="hmc l1"></div><div class="hmc"></div><div class="hmc l2"></div><div class="hmc l1"></div>
+                </div>
+              </div>
+            </div>
+            <div class="md-donut">
+              <svg class="donut-svg" viewBox="0 0 44 44" aria-label="Komposisi">
+                <circle cx="22" cy="22" r="16" fill="none" stroke="#E2EAE3" stroke-width="7"/>
+                <circle cx="22" cy="22" r="16" fill="none" stroke="#1F5C28" stroke-width="7" stroke-dasharray="65 36" stroke-dashoffset="25" stroke-linecap="round"/>
+                <circle cx="22" cy="22" r="16" fill="none" stroke="#C47F1A" stroke-width="7" stroke-dasharray="25 76" stroke-dashoffset="-40" stroke-linecap="round"/>
+              </svg>
+              <div class="donut-legend">
+                <div class="dl-item"><div class="dl-dot" style="background:#1F5C28;"></div><span class="dl-name">Sewa Meja</span><span class="dl-pct">65%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#C47F1A;"></div><span class="dl-name">Kopi/Snack</span><span class="dl-pct">25%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#E2EAE3;"></div><span class="dl-name">Lainnya</span><span class="dl-pct">10%</span></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </section>
@@ -711,14 +976,8 @@
     document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
   });
 
-  const visuals = ['sv0','sv1','sv2','sv3'];
-  function setStep(idx, el) {
-    document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
-    visuals.forEach((id, i) => {
-      document.getElementById(id).style.display = i === idx ? '' : 'none';
-    });
-  }
+  /* Step visuals sekarang static 2x2 grid — semua 4 selalu visible.
+     Tidak ada interactive switch lagi (setStep dihapus). */
 </script>
 </body>
 </html>
