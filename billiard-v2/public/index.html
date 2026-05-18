@@ -129,10 +129,10 @@
     .feat-desc { font-size: 13px; font-weight: 300; color: var(--text-muted); line-height: 1.65; }
 
     /* ─────────────────────────────────────────────────────────
-       HOW IT WORKS — Interactive (klik step kiri → visual kanan)
-       Visual content inline-styled detail per step (landing-clean_1)
+       HOW IT WORKS — Interactive list + sticky visual + tab strip
+       (landing-clean_3 style)
        ───────────────────────────────────────────────────────── */
-    .steps-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+    .steps-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
     .steps-list { display: flex; flex-direction: column; gap: 0; }
     .step-item { display: flex; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
     .step-item:first-child { border-top: 1px solid var(--border); }
@@ -143,8 +143,13 @@
     .step-num-wrap span { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); transition: color 0.2s; }
     .step-content-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; transition: color 0.2s; }
     .step-content-desc { font-size: 13px; font-weight: 300; color: var(--text-muted); line-height: 1.65; }
-    .step-visual { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; position: sticky; top: 100px; }
-    .sv-content { width: 100%; }
+    .step-visual { background: var(--white); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; min-height: 380px; display: flex; flex-direction: column; position: sticky; top: 100px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+    .sv-tab-strip { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+    .sv-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-right: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+    .sv-tab:last-child { border-right: none; }
+    .sv-tab.active { background: var(--white); color: var(--green); }
+    .sv-tab:hover:not(.active) { background: var(--white); color: var(--text-mid); }
+    .sv-content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 
@@ -465,11 +470,19 @@
         </div>
       </div>
 
-      <!-- RIGHT: sticky visual panel — switches by setStep() -->
+      <!-- RIGHT: sticky visual panel — switches by setStep() + tab strip -->
       <div class="step-visual" id="stepVisual">
 
+        <!-- Tab strip — sync with step list -->
+        <div class="sv-tab-strip">
+          <div class="sv-tab active" onclick="setStep(0)" data-idx="0">Daftar</div>
+          <div class="sv-tab" onclick="setStep(1)" data-idx="1">Scan</div>
+          <div class="sv-tab" onclick="setStep(2)" data-idx="2">Transaksi</div>
+          <div class="sv-tab" onclick="setStep(3)" data-idx="3">Analisis</div>
+        </div>
+
         <!-- SV0 — Daftarkan Member -->
-        <div id="sv0" class="sv-content" style="padding:20px;">
+        <div id="sv0" class="sv-content">
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
               <span style="font-size:12px;font-weight:600;color:var(--text);">Tambah Member Baru</span>
@@ -525,7 +538,7 @@
         </div>
 
         <!-- SV1 — Scan Saat Datang -->
-        <div id="sv1" class="sv-content" style="display:none;padding:20px;">
+        <div id="sv1" class="sv-content" style="display:none;">
           <div style="display:flex;gap:14px;align-items:flex-start;">
             <div style="flex-shrink:0;width:126px;background:var(--text);border-radius:20px;padding:9px 8px;border:2px solid #1a1a1a;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
               <div style="width:34px;height:5px;border-radius:99px;background:#1a1a1a;margin:0 auto 8px;"></div>
@@ -604,7 +617,7 @@
         </div>
 
         <!-- SV2 — Catat Transaksi -->
-        <div id="sv2" class="sv-content" style="display:none;padding:20px;">
+        <div id="sv2" class="sv-content" style="display:none;">
           <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;">
             <div style="flex:1;padding:7px 10px;text-align:center;font-size:9px;font-weight:500;color:var(--green);border-right:1px solid var(--border);">Inisiasi ✓</div>
             <div style="flex:1;padding:7px 10px;text-align:center;font-size:9px;font-weight:500;color:var(--green);border-right:1px solid var(--border);">Detail ✓</div>
@@ -652,7 +665,7 @@
 
         <!-- SV3 — Pantau & Analisis -->
         <div id="sv3" class="sv-content" style="display:none;">
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:16px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
             <div style="height:30px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px;padding:0 12px;">
               <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></div>
               <div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></div>
@@ -918,14 +931,21 @@
     document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
   });
 
-  /* Interactive step visuals: klik step di kiri → visual di kanan ganti */
+  /* Interactive step visuals: klik step di kiri / tab di atas visual → visual ganti */
   const visuals = ['sv0','sv1','sv2','sv3'];
   function setStep(idx, el) {
-    document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
+    const items = document.querySelectorAll('.step-item');
+    items.forEach(s => s.classList.remove('active'));
+    const targetItem = el || items[idx];
+    if (targetItem) targetItem.classList.add('active');
+
     visuals.forEach((id, i) => {
       const node = document.getElementById(id);
-      if (node) node.style.display = i === idx ? '' : 'none';
+      if (node) node.style.display = i === idx ? 'flex' : 'none';
+    });
+
+    document.querySelectorAll('.sv-tab').forEach((t, i) => {
+      t.classList.toggle('active', i === idx);
     });
   }
 </script>
