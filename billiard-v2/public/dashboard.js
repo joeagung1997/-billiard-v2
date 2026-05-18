@@ -467,7 +467,7 @@ const renderMemberRow = (m, idx) => {
         <button class="icon-btn" data-tip="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        ${waNum ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
+        ${waNum ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&amp;text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px;font-size:16px"><i class="ti ti-brand-whatsapp" style="pointer-events:none"></i></a>` : ""}
         <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
@@ -530,7 +530,7 @@ const renderMemberCard = (m) => {
     : "";
 
   const waShareBtn = waNum
-    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&text=${waShareMsg}" target="_blank" rel="noopener"
+    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&amp;text=${waShareMsg}" target="_blank" rel="noopener"
         class="mc-btn mc-btn-wa">📤 Kirim QR</a>`
     : "";
 

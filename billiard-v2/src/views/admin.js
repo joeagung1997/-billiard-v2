@@ -666,7 +666,7 @@ function buildModal() {
     + '<div class="modal-btns">'
     + '<a id="modalDl" class="modal-btn modal-btn-dl" download>⬇ Download</a>'
     + '<button class="modal-btn modal-btn-copy" onclick="copyModal()">Copy URL</button>'
-    + '<a id="modalWa" class="modal-btn modal-btn-wa" target="_blank" rel="noopener">' + WA_SVG + ' WhatsApp</a>'
+    + '<a id="modalWa" class="modal-btn modal-btn-wa" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" style="pointer-events:none;font-size:16px"></i> WhatsApp</a>'
     + '</div></div></div>';
 }
 
@@ -1209,7 +1209,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=30"><\/script>'
+    + '<script src="/dashboard.js?v=31"><\/script>'
     + '</body></html>';
 }
 
@@ -1479,7 +1479,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=30"></script>'
+    + '<script src="/dashboard.js?v=31"></script>'
     + '</body></html>';
 }
 
