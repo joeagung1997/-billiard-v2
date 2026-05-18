@@ -156,7 +156,7 @@ window.openMemberDetail = function(kode) {
     phoneEl.classList.add("link");
     phoneEl.classList.remove("muted");
     if (waNum) {
-      phoneWa.href = "https://wa.me/" + waNum;
+      phoneWa.href = "https://api.whatsapp.com/send?phone=" + waNum;
       phoneWa.style.display = "";
     } else {
       phoneWa.style.display = "none";
@@ -225,7 +225,7 @@ window.openMemberDetail = function(kode) {
     const baseUrl  = (HOST || "").replace("http://", "https://");
     const shareUrl = baseUrl + "/member/" + m.kode;
     const msg = encodeURIComponent("Halo " + m.nama + "! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: " + shareUrl);
-    waBtn.href = "https://wa.me/" + waNum + "?text=" + msg;
+    waBtn.href = "https://api.whatsapp.com/send?phone=" + waNum + "&text=" + msg;
     waBtn.style.display = "";
   } else {
     waBtn.style.display = "none";
@@ -467,7 +467,7 @@ const renderMemberRow = (m, idx) => {
         <button class="icon-btn" data-tip="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        ${waNum ? `<a href="https://wa.me/${waNum}?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
+        ${waNum ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
         <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
@@ -526,11 +526,11 @@ const renderMemberCard = (m) => {
     : "";
 
   const waBtn = waNum
-    ? `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" class="mc-btn mc-btn-wa">WA</a>`
+    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}" target="_blank" rel="noopener" class="mc-btn mc-btn-wa">WA</a>`
     : "";
 
   const waShareBtn = waNum
-    ? `<a href="https://wa.me/${waNum}?text=${waShareMsg}" target="_blank" rel="noopener"
+    ? `<a href="https://api.whatsapp.com/send?phone=${waNum}&text=${waShareMsg}" target="_blank" rel="noopener"
         class="mc-btn mc-btn-wa">📤 Kirim QR</a>`
     : "";
 
@@ -794,7 +794,9 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl, waNum) => {
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
   const waEl = document.getElementById("modalWa");
-  waEl.href = waNum ? `https://wa.me/${waNum}?text=${msg}` : `https://wa.me/?text=${msg}`;
+  waEl.href = waNum
+    ? `https://api.whatsapp.com/send?phone=${waNum}&text=${msg}`
+    : `https://api.whatsapp.com/send?text=${msg}`;
 
   document.getElementById("modalOverlay").classList.add("open");
   document.body.style.overflow = "hidden";

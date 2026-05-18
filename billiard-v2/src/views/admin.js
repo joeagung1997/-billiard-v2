@@ -1209,7 +1209,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=29"><\/script>'
+    + '<script src="/dashboard.js?v=30"><\/script>'
     + '</body></html>';
 }
 
@@ -1479,7 +1479,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=29"></script>'
+    + '<script src="/dashboard.js?v=30"></script>'
     + '</body></html>';
 }
 
@@ -1532,10 +1532,12 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
   );
   // Normalize ke format internasional WhatsApp (62XXX, tanpa +/spasi/dash)
   // telepon datang sbg "+62 812-3456-7890" → digits aja: "6281234567890"
+  // Pakai api.whatsapp.com/send (bukan wa.me) — lebih reliable di Android
+  // budget/Samsung Internet yang sering gagal handle redirect wa.me.
   const waNum = (telepon || '').replace(/\D/g, '');
   const waHref = waNum
-    ? 'https://wa.me/' + waNum + '?text=' + waMsg
-    : 'https://wa.me/?text=' + waMsg;
+    ? 'https://api.whatsapp.com/send?phone=' + waNum + '&text=' + waMsg
+    : 'https://api.whatsapp.com/send?text=' + waMsg;
 
   return docHead('Member Terdaftar')
     + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">'
