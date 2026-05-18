@@ -328,15 +328,15 @@ const esc = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-// ── WA opener — JS-driven biar reliable di Samsung Internet (A05/A07) ─
-// Selalu include &text= di URL (bahkan kalau empty) karena Samsung A05
-// dkk WhatsApp intent filter gak fire kalau cuma ?phone= tanpa &text=.
-// Fallback ke whatsapp:// scheme kalau api.whatsapp.com gagal launch app.
+// ── WA opener — JS-driven biar reliable di Samsung Internet (A07 dkk) ─
+// Samsung A07 dkk WhatsApp intent filter STRICT — butuh text NON-EMPTY
+// di URL untuk fire app launch. &text= kosong gak cukup, harus ada
+// konten. Default ke "Halo!" kalau caller gak ngasih msg.
 window.openWA = function(num, msg) {
   num = String(num || "").replace(/\D/g, "");
   if (!num) return false;
-  const text = msg || "";
-  // URL utama: api.whatsapp.com/send (web fallback + Android intent)
+  // Wajib non-empty — kalau caller passing msg kosong, default greeting
+  const text = msg || encodeURIComponent("Halo!");
   const apiUrl = "https://api.whatsapp.com/send?phone=" + num + "&text=" + text;
   // window.open dalam user-event handler — lebih reliable trigger
   // app intent di Samsung Internet daripada <a target=_blank>.
