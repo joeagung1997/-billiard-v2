@@ -438,6 +438,8 @@ function buildAdminCss() {
     '.hm-cell.lv2 { background:#8bc97a; }',
     '.hm-cell.lv3 { background:#3a7d2c; }',
     '.hm-cell.lv4 { background:#255519; box-shadow:0 0 6px rgba(37,85,25,.4); }',
+    '.hm-cell.hm-future { background:transparent; border:1px dashed var(--border); opacity:.5; cursor:default; }',
+    '.hm-cell.hm-future:hover { transform:none; }',
 
     // ── Mobile card layout ────────────────────────────────────
     '.mc { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; overflow:hidden; transition:border-color .15s; }',
@@ -790,16 +792,30 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
   // ── Chart data ───────────────────────────────────────────────
   const allChartLabels = JSON.stringify(trendDays.map((d) => d.lbl));
   const allChartData   = JSON.stringify(trendDays.map((d) => d.count));
-  // Heatmap 28 hari
+  // Heatmap 28 hari — aligned ke kolom hari (Min Sen Sel Rab Kam Jum Sab)
+  // Grid 4 baris × 7 kolom. Kolom 0 = Minggu. Today harus tepat di kolom
+  // yg sesuai weekday hari ini (mis. Sen=col1). Untuk itu kita mulai dari
+  // hari Minggu 3 minggu lalu (current Sunday - 21), dan cell future (>today)
+  // di-set null biar JS render-nya dim/empty.
+  const todayWibDay = nowWib.getDay();          // 0=Min, 1=Sen, ..., 6=Sab
+  const startSunday = new Date(nowWib);
+  startSunday.setDate(startSunday.getDate() - todayWibDay - 21);  // Minggu 3 minggu lalu
   const heatmap28 = [];
-  for (let hi = 27; hi >= 0; hi--) {
-    const hd = new Date(nowWib);
-    hd.setDate(hd.getDate() - hi);
+  for (let i = 0; i < 28; i++) {
+    const hd = new Date(startSunday);
+    hd.setDate(hd.getDate() + i);
+    // Cell future (setelah hari ini) → null, biar UI tampil dim/kosong
+    if (hd.getTime() > nowWib.getTime()) {
+      heatmap28.push(null);
+      continue;
+    }
     const hymd = hd.getFullYear() + '-'
       + String(hd.getMonth() + 1).padStart(2, '0') + '-'
       + String(hd.getDate()).padStart(2, '0');
+    // Count SCAN + DAFTAR_MEMBER sebagai aktivitas (sesuai konteks
+    // "Member Terdaftar" card — daftar baru juga termasuk aktivitas).
     const hcnt = log.filter((l) => {
-      if (l.aksi !== 'SCAN') return false;
+      if (l.aksi !== 'SCAN' && l.aksi !== 'DAFTAR_MEMBER') return false;
       const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const lymd = ld.getFullYear() + '-'
         + String(ld.getMonth() + 1).padStart(2, '0') + '-'
@@ -879,7 +895,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=31">'
+    + '<link rel="stylesheet" href="/admin.css?v=32">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1167,8 +1183,13 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '  var cls=["","lv1","lv2","lv3","lv4"];'
     + '  ALL_HM.forEach(function(v){'
     + '    var c=document.createElement("div");'
-    + '    c.className="hm-cell"+(v>0?" "+cls[Math.min(v,4)]:"");'
-    + '    c.title=v+" kunjungan";'
+    + '    if(v===null){'
+    + '      c.className="hm-cell hm-future";'
+    + '      c.title="Belum terjadi";'
+    + '    }else{'
+    + '      c.className="hm-cell"+(v>0?" "+cls[Math.min(v,4)]:"");'
+    + '      c.title=v+" kunjungan";'
+    + '    }'
     + '    grid.appendChild(c);'
     + '  });'
     + '})();'
@@ -1209,7 +1230,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=32"><\/script>'
+    + '<script src="/dashboard.js?v=33"><\/script>'
     + '</body></html>';
 }
 
@@ -1276,7 +1297,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=31">'
+    + '<link rel="stylesheet" href="/admin.css?v=32">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1479,7 +1500,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=32"></script>'
+    + '<script src="/dashboard.js?v=33"></script>'
     + '</body></html>';
 }
 

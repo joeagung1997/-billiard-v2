@@ -87,6 +87,7 @@ router.get("/tambah", requireAdmin, async (req, res) => {
     const newMember = createMember(kode, nama, telepon);
 
     await saveMember(newMember);
+    await appendLog(kode, nama, "DAFTAR_MEMBER", "Member baru terdaftar");
 
     const scanUrl = buildScanUrl(req, kode);
 

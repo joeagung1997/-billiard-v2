@@ -380,6 +380,7 @@ const renderLb = ({ nama, kode, total, reward }, idx) => {
 // Mapping aksi -> chip class + label
 const LOG_CHIP = {
   SCAN:          { cls: "ch-scan",   label: "Scan" },
+  DAFTAR_MEMBER: { cls: "ch-bonus",  label: "Daftar Baru" },
   BONUS_EARNED:  { cls: "ch-bonus",  label: "Bonus Earned" },
   BONUS_KLAIM:   { cls: "ch-bonus",  label: "Bonus Diklaim" },
   BONUS_EXPIRED: { cls: "ch-hapus",  label: "Bonus Hangus" },
