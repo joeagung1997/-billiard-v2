@@ -219,13 +219,13 @@ window.openMemberDetail = function(kode) {
     </div>`).join("");
   }
 
-  // Footer actions
+  // Footer actions — direct chat ke nomor member dengan text + URL
   const waBtn = document.getElementById("dtBtnWa");
   if (waNum) {
     const baseUrl  = (HOST || "").replace("http://", "https://");
     const shareUrl = baseUrl + "/member/" + m.kode;
     const msg = encodeURIComponent("Halo " + m.nama + "! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: " + shareUrl);
-    waBtn.href = "https://wa.me/?text=" + msg;
+    waBtn.href = "https://wa.me/" + waNum + "?text=" + msg;
     waBtn.style.display = "";
   } else {
     waBtn.style.display = "none";
@@ -408,7 +408,7 @@ const renderMemberRow = (m, idx) => {
   const imgUrl   = "/admin/qr-img/" + m.kode + "?tk=" + TK;
   const waNum    = (m.telepon ?? "").replace(/[^0-9]/g, "");
   const safeNama = m.nama.replace(/'/g, "\\'");
-  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}')`;
+  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}','${waNum || ""}')`;
   const color    = avatarColor(m.nama);
 
   const waShareMsg = encodeURIComponent(
@@ -467,7 +467,7 @@ const renderMemberRow = (m, idx) => {
         <button class="icon-btn" data-tip="Lihat QR" onclick="${qrClick}">
           <i class="ti ti-qrcode"></i>
         </button>
-        ${waNum ? `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
+        ${waNum ? `<a href="https://wa.me/${waNum}?text=${waShareMsg}" target="_blank" rel="noopener" class="icon-btn" data-tip="Kirim ke WhatsApp" style="background:#25d366;color:#fff;border-radius:7px">${WA_SVG}</a>` : ""}
         <a href="${resetQrUrl}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrl}" onclick="confirmAction(this);return false" class="icon-btn" data-tip="Reset QR (kartu hilang)">
           <i class="ti ti-refresh"></i>
         </a>
@@ -493,8 +493,8 @@ const renderMemberCard = (m) => {
   const imgUrl   = "/admin/qr-img/" + m.kode + "?tk=" + TK;
   const dlUrl    = "/admin/qr/" + m.kode + "?tk=" + TK;
   const safeNama = m.nama.replace(/'/g, "\\'");
-  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}')`;
   const waNum    = (m.telepon ?? "").replace(/[^0-9]/g, "");
+  const qrClick  = `openModal('${m.kode}','${safeNama}','${scanUrl}','${dlUrl}','${imgUrl}','${waNum || ""}')`;
   const waShareMsg = encodeURIComponent(
     "Halo " + m.nama + "! Ini kartu member billiard kamu.\n"
     + "Tunjukkan QR ini ke kasir tiap mau main: " + shareUrl
@@ -529,8 +529,10 @@ const renderMemberCard = (m) => {
     ? `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" class="mc-btn mc-btn-wa">WA</a>`
     : "";
 
-  const waShareBtn = `<a href="https://wa.me/?text=${waShareMsg}" target="_blank" rel="noopener"
-      class="mc-btn mc-btn-wa">📤 Kirim QR</a>`;
+  const waShareBtn = waNum
+    ? `<a href="https://wa.me/${waNum}?text=${waShareMsg}" target="_blank" rel="noopener"
+        class="mc-btn mc-btn-wa">📤 Kirim QR</a>`
+    : "";
 
   const resetQrMcBtn = `<a href="${resetQrUrlMc}" data-confirm="resetqr" data-name="${esc(m.nama)}" data-href="${resetQrUrlMc}" onclick="confirmAction(this);return false" class="mc-btn">🔄 Reset QR</a>`;
 
@@ -769,7 +771,7 @@ window.addEventListener("message", (e) => {
   }
 });
 
-const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
+const openModal = (kode, nama, scanUrl, dlUrl, imgUrl, waNum) => {
   _modalUrl  = scanUrl;
   _openedAt  = Date.now();
   _pendingQr = null;
@@ -791,7 +793,8 @@ const openModal = (kode, nama, scanUrl, dlUrl, imgUrl) => {
 
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const msg = encodeURIComponent('Halo ' + nama + '! Ini kartu member billiard kamu.\nTunjukkan QR ini ke kasir tiap mau main: ' + shareUrl);
-  document.getElementById("modalWa").href = `https://wa.me/?text=${msg}`;
+  const waEl = document.getElementById("modalWa");
+  waEl.href = waNum ? `https://wa.me/${waNum}?text=${msg}` : `https://wa.me/?text=${msg}`;
 
   document.getElementById("modalOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
