@@ -582,6 +582,7 @@ export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl, nomorWa }) =>
 <title>Kartu Member — ${CONFIG.NAMA_ARENA}</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 <style>
 :root{
   --gold:#C9A84C;--gold-lt:#F0D88A;
@@ -950,13 +951,13 @@ body::before{
 
   <!-- Action buttons -->
   <div class="actions">
-    <button type="button" class="act-btn act-btn-qr" onclick="saveQr()">
+    <button type="button" class="act-btn act-btn-qr" id="btnSaveCard" onclick="saveCard()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/>
         <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
-      Simpan QR
+      <span class="act-btn-label">Simpan Kartu</span>
     </button>
     <a class="act-btn act-btn-wa" href="${waUrl}" target="_blank" rel="noopener">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1036,16 +1037,63 @@ body::before{
   card.addEventListener('touchend', resetTilt, { passive: true });
 })();
 
-// Simpan QR Member — download QR image yg udah di-encode data URL
-window.saveQr = function() {
-  var img = document.querySelector('.qr-outer img');
-  if (!img || !img.src) return;
-  var a = document.createElement('a');
-  a.href = img.src;
-  a.download = 'qr-warpat-${kode}.png';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+// Simpan Kartu — capture #memberCard pakai html2canvas, download PNG.
+// Kartu doang yg di-capture (QR + member info + branding), bukan
+// terms/ketentuan yg ada di bawahnya.
+window.saveCard = function() {
+  var card  = document.getElementById('memberCard');
+  var btn   = document.getElementById('btnSaveCard');
+  var label = btn ? btn.querySelector('.act-btn-label') : null;
+
+  // Fallback kalau html2canvas gagal load → download bare QR image
+  function fallbackQr() {
+    var img = document.querySelector('.qr-outer img');
+    if (!img || !img.src) return;
+    var a = document.createElement('a');
+    a.href = img.src;
+    a.download = 'qr-warpat-${kode}.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  if (!card || typeof html2canvas !== 'function') {
+    fallbackQr();
+    return;
+  }
+
+  // Reset tilt transform supaya capture rapi (gak miring)
+  var prevTransform = card.style.transform;
+  card.style.transform = 'none';
+
+  if (btn)   { btn.disabled = true; btn.style.opacity = '0.65'; btn.style.cursor = 'wait'; }
+  if (label) { label.textContent = 'Menyimpan...'; }
+
+  // Delay kecil supaya browser sempet repaint tanpa tilt
+  setTimeout(function() {
+    html2canvas(card, {
+      backgroundColor: null,
+      scale:   2,
+      useCORS: true,
+      logging: false,
+    }).then(function(canvas) {
+      card.style.transform = prevTransform;
+      canvas.toBlob(function(blob) {
+        if (!blob) { fallbackQr(); return; }
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'kartu-warpat-${kode}.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+      }, 'image/png');
+    }).catch(function(err) {
+      console.error('Save card failed:', err);
+      card.style.transform = prevTransform;
+      fallbackQr();
+    }).finally(function() {
+      if (btn)   { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; }
+      if (label) { label.textContent = 'Simpan Kartu'; }
+    });
+  }, 60);
 };
 </script>
 </body>
