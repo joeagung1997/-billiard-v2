@@ -1687,19 +1687,93 @@
 
       <!-- Billiard -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
-        <div style="height:160px;background:linear-gradient(135deg,#1a6b3a,#145c2e);position:relative;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;inset:14px;border:1.5px solid rgba(255,255,255,0.12);border-radius:8px;"></div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px;width:100px;justify-content:center;">
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f44,#900);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fa0,#c60);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#44f,#00a);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff0,#880);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f80,#c40);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#080,#040);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.4);"></div>
-            <div style="width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ccc);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.2),0 2px 6px rgba(0,0,0,0.3);"></div>
-            <div style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#222,#000);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.6);"></div>
-          </div>
-          <div style="position:absolute;bottom:10px;right:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);">8 Meja</div>
+        <div style="height:160px;position:relative;overflow:hidden;">
+          <svg viewBox="0 0 200 160" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;display:block;" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="bf" cx="50%" cy="40%" r="80%"><stop offset="0%" stop-color="#258A4A"/><stop offset="60%" stop-color="#145C2E"/><stop offset="100%" stop-color="#0A3818"/></radialGradient>
+              <radialGradient id="bg1" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#FFE48A"/><stop offset="100%" stop-color="#A07A12"/></radialGradient>
+              <radialGradient id="bg2" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#7AB8FF"/><stop offset="100%" stop-color="#1A4FB8"/></radialGradient>
+              <radialGradient id="bg3" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#FF6A6A"/><stop offset="100%" stop-color="#9C1A14"/></radialGradient>
+              <radialGradient id="bg4" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#B58AFF"/><stop offset="100%" stop-color="#4A1A8A"/></radialGradient>
+              <radialGradient id="bg5" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#FFA84A"/><stop offset="100%" stop-color="#A05518"/></radialGradient>
+              <radialGradient id="bg6" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#7AFF7A"/><stop offset="100%" stop-color="#1A8A1F"/></radialGradient>
+              <radialGradient id="bg7" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#FF7A4A"/><stop offset="100%" stop-color="#7A2014"/></radialGradient>
+              <radialGradient id="bg8" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#404040"/><stop offset="100%" stop-color="#020202"/></radialGradient>
+              <radialGradient id="bgw" cx="35%" cy="28%" r="60%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#C8C8C8"/></radialGradient>
+              <linearGradient id="cue" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3A6CB8"/><stop offset="6%" stop-color="#E8D8B8"/><stop offset="18%" stop-color="#C49A5A"/><stop offset="100%" stop-color="#3A2410"/></linearGradient>
+            </defs>
+            <!-- Felt -->
+            <rect width="200" height="160" fill="url(#bf)"/>
+            <!-- Felt grain (diagonal lines, very subtle) -->
+            <g stroke="rgba(255,255,255,0.025)" stroke-width="0.5"><line x1="0" y1="0" x2="200" y2="200"/><line x1="0" y1="20" x2="200" y2="220"/><line x1="0" y1="40" x2="200" y2="240"/><line x1="0" y1="60" x2="200" y2="260"/><line x1="0" y1="80" x2="200" y2="280"/><line x1="0" y1="100" x2="200" y2="300"/><line x1="0" y1="120" x2="200" y2="320"/></g>
+            <!-- Inner gold border rail -->
+            <rect x="6" y="6" width="188" height="148" rx="6" fill="none" stroke="rgba(196,154,42,0.45)" stroke-width="1.2"/>
+            <rect x="7.5" y="7.5" width="185" height="145" rx="5" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+            <!-- Corner pockets -->
+            <g fill="#000" opacity="0.85">
+              <circle cx="6" cy="6" r="6"/><circle cx="194" cy="6" r="6"/>
+              <circle cx="6" cy="154" r="6"/><circle cx="194" cy="154" r="6"/>
+              <circle cx="100" cy="6" r="4.5"/><circle cx="100" cy="154" r="4.5"/>
+            </g>
+            <!-- Diamond markers -->
+            <g fill="rgba(255,255,255,0.35)">
+              <circle cx="50" cy="3" r="1.5"/><circle cx="150" cy="3" r="1.5"/>
+              <circle cx="50" cy="157" r="1.5"/><circle cx="150" cy="157" r="1.5"/>
+              <circle cx="3" cy="55" r="1.5"/><circle cx="3" cy="105" r="1.5"/>
+              <circle cx="197" cy="55" r="1.5"/><circle cx="197" cy="105" r="1.5"/>
+            </g>
+            <!-- Triangle rack (15 balls, apex up). Center @ (100,75). Spacing 13. -->
+            <g>
+              <!-- Row 1 (top, 1 ball) -->
+              <circle cx="100" cy="50" r="6.2" fill="url(#bg1)"/>
+              <ellipse cx="98" cy="48" rx="2" ry="1.4" fill="rgba(255,255,255,0.55)"/>
+              <!-- Row 2 (2 balls) -->
+              <circle cx="93" cy="62" r="6.2" fill="url(#bg2)"/>
+              <ellipse cx="91" cy="60" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="107" cy="62" r="6.2" fill="url(#bg3)"/>
+              <ellipse cx="105" cy="60" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <!-- Row 3 (3 balls — 8-ball at center) -->
+              <circle cx="86" cy="74" r="6.2" fill="url(#bg5)"/>
+              <ellipse cx="84" cy="72" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="100" cy="74" r="6.2" fill="url(#bg8)"/>
+              <ellipse cx="98" cy="72" rx="2" ry="1.4" fill="rgba(255,255,255,0.45)"/>
+              <circle cx="114" cy="74" r="6.2" fill="url(#bg4)"/>
+              <ellipse cx="112" cy="72" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <!-- Row 4 (4 balls) -->
+              <circle cx="79" cy="86" r="6.2" fill="url(#bg6)"/>
+              <ellipse cx="77" cy="84" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="93" cy="86" r="6.2" fill="url(#bg7)"/>
+              <ellipse cx="91" cy="84" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="107" cy="86" r="6.2" fill="url(#bg2)"/>
+              <ellipse cx="105" cy="84" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="121" cy="86" r="6.2" fill="url(#bg1)"/>
+              <ellipse cx="119" cy="84" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <!-- Row 5 (bottom, 5 balls) -->
+              <circle cx="72" cy="98" r="6.2" fill="url(#bg3)"/>
+              <ellipse cx="70" cy="96" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="86" cy="98" r="6.2" fill="url(#bg5)"/>
+              <ellipse cx="84" cy="96" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="100" cy="98" r="6.2" fill="url(#bg4)"/>
+              <ellipse cx="98" cy="96" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="114" cy="98" r="6.2" fill="url(#bg6)"/>
+              <ellipse cx="112" cy="96" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="128" cy="98" r="6.2" fill="url(#bg7)"/>
+              <ellipse cx="126" cy="96" rx="2" ry="1.4" fill="rgba(255,255,255,0.5)"/>
+            </g>
+            <!-- Cue ball (below rack) -->
+            <circle cx="100" cy="125" r="6.8" fill="url(#bgw)" stroke="rgba(0,0,0,0.12)" stroke-width="0.3"/>
+            <ellipse cx="97.5" cy="122" rx="2.5" ry="1.6" fill="rgba(255,255,255,0.95)"/>
+            <!-- Cue stick (angled from bottom-left) -->
+            <g transform="rotate(-22 30 145)">
+              <rect x="20" y="143.5" width="120" height="3" rx="1.5" fill="url(#cue)"/>
+              <circle cx="140" cy="145" r="1.8" fill="#3A6CB8"/>
+            </g>
+            <!-- Soft vignette -->
+            <rect width="200" height="160" fill="url(#vg)" opacity="0.5"/>
+            <radialGradient id="vg" cx="50%" cy="50%" r="75%"><stop offset="60%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.5)"/></radialGradient>
+          </svg>
+          <!-- Caption -->
+          <div style="position:absolute;bottom:8px;right:14px;font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.42);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;">8 Meja</div>
         </div>
         <div style="padding:18px 20px;">
           <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">Billiard</div>
@@ -1713,17 +1787,65 @@
 
       <!-- Nobar TV 55 inch -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
-        <div style="height:160px;background:linear-gradient(135deg,#080c18,#0f1830,#080c18);position:relative;display:flex;align-items:center;justify-content:center;">
-          <!-- TV illustration -->
-          <div style="width:120px;height:72px;background:#111;border-radius:6px;border:3px solid #2a2a2a;box-shadow:0 0 30px rgba(59,130,246,0.25);position:relative;display:flex;align-items:center;justify-content:center;">
-            <div style="position:absolute;inset:3px;background:linear-gradient(135deg,#1a2a4a,#0a1a3a);border-radius:3px;display:flex;align-items:center;justify-content:center;">
-              <span style="font-size:28px;">⚽</span>
+        <div style="height:160px;background:linear-gradient(160deg,#060a14,#0d1830,#080c1a);position:relative;overflow:hidden;">
+          <!-- Ambient blue glow around TV -->
+          <div style="position:absolute;top:14%;left:50%;transform:translateX(-50%);width:80%;height:75%;border-radius:50%;background:radial-gradient(ellipse,rgba(59,130,246,0.32),transparent 65%);filter:blur(22px);pointer-events:none;"></div>
+
+          <!-- TV (flat panel mounted) -->
+          <div style="position:absolute;top:14%;left:50%;transform:translateX(-50%);width:62%;max-width:160px;aspect-ratio:16/9;background:#040208;border-radius:5px;border:2.5px solid #1a1a2a;box-shadow:0 8px 26px rgba(0,0,0,0.6),0 0 30px rgba(59,130,246,0.22),inset 0 0 30px rgba(20,40,90,0.3);overflow:hidden;">
+            <!-- Soccer field scene -->
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,#0c1a3a 0%,#1a4a2a 25%,#1e6b3a 100%);">
+              <!-- Sky -->
+              <div style="position:absolute;top:0;left:0;right:0;height:30%;background:linear-gradient(180deg,#0a1830 0%,#1a3050 100%);"></div>
+              <!-- Crowd silhouette top -->
+              <div style="position:absolute;top:18%;left:0;right:0;height:14%;background:repeating-linear-gradient(90deg,rgba(0,0,0,0.6),rgba(0,0,0,0.6) 2px,rgba(20,30,60,0.5) 2px,rgba(20,30,60,0.5) 4px);"></div>
+              <!-- Field with lines -->
+              <div style="position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(180deg,#1e6b3a,#125a2e);">
+                <!-- Center circle -->
+                <div style="position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:1px solid rgba(255,255,255,0.55);border-radius:50%;"></div>
+                <!-- Center line -->
+                <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:100%;background:rgba(255,255,255,0.4);"></div>
+                <!-- Goal area lines -->
+                <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:36px;height:14px;border:1px solid rgba(255,255,255,0.4);border-bottom:none;"></div>
+              </div>
+              <!-- Players (small dots) -->
+              <div style="position:absolute;top:48%;left:36%;width:3px;height:3px;border-radius:50%;background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,0.6);"></div>
+              <div style="position:absolute;top:62%;left:52%;width:3px;height:3px;border-radius:50%;background:#3b82f6;box-shadow:0 0 4px rgba(59,130,246,0.6);"></div>
+              <div style="position:absolute;top:55%;left:65%;width:3px;height:3px;border-radius:50%;background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,0.6);"></div>
+              <div style="position:absolute;top:70%;left:40%;width:3px;height:3px;border-radius:50%;background:#3b82f6;box-shadow:0 0 4px rgba(59,130,246,0.6);"></div>
+              <!-- Ball -->
+              <div style="position:absolute;top:58%;left:54%;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.95);"></div>
+              <!-- Scoreboard top-left -->
+              <div style="position:absolute;top:5%;left:5%;display:flex;align-items:center;gap:3px;font-family:'DM Mono',monospace;font-size:5px;font-weight:700;letter-spacing:0.04em;">
+                <span style="background:rgba(0,0,0,0.7);color:#fff;padding:1px 3px;border-radius:1.5px;">MUN</span>
+                <span style="color:#fbbf24;">2 - 1</span>
+                <span style="background:rgba(0,0,0,0.7);color:#fff;padding:1px 3px;border-radius:1.5px;">LIV</span>
+              </div>
+              <!-- LIVE badge top-right -->
+              <div style="position:absolute;top:5%;right:5%;display:flex;align-items:center;gap:2px;background:rgba(239,68,68,0.85);padding:1px 4px;border-radius:99px;font-size:5px;font-weight:800;color:#fff;letter-spacing:0.1em;">
+                <span style="width:3px;height:3px;border-radius:50%;background:#fff;animation:pulseLive 1.4s ease-in-out infinite;"></span>
+                LIVE
+              </div>
+              <!-- Stadium lights flare -->
+              <div style="position:absolute;top:0;left:25%;width:50%;height:30%;background:radial-gradient(ellipse at center top,rgba(255,255,255,0.18),transparent 60%);"></div>
             </div>
-            <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:30px;height:4px;background:#1a1a1a;border-radius:2px;"></div>
-            <div style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);width:50px;height:4px;background:#222;border-radius:2px;"></div>
+            <!-- Screen glare -->
+            <div style="position:absolute;top:0;left:15%;width:50%;height:100%;background:linear-gradient(125deg,transparent 38%,rgba(255,255,255,0.06) 50%,transparent 62%);pointer-events:none;"></div>
           </div>
-          <div style="position:absolute;top:12px;right:14px;font-size:10px;font-weight:600;letter-spacing:0.1em;color:rgba(59,130,246,0.7);">55"</div>
-          <div style="position:absolute;bottom:10px;right:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);">Nobar</div>
+
+          <!-- Wall mount + cable -->
+          <div style="position:absolute;top:calc(14% + (60% * 9/16) + 6px);left:50%;transform:translateX(-50%);width:1.5px;height:14px;background:linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.02));"></div>
+
+          <!-- "55" badge top-right -->
+          <div style="position:absolute;top:10px;right:14px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.04em;color:rgba(59,130,246,0.85);text-shadow:0 0 8px rgba(59,130,246,0.6);">55"</div>
+          <!-- Caption -->
+          <div style="position:absolute;bottom:10px;right:14px;font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;">Nobar</div>
+
+          <!-- Subtle floor lights / reflection -->
+          <div style="position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(180deg,transparent,rgba(59,130,246,0.08));pointer-events:none;"></div>
+
+          <!-- Scanline overlay -->
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.012) 3px,rgba(255,255,255,0.012) 4px);pointer-events:none;"></div>
         </div>
         <div style="padding:18px 20px;">
           <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">Nonton Bareng (Nobar)</div>
@@ -1737,27 +1859,81 @@
 
       <!-- PlayStation 3 -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
-        <div style="height:160px;background:linear-gradient(135deg,#0d0814,#180c28,#0d0814);position:relative;display:flex;align-items:center;justify-content:center;">
-          <!-- PS3 illustration -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-            <div style="width:90px;height:32px;background:linear-gradient(135deg,#1a1a2a,#2a2a3a);border-radius:8px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.4);">
-              <span style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.08em;font-weight:600;">PS3</span>
-              <div style="width:5px;height:5px;border-radius:50%;background:#3b82f6;box-shadow:0 0 6px rgba(59,130,246,0.6);"></div>
-            </div>
-            <div style="display:flex;gap:12px;">
-              <!-- Controller -->
-              <div style="width:44px;height:28px;background:linear-gradient(135deg,#222,#333);border-radius:6px;border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;position:relative;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;position:absolute;right:6px;">
-                  <div style="width:4px;height:4px;border-radius:50%;background:#3b82f6;"></div>
-                  <div style="width:4px;height:4px;border-radius:50%;background:#ef4444;"></div>
-                  <div style="width:4px;height:4px;border-radius:50%;background:#22c55e;"></div>
-                  <div style="width:4px;height:4px;border-radius:50%;background:#facc15;"></div>
-                </div>
-              </div>
-            </div>
+        <div style="height:160px;background:linear-gradient(160deg,#080515,#180a30,#0a0518);position:relative;overflow:hidden;">
+          <!-- Ambient purple+blue glows -->
+          <div style="position:absolute;top:-20px;right:-20px;width:160px;height:120px;border-radius:50%;background:radial-gradient(ellipse,rgba(140,40,255,0.35),transparent 65%);filter:blur(20px);pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-25px;left:-15px;width:140px;height:100px;border-radius:50%;background:radial-gradient(ellipse,rgba(60,130,255,0.22),transparent 70%);filter:blur(18px);pointer-events:none;"></div>
+
+          <!-- PS3 console (top) -->
+          <div style="position:absolute;top:18%;left:50%;transform:translateX(-50%);width:65%;max-width:170px;height:22px;background:linear-gradient(180deg,#1a1a26 0%,#0a0a14 100%);border-radius:5px 5px 7px 7px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 20px rgba(0,0,0,0.65),inset 0 1px 0 rgba(255,255,255,0.08);">
+            <!-- Top highlight -->
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);"></div>
+            <!-- Disc slot -->
+            <div style="position:absolute;top:50%;left:14%;transform:translateY(-50%);width:55%;height:1.5px;background:rgba(255,255,255,0.2);border-radius:1px;box-shadow:inset 0 0 2px rgba(0,0,0,0.6);"></div>
+            <!-- Power LED -->
+            <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:5.5px;height:5.5px;border-radius:50%;background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.95);"></div>
+            <!-- Brand text -->
+            <div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);font-size:4.5px;font-weight:700;color:rgba(255,255,255,0.13);letter-spacing:0.32em;">PLAYSTATION&nbsp;3</div>
           </div>
-          <div style="position:absolute;bottom:10px;right:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);">Gaming</div>
-          <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(90,190,104,0.08),transparent 60%);"></div>
+
+          <!-- Glow line beneath console -->
+          <div style="position:absolute;top:calc(18% + 24px);left:50%;transform:translateX(-50%);width:60%;height:4px;background:radial-gradient(ellipse,rgba(59,130,246,0.42),transparent 70%);filter:blur(2px);pointer-events:none;"></div>
+
+          <!-- Controllers (2x DualShock, V formation) -->
+          <div style="position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:12px;">
+            <!-- Controller 1 (tilt left) -->
+            <svg width="58" height="38" viewBox="0 0 62 40" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 4px 10px rgba(0,0,0,0.6));transform:rotate(-5deg);">
+              <defs>
+                <linearGradient id="psCtrl1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2c2c3e"/><stop offset="55%" stop-color="#1a1a28"/><stop offset="100%" stop-color="#0a0a14"/></linearGradient>
+              </defs>
+              <rect x="3" y="1" width="11" height="5" rx="2" fill="url(#psCtrl1)"/>
+              <rect x="48" y="1" width="11" height="5" rx="2" fill="url(#psCtrl1)"/>
+              <path d="M 9 5 Q 4 5 4 16 L 4 30 Q 4 38 14 38 L 22 38 Q 27 38 28 33 Q 30 38 35 38 L 48 38 Q 58 38 58 30 L 58 16 Q 58 5 53 5 Z" fill="url(#psCtrl1)" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
+              <g transform="translate(13,20)" fill="rgba(255,255,255,0.22)"><rect x="-1.2" y="-3" width="2.4" height="6" rx="0.5"/><rect x="-3" y="-1.2" width="6" height="2.4" rx="0.5"/></g>
+              <circle cx="46" cy="14" r="1.7" fill="#22c55e"/>
+              <circle cx="51" cy="20" r="1.7" fill="#ef4444"/>
+              <circle cx="41" cy="20" r="1.7" fill="#ec4899"/>
+              <circle cx="46" cy="26" r="1.7" fill="#3b82f6"/>
+              <circle cx="20" cy="29" r="3.2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+              <circle cx="20" cy="29" r="1.5" fill="rgba(255,255,255,0.06)"/>
+              <circle cx="38" cy="29" r="3.2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+              <circle cx="38" cy="29" r="1.5" fill="rgba(255,255,255,0.06)"/>
+              <rect x="24" y="15" width="3" height="1.2" rx="0.5" fill="rgba(255,255,255,0.22)"/>
+              <rect x="31" y="15" width="3" height="1.2" rx="0.5" fill="rgba(255,255,255,0.22)"/>
+              <circle cx="29" cy="22" r="2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+            </svg>
+            <!-- Controller 2 (tilt right) -->
+            <svg width="58" height="38" viewBox="0 0 62 40" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 4px 10px rgba(0,0,0,0.6));transform:rotate(6deg);">
+              <defs>
+                <linearGradient id="psCtrl2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2c2c3e"/><stop offset="55%" stop-color="#1a1a28"/><stop offset="100%" stop-color="#0a0a14"/></linearGradient>
+              </defs>
+              <rect x="3" y="1" width="11" height="5" rx="2" fill="url(#psCtrl2)"/>
+              <rect x="48" y="1" width="11" height="5" rx="2" fill="url(#psCtrl2)"/>
+              <path d="M 9 5 Q 4 5 4 16 L 4 30 Q 4 38 14 38 L 22 38 Q 27 38 28 33 Q 30 38 35 38 L 48 38 Q 58 38 58 30 L 58 16 Q 58 5 53 5 Z" fill="url(#psCtrl2)" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
+              <g transform="translate(13,20)" fill="rgba(255,255,255,0.22)"><rect x="-1.2" y="-3" width="2.4" height="6" rx="0.5"/><rect x="-3" y="-1.2" width="6" height="2.4" rx="0.5"/></g>
+              <circle cx="46" cy="14" r="1.7" fill="#22c55e"/>
+              <circle cx="51" cy="20" r="1.7" fill="#ef4444"/>
+              <circle cx="41" cy="20" r="1.7" fill="#ec4899"/>
+              <circle cx="46" cy="26" r="1.7" fill="#3b82f6"/>
+              <circle cx="20" cy="29" r="3.2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+              <circle cx="20" cy="29" r="1.5" fill="rgba(255,255,255,0.06)"/>
+              <circle cx="38" cy="29" r="3.2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+              <circle cx="38" cy="29" r="1.5" fill="rgba(255,255,255,0.06)"/>
+              <rect x="24" y="15" width="3" height="1.2" rx="0.5" fill="rgba(255,255,255,0.22)"/>
+              <rect x="31" y="15" width="3" height="1.2" rx="0.5" fill="rgba(255,255,255,0.22)"/>
+              <circle cx="29" cy="22" r="2" fill="#0a0a14" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+            </svg>
+          </div>
+
+          <!-- Floor reflection pool -->
+          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:75%;height:18px;background:radial-gradient(ellipse at center top,rgba(140,79,255,0.22),transparent 70%);pointer-events:none;"></div>
+
+          <!-- Caption -->
+          <div style="position:absolute;bottom:8px;right:14px;font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;">Gaming</div>
+
+          <!-- Scanline + vignette -->
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.014) 3px,rgba(255,255,255,0.014) 4px);pointer-events:none;"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.4) 100%);pointer-events:none;"></div>
         </div>
         <div style="padding:18px 20px;">
           <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">PlayStation 3</div>
@@ -2043,7 +2219,7 @@
         <p style="font-size:13px;color:rgba(255,255,255,0.65);font-weight:300;line-height:1.6;">Sistem tukar poin sedang disiapkan. Stay tuned — kami kabari kalau udah live!</p>
       </div>
     </div>
-    <style>@keyframes pulseGold{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}</style>
+    <style>@keyframes pulseGold{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}@keyframes pulseLive{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}</style>
 
     <!-- ▼ Konten asli (blurred, gak bisa di-klik) -->
     <div style="filter:blur(5px) saturate(.85);opacity:.55;pointer-events:none;user-select:none;" aria-hidden="true">
