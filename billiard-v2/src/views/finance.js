@@ -102,7 +102,6 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<div class=\"qa-grid\">"
     + "<a href=\"/scan\" class=\"qa-btn\"><i class=\"ti ti-qrcode\"></i>Scan Member</a>"
     + "<a href=\"/operasional\" class=\"qa-btn\"><i class=\"ti ti-plus\"></i>Transaksi</a>"
-    + "<a href=\"#\" class=\"qa-btn\" onclick=\"goReset();return false\"><i class=\"ti ti-refresh\"></i>Reset Harian</a>"
     + "<button class=\"qa-btn danger\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i>Keluar</button>"
     + "</div>"
     + "</div>"
@@ -151,9 +150,6 @@ function buildFinanceBottomNav() {
     + "</button>"
     + "<a href=\"/scan\" class=\"bn-item\">"
     + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
-    + "</a>"
-    + "<a href=\"#\" class=\"bn-item danger\" onclick=\"goReset();return false\">"
-    + "<span class=\"bn-icon\"><i class=\"ti ti-refresh\"></i></span>Reset"
     + "</a>"
     + "</nav>"
 
@@ -930,7 +926,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "const WIZ_TOPPINGS=" + safeJson(toppingsByName) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
-    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
     + "function buildUrl(){"
     + "var b=document.getElementById('fBulan').value;"
     + "var j=document.getElementById('fJenis').value;"
@@ -1371,7 +1366,6 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "document.getElementById('catInput').focus();}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
-    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";
@@ -1651,7 +1645,6 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "function fmtH(el){var r=el.value.replace(/\\D/g,'');var n=parseInt(r)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):''}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
-    + "function goReset(){var t=localStorage.getItem('warpat_atk');if(confirm('Reset scan harian semua member?'))window.location.href=t?'/admin/reset?tk='+t:'/admin';}"
     + "function toggleSection(cat){var grid=document.getElementById('grid-'+cat);var hdr=document.querySelector('#sec-'+cat+' .mp-sec-hdr');var pag=document.getElementById('pag-'+cat);var open=grid.style.display!=='none';grid.style.display=open?'none':'';if(pag)pag.style.display=open?'none':'';hdr.classList.toggle('collapsed',open);}"
     // Hot toggle (add form)
     + "var hotOn=false;"
