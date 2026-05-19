@@ -45,6 +45,11 @@ router.get("/scan", async (req, res) => {
 router.post("/checkin", async (req, res) => {
   const kode = (req.body.id ?? "").trim().toUpperCase();
   const pin  = (req.body.pin ?? "").trim();
+  // Durasi main (jam) — kelipatan 2: 2/4/6/8. Default 2 kalau invalid.
+  // Point earned = durasi / 2 (jadi 2jam=1pt, 4jam=2pt, dst).
+  const durasiRaw  = parseInt(req.body.durasi ?? "2", 10);
+  const durasi     = [2, 4, 6, 8].includes(durasiRaw) ? durasiRaw : 2;
+  const pointDapat = durasi / 2;
 
   try {
     // PIN salah
@@ -96,9 +101,10 @@ router.post("/checkin", async (req, res) => {
       m.tanggalMulai = today.toISOString();
     }
 
-    // +1 kunjungan & +1 point (point = lifetime counter, gak reset)
+    // Sesi +1; point sesuai durasi (kelipatan 2 jam = 1 point).
+    // Point lifetime — gak reset di siklus baru / bonus claim.
     m.totalMain          += 1;
-    m.totalPoint          = (m.totalPoint ?? 0) + 1;
+    m.totalPoint          = (m.totalPoint ?? 0) + pointDapat;
     m.sudahScanHariIni    = true;
     m.tanggalScanTerakhir = today.toISOString();
 
@@ -108,7 +114,7 @@ router.post("/checkin", async (req, res) => {
       m.bonusEarnedAt = today.toISOString();
 
       await saveMember(m);
-      await appendLog(kode, m.nama, "BONUS_EARNED", `Bonus earned setelah ${m.totalMain} sesi`);
+      await appendLog(kode, m.nama, "BONUS_EARNED", `Bonus earned setelah ${m.totalMain} sesi · ${durasi} jam · +${pointDapat} point`);
 
       return res.send(resultPage("gratis", {
         nama:  m.nama,
@@ -121,11 +127,13 @@ router.post("/checkin", async (req, res) => {
 
     m.status = "-";
     await saveMember(m);
-    await appendLog(kode, m.nama, expired ? "SCAN_RESET" : "SCAN", `Kunjungan ke-${m.totalMain}`);
+    await appendLog(kode, m.nama, expired ? "SCAN_RESET" : "SCAN", `Kunjungan ke-${m.totalMain} · ${durasi} jam · +${pointDapat} point`);
 
     res.send(resultPage("sukses", {
       nama:      m.nama,
       judul:     "Check-in Berhasil!",
+      durasi,
+      pointDapat,
       pesan:     expired ? "Periode bonus direset. Kunjungan ke-1 periode baru!" : "",
       totalMain: m.totalMain,
       kode,

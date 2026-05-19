@@ -197,8 +197,12 @@ router.post("/members/:kode/klaim", requireApiAuth(["admin"]), async (req, res) 
 
 // ── POST /api/v1/checkin — check-in member (tanpa JWT) ────────
 router.post("/checkin", async (req, res) => {
-  const { kode: kodeRaw, kasirPin } = req.body ?? {};
+  const { kode: kodeRaw, kasirPin, durasi: durasiBody } = req.body ?? {};
   const kode = (kodeRaw ?? "").trim().toUpperCase();
+  // Durasi main (jam): kelipatan 2 (2/4/6/8). Point = durasi/2.
+  const durasiRaw  = parseInt(durasiBody ?? "2", 10);
+  const durasi     = [2, 4, 6, 8].includes(durasiRaw) ? durasiRaw : 2;
+  const pointDapat = durasi / 2;
 
   if (!kode || !kasirPin) return err(res, "Field 'kode' dan 'kasirPin' wajib diisi.");
   if (kasirPin !== CONFIG.KASIR_PIN) return err(res, "PIN kasir salah.", 401);
@@ -237,7 +241,7 @@ router.post("/checkin", async (req, res) => {
     }
 
     m.totalMain          += 1;
-    m.totalPoint          = (m.totalPoint ?? 0) + 1;
+    m.totalPoint          = (m.totalPoint ?? 0) + pointDapat;
     m.sudahScanHariIni    = true;
     m.tanggalScanTerakhir = today.toISOString();
 
@@ -246,12 +250,15 @@ router.post("/checkin", async (req, res) => {
       m.status        = "BONUS";
       m.bonusEarnedAt = today.toISOString();
       await saveMember(m);
-      await appendLog(kode, m.nama, "BONUS_EARNED", `Bonus earned setelah ${m.totalMain} sesi via API`);
+      await appendLog(kode, m.nama, "BONUS_EARNED", `Bonus earned setelah ${m.totalMain} sesi · ${durasi} jam · +${pointDapat} point (via API)`);
       return ok(res, {
         result:      "gratis",
         nama:        m.nama,
         totalMain:   m.totalMain,
+        totalPoint:  m.totalPoint,
         totalGratis: m.totalGratis ?? 0,
+        durasi,
+        pointDapat,
         status:      m.status,
         message:     `Selamat ${m.nama}! Bonus kamu siap diklaim ke kasir. 🎁`,
       });
@@ -259,17 +266,20 @@ router.post("/checkin", async (req, res) => {
 
     m.status = "-";
     await saveMember(m);
-    await appendLog(kode, m.nama, expired ? "SCAN_RESET" : "SCAN", `Kunjungan ke-${m.totalMain} via API`);
+    await appendLog(kode, m.nama, expired ? "SCAN_RESET" : "SCAN", `Kunjungan ke-${m.totalMain} · ${durasi} jam · +${pointDapat} point (via API)`);
 
     return ok(res, {
       result:    "sukses",
       nama:      m.nama,
       totalMain: m.totalMain,
+      totalPoint: m.totalPoint,
+      durasi,
+      pointDapat,
       status:    m.status,
       expired,
       message:   expired
-        ? `Check-in berhasil! Periode baru dimulai. Kunjungan ke-1.`
-        : `Check-in berhasil! Kunjungan ke-${m.totalMain} dari ${CONFIG.BATAS_MAIN}.`,
+        ? `Check-in berhasil! Periode baru dimulai. Kunjungan ke-1 · main ${durasi} jam, dapet ${pointDapat} point.`
+        : `Check-in berhasil! Kunjungan ke-${m.totalMain} dari ${CONFIG.BATAS_MAIN} · main ${durasi} jam, dapet ${pointDapat} point.`,
     });
   } catch (e) {
     console.error("[API] POST /checkin:", e.message);
