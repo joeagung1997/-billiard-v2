@@ -1661,7 +1661,7 @@
             </div>
           </div>
           <div style="position:absolute;bottom:10px;right:14px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);">Gaming</div>
-          <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,0.1),transparent 60%);"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(90,190,104,0.08),transparent 60%);"></div>
         </div>
         <div style="padding:18px 20px;">
           <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">PlayStation 3</div>
@@ -1692,121 +1692,240 @@
   </div>
 </section>
 
-<!-- ════ MEMBER CARD ════ -->
-<section style="padding:80px 40px;background:var(--text);color:#fff;position:relative;overflow:hidden;">
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 80% 50%,rgba(26,107,58,0.14),transparent 60%),radial-gradient(ellipse 40% 40% at 10% 80%,rgba(26,107,58,0.1),transparent 50%);pointer-events:none;"></div>
-  <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;position:relative;z-index:1;" class="reveal">
+<!-- ════ MEMBER CARD — HERO HIGHLIGHT ════ -->
+<section style="padding:0;background:var(--bg);position:relative;overflow:hidden;">
 
-    <!-- Left: copy -->
-    <div>
-      <div style="font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-        <span style="display:inline-block;width:16px;height:1.5px;background:rgba(255,255,255,0.25);border-radius:99px;"></span>
-        Membership Program
-      </div>
-      <h2 style="font-family:'Fraunces',serif;font-size:clamp(32px,4vw,48px);font-weight:600;line-height:1.08;letter-spacing:-0.03em;color:#fff;margin-bottom:14px;">
-        Daftar member,<br><em style="font-style:italic;font-weight:300;color:rgba(255,255,255,0.5);">gratis selamanya</em>
-      </h2>
-      <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:28px;">
-        Setiap member Warpat Jombang mendapat kartu digital eksklusif dengan QR code. Cukup tunjukkan ke kasir — check-in langsung tercatat.
-      </p>
+  <!-- Full-width hero banner -->
+  <div style="background:linear-gradient(135deg,#040d05 0%,#071409 35%,#0a1e0c 65%,#061008 100%);padding:80px 40px;position:relative;overflow:hidden;">
 
-      <!-- Benefit list -->
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,0.65);">
-          <div style="width:20px;height:20px;border-radius:6px;background:rgba(90,190,104,0.15);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:#5ABE68;"><i class="ti ti-check"></i></div>
-          <div><strong style="color:#fff;">Kartu digital gratis</strong> — QR code unik, bisa ditunjukkan dari HP</div>
+    <!-- Decorative grid lines -->
+    <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);"></div>
+
+    <!-- Glow spots -->
+    <div style="position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(26,107,58,0.15),transparent 65%);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-40px;right:10%;width:300px;height:250px;border-radius:50%;background:radial-gradient(ellipse,rgba(196,154,42,0.07),transparent 65%);pointer-events:none;"></div>
+
+    <div style="max-width:1120px;margin:0 auto;position:relative;z-index:1;">
+
+      <!-- TOP LABEL — Feature utama -->
+      <div class="reveal" style="text-align:center;margin-bottom:50px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(90,190,104,0.08);border:1px solid rgba(90,190,104,0.2);border-radius:99px;padding:6px 18px;margin-bottom:18px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#5ABE68;box-shadow:0 0 8px rgba(90,190,104,0.8);animation:pulseGreenDot 2s ease-in-out infinite;"></div>
+          <span style="font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#5ABE68;">Fitur Utama</span>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,0.65);">
-          <div style="width:20px;height:20px;border-radius:6px;background:rgba(90,190,104,0.15);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:#5ABE68;"><i class="ti ti-check"></i></div>
-          <div><strong style="color:#fff;">Tracker sesi otomatis</strong> — setiap kunjungan tercatat, tiap 9 sesi dapat 1 gratis</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,0.65);">
-          <div style="width:20px;height:20px;border-radius:6px;background:rgba(90,190,104,0.15);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:#5ABE68;"><i class="ti ti-check"></i></div>
-          <div><strong style="color:#fff;">Prioritas info event</strong> — dapat notifikasi pertama untuk turnamen dan nobar</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,0.65);">
-          <div style="width:20px;height:20px;border-radius:6px;background:rgba(90,190,104,0.15);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;color:#5ABE68;"><i class="ti ti-check"></i></div>
-          <div><strong style="color:#fff;">Daftar gratis</strong> — tidak ada biaya pendaftaran atau iuran bulanan</div>
-        </div>
+        <h2 style="font-family:'Fraunces',serif;font-size:clamp(36px,5vw,60px);font-weight:700;color:#fff;line-height:1.05;letter-spacing:-0.03em;margin-bottom:14px;">
+          Jadi Member,<br><em style="font-weight:300;font-style:italic;color:rgba(255,255,255,0.45);">langsung dapat banyak</em>
+        </h2>
+        <p style="font-size:15px;color:rgba(255,255,255,0.45);font-weight:300;max-width:520px;margin:0 auto;line-height:1.7;">Kartu digital gratis. Poin setiap kunjungan. Reward yang bisa ditukar. Semua dalam satu kartu QR di HP kamu.</p>
       </div>
 
-      <button onclick="openWa()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:9px;background:#fff;border:none;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;font-family:'Geist',sans-serif;transition:all 0.18s;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-        <i class="ti ti-id-badge" style="font-size:16px;"></i>
-        Daftar Sekarang via WA
-      </button>
-    </div>
+      <!-- 4 BENEFIT CARDS — horizontal -->
+      <div class="reveal" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:56px;">
 
-    <!-- Right: member card mockup -->
-    <div style="display:flex;align-items:center;justify-content:center;">
-      <div style="width:280px;position:relative;">
-        <!-- Glow -->
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(196,154,42,0.1),transparent 60%);pointer-events:none;"></div>
-        <!-- Card -->
-        <div style="background:linear-gradient(155deg,#0a160e,#060e08);border-radius:20px;border:1px solid rgba(201,168,76,0.2);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(201,168,76,0.08);animation:mockFloat 6s ease-in-out infinite;">
-          <!-- Card top -->
-          <div style="padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#222,#090909);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;position:relative;">
-                <div style="position:absolute;inset:27%;border-radius:50%;background:rgba(255,255,255,0.88);"></div>
-                <span style="position:absolute;font-size:6px;font-weight:700;color:#111;">8</span>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 18px;transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(90,190,104,0.25)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(90,190,104,0.1);border:1px solid rgba(90,190,104,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5ABE68" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:5px;">Kartu Digital</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">QR code unik di HP, tunjukkan langsung ke kasir</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 18px;transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(196,154,42,0.3)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(196,154,42,0.1);border:1px solid rgba(196,154,42,0.22);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:5px;">Poin Otomatis</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Setiap check-in tercatat, poin langsung bertambah</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 18px;transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(90,190,104,0.25)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(90,190,104,0.1);border:1px solid rgba(90,190,104,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5ABE68" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:5px;">9 Sesi = 1 Gratis</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Kumpulkan 9 kunjungan, dapat 1 sesi main gratis</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 18px;transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(196,154,42,0.3)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(196,154,42,0.1);border:1px solid rgba(196,154,42,0.22);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:5px;">Tukar Reward</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Poin bisa tukar diskon, minuman, hingga merchandise</div>
+        </div>
+
+      </div>
+
+      <!-- MAIN CONTENT: left copy + center card + right stats -->
+      <div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;gap:60px;align-items:center;">
+
+        <!-- Left: copy + checklist -->
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:20px;height:1px;background:rgba(255,255,255,0.2);display:inline-block;"></span>Kenapa harus member?</div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:32px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:22px;height:22px;border-radius:7px;background:rgba(90,190,104,0.12);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#5ABE68" stroke-width="2" stroke-linecap="round"><polyline points="2 6 5 9 10 3"/></svg>
               </div>
               <div>
-                <div style="font-family:'Fraunces',serif;font-size:12px;font-weight:600;color:rgba(238,242,237,0.9);">Warpat Jombang</div>
-                <div style="font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A84C;margin-top:1px;">Member Card</div>
+                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">Daftar 100% gratis</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Tidak ada biaya pendaftaran atau iuran bulanan sama sekali</div>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;border:1px solid rgba(201,168,76,0.25);background:rgba(201,168,76,0.08);font-size:8px;font-weight:600;color:#C9A84C;letter-spacing:0.08em;">
-              <div style="width:5px;height:5px;border-radius:50%;background:#E8C96A;animation:goldPulse 2s ease-in-out infinite;"></div>Active
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:22px;height:22px;border-radius:7px;background:rgba(90,190,104,0.12);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#5ABE68" stroke-width="2" stroke-linecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+              </div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">Poin tiap kunjungan</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Check-in billiard otomatis menambah poin ke kartu kamu</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:22px;height:22px;border-radius:7px;background:rgba(90,190,104,0.12);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#5ABE68" stroke-width="2" stroke-linecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+              </div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">Reward yang nyata</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Tukar poin dengan sesi gratis, minuman, atau merchandise</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:22px;height:22px;border-radius:7px;background:rgba(90,190,104,0.12);border:1px solid rgba(90,190,104,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#5ABE68" stroke-width="2" stroke-linecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+              </div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">Prioritas event & info</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Dapat info turnamen dan nobar lebih awal dari yang lain</div>
+              </div>
             </div>
           </div>
-          <!-- QR area -->
-          <div style="padding:14px 16px;text-align:center;">
-            <div style="width:90px;height:90px;background:#fff;border-radius:8px;margin:0 auto 10px;padding:7px;box-shadow:0 0 0 1px rgba(201,168,76,0.2),0 4px 16px rgba(0,0,0,0.4);">
-              <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" style="width:100%;height:100%;" aria-label="QR Code member">
-                <rect width="21" height="21" fill="white"/>
-                <rect x="0" y="0" width="6" height="6" fill="#111"/><rect x="1" y="1" width="4" height="4" fill="white"/><rect x="2" y="2" width="2" height="2" fill="#111"/>
-                <rect x="15" y="0" width="6" height="6" fill="#111"/><rect x="16" y="1" width="4" height="4" fill="white"/><rect x="17" y="2" width="2" height="2" fill="#111"/>
-                <rect x="0" y="15" width="6" height="6" fill="#111"/><rect x="1" y="16" width="4" height="4" fill="white"/><rect x="2" y="17" width="2" height="2" fill="#111"/>
-                <rect x="7" y="0" fill="#111" width="1" height="1"/><rect x="9" y="0" fill="#111" width="1" height="1"/><rect x="11" y="0" fill="#111" width="1" height="1"/>
-                <rect x="8" y="1" fill="#111" width="1" height="1"/><rect x="10" y="1" fill="#111" width="1" height="1"/>
-                <rect x="7" y="7" fill="#111" width="1" height="1"/><rect x="9" y="7" fill="#111" width="1" height="1"/><rect x="12" y="7" fill="#111" width="1" height="1"/>
-                <rect x="8" y="8" fill="#111" width="1" height="1"/><rect x="11" y="8" fill="#111" width="1" height="1"/><rect x="14" y="8" fill="#111" width="1" height="1"/>
-                <rect x="7" y="9" fill="#111" width="1" height="1"/><rect x="10" y="9" fill="#111" width="1" height="1"/><rect x="15" y="9" fill="#111" width="1" height="1"/>
-                <rect x="8" y="10" fill="#111" width="1" height="1"/><rect x="11" y="10" fill="#111" width="1" height="1"/><rect x="14" y="10" fill="#111" width="1" height="1"/>
-              </svg>
+
+          <button onclick="openWa()" style="display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:10px;background:#5ABE68;border:none;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:'Geist',sans-serif;transition:all 0.18s;box-shadow:0 4px 18px rgba(90,190,104,0.3);letter-spacing:0.01em;" onmouseenter="this.style.background='#4aae58';this.style.transform='translateY(-1px)'" onmouseleave="this.style.background='#5ABE68';this.style.transform='translateY(0)'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+            Daftar Member Sekarang
+          </button>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.3);">✓ Gratis · ✓ Langsung aktif · ✓ Cukup via WhatsApp</div>
+        </div>
+
+        <!-- Center: member card mockup — lebih besar -->
+        <div style="position:relative;flex-shrink:0;">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(90,190,104,0.08),transparent 65%);pointer-events:none;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(196,154,42,0.07),transparent 65%);pointer-events:none;"></div>
+
+          <div style="width:300px;background:linear-gradient(155deg,#0a160e,#060e08);border-radius:22px;border:1px solid rgba(201,168,76,0.22);overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,0.6),0 0 0 1px rgba(201,168,76,0.06);animation:mockFloat 6s ease-in-out infinite;position:relative;z-index:1;">
+            <!-- Card header -->
+            <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:9px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#222,#090909);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;">
+                  <div style="position:absolute;inset:27%;border-radius:50%;background:rgba(255,255,255,0.88);"></div>
+                  <span style="position:absolute;font-size:7px;font-weight:700;color:#111;">8</span>
+                </div>
+                <div>
+                  <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:600;color:rgba(238,242,237,0.92);">Warpat Jombang</div>
+                  <div style="font-size:7.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A84C;margin-top:1px;">Member Card</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;border:1px solid rgba(201,168,76,0.25);background:rgba(201,168,76,0.08);font-size:8px;font-weight:600;color:#C9A84C;letter-spacing:0.08em;">
+                <div style="width:5px;height:5px;border-radius:50%;background:#E8C96A;animation:goldPulse 2s ease-in-out infinite;"></div>Active
+              </div>
             </div>
-            <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:rgba(238,242,237,0.92);margin-bottom:5px;">mamang</div>
-            <div style="font-family:'DM Mono',monospace;font-size:10px;color:#5ABE68;letter-spacing:0.12em;">JMB-0526 · FREE</div>
-          </div>
-          <!-- Session tracker -->
-          <div style="padding:10px 16px;background:rgba(255,255,255,0.025);">
-            <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:6px;">
-              <span style="color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">Sesi Bulan Ini</span>
-              <span style="font-family:'DM Mono',monospace;color:rgba(238,242,237,0.8);">1 / 9</span>
+            <!-- QR + name -->
+            <div style="padding:16px 18px;text-align:center;">
+              <div style="width:100px;height:100px;background:#fff;border-radius:10px;margin:0 auto 12px;padding:8px;box-shadow:0 0 0 1px rgba(201,168,76,0.2),0 6px 20px rgba(0,0,0,0.4);">
+                <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" style="width:100%;height:100%;" aria-label="QR Code">
+                  <rect width="21" height="21" fill="white"/>
+                  <rect x="0" y="0" width="6" height="6" fill="#111"/><rect x="1" y="1" width="4" height="4" fill="white"/><rect x="2" y="2" width="2" height="2" fill="#111"/>
+                  <rect x="15" y="0" width="6" height="6" fill="#111"/><rect x="16" y="1" width="4" height="4" fill="white"/><rect x="17" y="2" width="2" height="2" fill="#111"/>
+                  <rect x="0" y="15" width="6" height="6" fill="#111"/><rect x="1" y="16" width="4" height="4" fill="white"/><rect x="2" y="17" width="2" height="2" fill="#111"/>
+                  <rect x="7" y="0" fill="#111" width="1" height="1"/><rect x="9" y="0" fill="#111" width="1" height="1"/><rect x="11" y="0" fill="#111" width="1" height="1"/>
+                  <rect x="8" y="1" fill="#111" width="1" height="1"/><rect x="10" y="1" fill="#111" width="1" height="1"/>
+                  <rect x="7" y="7" fill="#111" width="1" height="1"/><rect x="9" y="7" fill="#111" width="1" height="1"/><rect x="12" y="7" fill="#111" width="1" height="1"/>
+                  <rect x="8" y="8" fill="#111" width="1" height="1"/><rect x="11" y="8" fill="#111" width="1" height="1"/><rect x="14" y="8" fill="#111" width="1" height="1"/>
+                  <rect x="7" y="9" fill="#111" width="1" height="1"/><rect x="10" y="9" fill="#111" width="1" height="1"/><rect x="15" y="9" fill="#111" width="1" height="1"/>
+                  <rect x="8" y="10" fill="#111" width="1" height="1"/><rect x="11" y="10" fill="#111" width="1" height="1"/><rect x="14" y="10" fill="#111" width="1" height="1"/>
+                </svg>
+              </div>
+              <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:rgba(238,242,237,0.92);margin-bottom:4px;">mamang</div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;color:#5ABE68;letter-spacing:0.12em;">JMB-0526 · FREE</div>
             </div>
-            <div style="display:flex;gap:3px;">
-              <div style="flex:1;height:3px;border-radius:99px;background:linear-gradient(90deg,#2d6624,#5ABE68);box-shadow:0 0 5px rgba(45,102,36,0.4);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
-              <div style="flex:1;height:3px;border-radius:99px;background:linear-gradient(90deg,#8A6A1E,#C9A84C);opacity:0.6;"></div>
+            <!-- Session bar -->
+            <div style="padding:10px 18px;background:rgba(255,255,255,0.025);">
+              <div style="display:flex;justify-content:space-between;font-size:8px;margin-bottom:6px;">
+                <span style="color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">Sesi Bulan Ini</span>
+                <span style="font-family:'DM Mono',monospace;color:rgba(238,242,237,0.8);">4 / 9</span>
+              </div>
+              <div style="display:flex;gap:3px;">
+                <div style="flex:1;height:4px;border-radius:99px;background:linear-gradient(90deg,#2d6624,#5ABE68);box-shadow:0 0 5px rgba(45,102,36,0.4);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:linear-gradient(90deg,#2d6624,#5ABE68);box-shadow:0 0 5px rgba(45,102,36,0.4);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:linear-gradient(90deg,#2d6624,#5ABE68);box-shadow:0 0 5px rgba(45,102,36,0.4);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:linear-gradient(90deg,#2d6624,#5ABE68);box-shadow:0 0 5px rgba(45,102,36,0.4);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,0.07);"></div>
+                <div style="flex:1;height:4px;border-radius:99px;background:linear-gradient(90deg,#8A6A1E,#C9A84C);opacity:0.5;"></div>
+              </div>
+              <div style="font-size:8px;color:rgba(255,255,255,0.25);margin-top:5px;text-align:right;">5 sesi lagi untuk reward gratis ★</div>
             </div>
-          </div>
-          <!-- Check-in strip -->
-          <div style="padding:9px 16px;border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;gap:6px;font-size:10px;font-weight:500;color:#5ABE68;">
-            <div style="width:14px;height:14px;border-radius:50%;background:#5ABE68;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;"><i class="ti ti-check"></i></div>
-            Sudah check-in hari ini
+            <!-- CTA strip -->
+            <div style="padding:10px 18px;background:rgba(90,190,104,0.08);border-top:1px solid rgba(90,190,104,0.12);display:flex;align-items:center;justify-content:center;gap:6px;font-size:10px;font-weight:600;color:#5ABE68;">
+              <div style="width:14px;height:14px;border-radius:50%;background:#5ABE68;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">✓</div>
+              Check-in hari ini berhasil
+            </div>
           </div>
         </div>
+
+        <!-- Right: stats + social proof -->
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:16px;display:flex;align-items:center;gap:8px;">Info member<span style="width:20px;height:1px;background:rgba(255,255,255,0.2);display:inline-block;"></span></div>
+
+          <!-- Big stat -->
+          <div style="margin-bottom:24px;">
+            <div style="font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:#fff;line-height:1;letter-spacing:-0.03em;">100%</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:4px;">gratis daftar & tidak ada biaya tersembunyi</div>
+          </div>
+
+          <!-- Mini stats -->
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <div style="font-size:12px;color:rgba(255,255,255,0.55);">Poin per kunjungan</div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#C9A84C;">+1 poin</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <div style="font-size:12px;color:rgba(255,255,255,0.55);">Sesi gratis dapat</div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#5ABE68;">tiap 9 sesi</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <div style="font-size:12px;color:rgba(255,255,255,0.55);">Pilihan reward</div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#C9A84C;">4 kategori</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <div style="font-size:12px;color:rgba(255,255,255,0.55);">Berlaku poin</div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#5ABE68;">6 bulan</div>
+            </div>
+          </div>
+
+          <!-- Daftar via WA -->
+          <a href="https://wa.me/6281519210552?text=Halo%2C%20saya%20tertarik%20daftar%20jadi%20member%20Warpat%20Jombang%20%F0%9F%AA%AA" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);text-decoration:none;transition:all 0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.09)'" onmouseleave="this.style.background='rgba(255,255,255,0.05)'">
+            <div style="width:28px;height:28px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#fff;">Daftar lewat WhatsApp</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">Langsung aktif, cuma 1 menit</div>
+            </div>
+            <div style="margin-left:auto;font-size:14px;color:rgba(255,255,255,0.3);">→</div>
+          </a>
+        </div>
+
       </div>
     </div>
-
   </div>
+
 </section>
+
 
 <!-- ════ TUKAR POIN ════ -->
 <section style="padding:80px 40px;background:var(--bg);position:relative;overflow:hidden;">
@@ -1859,7 +1978,7 @@
               <div style="font-size:10px;color:var(--text-light);">5 kunjungan</div>
             </div>
           </div>
-          <div style="background:var(--green-soft);border:1px solid var(--green-mid);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--green);">Tukar</div>
+          <div onclick="openTukar('diskon')" style="background:var(--green-soft);border:1px solid var(--green-mid);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--green);cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='var(--green-mid)'" onmouseleave="this.style.background='var(--green-soft)'">Tukar →</div>
         </div>
       </div>
 
@@ -1885,7 +2004,7 @@
               <div style="font-size:10px;color:rgba(255,255,255,0.35);">9 kunjungan</div>
             </div>
           </div>
-          <div style="background:linear-gradient(135deg,rgba(196,154,42,0.2),rgba(196,154,42,0.1));border:1px solid rgba(196,154,42,0.4);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#C9A84C;">Tukar</div>
+          <div onclick="openTukar('jam')" style="background:linear-gradient(135deg,rgba(196,154,42,0.2),rgba(196,154,42,0.1));border:1px solid rgba(196,154,42,0.4);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#C9A84C;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='rgba(196,154,42,0.3)'" onmouseleave="this.style.background='linear-gradient(135deg,rgba(196,154,42,0.2),rgba(196,154,42,0.1))'">Tukar →</div>
         </div>
       </div>
 
@@ -1908,30 +2027,53 @@
               <div style="font-size:10px;color:var(--text-light);">3 kunjungan</div>
             </div>
           </div>
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#1d4ed8;">Tukar</div>
+          <div onclick="openTukar('minum')" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#1d4ed8;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#dbeafe'" onmouseleave="this.style.background='#eff6ff'">Tukar →</div>
         </div>
       </div>
 
-      <!-- 4. Merchandise -->
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <div style="height:4px;background:linear-gradient(90deg,#7c3aed,#a855f7);"></div>
-        <div style="padding:24px 24px 16px;text-align:center;">
-          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0e0818,#160c28);border:1px solid rgba(168,85,247,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 4px 16px rgba(168,85,247,0.1);">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+      <!-- 4. Merchandise — Clean Premium -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;position:relative;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.08)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        <!-- Gold top bar thin -->
+        <div style="height:3px;background:linear-gradient(90deg,#c8a040,#e8d080,#c8a040);"></div>
+
+        <div style="padding:22px 22px 0;">
+          <div style="width:44px;height:44px;border-radius:12px;background:#fdf8ee;border:1px solid #e8d89a;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8922a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
           </div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#a855f7;margin-bottom:6px;">Merchandise</div>
-          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:6px;">Kaos / Cap</div>
-          <div style="font-size:13px;color:var(--text-muted);font-weight:300;line-height:1.6;">Merchandise eksklusif Warpat Jombang — kaos atau topi limited edition</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#b8922a;margin-bottom:5px;">Merchandise</div>
+          <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);line-height:1.15;margin-bottom:5px;">Koleksi Eksklusif</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.65;margin-bottom:16px;">Kaos, cap, totebag, dan item limited edition Warpat Jombang.</div>
         </div>
-        <div style="margin:0 16px 16px;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="font-size:18px;">★</span>
-            <div>
-              <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--text);line-height:1;">15 poin</div>
-              <div style="font-size:10px;color:var(--text-light);">15 kunjungan</div>
-            </div>
+
+        <!-- Item previews -->
+        <div style="padding:0 22px 16px;display:flex;gap:7px;">
+          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#c8a040" fill-opacity="0.5" stroke="none"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">KAOS</span>
+            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">15★</span>
           </div>
-          <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#7c3aed;">Tukar</div>
+          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <svg width="22" height="17" viewBox="0 0 24 18" fill="none" stroke="#c8a040" stroke-width="1.4"><path d="M3 12c0-4.5 3-8 9-8s9 3.5 9 8" stroke-linecap="round"/><rect x="1" y="12" width="22" height="5" rx="2.5" fill="#c8a04022" stroke="#c8a040" stroke-width="1.2"/></svg>
+            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">CAP</span>
+            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">15★</span>
+          </div>
+          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <svg width="18" height="22" viewBox="0 0 22 26" fill="none" stroke="#c8a040" stroke-width="1.4"><rect x="2" y="7" width="18" height="17" rx="2"/><path d="M8 7V5.5a3 3 0 016 0V7" stroke-linecap="round"/></svg>
+            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">TOTEBAG</span>
+            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">12★</span>
+          </div>
+          <div style="flex:1;background:#f9f9f9;border:1px dashed var(--border-mid);border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+            <span style="font-size:16px;color:var(--text-light);line-height:1;">+3</span>
+            <span style="font-size:7.5px;color:var(--text-light);font-weight:500;text-align:center;">lainnya</span>
+          </div>
+        </div>
+
+        <div style="margin:0 14px 14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="color:#c8a040;font-size:14px;">★</span>
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--text);">mulai 3 poin</span>
+          </div>
+          <div onclick="openMerchCatalog()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:8px;padding:7px 13px;font-size:11px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Lihat Semua →</div>
         </div>
       </div>
 
@@ -1955,7 +2097,465 @@
   </div>
 </section>
 
-<!-- ════ MEJA SECTION ════ -->
+<!-- ════ MODAL MERCHANDISE CATALOG ════ -->
+<div id="modal-merch" onclick="if(event.target===this)closeMerchCatalog()" style="display:none;position:fixed;inset:0;z-index:10000;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);">
+  <div style="position:relative;width:100%;max-width:760px;margin:auto;background:#fff;border-radius:22px;border:1px solid #e8e0cc;box-shadow:0 30px 80px rgba(0,0,0,0.18);overflow:hidden;">
+
+    <!-- Gold top bar -->
+    <div style="height:3px;background:linear-gradient(90deg,#c8a040,#e8d080,#c8a040);"></div>
+
+    <!-- Header -->
+    <div style="padding:28px 30px 0;display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+          <div style="width:20px;height:20px;border-radius:6px;background:#fdf8ee;border:1px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:11px;">🎁</div>
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#b8922a;">Katalog Merchandise</span>
+        </div>
+        <h3 style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:#0f1a10;line-height:1.05;margin-bottom:5px;">Pilih <em style="font-style:italic;font-weight:300;color:#b8922a;">hadiah kamu</em></h3>
+        <p style="font-size:13px;color:#6b7280;font-weight:300;">Tukarkan poin dengan item eksklusif. Stok terbatas setiap periode.</p>
+      </div>
+      <button onclick="closeMerchCatalog()" style="width:34px;height:34px;border-radius:50%;background:#f5f5f5;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#6b7280;flex-shrink:0;transition:all 0.15s;margin-top:4px;" onmouseenter="this.style.background='#e8e8e8'" onmouseleave="this.style.background='#f5f5f5'">✕</button>
+    </div>
+
+    <!-- Stats strip -->
+    <div style="margin:18px 30px 0;display:flex;gap:8px;">
+      <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🎁</span>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">6 Item</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Tersedia sekarang</div></div>
+      </div>
+      <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="color:#c8a040;font-size:16px;">★</span>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">3 – 20</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Range poin</div></div>
+      </div>
+      <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🔄</span>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">Tiap periode</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Koleksi diperbarui</div></div>
+      </div>
+    </div>
+
+    <!-- Catalog grid -->
+    <div style="padding:18px 30px 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+
+      <!-- 1. Kaos Basic -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+        <div style="height:116px;background:linear-gradient(145deg,#f5f0e8,#ede4d0);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="68" height="68" viewBox="0 0 24 24" fill="none">
+            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z" fill="#c8a04033" stroke="#b8922a" stroke-width="0.8"/>
+            <text x="12" y="16.5" text-anchor="middle" font-size="4" fill="#9a7018" font-family="sans-serif" font-weight="700">WARPAT</text>
+          </svg>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:#1a2010;border:1.5px solid rgba(0,0,0,0.15);"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#1F5C28;border:1.5px solid rgba(0,0,0,0.1);"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#c8a040;border:1.5px solid rgba(0,0,0,0.1);"></div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Kaos Basic Warpat</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Cotton combed 30s · S/M/L/XL · 3 warna</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">15 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Kaos Premium -->
+      <div style="background:#fafafa;border:1px solid #e8d89a;border-radius:14px;overflow:hidden;transition:all 0.18s;position:relative;" onmouseenter="this.style.borderColor='#c8a040';this.style.boxShadow='0 6px 20px rgba(200,160,64,0.12)'" onmouseleave="this.style.borderColor='#e8d89a';this.style.boxShadow='none'">
+        <div style="position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#c8a040,#a07820);border-radius:99px;padding:2px 9px;font-size:7.5px;font-weight:700;color:#fff;letter-spacing:0.06em;z-index:1;">NEW</div>
+        <div style="height:116px;background:linear-gradient(145deg,#fef9ec,#f5edd8);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="68" height="68" viewBox="0 0 24 24" fill="none">
+            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z" fill="#c8a04044" stroke="#c8a040" stroke-width="0.8"/>
+            <circle cx="12" cy="13" r="3.5" fill="none" stroke="#c8a040" stroke-width="0.6" opacity="0.6"/>
+            <text x="12" y="14.2" text-anchor="middle" font-size="3.5" fill="#9a7018" font-family="sans-serif" font-weight="700">WARPAT</text>
+          </svg>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:#111;border:1.5px solid rgba(0,0,0,0.15);"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#3a200a;border:1.5px solid rgba(0,0,0,0.1);"></div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:#fef9c3;border:1px solid #fde047;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#854d0e;letter-spacing:0.06em;">LIMITED</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Kaos Premium Logo Gold</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Sablon gold foil · M/L/XL · 2 warna</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">20 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Snapback Cap -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+        <div style="height:116px;background:linear-gradient(145deg,#f0f4f0,#e4ece4);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="88" height="62" viewBox="0 0 90 64" fill="none">
+            <path d="M15 44 Q15 18 45 16 Q75 18 75 44" fill="#c8a04022" stroke="#b8922a" stroke-width="1.4"/>
+            <rect x="6" y="44" width="78" height="12" rx="4" fill="#c8a04015" stroke="#c8a040" stroke-width="1.2"/>
+            <text x="45" y="38" text-anchor="middle" font-size="10" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
+            <line x1="45" y1="16" x2="45" y2="10" stroke="#c8a040" stroke-width="1.1" opacity="0.5"/>
+            <circle cx="45" cy="8" r="2.5" fill="#c8a040" opacity="0.6"/>
+          </svg>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:#111;border:1.5px solid rgba(0,0,0,0.12);"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#1F5C28;border:1.5px solid rgba(0,0,0,0.1);"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#1a1e36;border:1.5px solid rgba(0,0,0,0.1);"></div>
+          </div>
+          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Snapback Cap Warpat</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Adjustable snapback · 3 warna</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">15 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Totebag -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+        <div style="height:116px;background:linear-gradient(145deg,#f5eed8,#ede0c0);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="60" height="74" viewBox="0 0 68 80" fill="none">
+            <path d="M10 22h48l-7 50H17L10 22z" fill="#c8a04022" stroke="#b8922a" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M24 22 Q24 8 34 8 Q44 8 44 22" fill="none" stroke="#c8a040" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+            <text x="34" y="56" text-anchor="middle" font-size="11" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
+            <line x1="14" y1="30" x2="54" y2="30" stroke="#c8a040" stroke-width="0.7" opacity="0.3"/>
+          </svg>
+          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Totebag Canvas Warpat</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Canvas tebal · Sablon dua sisi</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">12 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Stiker Pack -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+        <div style="height:116px;background:linear-gradient(145deg,#f0f5f0,#e4eee4);display:flex;align-items:center;justify-content:center;position:relative;flex-wrap:wrap;gap:5px;padding:12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">🎱</div>
+          <div style="width:40px;height:26px;border-radius:8px;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#9a7018;box-shadow:0 2px 8px rgba(0,0,0,0.06);">WP</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">⭐</div>
+          <div style="width:40px;height:26px;border-radius:8px;background:#fff;border:1.5px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#9ca3af;">JBG</div>
+          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Stiker Pack Warpat</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">6 lembar · Eksklusif · Tahan air</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">5 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Gantungan Kunci -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+        <div style="height:116px;background:linear-gradient(145deg,#f5f0e8,#ede4d0);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="48" height="68" viewBox="0 0 54 76" fill="none">
+            <circle cx="27" cy="10" r="8" fill="none" stroke="#b8922a" stroke-width="1.8" opacity="0.7"/>
+            <circle cx="27" cy="10" r="4" fill="none" stroke="#c8a040" stroke-width="1.4" opacity="0.4"/>
+            <line x1="27" y1="18" x2="27" y2="24" stroke="#b8922a" stroke-width="1.4" opacity="0.5"/>
+            <rect x="14" y="24" width="26" height="44" rx="13" fill="#c8a04022" stroke="#b8922a" stroke-width="1.5"/>
+            <text x="27" y="52" text-anchor="middle" font-size="7" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
+          </svg>
+          <div style="position:absolute;top:8px;right:8px;background:#fee2e2;border:1px solid #fca5a5;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#b91c1c;letter-spacing:0.06em;">TERBATAS</div>
+        </div>
+        <div style="padding:12px 13px 11px;">
+          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Gantungan Kunci Akrilik</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Akrilik premium · Desain billiard</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">3 poin</span></div>
+            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="margin:0 30px 26px;background:#f9f6ee;border:1px solid #e8d89a;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:16px;">📦</span>
+      <div style="font-size:12px;color:#6b7280;flex:1;line-height:1.6;">Stok berubah setiap periode. Penukaran di kasir dengan kartu member. Hubungi kami untuk cek stok terbaru.</div>
+      <button onclick="openWa();closeMerchCatalog();" style="display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;background:#25D366;border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'Geist',sans-serif;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 10px rgba(37,211,102,0.25);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+        Cek Stok via WA
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function openMerchCatalog() {
+  const m = document.getElementById('modal-merch');
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeMerchCatalog() {
+  document.getElementById('modal-merch').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeMerchCatalog();
+});
+</script>
+<!-- ════ MODAL TUKAR POIN ════ -->
+<div id="modal-tukar" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <!-- Backdrop -->
+  <div onclick="closeTukar()" style="position:absolute;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);"></div>
+
+  <!-- Modal box -->
+  <div style="position:relative;z-index:1;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:20px;border:1px solid var(--border-mid);box-shadow:0 30px 80px rgba(0,0,0,0.5);">
+
+    <!-- Header bar (dynamic) -->
+    <div id="modal-header-bar" style="height:4px;border-radius:20px 20px 0 0;"></div>
+
+    <div style="padding:28px 28px 24px;">
+
+      <!-- Top row: icon + title + close -->
+      <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:24px;">
+        <div id="modal-icon" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px;"></div>
+        <div style="flex:1;">
+          <div id="modal-eyebrow" style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:4px;"></div>
+          <div id="modal-title" style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--text);line-height:1.1;"></div>
+        </div>
+        <button onclick="closeTukar()" style="width:32px;height:32px;border-radius:50%;background:var(--white);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text-muted);flex-shrink:0;transition:all 0.15s;" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--white)'">✕</button>
+      </div>
+
+      <!-- Poin badge -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:14px 16px;background:var(--white);border:1px solid var(--border);border-radius:12px;">
+        <div style="font-size:28px;">★</div>
+        <div>
+          <div id="modal-poin" style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--text);line-height:1;"></div>
+          <div id="modal-poin-sub" style="font-size:12px;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div id="modal-badge" style="margin-left:auto;border-radius:99px;padding:5px 14px;font-size:11px;font-weight:700;letter-spacing:0.06em;"></div>
+      </div>
+
+      <!-- Description -->
+      <p id="modal-desc" style="font-size:14px;color:var(--text-muted);line-height:1.75;margin-bottom:24px;"></p>
+
+      <!-- Cara tukar steps -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-mid);margin-bottom:14px;">Cara Menukar</div>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="modal-steps"></div>
+      </div>
+
+      <!-- Syarat & ketentuan -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-mid);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <i class="ti ti-file-text" style="font-size:13px;"></i> Syarat & Ketentuan
+        </div>
+        <div id="modal-syarat" style="display:flex;flex-direction:column;gap:7px;"></div>
+      </div>
+
+      <!-- Validity chip row -->
+      <div id="modal-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;"></div>
+
+      <!-- CTA buttons -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="openWa()" style="flex:1;padding:13px;border-radius:10px;background:#25D366;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Geist',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.15s;" onmouseenter="this.style.background='#1EBE58'" onmouseleave="this.style.background='#25D366'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+          Hubungi Kasir via WA
+        </button>
+        <button onclick="closeTukar()" style="padding:13px 20px;border-radius:10px;background:var(--white);border:1px solid var(--border-mid);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:all 0.15s;" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--white)'">Tutup</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const rewardData = {
+  diskon: {
+    bar: 'linear-gradient(90deg,#1F5C28,#5ABE68)',
+    icon: '🏷️',
+    iconBg: 'linear-gradient(135deg,#0a1e0d,#122a16)',
+    iconBorder: 'rgba(30,107,58,0.3)',
+    eyebrow: 'Diskon Sewa',
+    eyebrowColor: '#1a7a3a',
+    title: 'Diskon 10% Sewa Meja',
+    poin: '5 poin',
+    poinSub: '= 5 kunjungan · Berlaku semua meja',
+    badge: '✓ Tersedia',
+    badgeBg: '#dcfce7', badgeBorder: '#86efac', badgeColor: '#166534',
+    desc: 'Dapatkan potongan 10% dari total biaya sewa meja billiard pada kunjungan berikutnya. Berlaku untuk semua tipe meja — 7 feet maupun 9 feet lokal. Tidak ada minimum durasi sewa.',
+    steps: [
+      { n: '1', text: 'Kunjungi Warpat Jombang dan buka kartu member digital kamu' },
+      { n: '2', text: 'Tunjukkan kartu ke kasir dan beritahu ingin menukar poin diskon' },
+      { n: '3', text: 'Kasir akan verifikasi poin dan langsung memotong 10% dari tagihan' },
+      { n: '4', text: 'Poin otomatis terpotong dan sisa poin ditampilkan di kartu' },
+    ],
+    syarat: [
+      'Tidak dapat digabung dengan promo lain',
+      'Berlaku 1x per penukaran',
+      'Harus ditunjukkan sebelum membayar',
+      'Minimum sewa 30 menit',
+    ],
+    chips: [
+      { icon: '📅', text: 'Berlaku semua hari', bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+      { icon: '🎱', text: 'Semua meja', bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+      { icon: '⏰', text: 'Tidak ada expired', bg: '#fefce8', color: '#854d0e', border: '#fde68a' },
+    ]
+  },
+  jam: {
+    bar: 'linear-gradient(90deg,#8A6A1E,#C9A84C,#8A6A1E)',
+    icon: '⏱️',
+    iconBg: 'linear-gradient(135deg,#1a1408,#2a2010)',
+    iconBorder: 'rgba(196,154,42,0.3)',
+    eyebrow: 'Jam Gratis',
+    eyebrowColor: '#C9A84C',
+    title: '1 Jam Main Gratis',
+    poin: '9 poin',
+    poinSub: '= 9 kunjungan · Reward terpopuler',
+    badge: '⭐ Populer',
+    badgeBg: '#fefce8', badgeBorder: '#fde68a', badgeColor: '#854d0e',
+    desc: 'Mainkan billiard selama satu jam penuh tanpa bayar. Berlaku untuk seluruh meja yang tersedia — dari meja 7 feet hingga meja 9 feet lokal. Satu jam ekstra untuk tambah sesi atau tantang teman!',
+    steps: [
+      { n: '1', text: 'Buka aplikasi / kartu member dan pastikan poin ≥ 9' },
+      { n: '2', text: 'Tunjukkan kartu ke kasir, pilih meja yang diinginkan' },
+      { n: '3', text: 'Kasir mencatat penukaran dan menghitung 1 jam gratis dari saat itu' },
+      { n: '4', text: 'Nikmati 1 jam penuh tanpa biaya tambahan' },
+    ],
+    syarat: [
+      'Maksimal 1 jam per penukaran, tidak bisa dicash',
+      'Tidak berlaku saat event / turnamen',
+      'Tidak dapat dipindahtangankan ke orang lain',
+      'Harus dimulai dalam 15 menit setelah penukaran',
+    ],
+    chips: [
+      { icon: '📅', text: 'Semua hari buka', bg: '#fefce8', color: '#854d0e', border: '#fde68a' },
+      { icon: '🎱', text: 'Semua meja', bg: '#fefce8', color: '#854d0e', border: '#fde68a' },
+      { icon: '⏳', text: 'Valid 3 bulan', bg: '#fff7ed', color: '#9a3412', border: '#fed7aa' },
+    ]
+  },
+  minum: {
+    bar: 'linear-gradient(90deg,#0369a1,#38bdf8)',
+    icon: '☕',
+    iconBg: 'linear-gradient(135deg,#060e18,#0a1828)',
+    iconBorder: 'rgba(56,189,248,0.2)',
+    eyebrow: 'Free Minuman',
+    eyebrowColor: '#0ea5e9',
+    title: '1 Minuman Gratis',
+    poin: '3 poin',
+    poinSub: '= 3 kunjungan · Paling mudah dicapai',
+    badge: '🔥 Paling mudah',
+    badgeBg: '#eff6ff', badgeBorder: '#bfdbfe', badgeColor: '#1d4ed8',
+    desc: 'Tukarkan 3 poin untuk satu minuman gratis dari menu yang tersedia. Cocok untuk menemani sesi main billiard atau santai di area lounge. Tersedia pilihan kopi, teh manis, es jeruk, dan minuman dingin lainnya.',
+    steps: [
+      { n: '1', text: 'Tunjukkan kartu member ke kasir / area minuman' },
+      { n: '2', text: 'Pilih minuman yang diinginkan dari menu tersedia' },
+      { n: '3', text: 'Kasir memproses penukaran dan menyiapkan minuman' },
+      { n: '4', text: 'Nikmati minumanmu!' },
+    ],
+    syarat: [
+      'Berlaku untuk 1 minuman per penukaran',
+      'Hanya untuk menu minuman standar (tidak berlaku paket / add-on)',
+      'Tidak dapat ditukar dengan uang tunai',
+      'Stok minuman mengikuti ketersediaan hari itu',
+    ],
+    chips: [
+      { icon: '☕', text: 'Kopi & Teh', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+      { icon: '🧊', text: 'Minuman dingin', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+      { icon: '⏳', text: 'Valid 1 bulan', bg: '#fff7ed', color: '#9a3412', border: '#fed7aa' },
+    ]
+  },
+  merch: {
+    bar: 'linear-gradient(90deg,#1F5C28,#5ABE68)',
+    icon: '🎁',
+    iconBg: 'linear-gradient(135deg,#071a0c,#0e2816)',
+    iconBorder: 'rgba(90,190,104,0.15)',
+    eyebrow: 'Merchandise',
+    eyebrowColor: '#5ABE68',
+    title: 'Kaos / Cap Warpat',
+    poin: '15 poin',
+    poinSub: '= 15 kunjungan · Koleksi eksklusif',
+    badge: '🎨 Limited',
+    badgeBg: '#f0fdf4', badgeBorder: '#bbf7d0', badgeColor: '#1F5C28',
+    desc: 'Reward premium untuk member setia — pilih kaos atau topi cap eksklusif berdesain Warpat Jombang. Stok terbatas, desain berganti setiap periode. Jadi yang pertama punya!',
+    steps: [
+      { n: '1', text: 'Pastikan poin kamu sudah mencapai 15 poin' },
+      { n: '2', text: 'Hubungi kasir dan tunjukkan kartu member untuk verifikasi' },
+      { n: '3', text: 'Pilih jenis merchandise yang diinginkan (kaos atau cap)' },
+      { n: '4', text: 'Kasir memproses penukaran dan merchandise langsung dibawa pulang' },
+    ],
+    syarat: [
+      'Stok terbatas — first come first served',
+      'Tidak dapat ditukar dengan uang tunai atau reward lain',
+      'Ukuran kaos: S, M, L, XL (mengikuti stok tersedia)',
+      'Desain dapat berubah setiap periode tanpa pemberitahuan sebelumnya',
+      'Penukaran hanya bisa dilakukan langsung di tempat',
+    ],
+    chips: [
+      { icon: '👕', text: 'Kaos S–XL', bg: '#f0fdf4', color: '#1F5C28', border: '#bbf7d0' },
+      { icon: '🧢', text: 'Cap Snapback', bg: '#f0fdf4', color: '#1F5C28', border: '#bbf7d0' },
+      { icon: '📦', text: 'Stok terbatas', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+    ]
+  }
+};
+
+function openTukar(type) {
+  const d = rewardData[type];
+  const m = document.getElementById('modal-tukar');
+
+  document.getElementById('modal-header-bar').style.background = d.bar;
+  document.getElementById('modal-icon').innerHTML = d.icon;
+  document.getElementById('modal-icon').style.background = d.iconBg;
+  document.getElementById('modal-icon').style.border = '1px solid ' + d.iconBorder;
+  document.getElementById('modal-eyebrow').textContent = d.eyebrow;
+  document.getElementById('modal-eyebrow').style.color = d.eyebrowColor;
+  document.getElementById('modal-title').textContent = d.title;
+  document.getElementById('modal-poin').textContent = d.poin;
+  document.getElementById('modal-poin-sub').textContent = d.poinSub;
+
+  const badge = document.getElementById('modal-badge');
+  badge.textContent = d.badge;
+  badge.style.background = d.badgeBg;
+  badge.style.border = '1px solid ' + d.badgeBorder;
+  badge.style.color = d.badgeColor;
+
+  document.getElementById('modal-desc').textContent = d.desc;
+
+  // Steps
+  const stepsEl = document.getElementById('modal-steps');
+  stepsEl.innerHTML = d.steps.map(s => `
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div style="width:26px;height:26px;border-radius:8px;background:${d.iconBg};border:1px solid ${d.iconBorder};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${d.eyebrowColor};flex-shrink:0;font-family:'DM Mono',monospace;">${s.n}</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;padding-top:3px;">${s.text}</div>
+    </div>
+  `).join('');
+
+  // Syarat
+  const syaratEl = document.getElementById('modal-syarat');
+  syaratEl.innerHTML = d.syarat.map(s => `
+    <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-muted);">
+      <span style="color:${d.eyebrowColor};margin-top:2px;flex-shrink:0;">•</span> ${s}
+    </div>
+  `).join('');
+
+  // Chips
+  const chipsEl = document.getElementById('modal-chips');
+  chipsEl.innerHTML = d.chips.map(c => `
+    <div style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;background:${c.bg};border:1px solid ${c.border};font-size:11px;font-weight:500;color:${c.color};">
+      ${c.icon} ${c.text}
+    </div>
+  `).join('');
+
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTukar() {
+  document.getElementById('modal-tukar').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTukar(); });
+</script>
 
 <section id="meja" class="tables-section">
   <div class="tables-inner">
@@ -2078,9 +2678,9 @@
     <div class="trn-card">
       <div class="trn-photo">
         <div class="trn-photo-inner" style="background:linear-gradient(155deg,#0d0814,#1a0e28,#100a1e);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;position:relative;">
-          <div style="font-size:52px;filter:drop-shadow(0 0 18px rgba(168,85,247,0.5));">🎮</div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(168,85,247,0.7);">Mobile Legends</div>
-          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(168,85,247,0.5),transparent);"></div>
+          <div style="font-size:52px;filter:drop-shadow(0 0 18px rgba(90,190,104,0.5));">🎮</div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(90,190,104,0.7);">Mobile Legends</div>
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(90,190,104,0.5),transparent);"></div>
           <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(13,8,20,0.7),transparent 50%);"></div>
         </div>
       </div>
@@ -2123,7 +2723,7 @@
       </div>
       <div class="trn-row" style="opacity:0.6;">
         <div style="font-size:18px;width:28px;text-align:center;">🎮</div>
-        <div class="trn-row-av" style="background:rgba(168,85,247,0.15);color:#C084FC;">ML</div>
+        <div class="trn-row-av" style="background:rgba(90,190,104,0.12);color:#C084FC;">ML</div>
         <div class="trn-row-name">Turnamen Mobile Legends</div>
         <div class="trn-row-score" style="color:rgba(255,255,255,0.3);">Segera</div>
       </div>
