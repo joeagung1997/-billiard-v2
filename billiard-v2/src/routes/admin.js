@@ -57,8 +57,9 @@ router.get("/members", requireAdmin, async (req, res) => {
   try {
     await checkBonusExpiry();
     const db    = await readDB();
+    const log   = await readLog();
     const token = res.locals.tk;
-    res.send(memberPage({ db, token, req }));
+    res.send(memberPage({ db, log, token, req }));
   } catch (err) {
     console.error("[ADMIN] members error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");

@@ -716,10 +716,10 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     }))
     .sort((a, b) => b.total - a.total);
 
-  const dataLog = log.map(({ nama, aksi, detail, ts }) => ({
-    nama, aksi, detail: detail ?? '',
+  const dataLog = log.map(({ kode, nama, aksi, detail, ts }) => ({
+    kode, nama, aksi, detail: detail ?? '',
     tgl: new Date(ts).toLocaleString('id-ID', {
-      weekday: 'short', day: 'numeric', month: 'short',
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
     }),
   }));
@@ -1229,15 +1229,28 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=37"><\/script>'
+    + '<script src="/dashboard.js?v=38"><\/script>'
     + '</body></html>';
 }
 
 // ── Kelola Member page ────────────────────────────────────────
 
-export function memberPage({ db, token, req }) {
+export function memberPage({ db, log = [], token, req }) {
   const { members } = db;
   const hostBase = req.protocol + '://' + req.get('host');
+
+  // Log riwayat per-member untuk modal detail. Filter ke event yg
+  // beneran scan (SCAN, SCAN_RESET, BONUS_EARNED) — semua nambah point.
+  // Format tanggal lengkap: hari, tgl, bulan, tahun, jam.
+  const dataLogMember = log
+    .filter((l) => l.aksi === 'SCAN' || l.aksi === 'SCAN_RESET' || l.aksi === 'BONUS_EARNED')
+    .map(({ kode, nama, aksi, detail, ts }) => ({
+      kode, nama, aksi, detail: detail ?? '',
+      tgl: new Date(ts).toLocaleString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+      }),
+    }));
   const nowWibM  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   const curBulanM = nowWibM.getFullYear() + '-' + String(nowWibM.getMonth() + 1).padStart(2, '0');
   const bulanLabelM = nowWibM.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -1495,13 +1508,13 @@ export function memberPage({ db, token, req }) {
     + '<script>'
     + 'const DATA_SCAN   = [];'
     + 'const DATA_LB     = [];'
-    + 'const DATA_LOG    = [];'
+    + 'const DATA_LOG    = ' + JSON.stringify(dataLogMember) + ';'
     + 'const DATA_MEMBER = ' + JSON.stringify(dataMember) + ';'
     + 'const TK          = ' + JSON.stringify(token)      + ';'
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=37"></script>'
+    + '<script src="/dashboard.js?v=38"></script>'
     + '</body></html>';
 }
 

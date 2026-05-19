@@ -202,9 +202,11 @@ window.openMemberDetail = function(kode) {
     warnEl.innerHTML = "";
   }
 
-  // Riwayat dari DATA_LOG (filter SCAN untuk member ini, max 10)
+  // Riwayat dari DATA_LOG — semua event scan member ini (SCAN +
+  // SCAN_RESET + BONUS_EARNED, semuanya nambah point), max 10 terbaru.
+  const SCAN_AKSI = new Set(["SCAN", "SCAN_RESET", "BONUS_EARNED"]);
   const riv = (Array.isArray(DATA_LOG) ? DATA_LOG : [])
-    .filter((l) => l.kode === m.kode && l.aksi === "SCAN")
+    .filter((l) => l.kode === m.kode && SCAN_AKSI.has(l.aksi))
     .slice(0, 10);
   const rivEl = document.getElementById("dtRiwayat");
   if (riv.length === 0) {
@@ -213,10 +215,15 @@ window.openMemberDetail = function(kode) {
       <p>Belum ada riwayat kunjungan</p>
     </div>`;
   } else {
+    const labelFor = (l, fallback) => {
+      if (l.aksi === "BONUS_EARNED") return l.detail || "Bonus earned";
+      if (l.aksi === "SCAN_RESET")   return "Reset siklus" + (l.detail ? " — " + l.detail : "");
+      return l.detail || fallback;
+    };
     rivEl.innerHTML = riv.map((l, i) => `<div class="dt-riv-item">
       <div class="dt-riv-dot"></div>
       <div class="dt-riv-body">
-        <p class="dt-riv-label">${esc(l.detail || "Kunjungan ke-" + (riv.length - i))}</p>
+        <p class="dt-riv-label">${esc(labelFor(l, "Kunjungan ke-" + (riv.length - i)))}</p>
         <p class="dt-riv-time">${esc(l.tgl || "")}</p>
       </div>
     </div>`).join("");
