@@ -142,6 +142,46 @@ body::after{
 @keyframes cueSwing{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(2deg)}}
 @keyframes ballBounce{0%,100%{transform:translateY(0) scale(1,1)}45%{transform:translateY(-5px) scale(1.04,.97)}50%{transform:translateY(-6px) scale(1.05,.96)}55%{transform:translateY(-5px) scale(1.04,.97)}}
 @keyframes celebrateGlow{0%,100%{box-shadow:0 0 20px rgba(201,168,76,.15)}50%{box-shadow:0 0 45px rgba(201,168,76,.4)}}
+
+/* WA booking button (post-checkin) */
+.act-row{width:100%;max-width:380px;margin:14px auto 0;display:flex}
+.act-btn-wa{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 16px;font-size:13px;font-weight:600;letter-spacing:.02em;
+  font-family:'DM Sans',sans-serif;
+  background:#25D366;color:#fff;border:none;border-radius:12px;
+  text-decoration:none;cursor:pointer;
+  box-shadow:0 4px 14px rgba(37,211,102,.25);
+  transition:transform .15s ease,background .2s ease,box-shadow .2s ease;
+}
+.act-btn-wa:hover{background:#1EBE58;box-shadow:0 6px 18px rgba(37,211,102,.35)}
+.act-btn-wa:active{transform:translateY(1px)}
+
+/* Terms (ketentuan member) block */
+.terms-block{
+  width:100%;max-width:380px;margin:14px auto 0;
+  padding:14px 16px 16px;
+  background:rgba(14,107,56,.06);
+  border:1px solid rgba(201,168,76,.14);
+  border-radius:14px;
+}
+.terms-title{
+  display:flex;align-items:center;gap:7px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:14px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:4px;
+}
+.terms-sub{font-size:10.5px;color:var(--muted);margin-bottom:11px}
+.terms-list{display:flex;flex-direction:column;gap:9px}
+.term-item{display:flex;gap:9px;align-items:flex-start}
+.term-icon{font-size:14px;flex-shrink:0;line-height:1.4}
+.term-text{font-size:10.5px;color:rgba(239,243,238,.7);line-height:1.55}
+.term-text strong{color:var(--text);font-weight:600}
+.terms-footer{
+  margin-top:12px;padding-top:10px;
+  border-top:1px solid rgba(201,168,76,.1);
+  font-size:9.5px;color:var(--muted);text-align:center;
+}
 `;
 
 // ── Character SVG ─────────────────────────────────────────────
@@ -364,6 +404,49 @@ const memberIdentity = (nama, kode) => `
   <div class="qr-mini">${MINI_QR}</div>
 </div>`;
 
+// ── WA Booking button (post-checkin) ──────────────────────────
+const waBookBtn = (nama, kode) => {
+  const wa   = CONFIG.NOMOR_WA || "6281519210552";
+  const text = encodeURIComponent(
+    `Halo ${CONFIG.NAMA_ARENA}, saya ${nama}${kode ? ` (member ${kode})` : ""}. Mau booking meja, ada yang tersedia? 🎱`
+  );
+  return `<div class="act-row">
+    <a class="act-btn-wa" href="https://wa.me/${wa}?text=${text}" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+      </svg>
+      Booking Meja via WhatsApp
+    </a>
+  </div>`;
+};
+
+// ── Terms / Ketentuan Member block ────────────────────────────
+const termsBlock = () => `
+<div class="terms-block">
+  <div class="terms-title">Ketentuan Member ${CONFIG.NAMA_ARENA}</div>
+  <div class="terms-sub">Biar nggak ada salah paham, simak dulu ya!</div>
+  <div class="terms-list">
+    <div class="term-item">
+      <span class="term-icon">🎁</span>
+      <div class="term-text"><strong>Bonus berlaku 2 minggu</strong> — lebih dari itu sayang banget kalau hangus. Jangan lupa diklaim!</div>
+    </div>
+    <div class="term-item">
+      <span class="term-icon">🌙</span>
+      <div class="term-text"><strong>Malam Minggu? Tunggu sepi dulu</strong> — Bonus gratis nggak bisa diklaim saat ramai. Datang siang lebih aman.</div>
+    </div>
+    <div class="term-item">
+      <span class="term-icon">💤</span>
+      <div class="term-text"><strong>Lama nggak mampir?</strong> — Member yang nggak scan lebih dari 2 bulan otomatis jadi tidak aktif.</div>
+    </div>
+    <div class="term-item">
+      <span class="term-icon">🔄</span>
+      <div class="term-text"><strong>Sempat balik tapi menghilang lagi?</strong> — Kalau sudah scan tapi absen lagi lebih dari 1 bulan, progres sesi akan mulai dari nol.</div>
+    </div>
+  </div>
+  <div class="terms-footer">Punya pertanyaan? Hubungi kasir kami langsung.</div>
+</div>`;
+
 // ── HTML doc wrapper ───────────────────────────────────────────
 const htmlDoc = (title, extraCss, bodyContent) => `<!DOCTYPE html>
 <html lang="id">
@@ -529,6 +612,8 @@ export const resultPage = (tipe, data) => {
       <div class="card-footer">${now}</div>
     </div>
   </div>
+  ${waBookBtn(nama, kode)}
+  ${termsBlock()}
 </div>`
   );
 
