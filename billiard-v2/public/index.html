@@ -2245,6 +2245,9 @@
     <!-- Reward catalog premium cards — 10 item -->
     <style>
       .reward-catalog{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+      .reward-featured{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+      @media (max-width:960px){.reward-featured{grid-template-columns:repeat(3,1fr);gap:12px;}}
+      @media (max-width:640px){.reward-featured{grid-template-columns:1fr;}}
       .rwd-card{position:relative;background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease;cursor:default;display:flex;flex-direction:column;}
       .rwd-card:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(0,0,0,0.09);}
       /* Bonus theme — dark green + gold */
@@ -2289,11 +2292,13 @@
       @media (max-width:640px){.reward-catalog{grid-template-columns:1fr;}}
     </style>
 
-    <div class="reveal reward-catalog">
+    <!-- 3 featured cards — front -->
+    <div class="reveal reward-featured">
 
-      <!-- 8 pt — Main 1 jam gratis -->
+      <!-- 8 pt — Main 1 jam (ENTRY) -->
       <div class="rwd-card bonus">
         <div class="rwd-line"></div>
+        <span class="rwd-pop" style="background:linear-gradient(135deg,#22c55e,#16a34a);">MUDAH</span>
         <div class="rwd-body">
           <div class="rwd-ic-wrap"><i class="ti ti-clock"></i></div>
           <div class="rwd-eb">Bonus Main</div>
@@ -2305,21 +2310,7 @@
         </div>
       </div>
 
-      <!-- 12 pt — Rokok murah -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-cigarette"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Rokok murah<span class="rwd-sub">Rp 25.000</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">12 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 16 pt — Main 2 jam gratis (POPULER) -->
+      <!-- 16 pt — Main 2 jam (POPULER) -->
       <div class="rwd-card bonus">
         <div class="rwd-line"></div>
         <span class="rwd-pop">POPULER</span>
@@ -2334,91 +2325,7 @@
         </div>
       </div>
 
-      <!-- 20 pt — Sarung tangan -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-hand-stop"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Sarung tangan<span class="rwd-sub">Billiard glove</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">20 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 25 pt — Rokok mahal -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-cigarette"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Rokok mahal<span class="rwd-sub">Rp 50.000</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">25 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 30 pt — Kaos branding -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-shirt"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Kaos branding<span class="rwd-sub">Warpat Jombang</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">30 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 40 pt — Main 4 jam gratis -->
-      <div class="rwd-card bonus">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-clock-hour-9"></i></div>
-          <div class="rwd-eb">Bonus Main</div>
-          <div class="rwd-ttl">Main 4 jam<br>gratis</div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">40 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 50 pt — Topi branding -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-baseball-bat"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Topi branding<span class="rwd-sub">Warpat Jombang</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">50 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 75 pt — Tas / cue bag -->
-      <div class="rwd-card merch">
-        <div class="rwd-line"></div>
-        <div class="rwd-body">
-          <div class="rwd-ic-wrap"><i class="ti ti-briefcase"></i></div>
-          <div class="rwd-eb">Merchandise</div>
-          <div class="rwd-ttl">Tas / cue bag<span class="rwd-sub">Carry your stick</span></div>
-        </div>
-        <div class="rwd-foot">
-          <div class="rwd-pt-grp"><span class="rwd-star">★</span><span class="rwd-pt-num">75 pt</span></div>
-          <button type="button" class="rwd-btn" onclick="openWa()">Tukar →</button>
-        </div>
-      </div>
-
-      <!-- 100 pt — Stik entry level (TOP TIER) -->
+      <!-- 100 pt — Stik (TOP TIER) -->
       <div class="rwd-card merch">
         <div class="rwd-line"></div>
         <span class="rwd-pop">TOP TIER</span>
@@ -2433,6 +2340,15 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Lihat Semua button -->
+    <div class="reveal" style="margin-top:18px;display:flex;justify-content:center;">
+      <button type="button" onclick="openMerchCatalog()" style="display:inline-flex;align-items:center;gap:9px;padding:13px 24px;background:linear-gradient(155deg,#0a160e,#060e08);border:1px solid rgba(196,154,42,0.32);color:#E8B84B;border-radius:99px;font-size:13px;font-weight:600;font-family:'Geist',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.18);transition:transform .15s ease,box-shadow .2s ease,border-color .15s ease;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 24px rgba(0,0,0,0.25)';this.style.borderColor='rgba(196,154,42,0.55)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 18px rgba(0,0,0,0.18)';this.style.borderColor='rgba(196,154,42,0.32)'">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#8A6A1E);color:#fff;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;">10</span>
+        Lihat Semua Reward
+        <i class="ti ti-arrow-right" style="font-size:13px;"></i>
+      </button>
     </div>
 
     <!-- Bottom note -->
@@ -2465,10 +2381,10 @@
       <div>
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
           <div style="width:20px;height:20px;border-radius:6px;background:#fdf8ee;border:1px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:11px;">🎁</div>
-          <span style="font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#b8922a;">Katalog Merchandise</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#b8922a;">Katalog Reward Lengkap</span>
         </div>
         <h3 style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:#0f1a10;line-height:1.05;margin-bottom:5px;">Pilih <em style="font-style:italic;font-weight:300;color:#b8922a;">hadiah kamu</em></h3>
-        <p style="font-size:13px;color:#6b7280;font-weight:300;">Tukarkan poin dengan item eksklusif. Stok terbatas setiap periode.</p>
+        <p style="font-size:13px;color:#6b7280;font-weight:300;">10 reward — bonus main &amp; merchandise. Tukar di kasir dgn kartu member.</p>
       </div>
       <button onclick="closeMerchCatalog()" style="width:34px;height:34px;border-radius:50%;background:#f5f5f5;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#6b7280;flex-shrink:0;transition:all 0.15s;margin-top:4px;" onmouseenter="this.style.background='#e8e8e8'" onmouseleave="this.style.background='#f5f5f5'">✕</button>
     </div>
@@ -2477,157 +2393,116 @@
     <div style="margin:18px 30px 0;display:flex;gap:8px;">
       <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
         <span style="font-size:16px;">🎁</span>
-        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">6 Item</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Tersedia sekarang</div></div>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">10 Item</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Tersedia ditukar</div></div>
       </div>
       <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
         <span style="color:#c8a040;font-size:16px;">★</span>
-        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">3 – 20</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Range poin</div></div>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">8 – 100</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Range poin</div></div>
       </div>
       <div style="flex:1;background:#f9f6ee;border:1px solid #e8d89a;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:16px;">🔄</span>
-        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">Tiap periode</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Koleksi diperbarui</div></div>
+        <span style="font-size:16px;">⏱</span>
+        <div><div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#0f1a10;line-height:1;">1 pt / 2 jam</div><div style="font-size:10px;color:#9ca3af;margin-top:1px;">Earning rate</div></div>
       </div>
     </div>
 
-    <!-- Catalog grid -->
-    <div style="padding:18px 30px 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+    <!-- Catalog grid: 10 items, kombinasi bonus + merch -->
+    <style>
+      .mdl-grid{padding:18px 30px 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+      .mdl-card{background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all .18s ease;}
+      .mdl-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,0.08);}
+      .mdl-card.bonus{background:linear-gradient(160deg,#071a0c,#0a2010);border-color:rgba(196,154,42,0.28);}
+      .mdl-card.bonus:hover{box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+      .mdl-vis{height:120px;display:flex;align-items:center;justify-content:center;position:relative;}
+      .mdl-card.merch .mdl-vis{background:linear-gradient(145deg,#f5f0e8,#ede4d0);}
+      .mdl-card.bonus .mdl-vis{background:linear-gradient(145deg,#0a2010,#061208);border-bottom:1px solid rgba(196,154,42,0.18);}
+      .mdl-vis i{font-size:46px;}
+      .mdl-card.merch .mdl-vis i{color:#b8922a;}
+      .mdl-card.bonus .mdl-vis i{color:#C9A84C;}
+      .mdl-tag{position:absolute;top:8px;right:8px;border-radius:99px;padding:2px 8px;font-size:7.5px;font-weight:700;letter-spacing:0.06em;}
+      .mdl-tag.green{background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;}
+      .mdl-tag.gold{background:linear-gradient(135deg,#c8a040,#a07820);border:1px solid #a07820;color:#fff;box-shadow:0 2px 6px rgba(196,154,42,0.35);}
+      .mdl-tag.amber{background:#fef3c7;border:1px solid #fde047;color:#854d0e;}
+      .mdl-info{padding:12px 14px 12px;}
+      .mdl-card.merch .mdl-info{color:#0f1a10;}
+      .mdl-card.bonus .mdl-info{color:#fff;}
+      .mdl-name{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.25;}
+      .mdl-card.bonus .mdl-name{color:#fff;}
+      .mdl-desc{font-size:11px;line-height:1.55;margin-bottom:10px;}
+      .mdl-card.merch .mdl-desc{color:#9ca3af;}
+      .mdl-card.bonus .mdl-desc{color:rgba(255,255,255,0.45);}
+      .mdl-row{display:flex;align-items:center;justify-content:space-between;}
+      .mdl-pt{display:flex;align-items:center;gap:3px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;}
+      .mdl-card.merch .mdl-pt{color:#0f1a10;}
+      .mdl-card.bonus .mdl-pt{color:#fff;}
+      .mdl-pt-star{color:#c8a040;font-size:13px;}
+      .mdl-btn{border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid;font-family:'Geist',sans-serif;transition:background .15s ease;}
+      .mdl-card.merch .mdl-btn{background:#fdf8ee;border-color:#e8d89a;color:#9a7018;}
+      .mdl-card.merch .mdl-btn:hover{background:#f5edd8;}
+      .mdl-card.bonus .mdl-btn{background:linear-gradient(135deg,rgba(196,154,42,0.22),rgba(196,154,42,0.1));border-color:rgba(196,154,42,0.4);color:#C9A84C;}
+      .mdl-card.bonus .mdl-btn:hover{background:rgba(196,154,42,0.32);}
+      @media (max-width:760px){.mdl-grid{grid-template-columns:repeat(2,1fr);}}
+      @media (max-width:480px){.mdl-grid{grid-template-columns:1fr;}}
+    </style>
+    <div class="mdl-grid">
 
-      <!-- 1. Kaos Basic -->
-      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
-        <div style="height:116px;background:linear-gradient(145deg,#f5f0e8,#ede4d0);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="68" height="68" viewBox="0 0 24 24" fill="none">
-            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z" fill="#c8a04033" stroke="#b8922a" stroke-width="0.8"/>
-            <text x="12" y="16.5" text-anchor="middle" font-size="4" fill="#9a7018" font-family="sans-serif" font-weight="700">WARPAT</text>
-          </svg>
-          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
-            <div style="width:9px;height:9px;border-radius:50%;background:#1a2010;border:1.5px solid rgba(0,0,0,0.15);"></div>
-            <div style="width:9px;height:9px;border-radius:50%;background:#1F5C28;border:1.5px solid rgba(0,0,0,0.1);"></div>
-            <div style="width:9px;height:9px;border-radius:50%;background:#c8a040;border:1.5px solid rgba(0,0,0,0.1);"></div>
-          </div>
-          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Kaos Basic Warpat</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Cotton combed 30s · S/M/L/XL · 3 warna</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">15 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 8 pt — Main 1 jam gratis -->
+      <div class="mdl-card bonus">
+        <div class="mdl-vis"><i class="ti ti-clock"></i><span class="mdl-tag green">8 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Main 1 jam gratis</div><div class="mdl-desc">Sewa meja 1 jam, semua meja berlaku</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>8 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
-      <!-- 2. Kaos Premium -->
-      <div style="background:#fafafa;border:1px solid #e8d89a;border-radius:14px;overflow:hidden;transition:all 0.18s;position:relative;" onmouseenter="this.style.borderColor='#c8a040';this.style.boxShadow='0 6px 20px rgba(200,160,64,0.12)'" onmouseleave="this.style.borderColor='#e8d89a';this.style.boxShadow='none'">
-        <div style="position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#c8a040,#a07820);border-radius:99px;padding:2px 9px;font-size:7.5px;font-weight:700;color:#fff;letter-spacing:0.06em;z-index:1;">NEW</div>
-        <div style="height:116px;background:linear-gradient(145deg,#fef9ec,#f5edd8);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="68" height="68" viewBox="0 0 24 24" fill="none">
-            <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z" fill="#c8a04044" stroke="#c8a040" stroke-width="0.8"/>
-            <circle cx="12" cy="13" r="3.5" fill="none" stroke="#c8a040" stroke-width="0.6" opacity="0.6"/>
-            <text x="12" y="14.2" text-anchor="middle" font-size="3.5" fill="#9a7018" font-family="sans-serif" font-weight="700">WARPAT</text>
-          </svg>
-          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
-            <div style="width:9px;height:9px;border-radius:50%;background:#111;border:1.5px solid rgba(0,0,0,0.15);"></div>
-            <div style="width:9px;height:9px;border-radius:50%;background:#3a200a;border:1.5px solid rgba(0,0,0,0.1);"></div>
-          </div>
-          <div style="position:absolute;top:8px;right:8px;background:#fef9c3;border:1px solid #fde047;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#854d0e;letter-spacing:0.06em;">LIMITED</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Kaos Premium Logo Gold</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Sablon gold foil · M/L/XL · 2 warna</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">20 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 12 pt — Rokok murah -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-cigarette"></i><span class="mdl-tag green">12 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Rokok murah</div><div class="mdl-desc">Setara Rp 25.000 · brand tersedia di kasir</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>12 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
-      <!-- 3. Snapback Cap -->
-      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
-        <div style="height:116px;background:linear-gradient(145deg,#f0f4f0,#e4ece4);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="88" height="62" viewBox="0 0 90 64" fill="none">
-            <path d="M15 44 Q15 18 45 16 Q75 18 75 44" fill="#c8a04022" stroke="#b8922a" stroke-width="1.4"/>
-            <rect x="6" y="44" width="78" height="12" rx="4" fill="#c8a04015" stroke="#c8a040" stroke-width="1.2"/>
-            <text x="45" y="38" text-anchor="middle" font-size="10" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
-            <line x1="45" y1="16" x2="45" y2="10" stroke="#c8a040" stroke-width="1.1" opacity="0.5"/>
-            <circle cx="45" cy="8" r="2.5" fill="#c8a040" opacity="0.6"/>
-          </svg>
-          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">
-            <div style="width:9px;height:9px;border-radius:50%;background:#111;border:1.5px solid rgba(0,0,0,0.12);"></div>
-            <div style="width:9px;height:9px;border-radius:50%;background:#1F5C28;border:1.5px solid rgba(0,0,0,0.1);"></div>
-            <div style="width:9px;height:9px;border-radius:50%;background:#1a1e36;border:1.5px solid rgba(0,0,0,0.1);"></div>
-          </div>
-          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Snapback Cap Warpat</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Adjustable snapback · 3 warna</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">15 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 16 pt — Main 2 jam (POPULER) -->
+      <div class="mdl-card bonus">
+        <div class="mdl-vis"><i class="ti ti-clock"></i><span class="mdl-tag gold">POPULER</span></div>
+        <div class="mdl-info"><div class="mdl-name">Main 2 jam gratis</div><div class="mdl-desc">Paling sering ditukar · semua meja</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>16 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
-      <!-- 4. Totebag -->
-      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
-        <div style="height:116px;background:linear-gradient(145deg,#f5eed8,#ede0c0);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="60" height="74" viewBox="0 0 68 80" fill="none">
-            <path d="M10 22h48l-7 50H17L10 22z" fill="#c8a04022" stroke="#b8922a" stroke-width="1.4" stroke-linejoin="round"/>
-            <path d="M24 22 Q24 8 34 8 Q44 8 44 22" fill="none" stroke="#c8a040" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-            <text x="34" y="56" text-anchor="middle" font-size="11" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
-            <line x1="14" y1="30" x2="54" y2="30" stroke="#c8a040" stroke-width="0.7" opacity="0.3"/>
-          </svg>
-          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Totebag Canvas Warpat</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Canvas tebal · Sablon dua sisi</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">12 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 20 pt — Sarung tangan -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-hand-stop"></i><span class="mdl-tag green">20 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Sarung tangan billiard</div><div class="mdl-desc">Glove pemain · cocok buat grip mantap</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>20 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
-      <!-- 5. Stiker Pack -->
-      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
-        <div style="height:116px;background:linear-gradient(145deg,#f0f5f0,#e4eee4);display:flex;align-items:center;justify-content:center;position:relative;flex-wrap:wrap;gap:5px;padding:12px;">
-          <div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">🎱</div>
-          <div style="width:40px;height:26px;border-radius:8px;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#9a7018;box-shadow:0 2px 8px rgba(0,0,0,0.06);">WP</div>
-          <div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid #e8d89a;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">⭐</div>
-          <div style="width:40px;height:26px;border-radius:8px;background:#fff;border:1.5px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#9ca3af;">JBG</div>
-          <div style="position:absolute;top:8px;right:8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#065f46;letter-spacing:0.06em;">TERSEDIA</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Stiker Pack Warpat</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">6 lembar · Eksklusif · Tahan air</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">5 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 25 pt — Rokok mahal -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-cigarette"></i><span class="mdl-tag green">25 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Rokok mahal</div><div class="mdl-desc">Setara Rp 50.000 · pilihan brand premium</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>25 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
-      <!-- 6. Gantungan Kunci -->
-      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:all 0.18s;" onmouseenter="this.style.borderColor='#e8d89a';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.07)'" onmouseleave="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
-        <div style="height:116px;background:linear-gradient(145deg,#f5f0e8,#ede4d0);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="48" height="68" viewBox="0 0 54 76" fill="none">
-            <circle cx="27" cy="10" r="8" fill="none" stroke="#b8922a" stroke-width="1.8" opacity="0.7"/>
-            <circle cx="27" cy="10" r="4" fill="none" stroke="#c8a040" stroke-width="1.4" opacity="0.4"/>
-            <line x1="27" y1="18" x2="27" y2="24" stroke="#b8922a" stroke-width="1.4" opacity="0.5"/>
-            <rect x="14" y="24" width="26" height="44" rx="13" fill="#c8a04022" stroke="#b8922a" stroke-width="1.5"/>
-            <text x="27" y="52" text-anchor="middle" font-size="7" fill="#9a7018" font-family="sans-serif" font-weight="800">WP</text>
-          </svg>
-          <div style="position:absolute;top:8px;right:8px;background:#fee2e2;border:1px solid #fca5a5;border-radius:99px;padding:2px 7px;font-size:7px;font-weight:700;color:#b91c1c;letter-spacing:0.06em;">TERBATAS</div>
-        </div>
-        <div style="padding:12px 13px 11px;">
-          <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;">Gantungan Kunci Akrilik</div>
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:9px;line-height:1.5;">Akrilik premium · Desain billiard</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:3px;"><span style="color:#c8a040;font-size:12px;">★</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#111827;">3 poin</span></div>
-            <div onclick="openWa()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Tukar</div>
-          </div>
-        </div>
+      <!-- 30 pt — Kaos branding -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-shirt"></i><span class="mdl-tag green">30 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Kaos branding</div><div class="mdl-desc">Kaos Warpat Jombang · stok terbatas</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>30 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
+      </div>
+
+      <!-- 40 pt — Main 4 jam -->
+      <div class="mdl-card bonus">
+        <div class="mdl-vis"><i class="ti ti-clock-hour-9"></i><span class="mdl-tag green">40 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Main 4 jam gratis</div><div class="mdl-desc">Setengah hari main bareng — semua meja</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>40 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
+      </div>
+
+      <!-- 50 pt — Topi branding -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-baseball-bat"></i><span class="mdl-tag green">50 pt</span></div>
+        <div class="mdl-info"><div class="mdl-name">Topi branding</div><div class="mdl-desc">Cap Warpat Jombang · adjustable</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>50 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
+      </div>
+
+      <!-- 75 pt — Tas / cue bag -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-briefcase"></i><span class="mdl-tag amber">LIMITED</span></div>
+        <div class="mdl-info"><div class="mdl-name">Tas / cue bag</div><div class="mdl-desc">Buat bawa stik pribadi · canvas tebal</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>75 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
+      </div>
+
+      <!-- 100 pt — Stik entry level (TOP TIER) -->
+      <div class="mdl-card merch">
+        <div class="mdl-vis"><i class="ti ti-pool"></i><span class="mdl-tag gold">TOP TIER</span></div>
+        <div class="mdl-info"><div class="mdl-name">Stik entry level</div><div class="mdl-desc">Cue stick pribadi · reward tertinggi</div><div class="mdl-row"><div class="mdl-pt"><span class="mdl-pt-star">★</span>100 poin</div><button type="button" class="mdl-btn" onclick="openWa();closeMerchCatalog();">Tukar</button></div></div>
       </div>
 
     </div>
