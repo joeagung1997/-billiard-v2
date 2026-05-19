@@ -489,16 +489,30 @@ input[type=password]{
 }
 input[type=password]:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1)}
 .durasi-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;text-align:center}
-.durasi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.durasi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
 .durasi-opt{position:relative;cursor:pointer}
 .durasi-opt input{position:absolute;opacity:0;pointer-events:none}
 .durasi-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 4px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:all .15s ease}
 .durasi-chip .h{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--text);line-height:1}
 .durasi-chip .p{font-size:9px;font-weight:600;letter-spacing:.06em;color:var(--muted);margin-top:3px;text-transform:uppercase}
+/* 4/6/8 jam = non-default, kasih tint amber biar kasir aware */
+.durasi-opt.is-long .durasi-chip{border-color:rgba(245,158,11,.18)}
 .durasi-opt input:checked + .durasi-chip{background:linear-gradient(135deg,rgba(45,181,109,.16),rgba(45,181,109,.08));border-color:rgba(45,181,109,.5);box-shadow:0 0 0 3px rgba(45,181,109,.1)}
+.durasi-opt.is-long input:checked + .durasi-chip{background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.08));border-color:rgba(245,158,11,.55);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
 .durasi-opt input:checked + .durasi-chip .h{color:var(--green-lt)}
 .durasi-opt input:checked + .durasi-chip .p{color:var(--green-lt)}
+.durasi-opt.is-long input:checked + .durasi-chip .h{color:#fbbf24}
+.durasi-opt.is-long input:checked + .durasi-chip .p{color:#fbbf24}
 .durasi-opt:hover .durasi-chip{border-color:rgba(255,255,255,.18)}
+.durasi-warn{
+  display:none;align-items:flex-start;gap:8px;
+  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.28);
+  border-radius:10px;padding:9px 11px;margin-bottom:14px;
+  font-size:11.5px;color:#fbbf24;line-height:1.5;
+}
+.durasi-warn.show{display:flex}
+.durasi-warn .w-ic{flex-shrink:0;font-size:14px;line-height:1.3}
+.durasi-warn strong{color:#fde68a;font-weight:700}
 button[type=submit]{
   width:100%;border:none;border-radius:12px;padding:14px;
   font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.06em;
@@ -542,18 +556,58 @@ button[type=submit]:active{opacity:.85;transform:scale(.98)}
       Kasir: masukkan PIN untuk<br>konfirmasi kehadiran member.
     </p>
     ${errorMsg ? `<div class="err">${errorMsg}</div>` : ""}
-    <form action="/checkin" method="POST">
+    <form action="/checkin" method="POST" id="checkinForm" onsubmit="return confirmCheckin(event)">
       <input type="hidden" name="id" value="${kode}">
-      <div class="durasi-label">Durasi main</div>
+      <div class="durasi-label">Durasi main (jam)</div>
       <div class="durasi-row">
-        <label class="durasi-opt"><input type="radio" name="durasi" value="2" checked><span class="durasi-chip"><span class="h">2</span><span class="p">1 point</span></span></label>
-        <label class="durasi-opt"><input type="radio" name="durasi" value="4"><span class="durasi-chip"><span class="h">4</span><span class="p">2 point</span></span></label>
-        <label class="durasi-opt"><input type="radio" name="durasi" value="6"><span class="durasi-chip"><span class="h">6</span><span class="p">3 point</span></span></label>
-        <label class="durasi-opt"><input type="radio" name="durasi" value="8"><span class="durasi-chip"><span class="h">8</span><span class="p">4 point</span></span></label>
+        <label class="durasi-opt"><input type="radio" name="durasi" value="2" checked onchange="onDurasiChange(this)"><span class="durasi-chip"><span class="h">2</span><span class="p">1 point</span></span></label>
+        <label class="durasi-opt is-long" onclick="return guardLong(2,4,event)"><input type="radio" name="durasi" value="4" onchange="onDurasiChange(this)"><span class="durasi-chip"><span class="h">4</span><span class="p">2 point</span></span></label>
+        <label class="durasi-opt is-long" onclick="return guardLong(2,6,event)"><input type="radio" name="durasi" value="6" onchange="onDurasiChange(this)"><span class="durasi-chip"><span class="h">6</span><span class="p">3 point</span></span></label>
+        <label class="durasi-opt is-long" onclick="return guardLong(2,8,event)"><input type="radio" name="durasi" value="8" onchange="onDurasiChange(this)"><span class="durasi-chip"><span class="h">8</span><span class="p">4 point</span></span></label>
       </div>
-      <input type="password" name="pin" placeholder="••••" maxlength="8" autofocus autocomplete="off">
+      <div class="durasi-warn" id="durasiWarn">
+        <span class="w-ic">⚠️</span>
+        <span>Dipilih <strong id="warnJam">4 jam</strong> (+<strong id="warnPt">2</strong> point). Pastikan benar — kebanyakan member main <strong>2 jam</strong>.</span>
+      </div>
+      <input type="password" name="pin" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="••••" maxlength="8" autofocus oninput="this.value=this.value.replace(/[^0-9]/g,'')">
       <button type="submit">Konfirmasi Check-in</button>
     </form>
+    <script>
+      // Confirmation untuk durasi non-default (4/6/8 jam). Klik chip selain
+      // yg lagi aktif → confirm dialog. Confirm OK → switch. Cancel → batal.
+      function guardLong(current, target, evt) {
+        var cur = document.querySelector('input[name="durasi"]:checked');
+        var curVal = cur ? parseInt(cur.value, 10) : 2;
+        if (curVal === target) return true; // udah aktif, gak perlu confirm
+        var pt = target / 2;
+        var msg = 'Ganti durasi ke ' + target + ' jam?\\n\\nMember akan dapet ' + pt + ' point.\\nKebanyakan member main 2 jam.';
+        if (!confirm(msg)) {
+          evt.preventDefault();
+          return false;
+        }
+      }
+      function onDurasiChange(input) {
+        var val = parseInt(input.value, 10);
+        var warn = document.getElementById('durasiWarn');
+        if (val === 2) {
+          warn.classList.remove('show');
+        } else {
+          document.getElementById('warnJam').textContent = val + ' jam';
+          document.getElementById('warnPt').textContent = val / 2;
+          warn.classList.add('show');
+        }
+      }
+      // Safety net pas submit — kalau pilih non-default, confirm sekali lagi
+      function confirmCheckin(evt) {
+        var cur = document.querySelector('input[name="durasi"]:checked');
+        var val = cur ? parseInt(cur.value, 10) : 2;
+        if (val !== 2) {
+          var ok = confirm('Konfirmasi check-in dgn durasi ' + val + ' jam (+' + (val/2) + ' point)?');
+          if (!ok) { evt.preventDefault(); return false; }
+        }
+        return true;
+      }
+    </script>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.65">
       Hanya kasir yang bisa konfirmasi check-in.<br>Member cukup tunjukkan QR.
     </p>
