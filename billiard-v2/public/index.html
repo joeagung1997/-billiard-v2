@@ -1148,6 +1148,11 @@
     .reveal-d2 { transition-delay: 0.16s; }
     .reveal-d3 { transition-delay: 0.24s; }
 
+    /* Card grids (default desktop layout — overridden di media query) */
+    .feat-grid    { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .reward-grid  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 56px; }
+
     @media (max-width: 960px) {
       .tables-inner  { grid-template-columns: 1fr; gap: 40px; }
       .tournament-header { grid-template-columns: 1fr; gap: 20px; }
@@ -1158,6 +1163,11 @@
       .footer-inner      { grid-template-columns: 1fr 1fr; }
       .photo-grid        { grid-template-rows: 160px 160px; }
       .nav-links         { display: none; }
+      .hero-inner        { grid-template-columns: 1fr; gap: 24px; padding: 0 24px; }
+      .hero-right-col    { height: 380px; }
+      .feat-grid         { grid-template-columns: 1fr 1fr; }
+      .reward-grid       { grid-template-columns: 1fr 1fr; }
+      .pricing-grid      { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 640px) {
       .nav { padding: 0 20px; }
@@ -1171,10 +1181,15 @@
       .ph4 { grid-column: 1/2; grid-row: 3; }
       .ph5 { grid-column: 2/3; grid-row: 3; }
       .tournament-grid { grid-template-columns: 1fr; }
-      .hero-title { font-size: 52px; }
-      .hs-item { padding-right: 20px; margin-right: 20px; }
-      .hs-val { font-size: 26px; }
+      .hero-title { font-size: 44px; }
+      .hero { min-height: auto; height: auto; padding: 80px 0 40px; }
+      .hero-right-col { height: 300px; }
+      .hs-item { padding-right: 16px; margin-right: 16px; }
+      .hs-val { font-size: 24px; }
       .footer-inner { grid-template-columns: 1fr; }
+      .feat-grid    { grid-template-columns: 1fr; }
+      .reward-grid  { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
     }
     /* ── HERO ANIMATION ADDITIONS ── */
     .hero-deco-ball {
@@ -1683,7 +1698,7 @@
       <h2 class="section-title">Bukan cuma billiard,<br><em>masih banyak lagi</em></h2>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;" class="reveal">
+    <div class="reveal feat-grid">
 
       <!-- Billiard -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
@@ -1992,7 +2007,7 @@
       </div>
 
       <!-- 4 BENEFIT CARDS — horizontal -->
-      <div class="reveal" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:56px;">
+      <div class="reveal pricing-grid">
 
         <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 18px;transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(90,190,104,0.25)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
           <div style="width:40px;height:40px;border-radius:12px;background:rgba(90,190,104,0.1);border:1px solid rgba(90,190,104,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
@@ -2242,7 +2257,7 @@
     </div>
 
     <!-- Reward cards grid -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;" class="reveal">
+    <div class="reveal reward-grid">
 
       <!-- 1. Diskon -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
