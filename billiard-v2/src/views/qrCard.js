@@ -557,10 +557,15 @@ body::after{
 
 // ── memberCardPage — layout portrait mobile-friendly untuk /member/:kode ──────
 // QR besar (250px), mudah di-scan kasir, layar penuh tanpa empty space.
-export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl }) => {
+export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl, nomorWa }) => {
   const tm    = totalMain ?? 0;
   const batas = CONFIG.BATAS_MAIN;
   const sisaLagi = Math.max(0, batas - tm);
+  const wa      = nomorWa || CONFIG.NOMOR_WA || "6281519210552";
+  const waText  = encodeURIComponent(
+    `Halo ${CONFIG.NAMA_ARENA}, saya ${nama} (member ${kode}). Mau booking meja, ada yang tersedia? 🎱`
+  );
+  const waUrl   = `https://wa.me/${wa}?text=${waText}`;
 
   let dotsHtml = "";
   for (let i = 0; i < batas; i++) {
@@ -728,6 +733,36 @@ body::before{
   pointer-events:none;animation:holoMove 5s ease-in-out infinite;
 }
 @keyframes holoMove{0%,100%{opacity:.6;transform:translateX(0)}50%{opacity:1;transform:translateX(-15px)}}
+
+/* Action buttons (Simpan QR + Booking WA) */
+.actions{
+  width:100%;max-width:380px;margin-top:16px;
+  display:flex;gap:9px;
+}
+.act-btn{
+  flex:1;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:13px 12px;
+  font-size:13px;font-weight:600;letter-spacing:.02em;
+  font-family:'DM Sans',sans-serif;
+  border-radius:12px;border:none;cursor:pointer;
+  text-decoration:none;
+  transition:transform .15s ease,background .2s ease,box-shadow .2s ease;
+}
+.act-btn:active{transform:translateY(1px)}
+.act-btn-qr{
+  background:rgba(201,168,76,.1);
+  border:1px solid rgba(201,168,76,.32);
+  color:var(--gold-lt);
+}
+.act-btn-qr:hover{background:rgba(201,168,76,.18);box-shadow:0 4px 12px rgba(201,168,76,.15)}
+.act-btn-wa{
+  background:#25D366;
+  color:#fff;
+  box-shadow:0 4px 14px rgba(37,211,102,.25);
+}
+.act-btn-wa:hover{background:#1EBE58;box-shadow:0 6px 18px rgba(37,211,102,.35)}
+.act-btn svg{flex-shrink:0}
 
 /* Terms */
 .terms{
@@ -913,6 +948,25 @@ body::before{
 
   </div><!-- /card-wrap -->
 
+  <!-- Action buttons -->
+  <div class="actions">
+    <button type="button" class="act-btn act-btn-qr" onclick="saveQr()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Simpan QR
+    </button>
+    <a class="act-btn act-btn-wa" href="${waUrl}" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+      </svg>
+      Booking Meja
+    </a>
+  </div>
+
   <!-- Ketentuan Member -->
   <div class="terms">
     <div class="terms-title">
@@ -981,6 +1035,18 @@ body::before{
   }, { passive: true });
   card.addEventListener('touchend', resetTilt, { passive: true });
 })();
+
+// Simpan QR Member — download QR image yg udah di-encode data URL
+window.saveQr = function() {
+  var img = document.querySelector('.qr-outer img');
+  if (!img || !img.src) return;
+  var a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'qr-warpat-${kode}.png';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
 </script>
 </body>
 </html>`;
