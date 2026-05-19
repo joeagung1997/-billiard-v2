@@ -127,6 +127,16 @@ body::after{
 .ct-amber{color:#fbbf24}
 .ct-gold{color:var(--gold-lt)}
 .tip-section{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+.point-earn-badge{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 13px;margin-bottom:11px;
+  background:linear-gradient(135deg,rgba(201,168,76,.14),rgba(201,168,76,.06));
+  border:1px solid rgba(201,168,76,.32);border-radius:11px;
+  font-size:12px;color:var(--gold-lt);
+}
+.point-earn-badge .pe-icon{font-size:14px;line-height:1}
+.point-earn-badge .pe-text{letter-spacing:.01em}
+.point-earn-badge strong{color:var(--gold);font-weight:700}
 .tip-label{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .tip-text{font-size:12px;color:rgba(239,243,238,.55);line-height:1.65}
 .card-footer{text-align:center;font-size:10px;letter-spacing:.07em;color:rgba(239,243,238,.22)}
@@ -478,6 +488,17 @@ input[type=password]{
   transition:border-color .2s,box-shadow .2s;
 }
 input[type=password]:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1)}
+.durasi-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;text-align:center}
+.durasi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.durasi-opt{position:relative;cursor:pointer}
+.durasi-opt input{position:absolute;opacity:0;pointer-events:none}
+.durasi-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 4px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:all .15s ease}
+.durasi-chip .h{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--text);line-height:1}
+.durasi-chip .p{font-size:9px;font-weight:600;letter-spacing:.06em;color:var(--muted);margin-top:3px;text-transform:uppercase}
+.durasi-opt input:checked + .durasi-chip{background:linear-gradient(135deg,rgba(45,181,109,.16),rgba(45,181,109,.08));border-color:rgba(45,181,109,.5);box-shadow:0 0 0 3px rgba(45,181,109,.1)}
+.durasi-opt input:checked + .durasi-chip .h{color:var(--green-lt)}
+.durasi-opt input:checked + .durasi-chip .p{color:var(--green-lt)}
+.durasi-opt:hover .durasi-chip{border-color:rgba(255,255,255,.18)}
 button[type=submit]{
   width:100%;border:none;border-radius:12px;padding:14px;
   font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.06em;
@@ -523,6 +544,13 @@ button[type=submit]:active{opacity:.85;transform:scale(.98)}
     ${errorMsg ? `<div class="err">${errorMsg}</div>` : ""}
     <form action="/checkin" method="POST">
       <input type="hidden" name="id" value="${kode}">
+      <div class="durasi-label">Durasi main</div>
+      <div class="durasi-row">
+        <label class="durasi-opt"><input type="radio" name="durasi" value="2" checked><span class="durasi-chip"><span class="h">2</span><span class="p">1 point</span></span></label>
+        <label class="durasi-opt"><input type="radio" name="durasi" value="4"><span class="durasi-chip"><span class="h">4</span><span class="p">2 point</span></span></label>
+        <label class="durasi-opt"><input type="radio" name="durasi" value="6"><span class="durasi-chip"><span class="h">6</span><span class="p">3 point</span></span></label>
+        <label class="durasi-opt"><input type="radio" name="durasi" value="8"><span class="durasi-chip"><span class="h">8</span><span class="p">4 point</span></span></label>
+      </div>
       <input type="password" name="pin" placeholder="••••" maxlength="8" autofocus autocomplete="off">
       <button type="submit">Konfirmasi Check-in</button>
     </form>
@@ -542,6 +570,7 @@ export const resultPage = (tipe, data) => {
     nama = "", judul = "", pesan = "",
     totalMain = 0, totalGratis = 0, kode = "",
     expired = false, jamScan = "",
+    durasi = 0, pointDapat = 0,
   } = data;
 
   const tm  = totalMain;
@@ -563,6 +592,10 @@ export const resultPage = (tipe, data) => {
       ${memberIdentity(nama, kode)}
       <div class="divider"></div>
       ${sessionSection(tm, CONFIG.BATAS_MAIN, "Sesi Bulan Ini")}
+      ${durasi > 0 ? `<div class="point-earn-badge">
+        <span class="pe-icon">⭐</span>
+        <span class="pe-text">Main <strong>${durasi} jam</strong> · dapet <strong>+${pointDapat} point</strong></span>
+      </div>` : ""}
       <div class="checkin-badge cb-green">
         <div class="check-icon ci-green">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
