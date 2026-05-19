@@ -812,10 +812,9 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     const hymd = hd.getFullYear() + '-'
       + String(hd.getMonth() + 1).padStart(2, '0') + '-'
       + String(hd.getDate()).padStart(2, '0');
-    // Count SCAN + DAFTAR_MEMBER sebagai aktivitas (sesuai konteks
-    // "Member Terdaftar" card — daftar baru juga termasuk aktivitas).
+    // Count SCAN aja — konsisten dgn trend chart "Trend Kunjungan" di atas.
     const hcnt = log.filter((l) => {
-      if (l.aksi !== 'SCAN' && l.aksi !== 'DAFTAR_MEMBER') return false;
+      if (l.aksi !== 'SCAN') return false;
       const ld = new Date(new Date(l.ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const lymd = ld.getFullYear() + '-'
         + String(ld.getMonth() + 1).padStart(2, '0') + '-'
