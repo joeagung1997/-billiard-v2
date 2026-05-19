@@ -628,11 +628,13 @@ body::before{
 }
 .card{transform-style:preserve-3d;transition:transform .5s cubic-bezier(.23,1,.32,1)}
 
-/* Chibi — absolute, nempel di pojok kanan-bawah card, sedikit nongol */
+/* Chibi — absolute, "peeking" dari pojok kanan-bawah card.
+   right negative gede biar setengah keluar kanan card → gak nutupin
+   konten Reward/Sesi yg ada di stats area. */
 .chibi{
   position:absolute;
-  right:-10px;       /* sedikit nongol ke luar tepi kanan card */
-  bottom:26px;       /* setinggi CI strip dari bawah */
+  right:-40px;       /* setengah chibi keluar kanan card */
+  bottom:5px;        /* duduk di pojok kanan-bawah card */
   width:80px;
   z-index:2;
   filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)) drop-shadow(0 -2px 8px rgba(45,181,109,.2));
