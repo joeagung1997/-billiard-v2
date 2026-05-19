@@ -1084,8 +1084,21 @@ window.saveCard = function() {
       scale:   2,
       useCORS: true,
       logging: false,
-    }).then(function(canvas) {
+    }).then(function(rawCanvas) {
       card.style.transform = prevTransform;
+
+      // Bungkus hasil capture dgn padding + bg page biar pas dibuka
+      // di gallery full-screen, kartu gak nempel ke edge. PAD = 36px
+      // CSS, dikali 2 karena scale: 2 di html2canvas.
+      var PAD = 36 * 2;
+      var canvas = document.createElement('canvas');
+      canvas.width  = rawCanvas.width  + PAD * 2;
+      canvas.height = rawCanvas.height + PAD * 2;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#060B08'; // match --bg page
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(rawCanvas, PAD, PAD);
+
       canvas.toBlob(function(blob) {
         if (!blob) { fallbackQr(); return; }
 
