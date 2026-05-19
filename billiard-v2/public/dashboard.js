@@ -203,31 +203,76 @@ window.openMemberDetail = function(kode) {
   }
 
   // Riwayat dari DATA_LOG — semua event scan member ini (SCAN +
-  // SCAN_RESET + BONUS_EARNED, semuanya nambah point), max 10 terbaru.
+  // SCAN_RESET + BONUS_EARNED, semuanya nambah point). Sorted date-desc
+  // dari server (readLog ORDER BY ts DESC), jadi index 0 = paling baru.
   const SCAN_AKSI = new Set(["SCAN", "SCAN_RESET", "BONUS_EARNED"]);
-  const riv = (Array.isArray(DATA_LOG) ? DATA_LOG : [])
-    .filter((l) => l.kode === m.kode && SCAN_AKSI.has(l.aksi))
-    .slice(0, 10);
-  const rivEl = document.getElementById("dtRiwayat");
-  if (riv.length === 0) {
-    rivEl.innerHTML = `<div class="dt-empty">
-      <i class="ti ti-calendar-off"></i>
-      <p>Belum ada riwayat kunjungan</p>
-    </div>`;
-  } else {
-    const labelFor = (l, fallback) => {
-      if (l.aksi === "BONUS_EARNED") return l.detail || "Bonus earned";
-      if (l.aksi === "SCAN_RESET")   return "Reset siklus" + (l.detail ? " — " + l.detail : "");
-      return l.detail || fallback;
-    };
-    rivEl.innerHTML = riv.map((l, i) => `<div class="dt-riv-item">
-      <div class="dt-riv-dot"></div>
-      <div class="dt-riv-body">
-        <p class="dt-riv-label">${esc(labelFor(l, "Kunjungan ke-" + (riv.length - i)))}</p>
-        <p class="dt-riv-time">${esc(l.tgl || "")}</p>
-      </div>
-    </div>`).join("");
+  const allRiv = (Array.isArray(DATA_LOG) ? DATA_LOG : [])
+    .filter((l) => l.kode === m.kode && SCAN_AKSI.has(l.aksi));
+
+  // Visit number lifetime: latest = totalPoint, lalu turun. Pakai
+  // totalPoint sbg anchor supaya tetap akurat walaupun log capped 500.
+  const totalPoint = m.totalPoint || 0;
+  const enrichedRiv = allRiv.map((l, i) => Object.assign({}, l, {
+    visitNum: totalPoint - i,
+    bulan:    (l.ts || "").slice(0, 7), // "YYYY-MM"
+  }));
+
+  // Total badge di header (lifetime count)
+  const totalEl = document.getElementById("dtRivTotal");
+  if (totalEl) totalEl.textContent = totalPoint + " total";
+
+  // Build opsi filter bulan dari bulan yg ada di riwayat
+  const filterEl = document.getElementById("dtRivFilter");
+  const BULAN_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const bulanLabel = (ym) => {
+    const [y, m_] = ym.split("-");
+    return BULAN_ID[parseInt(m_, 10) - 1] + " " + y;
+  };
+  if (filterEl) {
+    const monthsSet = new Set(enrichedRiv.map((l) => l.bulan).filter(Boolean));
+    const months   = Array.from(monthsSet).sort().reverse(); // newest first
+    filterEl.innerHTML = '<option value="">Semua bulan</option>'
+      + months.map((ym) => `<option value="${ym}">${esc(bulanLabel(ym))}</option>`).join("");
   }
+
+  const labelFor = (l, fallback) => {
+    if (l.aksi === "BONUS_EARNED") return l.detail || "Bonus earned";
+    if (l.aksi === "SCAN_RESET")   return "Reset siklus" + (l.detail ? " — " + l.detail : "");
+    return l.detail || fallback;
+  };
+
+  const renderRiv = (bulanFilter) => {
+    const rivEl = document.getElementById("dtRiwayat");
+    if (!rivEl) return;
+    const list = bulanFilter
+      ? enrichedRiv.filter((l) => l.bulan === bulanFilter)
+      : enrichedRiv;
+    if (list.length === 0) {
+      const msg = bulanFilter ? "Tidak ada kunjungan di bulan ini" : "Belum ada riwayat kunjungan";
+      rivEl.innerHTML = `<div class="dt-empty">
+        <i class="ti ti-calendar-off"></i>
+        <p>${esc(msg)}</p>
+      </div>`;
+      return;
+    }
+    rivEl.innerHTML = list.map((l) => {
+      const isReward = l.visitNum > 0 && l.visitNum % 10 === 0;
+      const badge = isReward
+        ? `<span class="dt-riv-badge"><i class="ti ti-gift"></i>Reward</span>`
+        : "";
+      const label = labelFor(l, "Kunjungan ke-" + l.visitNum);
+      return `<div class="dt-riv-item${isReward ? " is-reward" : ""}">
+        <div class="dt-riv-dot"></div>
+        <div class="dt-riv-body">
+          <p class="dt-riv-label">${esc(label)}${badge}</p>
+          <p class="dt-riv-time">${esc(l.tgl || "")}</p>
+        </div>
+      </div>`;
+    }).join("");
+  };
+
+  renderRiv("");
+  if (filterEl) filterEl.onchange = function() { renderRiv(this.value); };
 
   // Footer actions — direct chat ke nomor member via openWA() helper
   const waBtn = document.getElementById("dtBtnWa");
