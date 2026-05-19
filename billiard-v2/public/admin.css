@@ -1333,16 +1333,34 @@ td          { padding:10px 16px; vertical-align:middle; }
 .dt-wa-inline i { font-size:13px; }
 
 /* ── Riwayat list ──────────────────────────────────────────────── */
+.dt-riv-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.dt-riv-total { font-size:11px; color:#7a8c78; background:#eef5ec; font-weight:600; padding:3px 8px; border-radius:10px; letter-spacing:.02em; }
+.dt-riv-filter-row { margin-bottom:8px; }
+.dt-riv-filter {
+  width:100%; padding:8px 10px; font-size:12px; font-family:inherit;
+  border:1px solid #e6e6e6; border-radius:8px; background:#fafafa;
+  color:#333; cursor:pointer; outline:none;
+}
+.dt-riv-filter:focus { border-color:#2a7a4e; background:#fff; }
+.dt-riv-wrap { max-height:280px; overflow-y:auto; padding-right:4px; }
 .dt-riv { display:flex; flex-direction:column; gap:0; }
 .dt-riv-item {
   display:flex; align-items:center; gap:12px;
   padding:10px 0; border-bottom:1px solid #f7f7f7;
 }
 .dt-riv-item:last-child { border:none; }
+.dt-riv-item.is-reward .dt-riv-dot { background:#c47f1a; box-shadow:0 0 0 3px rgba(196,127,26,.12); }
 .dt-riv-dot { width:8px; height:8px; border-radius:50%; background:#2a7a4e; flex-shrink:0; margin-left:4px; box-shadow:0 0 0 3px rgba(42,122,78,.08); }
 .dt-riv-body { flex:1; min-width:0; }
 .dt-riv-label { font-size:13px; color:#222; margin:0; font-weight:500; }
 .dt-riv-time { font-size:11px; color:#bbb; margin:0; }
+.dt-riv-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  background:#fff7e6; color:#c47f1a;
+  font-size:10px; font-weight:600; padding:2px 7px; border-radius:10px;
+  margin-left:6px; vertical-align:middle;
+}
+.dt-riv-badge i { font-size:11px; }
 
 .dt-empty {
   display:flex; align-items:center; justify-content:center;

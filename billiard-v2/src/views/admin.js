@@ -894,7 +894,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=34">'
+    + '<link rel="stylesheet" href="/admin.css?v=35">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1229,7 +1229,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=38"><\/script>'
+    + '<script src="/dashboard.js?v=39"><\/script>'
     + '</body></html>';
 }
 
@@ -1241,11 +1241,13 @@ export function memberPage({ db, log = [], token, req }) {
 
   // Log riwayat per-member untuk modal detail. Filter ke event yg
   // beneran scan (SCAN, SCAN_RESET, BONUS_EARNED) — semua nambah point.
-  // Format tanggal lengkap: hari, tgl, bulan, tahun, jam.
+  // Pass `ts` mentah (ISO) supaya client bisa parse bulan utk filter.
+  // `tgl` udah ke-format lengkap: hari, tgl, bulan, tahun, jam.
   const dataLogMember = log
     .filter((l) => l.aksi === 'SCAN' || l.aksi === 'SCAN_RESET' || l.aksi === 'BONUS_EARNED')
     .map(({ kode, nama, aksi, detail, ts }) => ({
       kode, nama, aksi, detail: detail ?? '',
+      ts: new Date(ts).toISOString(),
       tgl: new Date(ts).toLocaleString('id-ID', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
         hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
@@ -1310,7 +1312,7 @@ export function memberPage({ db, log = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=34">'
+    + '<link rel="stylesheet" href="/admin.css?v=35">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1452,9 +1454,15 @@ export function memberPage({ db, log = [], token, req }) {
     + '</div>'
     + '</div>'
     + '<div class="dt-sec">'
-    + '<p class="dt-sec-t">Riwayat Kunjungan</p>'
+    + '<div class="dt-riv-hdr">'
+    + '<p class="dt-sec-t" style="margin:0">Riwayat Kunjungan</p>'
+    + '<span class="dt-riv-total" id="dtRivTotal">0 total</span>'
+    + '</div>'
+    + '<div class="dt-riv-filter-row">'
+    + '<select id="dtRivFilter" class="dt-riv-filter"><option value="">Semua bulan</option></select>'
+    + '</div>'
     + '<div id="dtBonusWarn"></div>'
-    + '<div id="dtRiwayat" class="dt-riv"></div>'
+    + '<div class="dt-riv-wrap"><div id="dtRiwayat" class="dt-riv"></div></div>'
     + '</div>'
     + '</div>' // /dt-body
 
@@ -1517,7 +1525,7 @@ export function memberPage({ db, log = [], token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=38"></script>'
+    + '<script src="/dashboard.js?v=39"></script>'
     + '</body></html>';
 }
 
