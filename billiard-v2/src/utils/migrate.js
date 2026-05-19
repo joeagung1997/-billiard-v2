@@ -99,6 +99,23 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS voided_at   TIMESTAMPTZ`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS void_reason TEXT DEFAULT ''`);
 
+  // Point lifetime — 1 point tiap check-in. Beda dgn total_main yg
+  // reset tiap siklus. Backfill dari logs (SCAN + SCAN_RESET +
+  // BONUS_EARNED — semuanya event scan), tapi cuma untuk member yg
+  // total_point-nya masih 0 supaya re-run migrasi gak nimpa data baru.
+  await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS total_point INTEGER DEFAULT 0`);
+  await query(`
+    UPDATE members m
+    SET total_point = sub.cnt
+    FROM (
+      SELECT kode, COUNT(*) AS cnt
+      FROM logs
+      WHERE aksi IN ('SCAN', 'SCAN_RESET', 'BONUS_EARNED')
+      GROUP BY kode
+    ) sub
+    WHERE m.kode = sub.kode AND m.total_point = 0
+  `);
+
   // ── Insert default kategori hanya jika tabel masih kosong ───
   const katCount = await query("SELECT COUNT(*) FROM kategori");
   if (parseInt(katCount.rows[0].count) === 0) {

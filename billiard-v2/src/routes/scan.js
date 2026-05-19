@@ -96,8 +96,9 @@ router.post("/checkin", async (req, res) => {
       m.tanggalMulai = today.toISOString();
     }
 
-    // +1 kunjungan
+    // +1 kunjungan & +1 point (point = lifetime counter, gak reset)
     m.totalMain          += 1;
+    m.totalPoint          = (m.totalPoint ?? 0) + 1;
     m.sudahScanHariIni    = true;
     m.tanggalScanTerakhir = today.toISOString();
 
