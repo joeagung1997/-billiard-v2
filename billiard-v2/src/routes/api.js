@@ -237,6 +237,7 @@ router.post("/checkin", async (req, res) => {
     }
 
     m.totalMain          += 1;
+    m.totalPoint          = (m.totalPoint ?? 0) + 1;
     m.sudahScanHariIni    = true;
     m.tanggalScanTerakhir = today.toISOString();
 

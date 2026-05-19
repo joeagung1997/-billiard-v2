@@ -894,7 +894,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=32">'
+    + '<link rel="stylesheet" href="/admin.css?v=33">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1229,7 +1229,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '}'
     + 'setPeriod(14,document.querySelector(".chart-period-btn.active"));'
     + '<\/script>'
-    + '<script src="/dashboard.js?v=36"><\/script>'
+    + '<script src="/dashboard.js?v=37"><\/script>'
     + '</body></html>';
 }
 
@@ -1264,6 +1264,7 @@ export function memberPage({ db, token, req }) {
       nama:          m.nama,
       telepon:       m.telepon ?? '',
       totalMain:     m.totalMain ?? 0,
+      totalPoint:    m.totalPoint ?? 0,
       totalGratis:   m.totalGratis ?? 0,
       status:        m.status ?? '-',
       sudahScan:     !!(m.tanggalScanTerakhir && opDayM(m.tanggalScanTerakhir) === todayOpM),
@@ -1296,7 +1297,7 @@ export function memberPage({ db, token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=32">'
+    + '<link rel="stylesheet" href="/admin.css?v=33">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1410,6 +1411,7 @@ export function memberPage({ db, token, req }) {
     + '<div class="dt-body" id="dtBody">'
     + '<div class="dt-stats">'
     + '<div class="dt-st"><p class="dt-st-v" id="dtKunjungan">0</p><p class="dt-st-l">Kunjungan</p></div>'
+    + '<div class="dt-st"><p class="dt-st-v" id="dtPoint">0</p><p class="dt-st-l">Point</p></div>'
     + '<div class="dt-st"><p class="dt-st-v sm" id="dtBergabung">—</p><p class="dt-st-l">Bergabung</p></div>'
     + '<div class="dt-st"><p class="dt-st-v sm" id="dtTerakhir">—</p><p class="dt-st-l">Terakhir Scan</p></div>'
     + '</div>'
@@ -1499,7 +1501,7 @@ export function memberPage({ db, token, req }) {
     + 'const BATAS       = ' + CONFIG.BATAS_MAIN          + ';'
     + 'const HOST        = ' + JSON.stringify(hostBase)   + ';'
     + '</script>'
-    + '<script src="/dashboard.js?v=36"></script>'
+    + '<script src="/dashboard.js?v=37"></script>'
     + '</body></html>';
 }
 

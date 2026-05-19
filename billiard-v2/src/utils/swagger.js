@@ -58,6 +58,7 @@ Endpoint \`POST /api/v1/checkin\` **tidak** memerlukan JWT — cukup sertakan \`
           nama:                { type: "string",  example: "Budi Santoso" },
           telepon:             { type: "string",  example: "0812-3456-7890" },
           totalMain:           { type: "integer", example: 7 },
+          totalPoint:          { type: "integer", example: 23, description: "Lifetime check-in count (1 point per scan, gak reset)" },
           totalGratis:         { type: "integer", example: 2 },
           status:              { type: "string",  enum: ["-", "BONUS", "GRATIS"], example: "-" },
           aktif:               { type: "boolean", example: true },

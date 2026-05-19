@@ -145,6 +145,7 @@ window.openMemberDetail = function(kode) {
 
   // Stats
   document.getElementById("dtKunjungan").textContent = m.totalMain || 0;
+  document.getElementById("dtPoint").textContent     = m.totalPoint || 0;
   document.getElementById("dtBergabung").textContent = m.tglDaftar || "—";
   document.getElementById("dtTerakhir").textContent  = m.tglTerakhir || "—";
 

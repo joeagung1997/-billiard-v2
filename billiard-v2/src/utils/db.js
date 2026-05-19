@@ -26,6 +26,7 @@ const rowToMember = (row) => {
     nama:                row.nama,
     telepon:             row.telepon               ?? "",
     totalMain:           row.total_main            ?? 0,
+    totalPoint:          row.total_point           ?? 0,
     tanggalMulai:        row.tanggal_mulai         ?? null,
     sudahScanHariIni:    row.sudah_scan_hari_ini   ?? false,
     status:              row.status                ?? "-",
@@ -70,8 +71,9 @@ export const saveMember = async (m) => {
   await query(`
     INSERT INTO members
       (kode, nama, telepon, total_main, tanggal_mulai, sudah_scan_hari_ini,
-       status, total_gratis, tanggal_daftar, tanggal_scan_terakhir, bonus_earned_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       status, total_gratis, tanggal_daftar, tanggal_scan_terakhir, bonus_earned_at,
+       total_point)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     ON CONFLICT (kode) DO UPDATE SET
       nama                  = EXCLUDED.nama,
       telepon               = EXCLUDED.telepon,
@@ -81,13 +83,15 @@ export const saveMember = async (m) => {
       status                = EXCLUDED.status,
       total_gratis          = EXCLUDED.total_gratis,
       tanggal_scan_terakhir = EXCLUDED.tanggal_scan_terakhir,
-      bonus_earned_at       = EXCLUDED.bonus_earned_at
+      bonus_earned_at       = EXCLUDED.bonus_earned_at,
+      total_point           = EXCLUDED.total_point
   `, [
     m.kode, m.nama, m.telepon ?? "",
     m.totalMain ?? 0, m.tanggalMulai ?? null,
     m.sudahScanHariIni ?? false, m.status ?? "-",
     m.totalGratis ?? 0, m.tanggalDaftar ?? new Date().toISOString(),
     m.tanggalScanTerakhir ?? null, m.bonusEarnedAt ?? null,
+    m.totalPoint ?? 0,
   ]);
 };
 
@@ -113,13 +117,16 @@ export const deleteMember = async (kode) => {
 
 // ── Reset QR — kode baru, data tetap ─────────────────────────
 export const resetQrMember = async (oldKode, newKode) => {
-  // Copy semua data ke kode baru
+  // Copy semua data ke kode baru — termasuk total_point (lifetime) dan
+  // bonus_earned_at supaya progress member gak hilang gara-gara kartu hilang.
   await query(`
     INSERT INTO members
       (kode, nama, telepon, total_main, tanggal_mulai,
-       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir)
+       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir,
+       bonus_earned_at, total_point)
     SELECT $2, nama, telepon, total_main, tanggal_mulai,
-       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir
+       sudah_scan_hari_ini, status, total_gratis, tanggal_daftar, tanggal_scan_terakhir,
+       bonus_earned_at, total_point
     FROM members WHERE kode = $1
   `, [oldKode.toUpperCase(), newKode.toUpperCase()]);
   // Hapus kode lama
@@ -144,6 +151,7 @@ export const createMember = (kode, nama, telepon = "") => ({
   nama:                nama.trim(),
   telepon,
   totalMain:           0,
+  totalPoint:          0,
   tanggalMulai:        null,
   sudahScanHariIni:    false,
   status:              "-",
