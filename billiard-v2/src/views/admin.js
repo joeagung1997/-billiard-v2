@@ -564,7 +564,6 @@ function buildSidebar(token, activePage) {
     + '<div class="qa-grid">'
     + '<a href="/scan" class="qa-btn"><i class="ti ti-qrcode"></i>Scan Member</a>'
     + '<a href="/operasional" class="qa-btn" onclick="' + tkOnclick + '"><i class="ti ti-plus"></i>Transaksi</a>'
-    + '<a href="/admin/reset?tk=' + token + '" class="qa-btn" onclick="return confirm(\'Reset scan harian semua member?\')"><i class="ti ti-refresh"></i>Reset Harian</a>'
     + '<button class="qa-btn danger" onclick="adminLogout()"><i class="ti ti-logout"></i>Keluar</button>'
     + '</div>'
     + '</div>'
