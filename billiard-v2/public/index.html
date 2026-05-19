@@ -3252,6 +3252,121 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTukar()
   </div>
 </footer>
 
+<!-- ════ FLOATING WA WIDGET (chat bubble bottom-right) ════ -->
+<style>
+.wa-float{
+  position:fixed;bottom:20px;right:20px;z-index:9000;
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
+  max-width:290px;pointer-events:none;
+}
+.wa-float-tip{
+  position:relative;
+  background:#fff;border:1px solid rgba(0,0,0,0.08);
+  border-radius:14px;
+  padding:14px 38px 14px 16px;
+  font-size:13px;color:#333;line-height:1.5;font-family:'Geist',sans-serif;
+  box-shadow:0 10px 30px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.05);
+  pointer-events:auto;
+  animation:waTipIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 1.2s both;
+  transform-origin:bottom right;
+}
+.wa-float-tip::after{
+  content:'';position:absolute;bottom:-7px;right:36px;
+  width:14px;height:14px;background:#fff;
+  border-right:1px solid rgba(0,0,0,0.08);
+  border-bottom:1px solid rgba(0,0,0,0.08);
+  transform:rotate(45deg);
+}
+.wa-float-tip strong{color:#1A5224;font-weight:600;}
+.wa-float-close{
+  position:absolute;top:-9px;right:-9px;
+  width:24px;height:24px;border-radius:50%;
+  background:#4b5563;color:#fff;
+  border:2px solid #fff;cursor:pointer;
+  font-size:13px;font-weight:600;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  transition:background 0.15s;
+}
+.wa-float-close:hover{background:#1f2937;}
+.wa-float-cta{
+  display:inline-flex;align-items:center;gap:11px;
+  padding:11px 18px 11px 14px;
+  background:linear-gradient(135deg,#2DD06F 0%,#22C55E 50%,#16A34A 100%);
+  color:#fff;border-radius:99px;
+  text-decoration:none;
+  box-shadow:0 8px 22px rgba(34,197,94,0.42),0 0 0 4px rgba(255,255,255,0.6);
+  font-family:'Geist',sans-serif;font-weight:600;
+  pointer-events:auto;
+  transition:transform 0.15s ease,box-shadow 0.2s ease;
+  animation:waCtaIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.7s both,waPulse 2.5s ease-in-out 3s infinite;
+}
+.wa-float-cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(34,197,94,0.5),0 0 0 4px rgba(255,255,255,0.7);}
+.wa-float-cta:active{transform:translateY(0);}
+.wa-float-icon{
+  width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.18);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.wa-float-cta-text .l1{font-size:14px;font-weight:700;line-height:1.1;letter-spacing:.01em;}
+.wa-float-cta-text .l2{font-size:11px;font-weight:400;opacity:0.92;line-height:1.1;margin-top:2px;}
+.wa-float.tip-hidden .wa-float-tip,
+.wa-float.tip-hidden .wa-float-close{display:none;}
+
+@keyframes waTipIn{
+  0%{opacity:0;transform:translateY(20px) scale(0.85);}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+@keyframes waCtaIn{
+  0%{opacity:0;transform:scale(0.5);}
+  100%{opacity:1;transform:scale(1);}
+}
+@keyframes waPulse{
+  0%,100%{box-shadow:0 8px 22px rgba(34,197,94,0.42),0 0 0 4px rgba(255,255,255,0.6);}
+  50%{box-shadow:0 8px 22px rgba(34,197,94,0.55),0 0 0 8px rgba(34,197,94,0.18);}
+}
+
+@media (max-width: 640px) {
+  .wa-float{bottom:14px;right:14px;max-width:calc(100% - 28px);}
+  .wa-float-tip{font-size:12px;padding:12px 34px 12px 14px;}
+  .wa-float-cta{padding:10px 16px 10px 12px;}
+  .wa-float-cta-text .l1{font-size:13px;}
+  .wa-float-cta-text .l2{font-size:10px;}
+  .wa-float-icon{width:32px;height:32px;}
+}
+</style>
+
+<div class="wa-float" id="waFloat">
+  <div class="wa-float-tip" role="status">
+    <button class="wa-float-close" onclick="closeWaTip()" aria-label="Tutup pesan">×</button>
+    Selamat datang di <strong>Warpat Jombang</strong> 👋<br>
+    Booking meja, info event, atau daftar member — chat aja!
+  </div>
+  <a class="wa-float-cta" href="https://wa.me/6281519210552?text=Halo%20Warpat%20Jombang%2C%20saya%20mau%20tanya-tanya%20%F0%9F%8E%B1" target="_blank" rel="noopener" aria-label="Hubungi via WhatsApp">
+    <span class="wa-float-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.535 5.862L.057 23.5l5.773-1.514A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.031-1.385l-.36-.214-3.427.899.916-3.338-.235-.375A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+      </svg>
+    </span>
+    <span class="wa-float-cta-text">
+      <span class="l1">Hubungi Kami</span>
+      <span class="l2">Respons cepat · 09:00–02:00</span>
+    </span>
+  </a>
+</div>
+<script>
+  function closeWaTip(){
+    document.getElementById('waFloat').classList.add('tip-hidden');
+    try{ sessionStorage.setItem('waTipClosed','1'); }catch(_){}
+  }
+  // Hidden kalau user udah pernah close di session ini
+  try{
+    if(sessionStorage.getItem('waTipClosed')==='1'){
+      document.getElementById('waFloat').classList.add('tip-hidden');
+    }
+  }catch(_){}
+</script>
+
 <!-- ════ WA MODAL ════ -->
 <div class="wa-overlay" id="waOverlay" onclick="closeWaOutside(event)">
   <div class="wa-modal">
