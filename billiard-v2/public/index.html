@@ -2236,136 +2236,69 @@
       <div style="background:linear-gradient(155deg,#0a160e,#060e08);border:1px solid rgba(196,154,42,0.25);border-radius:16px;padding:18px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 24px rgba(0,0,0,0.2);">
         <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d4a840,#a07820);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(196,154,42,0.3);">★</div>
         <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:2px;">Poin per kunjungan</div>
-          <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:#C9A84C;line-height:1;">1 <span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:300;">poin</span></div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:2px;">Tiap 2 jam main</div>
+          <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:#C9A84C;line-height:1;">1 <span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:300;">point</span></div>
         </div>
       </div>
     </div>
 
-    <!-- Reward cards grid -->
-    <div class="reveal reward-grid">
-
-      <!-- 1. Diskon -->
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <!-- Top accent -->
-        <div style="height:4px;background:linear-gradient(90deg,#1F5C28,#5ABE68);"></div>
-        <!-- Icon area -->
-        <div style="padding:24px 24px 16px;text-align:center;">
-          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0a1e0d,#122a16);border:1px solid rgba(30,107,58,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 4px 16px rgba(26,107,58,0.15);">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(90,190,104,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px;">Diskon Sewa</div>
-          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:6px;">10% Off</div>
-          <div style="font-size:13px;color:var(--text-muted);font-weight:300;line-height:1.6;">Diskon 10% untuk sewa meja billiard pada kunjungan berikutnya</div>
-        </div>
-        <!-- Poin required -->
-        <div style="margin:0 16px 16px;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="font-size:18px;">★</span>
-            <div>
-              <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--text);line-height:1;">5 poin</div>
-              <div style="font-size:10px;color:var(--text-light);">5 kunjungan</div>
-            </div>
-          </div>
-          <div onclick="openTukar('diskon')" style="background:var(--green-soft);border:1px solid var(--green-mid);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--green);cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='var(--green-mid)'" onmouseleave="this.style.background='var(--green-soft)'">Tukar →</div>
-        </div>
+    <!-- Reward catalog — daftar lengkap 10 item -->
+    <style>
+      .reward-catalog{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+      .rwd-row{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;transition:transform .15s ease,box-shadow .2s ease,border-color .15s ease;}
+      .rwd-row:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,0.08);}
+      .rwd-pt{flex-shrink:0;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;padding:8px 0;width:62px;text-align:center;border-radius:10px;color:#fff;letter-spacing:.02em;line-height:1;}
+      .rwd-row.bonus .rwd-pt{background:linear-gradient(135deg,#1F5C28 0%,#2D7A35 100%);box-shadow:0 3px 10px rgba(31,92,40,.28);}
+      .rwd-row.merch .rwd-pt{background:linear-gradient(135deg,#C49A2A 0%,#E8B84B 100%);box-shadow:0 3px 10px rgba(196,154,42,.28);}
+      .rwd-body{flex:1;min-width:0;}
+      .rwd-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:3px;letter-spacing:-.005em;}
+      .rwd-jenis{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;}
+      .rwd-row.bonus .rwd-jenis{color:var(--green);}
+      .rwd-row.merch .rwd-jenis{color:#b8922a;}
+      .rwd-jenis-ic{font-size:13px;line-height:1;}
+      @media (max-width:640px){.reward-catalog{grid-template-columns:1fr;}}
+    </style>
+    <div class="reveal reward-catalog">
+      <div class="rwd-row bonus" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">8 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Main 1 jam gratis</div><div class="rwd-jenis"><span class="rwd-jenis-ic">⏱</span> Bonus main</div></div>
       </div>
-
-      <!-- 2. Jam Gratis -->
-      <div style="background:linear-gradient(160deg,#071a0c,#0a2010);border:1px solid rgba(196,154,42,0.25);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;position:relative;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.3)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <!-- Gold top accent -->
-        <div style="height:4px;background:linear-gradient(90deg,#8A6A1E,#C9A84C,#8A6A1E);"></div>
-        <!-- Popular badge -->
-        <div style="position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#d4a840,#a07820);border-radius:99px;padding:3px 10px;font-size:9px;font-weight:700;color:#fff;letter-spacing:0.06em;box-shadow:0 2px 8px rgba(196,154,42,0.4);">POPULER</div>
-        <div style="padding:24px 24px 16px;text-align:center;">
-          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#1a1408,#2a2010);border:1px solid rgba(196,154,42,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 4px 16px rgba(196,154,42,0.15);">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#C9A84C;margin-bottom:6px;">Jam Gratis</div>
-          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:6px;">1 Jam Main</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;line-height:1.6;">Satu jam sewa meja billiard gratis, berlaku semua meja</div>
-        </div>
-        <div style="margin:0 16px 16px;border-top:1px solid rgba(255,255,255,0.07);padding-top:14px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="font-size:18px;color:#C9A84C;">★</span>
-            <div>
-              <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:#fff;line-height:1;">9 poin</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.35);">9 kunjungan</div>
-            </div>
-          </div>
-          <div onclick="openTukar('jam')" style="background:linear-gradient(135deg,rgba(196,154,42,0.2),rgba(196,154,42,0.1));border:1px solid rgba(196,154,42,0.4);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#C9A84C;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='rgba(196,154,42,0.3)'" onmouseleave="this.style.background='linear-gradient(135deg,rgba(196,154,42,0.2),rgba(196,154,42,0.1))'">Tukar →</div>
-        </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">12 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Rokok murah <span style="color:var(--text-muted);font-weight:400;">(Rp 25.000)</span></div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
       </div>
-
-      <!-- 3. Minuman -->
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <div style="height:4px;background:linear-gradient(90deg,#0369a1,#38bdf8);"></div>
-        <div style="padding:24px 24px 16px;text-align:center;">
-          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#060e18,#0a1828);border:1px solid rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 4px 16px rgba(56,189,248,0.1);">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(56,189,248,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-          </div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#0ea5e9;margin-bottom:6px;">Free Minuman</div>
-          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:6px;">1 Minuman</div>
-          <div style="font-size:13px;color:var(--text-muted);font-weight:300;line-height:1.6;">Satu minuman gratis dari menu tersedia (kopi, teh, atau minuman dingin)</div>
-        </div>
-        <div style="margin:0 16px 16px;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="font-size:18px;">★</span>
-            <div>
-              <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--text);line-height:1;">3 poin</div>
-              <div style="font-size:10px;color:var(--text-light);">3 kunjungan</div>
-            </div>
-          </div>
-          <div onclick="openTukar('minum')" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#1d4ed8;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#dbeafe'" onmouseleave="this.style.background='#eff6ff'">Tukar →</div>
-        </div>
+      <div class="rwd-row bonus" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">16 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Main 2 jam gratis</div><div class="rwd-jenis"><span class="rwd-jenis-ic">⏱</span> Bonus main</div></div>
       </div>
-
-      <!-- 4. Merchandise — Clean Premium -->
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;cursor:default;position:relative;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.08)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <!-- Gold top bar thin -->
-        <div style="height:3px;background:linear-gradient(90deg,#c8a040,#e8d080,#c8a040);"></div>
-
-        <div style="padding:22px 22px 0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:#fdf8ee;border:1px solid #e8d89a;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8922a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-          </div>
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#b8922a;margin-bottom:5px;">Merchandise</div>
-          <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--text);line-height:1.15;margin-bottom:5px;">Koleksi Eksklusif</div>
-          <div style="font-size:12px;color:var(--text-muted);line-height:1.65;margin-bottom:16px;">Kaos, cap, totebag, dan item limited edition Warpat Jombang.</div>
-        </div>
-
-        <!-- Item previews -->
-        <div style="padding:0 22px 16px;display:flex;gap:7px;">
-          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#c8a040" fill-opacity="0.5" stroke="none"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">KAOS</span>
-            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">15★</span>
-          </div>
-          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <svg width="22" height="17" viewBox="0 0 24 18" fill="none" stroke="#c8a040" stroke-width="1.4"><path d="M3 12c0-4.5 3-8 9-8s9 3.5 9 8" stroke-linecap="round"/><rect x="1" y="12" width="22" height="5" rx="2.5" fill="#c8a04022" stroke="#c8a040" stroke-width="1.2"/></svg>
-            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">CAP</span>
-            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">15★</span>
-          </div>
-          <div style="flex:1;background:#fdf8ee;border:1px solid #e8d89a;border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;">
-            <svg width="18" height="22" viewBox="0 0 22 26" fill="none" stroke="#c8a040" stroke-width="1.4"><rect x="2" y="7" width="18" height="17" rx="2"/><path d="M8 7V5.5a3 3 0 016 0V7" stroke-linecap="round"/></svg>
-            <span style="font-size:7px;color:#b8922a;font-weight:600;letter-spacing:0.06em;">TOTEBAG</span>
-            <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);">12★</span>
-          </div>
-          <div style="flex:1;background:#f9f9f9;border:1px dashed var(--border-mid);border-radius:10px;padding:9px 6px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
-            <span style="font-size:16px;color:var(--text-light);line-height:1;">+3</span>
-            <span style="font-size:7.5px;color:var(--text-light);font-weight:500;text-align:center;">lainnya</span>
-          </div>
-        </div>
-
-        <div style="margin:0 14px 14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <span style="color:#c8a040;font-size:14px;">★</span>
-            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--text);">mulai 3 poin</span>
-          </div>
-          <div onclick="openMerchCatalog()" style="background:#fdf8ee;border:1px solid #e8d89a;border-radius:8px;padding:7px 13px;font-size:11px;font-weight:600;color:#9a7018;cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.background='#f5edd8'" onmouseleave="this.style.background='#fdf8ee'">Lihat Semua →</div>
-        </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">20 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Sarung tangan billiard</div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
       </div>
-
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">25 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Rokok mahal <span style="color:var(--text-muted);font-weight:400;">(Rp 50.000)</span></div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
+      </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">30 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Kaos branding</div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
+      </div>
+      <div class="rwd-row bonus" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">40 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Main 4 jam gratis</div><div class="rwd-jenis"><span class="rwd-jenis-ic">⏱</span> Bonus main</div></div>
+      </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">50 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Topi branding</div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
+      </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">75 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Tas / cue bag</div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
+      </div>
+      <div class="rwd-row merch" onclick="openWa()" style="cursor:pointer;">
+        <div class="rwd-pt">100 pt</div>
+        <div class="rwd-body"><div class="rwd-name">Stik entry level</div><div class="rwd-jenis"><span class="rwd-jenis-ic">🎁</span> Merchandise</div></div>
+      </div>
     </div>
 
     <!-- Bottom note -->
