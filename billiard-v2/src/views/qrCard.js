@@ -1037,15 +1037,25 @@ body::before{
   card.addEventListener('touchend', resetTilt, { passive: true });
 })();
 
-// Simpan Kartu — capture #memberCard pakai html2canvas, download PNG.
-// Kartu doang yg di-capture (QR + member info + branding), bukan
-// terms/ketentuan yg ada di bawahnya.
+// Simpan Kartu — capture #memberCard pakai html2canvas. Di mobile pake
+// Web Share API supaya user bisa langsung "Save to Photos/Galeri" via
+// native share sheet. Di desktop/browser tanpa share support, fallback
+// ke download biasa (Downloads folder).
 window.saveCard = function() {
   var card  = document.getElementById('memberCard');
   var btn   = document.getElementById('btnSaveCard');
   var label = btn ? btn.querySelector('.act-btn-label') : null;
+  var FNAME = 'kartu-warpat-${kode}.png';
 
-  // Fallback kalau html2canvas gagal load → download bare QR image
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // Fallback paling akhir: download bare QR image kalau html2canvas gagal
   function fallbackQr() {
     var img = document.querySelector('.qr-outer img');
     if (!img || !img.src) return;
@@ -1078,12 +1088,29 @@ window.saveCard = function() {
       card.style.transform = prevTransform;
       canvas.toBlob(function(blob) {
         if (!blob) { fallbackQr(); return; }
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'kartu-warpat-${kode}.png';
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+
+        // Coba Web Share API dulu — di mobile ini ngebuka share sheet
+        // yg ada opsi "Save to Photos" / "Galeri" → langsung masuk
+        // galeri user, gak nyangsang di Downloads.
+        try {
+          var file = new File([blob], FNAME, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+              files: [file],
+              title: 'Kartu Member Warpat Jombang',
+              text:  'Kartu member ${kode}',
+            }).catch(function(err) {
+              // User cancel share sheet → diem aja, jangan paksa download
+              if (err && err.name !== 'AbortError') {
+                downloadBlob(blob, FNAME);
+              }
+            });
+            return;
+          }
+        } catch (e) { /* File constructor / canShare gak ada → fallback */ }
+
+        // Web Share gak support → download ke Downloads folder
+        downloadBlob(blob, FNAME);
       }, 'image/png');
     }).catch(function(err) {
       console.error('Save card failed:', err);
