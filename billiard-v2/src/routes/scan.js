@@ -81,14 +81,18 @@ router.post("/checkin", async (req, res) => {
 
     let expired = false;
 
-    // Case: expired 30 hari
-    if (m.tanggalMulai) {
-      if (selisihHari(m.tanggalMulai, today) >= CONFIG.BATAS_HARI) {
+    // Case: expired — gap ≥ BATAS_HARI sejak check-in terakhir.
+    // Reset diukur dari kunjungan TERAKHIR, bukan dari awal siklus.
+    // Member yg aktif tapi sempet vakum 30+ hari → reset, dan tanggal
+    // kembali jadi titik nol siklus baru.
+    if (m.tanggalScanTerakhir) {
+      if (selisihHari(m.tanggalScanTerakhir, today) >= CONFIG.BATAS_HARI) {
         expired        = true;
         m.totalMain    = 0;
         m.tanggalMulai = today.toISOString();
       }
     } else {
+      // First-ever check-in (belum pernah scan sama sekali)
       m.tanggalMulai = today.toISOString();
     }
 
