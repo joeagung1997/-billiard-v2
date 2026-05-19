@@ -612,9 +612,9 @@ export const resultPage = (tipe, data) => {
       <div class="card-footer">${now}</div>
     </div>
   </div>
-  ${waBookBtn(nama, kode)}
-  ${termsBlock()}
-</div>`
+</div>
+${waBookBtn(nama, kode)}
+${termsBlock()}`
   );
 
   // ── Gratis ─────────────────────────────────────────────────
