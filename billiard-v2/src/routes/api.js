@@ -223,8 +223,11 @@ router.post("/checkin", async (req, res) => {
     }
 
     let expired = false;
-    if (m.tanggalMulai) {
-      if (selisihHari(m.tanggalMulai, today) >= CONFIG.BATAS_HARI) {
+    // Expired: gap ≥ BATAS_HARI sejak check-in terakhir (bukan dari
+    // tanggalMulai). Member yg balik setelah vakum panjang → reset,
+    // tanggal kembali jadi titik nol siklus baru.
+    if (m.tanggalScanTerakhir) {
+      if (selisihHari(m.tanggalScanTerakhir, today) >= CONFIG.BATAS_HARI) {
         expired        = true;
         m.totalMain    = 0;
         m.tanggalMulai = today.toISOString();
