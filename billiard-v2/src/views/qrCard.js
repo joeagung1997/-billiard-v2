@@ -620,20 +620,21 @@ body::before{
 .hdr-brand{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.32em;color:var(--gold)}
 .hdr-sub{font-size:11px;color:var(--muted);margin-top:3px}
 
-/* Card wrapper — flex row: card di kiri, chibi di kanan bawah */
+/* Card wrapper — card centered, chibi absolute biar gak narik flex */
 .card-wrap{
-  display:flex;align-items:flex-end;
-  width:100%;gap:0;
+  position:relative;
+  width:100%;
   perspective:900px;
 }
-.card{flex:1;min-width:0;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.23,1,.32,1)}
+.card{transform-style:preserve-3d;transition:transform .5s cubic-bezier(.23,1,.32,1)}
 
-/* Chibi */
+/* Chibi — absolute, nempel di pojok kanan-bawah card, sedikit nongol */
 .chibi{
-  flex-shrink:0;
+  position:absolute;
+  right:-10px;       /* sedikit nongol ke luar tepi kanan card */
+  bottom:26px;       /* setinggi CI strip dari bawah */
   width:80px;
-  margin-left:-18px; /* sedikit overlap dengan tepi card */
-  margin-bottom:36px; /* setinggi CI strip dari bawah */
+  z-index:2;
   filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)) drop-shadow(0 -2px 8px rgba(45,181,109,.2));
   animation:chibiFloat 3.5s ease-in-out infinite;
   pointer-events:none;
