@@ -15,6 +15,9 @@ export const CONFIG = Object.freeze({
   KODE_PREFIX: process.env.KODE_PREFIX          ?? "JMB",
   JWT_SECRET:  process.env.JWT_SECRET           ?? "billiard-warpat-secret-2026",
   JWT_EXPIRES: process.env.JWT_EXPIRES          ?? "24h",
+  // Nomor WA Warpat Jombang — dipakai untuk tombol booking di kartu member.
+  // Format: 62 + nomor tanpa 0 di depan (mis. 6281519210552).
+  NOMOR_WA:    process.env.NOMOR_WA             ?? "6281519210552",
 
   // Path database — pakai Railway Volume jika ada
   DATA_DIR:   existsSync("/data") ? "/data" : process.cwd(),

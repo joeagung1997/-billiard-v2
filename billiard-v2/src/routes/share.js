@@ -138,6 +138,7 @@ router.get("/member/:kode", async (req, res) => {
     kode,
     totalMain: member.totalMain ?? 0,
     qrDataUrl: qrImg,
+    nomorWa:   CONFIG.NOMOR_WA,
   });
 
   // Inject OG + Twitter meta tags ke dalam <head> sebelum </head>
