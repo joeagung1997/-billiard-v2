@@ -129,8 +129,10 @@ router.get("/member/:kode", async (req, res) => {
   const desc     = "Kartu member " + CONFIG.NAMA_ARENA
     + ". Tunjukkan QR ini ke kasir untuk check-in. Kode: " + kode;
 
-  // Generate QR data URL untuk kartu
-  const qrImg = await qrDataUrl(scanUrl, 200);
+  // Generate QR data URL untuk kartu.
+  // 480px source biar gak ke-upscale di display 260px (≥2x untuk Retina).
+  // Upscale blur = scanner susah lock onto finder patterns.
+  const qrImg = await qrDataUrl(scanUrl, 480);
 
   // Build halaman kartu portrait (QR besar, mobile-friendly) + inject OG meta tags
   const cardHtml = memberCardPage({

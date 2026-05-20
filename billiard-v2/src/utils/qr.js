@@ -6,7 +6,7 @@ import { CONFIG } from "../config.js";
 
 const QR_OPTIONS = {
   errorCorrectionLevel: "M",
-  margin: 2,
+  margin: 4,
   color: { dark: "#000000", light: "#ffffff" },
 };
 
