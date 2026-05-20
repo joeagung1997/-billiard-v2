@@ -3104,6 +3104,171 @@
     .floating-wa-icon { width: 28px; height: 28px; }
     .floating-wa-icon svg { width: 15px; height: 15px; }
   }
+  /* ─── Small phone (≤480px) ───────────────────────────────── */
+  @media (max-width: 480px) {
+    /* NAV — compact biar muat di HP kecil */
+    nav { padding: 0.9rem 1rem; }
+    .logo { font-size: 1.35rem; gap: 0.55rem; letter-spacing: 0.1em; }
+    .logo-mark { width: 30px; height: 30px; }
+    .logo-mark::before { width: 13px; height: 13px; }
+    .logo-mark::after { font-size: 0.6rem; }
+    .nav-cta { padding: 0.5rem 0.9rem; font-size: 0.6rem; letter-spacing: 0.15em; gap: 0.4rem; }
+    .nav-cta svg { width: 12px; height: 12px; }
+
+    /* HERO — tighter padding + stacked buttons + smaller decorations */
+    .hero { padding: 5.5rem 1rem 3.5rem; min-height: auto; }
+    .hero h1 { font-size: clamp(2.3rem, 11vw, 3.4rem); line-height: 1; }
+    .hero p { font-size: 0.92rem; line-height: 1.6; }
+    .hero-eyebrow { font-size: 0.6rem; letter-spacing: 0.22em; margin-bottom: 1.1rem; gap: 0.55rem; }
+    .hero-eyebrow::before { width: 28px; }
+    .hero-actions { flex-direction: column; align-items: stretch; gap: 0.7rem; width: 100%; }
+    .btn-primary, .btn-ghost { width: 100%; justify-content: center; padding: 1rem 1.4rem; font-size: 0.68rem; }
+    .hero-bg-circle { opacity: 0.45; }
+    .hero-ring { opacity: 0.4; }
+    .ring-1, .ring-2 { right: -10vh; }
+
+    /* HERO STATS — compact */
+    .hero-stats { left: 1rem; right: 1rem; bottom: 1.2rem; gap: 0.6rem; }
+    .stat-group { padding: 0.25rem; gap: 0.3rem; }
+    .stat-group > div { padding: 0.4rem 0.6rem; gap: 0.35rem; }
+    .stat-num { font-size: 1.15rem; }
+    .stat-label { font-size: 0.5rem; max-width: 60px; letter-spacing: 0.1em; }
+
+    /* SECTION PADDING — tighter horizontal */
+    .member, .rewards, .aktivitas, .events, .lokasi, footer { padding: 3rem 1rem; }
+
+    /* FEATURES → single column */
+    .features-grid { grid-template-columns: 1fr; gap: 0.7rem; margin-bottom: 2rem; }
+    .feature-card { padding: 1.1rem; }
+
+    /* MEMBER section */
+    .member-showcase { gap: 1.8rem; }
+    .member-card-stage { min-height: 320px; }
+    .info-stat-big { font-size: 2.4rem; }
+    .info-stat-tag { font-size: 0.78rem; }
+    .benefits-row { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .benefit-pill { padding: 0.7rem 0.6rem; min-height: 78px; }
+    .benefit-icon { width: 28px; height: 28px; }
+    .benefit-icon svg { width: 14px; height: 14px; }
+    .benefit-metric { font-size: 1.05rem; }
+    .benefit-metric small { font-size: 0.5rem; }
+    .benefit-label { font-size: 0.6rem; }
+    .member-cta-mega { padding: 0.9rem; gap: 0.7rem; }
+    .cta-icon { width: 36px; height: 36px; }
+    .cta-icon svg { width: 17px; height: 17px; }
+    .cta-title { font-size: 0.78rem; }
+    .cta-sub { font-size: 0.58rem; }
+
+    /* REWARDS → single column featured cards */
+    .rewards-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+    .reward-card { min-height: 270px; padding: 0; }
+    .reward-visual { height: 140px; }
+    .reward-visual svg { width: 88px; height: 88px; }
+    .reward-content { padding: 1.1rem; }
+    .reward-name { font-size: 1.2rem; }
+
+    /* REWARDS MODAL */
+    .reward-modal-overlay { padding: 0.6rem; }
+    .reward-modal { max-height: 94vh; border-radius: 14px; }
+    .reward-modal-header { padding: 1rem 1.1rem; }
+    .reward-modal-title { font-size: 1.15rem; }
+    .reward-modal-sub { font-size: 0.55rem; letter-spacing: 0.15em; }
+    .reward-modal-close { width: 32px; height: 32px; }
+    .reward-modal-tabs { padding: 0.65rem 1.1rem 0; gap: 0.5rem; }
+    .reward-tab { padding: 0.35rem 0.6rem; font-size: 0.52rem; letter-spacing: 0.12em; }
+    .reward-catalog { padding: 0.9rem 1.1rem 1rem; }
+    .reward-catalog-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .catalog-card { padding: 0; }
+    .catalog-visual { height: 78px; }
+    .catalog-visual svg { width: 46px; height: 46px; }
+    .catalog-cat-pill { font-size: 0.45rem; padding: 0.2rem 0.4rem; }
+    .catalog-info { padding: 0.6rem 0.7rem 0.7rem; }
+    .catalog-name { font-size: 0.82rem; line-height: 1.25; }
+    .catalog-points { font-size: 1.1rem; }
+    .reward-modal-footer { padding: 0.75rem 1.1rem; font-size: 0.58rem; gap: 0.4rem; flex-wrap: wrap; }
+
+    /* REDEEM POPUP */
+    .redeem-overlay { padding: 0.7rem; }
+    .redeem-popup { border-radius: 16px; max-height: 92vh; }
+    .redeem-hero { padding: 1.5rem 1.1rem 1rem; }
+    .redeem-visual { width: 90px; height: 90px; margin-bottom: 0.8rem; }
+    .redeem-eyebrow { font-size: 0.55rem; letter-spacing: 0.18em; }
+    .redeem-name { font-size: 1.1rem; }
+    .redeem-body { padding: 1rem 1.1rem 1.2rem; }
+
+    /* AKTIVITAS — scenes single column */
+    .scenes-grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      aspect-ratio: auto;
+      gap: 0.7rem;
+      min-height: auto;
+    }
+    .scene-card { padding: 1rem; min-height: 160px; }
+    .scene-1 { grid-column: auto; grid-row: auto; min-height: 200px; }
+    .scene-title { font-size: 1rem; }
+    .scene-1 .scene-title { font-size: 1.25rem; }
+    .scene-desc { font-size: 0.62rem; }
+
+    /* EVENTS — compress 2-col + smaller fonts */
+    .event-row { grid-template-columns: 60px 1fr; gap: 0.8rem; padding: 1rem 0.6rem; }
+    .event-row:hover { padding-left: 0.9rem; padding-right: 0.9rem; }
+    .event-date { font-size: 1.9rem; line-height: 0.95; }
+    .event-date small { font-size: 0.55rem; margin-top: 0.2rem; }
+    .event-title { font-size: 1.15rem; }
+    .event-title small { font-size: 0.72rem; }
+
+    /* LOKASI */
+    .lokasi-info-card { padding: 0.9rem; gap: 0.7rem; }
+    .lokasi-info-icon { width: 34px; height: 34px; }
+    .lokasi-info-icon svg { width: 15px; height: 15px; }
+    .lokasi-info-label { font-size: 0.55rem; letter-spacing: 0.18em; }
+    .lokasi-info-value { font-size: 0.8rem; }
+    .lokasi-map-btn { padding: 0.7rem 1rem; font-size: 0.62rem; }
+
+    /* FOOTER */
+    .footer-cta { padding: 1.1rem; gap: 1rem; }
+    .footer-cta-title { font-size: 1.1rem; }
+    .footer-cta-sub { font-size: 0.7rem; }
+    .footer-cta-btn { padding: 0.85rem 1.2rem; font-size: 0.65rem; }
+    .footer-grid { grid-template-columns: 1fr; gap: 1.8rem; }
+    .footer-brand { grid-column: auto; }
+    .footer-bottom { font-size: 0.65rem; }
+    .footer-bottom-meta { gap: 0.8rem; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+
+    /* FLOATING WA — extra compact */
+    .floating-wa {
+      bottom: 0.8rem; right: 0.8rem;
+      padding: 0.6rem 0.95rem 0.6rem 0.6rem;
+      font-size: 0.6rem;
+      gap: 0.55rem;
+    }
+    .floating-wa-icon { width: 26px; height: 26px; }
+    .floating-wa-icon svg { width: 13px; height: 13px; }
+  }
+
+  /* ─── Tiny phone (≤360px) — last-line defense ─────────────── */
+  @media (max-width: 360px) {
+    .hero { padding: 5rem 0.8rem 3rem; }
+    .hero h1 { font-size: clamp(2rem, 12vw, 2.8rem); }
+    .member, .rewards, .aktivitas, .events, .lokasi, footer { padding: 2.5rem 0.8rem; }
+    .benefits-row { grid-template-columns: 1fr; }
+    .reward-catalog-grid { grid-template-columns: 1fr; }
+    .event-date { font-size: 1.6rem; }
+    .event-title { font-size: 1rem; }
+  }
+
+  /* ─── Touch-friendly tap targets + safe area ──────────────── */
+  @media (pointer: coarse) {
+    .nav-cta, .btn-primary, .btn-ghost, .footer-cta-btn,
+    .lokasi-map-btn, .floating-wa, .reward-card-action,
+    .rewards-expand-btn, .redeem-cta {
+      min-height: 44px;
+    }
+    .floating-wa {
+      padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
+    }
+  }
 </style>
 </head>
 <body>
