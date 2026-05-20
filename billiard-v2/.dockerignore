@@ -1,0 +1,43 @@
+# Build context exclusions — biar Railway/Nixpacks gak copy file ga perlu
+
+# Version control
+.git
+.gitignore
+.github
+
+# Node
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Local config & secrets
+.env
+.env.local
+.env.*.local
+.claude
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docs & meta (gak perlu di runtime container)
+README.md
+LICENSE
+*.md
+docs
+
+# Local backups
+*.legacy.html
+*.bak
+*.backup
+
+# Test artifacts
+coverage
+.nyc_output
+*.log

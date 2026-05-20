@@ -1,0 +1,16 @@
+# Nixpacks build config — force npm ci + skip dev deps untuk deploy lebih cepat.
+# Tanpa file ini, Nixpacks default pakai `npm install` yg resolve deps fresh tiap deploy.
+
+[phases.setup]
+# Pin Node version supaya konsisten dengan engines di package.json.
+# Nixpacks udah deteksi otomatis dari package.json, tapi explicit lebih aman.
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+# --omit=dev = skip devDependencies (saat ini gak ada, tapi defensive untuk future).
+# --no-audit + --no-fund = skip network call yg gak perlu di CI.
+# TODO: ganti ke `npm ci` setelah package-lock.json di-generate (Node belum install lokal).
+cmds = ["npm install --omit=dev --no-audit --no-fund"]
+
+[start]
+cmd = "node src/app.js"
