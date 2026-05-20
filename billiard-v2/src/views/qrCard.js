@@ -1040,15 +1040,42 @@ body::before{
   card.addEventListener('touchend', resetTilt, { passive: true });
 })();
 
-// Simpan Kartu — capture #memberCard pakai html2canvas. Di mobile pake
-// Web Share API supaya user bisa langsung "Save to Photos/Galeri" via
-// native share sheet. Di desktop/browser tanpa share support, fallback
-// ke download biasa (Downloads folder).
+// Simpan Kartu — capture #memberCard pakai html2canvas, terus langsung
+// download ke folder Downloads (bypass Web Share API yg di Android One UI /
+// MIUI nampilin share sheet jelek tanpa opsi "Save to Photos"). Setelah
+// download, tampilin toast 4 detik biar user tau file masuk ke mana.
 window.saveCard = function() {
   var card  = document.getElementById('memberCard');
   var btn   = document.getElementById('btnSaveCard');
   var label = btn ? btn.querySelector('.act-btn-label') : null;
   var FNAME = 'kartu-warpat-${kode}.png';
+
+  function showToast(msg, isError) {
+    var existing = document.getElementById('saveToast');
+    if (existing) existing.remove();
+    var t = document.createElement('div');
+    t.id = 'saveToast';
+    t.textContent = msg;
+    t.style.cssText = [
+      'position:fixed', 'left:50%', 'bottom:24px', 'transform:translateX(-50%) translateY(20px)',
+      'padding:12px 18px', 'border-radius:12px',
+      'background:' + (isError ? 'rgba(220,38,38,.95)' : 'rgba(14,107,56,.95)'),
+      'color:#fff', 'font-family:DM Sans,sans-serif', 'font-size:13px', 'font-weight:500',
+      'box-shadow:0 8px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08)',
+      'z-index:9999', 'opacity:0', 'transition:opacity .25s ease, transform .25s ease',
+      'max-width:88vw', 'text-align:center', 'pointer-events:none',
+    ].join(';');
+    document.body.appendChild(t);
+    // Force reflow lalu animate in
+    void t.offsetHeight;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(function() {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(20px)';
+      setTimeout(function() { t.remove(); }, 300);
+    }, 3700);
+  }
 
   function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
@@ -1061,11 +1088,12 @@ window.saveCard = function() {
   // Fallback paling akhir: download bare QR image kalau html2canvas gagal
   function fallbackQr() {
     var img = document.querySelector('.qr-outer img');
-    if (!img || !img.src) return;
+    if (!img || !img.src) { showToast('Gagal menyimpan kartu', true); return; }
     var a = document.createElement('a');
     a.href = img.src;
     a.download = 'qr-warpat-${kode}.png';
     document.body.appendChild(a); a.click(); a.remove();
+    showToast('QR tersimpan di Downloads');
   }
 
   if (!card || typeof html2canvas !== 'function') {
@@ -1104,29 +1132,11 @@ window.saveCard = function() {
 
       canvas.toBlob(function(blob) {
         if (!blob) { fallbackQr(); return; }
-
-        // Coba Web Share API dulu — di mobile ini ngebuka share sheet
-        // yg ada opsi "Save to Photos" / "Galeri" → langsung masuk
-        // galeri user, gak nyangsang di Downloads.
-        try {
-          var file = new File([blob], FNAME, { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({
-              files: [file],
-              title: 'Kartu Member Warpat Jombang',
-              text:  'Kartu member ${kode}',
-            }).catch(function(err) {
-              // User cancel share sheet → diem aja, jangan paksa download
-              if (err && err.name !== 'AbortError') {
-                downloadBlob(blob, FNAME);
-              }
-            });
-            return;
-          }
-        } catch (e) { /* File constructor / canShare gak ada → fallback */ }
-
-        // Web Share gak support → download ke Downloads folder
+        // Download langsung — Chrome Android auto-save ke Downloads/ folder
+        // + notif banner. Galeri Samsung/Xiaomi auto-scan Downloads, kartu
+        // muncul di galeri tanpa user perlu pilih app share.
         downloadBlob(blob, FNAME);
+        showToast('Kartu tersimpan di Downloads');
       }, 'image/png');
     }).catch(function(err) {
       console.error('Save card failed:', err);
