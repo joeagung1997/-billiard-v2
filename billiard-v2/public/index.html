@@ -1367,6 +1367,16 @@
     mix-blend-mode: multiply;
     filter: brightness(1.25) contrast(1.08);
   }
+  /* Custom bg untuk card dengan foto produk yg punya dark bg (mis. LA Ice
+     dengan dark navy bg). Card bg di-match ke photo bg biar letterbox sides
+     dari contain mode nge-blend seamless ke foto. */
+  .reward-visual.reward-visual--bg-navy {
+    background: radial-gradient(ellipse at center, #1a2c4e 0%, #0a1530 55%, #050a18 100%);
+  }
+  .reward-visual--bg-navy::before {
+    /* Override the amber dot pattern with subtle blue tint */
+    background-image: radial-gradient(circle, rgba(120,160,220,0.05) 1px, transparent 1.5px) !important;
+  }
   .reward-card:hover .reward-photo { transform: scale(1.08); }
   /* Tag at top right of visual */
   .reward-tag {
@@ -3996,11 +4006,11 @@
       </div>
     </div>
 
-    <!-- Featured 2: 25 poin Rokok LA Ice — foto produk asli, cover mode (bg biru cinematic fill card) -->
+    <!-- Featured 2: 25 poin Rokok LA Ice — foto produk asli, contain mode + navy bg match foto -->
     <div class="reward-card reveal reveal-delay-2" data-name="Rokok LA Ice" data-points="25">
-      <div class="reward-visual">
+      <div class="reward-visual reward-visual--bg-navy">
         <span class="reward-category">Tobacco</span>
-        <img class="reward-photo" src="/rewards/la-ice.jpg" alt="Rokok LA Ice" loading="lazy">
+        <img class="reward-photo reward-photo--contain" src="/rewards/la-ice.jpg" alt="Rokok LA Ice" loading="lazy">
       </div>
       <div class="reward-content">
         <div class="reward-name">Rokok LA Ice</div>
