@@ -74,8 +74,9 @@ body::after{
   /* Crossfade simple — gak ada filter:blur (GPU heavy di TV 4K) atau
      transform:scale yang bikin frame drop. Animation entry tetep main
      dari child elements via `.slide.active .xxx` selector */
-  transition: opacity 0.7s ease;
-  padding:4vh 6vw;
+  transition: opacity 0.5s ease;
+  /* Padding lebih kecil biar konten fit di viewport TV 1080p/720p */
+  padding:2vh 4vw;
 }
 .slide.active{opacity:1;pointer-events:auto}
 
@@ -148,9 +149,10 @@ body::after{
 
 .hero-logo{
   font-family:'Bebas Neue',sans-serif;
-  font-size:13rem;line-height:.85;letter-spacing:.04em;
+  /* clamp: min 4rem, scale dgn viewport height (auto-fit TV), max 13rem */
+  font-size:clamp(4rem, 13vh, 13rem);line-height:.85;letter-spacing:.04em;
   color:var(--cream);text-align:center;
-  text-shadow:0 0 30px rgba(245,200,66,.4),0 0 60px rgba(245,200,66,.2);
+  text-shadow:0 0 18px rgba(245,200,66,.35);
   position:relative;
 }
 .hero-logo .gold-word{
@@ -158,10 +160,12 @@ body::after{
   background:linear-gradient(180deg,#fff5d0 0%,var(--gold-bright) 35%,var(--gold) 60%,#8a6f1a 100%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 18px rgba(245,200,66,.7));
+  /* Reduce drop-shadow blur biar lebih ringan di TV */
+  filter:drop-shadow(0 0 8px rgba(245,200,66,.5));
 }
 .slide.active .hero-logo{animation:logoEntry 1.4s cubic-bezier(.2,.8,.2,1) .2s both}
-.slide.active .hero-logo .gold-word{animation:neonFlicker 5s ease-in-out 2s infinite}
+/* neonFlicker animation removed — drop-shadow animation infinite is expensive
+   di TV (GPU intensive di 4K). Gold-word tetep punya static drop-shadow */
 
 .hero-line{
   width:0;height:2px;margin:2rem auto 1.8rem;
@@ -279,15 +283,15 @@ body::after{
 .slide.active .gratis-stamp{animation:stampIn .9s cubic-bezier(.3,.8,.3,1.4) .8s forwards}
 
 .gratis-100{
-  font-size:11rem;letter-spacing:-.02em;
+  font-size:clamp(3.5rem, 12vh, 11rem);letter-spacing:-.02em;
   background:linear-gradient(180deg,#fff5d0 0%,var(--gold-bright) 40%,var(--gold) 70%,#8a6f1a 100%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 30px rgba(245,200,66,.7));
+  filter:drop-shadow(0 0 12px rgba(245,200,66,.5));
 }
 .gratis-word{
-  font-size:8.5rem;color:var(--cream);letter-spacing:.05em;
-  text-shadow:0 0 25px rgba(245,200,66,.2);
+  font-size:clamp(2.8rem, 9vh, 8.5rem);color:var(--cream);letter-spacing:.05em;
+  text-shadow:0 0 12px rgba(245,200,66,.2);
 }
 
 .gratis-subline{
@@ -312,9 +316,8 @@ body::after{
   text-align:center;
   background:linear-gradient(160deg,rgba(22,61,44,.75) 0%,rgba(7,16,11,.9) 100%);
   border:1px solid rgba(212,175,55,.3);
-  border-radius:18px;padding:2.2rem 1.8rem;
+  border-radius:18px;padding:1.4rem 1.2rem;
   opacity:0;transform:translateY(40px);
-  backdrop-filter:blur(8px);
   position:relative;z-index:2;
 }
 .slide.active .flow-card{animation:cardRise .9s cubic-bezier(.2,.8,.2,1) forwards}
@@ -324,21 +327,21 @@ body::after{
 
 /* Custom SVG illustration container */
 .flow-illustration{
-  width:170px;height:140px;
-  margin-bottom:1rem;
+  width:120px;height:100px;
+  margin-bottom:.7rem;
   display:flex;align-items:center;justify-content:center;
   position:relative;
 }
-.flow-illustration svg{width:100%;height:100%;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4))}
+.flow-illustration svg{width:100%;height:100%;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
 
 .flow-label{
   font-family:'Bebas Neue',sans-serif;
-  font-size:2.6rem;color:var(--cream);letter-spacing:.08em;
-  line-height:1;margin-bottom:.7rem;
+  font-size:1.9rem;color:var(--cream);letter-spacing:.08em;
+  line-height:1;margin-bottom:.5rem;
 }
 
 .flow-desc{
-  font-size:1.15rem;color:var(--cream-muted);line-height:1.45;
+  font-size:.95rem;color:var(--cream-muted);line-height:1.4;
 }
 
 /* Arrow between cards */
@@ -621,7 +624,7 @@ body::after{
   -webkit-text-fill-color:transparent;
   filter:drop-shadow(0 0 16px rgba(245,200,66,.5));
 }
-.slide.active .cta-url{animation:neonFlicker 6s ease-in-out 4s infinite}
+/* neonFlicker removed — too heavy for TV (infinite drop-shadow change) */
 
 /* ============================================================
    SLIDE 4 — EVENT: NOBAR PIALA DUNIA 2026 (CLEANED UP)
@@ -667,7 +670,7 @@ body::after{
 /* Main event title — SINGLE LINE */
 .event-title{
   font-family:'Bebas Neue',sans-serif;
-  font-size:6.5rem;letter-spacing:.04em;line-height:1;
+  font-size:clamp(2.8rem, 8vh, 6.5rem);letter-spacing:.04em;line-height:1;
   text-align:center;margin:-.2rem 0 .3rem;opacity:0;
   white-space:nowrap;
 }
@@ -685,7 +688,7 @@ body::after{
   filter:drop-shadow(0 0 28px rgba(245,200,66,.7));
   margin-left:.2em;
 }
-.slide.active .event-title .year{animation:neonFlicker 5s ease-in-out 2s infinite}
+/* neonFlicker removed — TV perf */
 
 /* Date banner */
 .event-date-banner{
@@ -724,11 +727,10 @@ body::after{
   position:relative;
   background:linear-gradient(160deg,rgba(22,61,44,.75) 0%,rgba(7,16,11,.92) 100%);
   border:1px solid rgba(212,175,55,.3);
-  border-radius:20px;padding:1.4rem 1.2rem 1.2rem;
+  border-radius:20px;padding:1rem 1rem .9rem;
   text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:.6rem;
+  display:flex;flex-direction:column;align-items:center;gap:.4rem;
   opacity:0;transform:translateY(40px);
-  backdrop-filter:blur(8px);
 }
 .slide.active .event-perk{animation:cardRise .9s cubic-bezier(.2,.8,.2,1) forwards}
 .slide.active .event-perk:nth-child(1){animation-delay:1.5s}
@@ -760,27 +762,26 @@ body::after{
 }
 
 .perk-icon{
-  width:72px;height:72px;border-radius:50%;
+  width:54px;height:54px;border-radius:50%;
   background:radial-gradient(circle at 30% 30%,var(--gold-bright),var(--gold-soft));
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 10px 24px rgba(212,175,55,.42),inset 0 -4px 10px rgba(0,0,0,.22);
-  margin-bottom:.3rem;
-  animation:iconPulse 3s ease-in-out infinite;
+  box-shadow:0 6px 14px rgba(212,175,55,.4),inset 0 -3px 6px rgba(0,0,0,.22);
+  margin-bottom:.2rem;
 }
 .perk-icon svg{
-  width:40px;height:40px;color:#1a1a1a;
+  width:30px;height:30px;color:#1a1a1a;
 }
 
 .perk-label{
   font-family:'Bebas Neue',sans-serif;
-  font-size:1.6rem;color:var(--cream);letter-spacing:.05em;
+  font-size:1.3rem;color:var(--cream);letter-spacing:.05em;
   line-height:1;
 }
 .event-perk.featured .perk-label{color:var(--gold-bright)}
 
 .perk-desc{
-  font-size:.9rem;color:var(--cream-muted);
-  line-height:1.4;
+  font-size:.85rem;color:var(--cream-muted);
+  line-height:1.35;
 }
 
 /* Footer */
