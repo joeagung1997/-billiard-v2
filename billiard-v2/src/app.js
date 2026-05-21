@@ -27,6 +27,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, "../public"), {
   etag: true,
   lastModified: true,
+  // extensions: biar URL pretty (/iklanmember) auto-resolve ke /iklanmember.html
+  extensions: ["html"],
   setHeaders(res, filePath) {
     if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
       // no-cache: browser selalu revalidate, tapi pakai cache (304) jika file tidak berubah
