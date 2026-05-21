@@ -837,7 +837,10 @@ window.addEventListener("message", (e) => {
 });
 
 const openModal = (kode, nama, scanUrl, dlUrl, imgUrl, waNum) => {
-  _modalUrl  = scanUrl;
+  // Tombol "Copy URL" kirim member-share URL (/member/XXX), BUKAN scan URL
+  // (/scan?id=XXX). Scan URL itu buat kasir scan QR — buka PIN page kalo
+  // dibuka member. Member harus dapet link card-nya (/member/XXX).
+  _modalUrl  = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   _openedAt  = Date.now();
   _pendingQr = null;
 
