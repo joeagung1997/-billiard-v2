@@ -283,15 +283,15 @@ body::after{
 .slide.active .gratis-stamp{animation:stampIn .9s cubic-bezier(.3,.8,.3,1.4) .8s forwards}
 
 .gratis-100{
-  font-size:clamp(3.5rem, 12vh, 11rem);letter-spacing:-.02em;
+  font-size:clamp(3rem, 10vh, 9rem);letter-spacing:-.02em;
   background:linear-gradient(180deg,#fff5d0 0%,var(--gold-bright) 40%,var(--gold) 70%,#8a6f1a 100%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 12px rgba(245,200,66,.5));
+  filter:drop-shadow(0 0 10px rgba(245,200,66,.5));
 }
 .gratis-word{
-  font-size:clamp(2.8rem, 9vh, 8.5rem);color:var(--cream);letter-spacing:.05em;
-  text-shadow:0 0 12px rgba(245,200,66,.2);
+  font-size:clamp(2.4rem, 7.5vh, 7rem);color:var(--cream);letter-spacing:.05em;
+  text-shadow:0 0 10px rgba(245,200,66,.2);
 }
 
 .gratis-subline{
@@ -393,15 +393,10 @@ body::after{
   position:relative;overflow:hidden;
 }
 .slide.active .member-cta-pill{
-  animation:fadeInUp 1s ease 2.9s forwards,
-             ctaPulse 2s ease-in-out 4.5s infinite;
+  animation:fadeInUp 1s ease 2.9s forwards;
+  /* ctaPulse removed — box-shadow infinite GPU heavy on TV */
 }
-.member-cta-pill::before{
-  content:'';position:absolute;top:0;left:-100%;
-  width:50%;height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
-  animation:shimmer 3s ease 5.5s infinite;
-}
+/* ::before shimmer removed — `left` animation triggers layout reflow per frame */
 .member-cta-pill .cta-arrow-pill{
   font-size:2.2rem;
   animation:arrowBounceRight 1.5s ease-in-out 4s infinite;
@@ -437,12 +432,11 @@ body::after{
   position:relative;
   background:linear-gradient(160deg,rgba(22,61,44,.75) 0%,rgba(7,16,11,.92) 100%);
   border:1px solid rgba(212,175,55,.3);
-  border-radius:22px;
+  border-radius:18px;
   display:flex;flex-direction:column;
   overflow:hidden;
   opacity:0;transform:translateY(50px);
-  padding:1.3rem 1.3rem 1.4rem;
-  backdrop-filter:blur(8px);
+  padding:1rem 1rem 1.1rem;
 }
 /* Subtle dotted pattern overlay */
 .reward-card::after{
@@ -468,8 +462,8 @@ body::after{
   to{opacity:1;transform:translateY(-12px) scale(1.03)}
 }
 .slide.active .reward-card.featured{
-  animation:cardRiseFeatured 1.1s cubic-bezier(.3,.8,.3,1.1) 1.6s forwards,
-             featuredGlowPulse 3s ease-in-out 3s infinite;
+  animation:cardRiseFeatured 1.1s cubic-bezier(.3,.8,.3,1.1) 1.6s forwards;
+  /* featuredGlowPulse removed — box-shadow animation infinite = repaint per frame, GPU heavy TV */
 }
 @keyframes featuredGlowPulse{
   0%,100%{box-shadow:0 0 35px rgba(212,175,55,.3),inset 0 0 30px rgba(212,175,55,.04)}
@@ -497,11 +491,11 @@ body::after{
 .reward-photo{
   background:linear-gradient(180deg,rgba(7,16,11,.4) 0%,rgba(7,16,11,.7) 100%);
   border:1px solid rgba(212,175,55,.12);
-  border-radius:14px;
-  height:280px;
+  border-radius:12px;
+  height:clamp(140px, 22vh, 220px);
   display:flex;align-items:center;justify-content:center;
-  padding:.6rem;
-  margin-bottom:1rem;
+  padding:.5rem;
+  margin-bottom:.7rem;
   overflow:hidden;
   position:relative;
 }
@@ -528,15 +522,15 @@ body::after{
 /* Product name */
 .reward-name{
   font-family:'Bebas Neue',sans-serif;
-  font-size:1.8rem;color:var(--cream);letter-spacing:.05em;
-  line-height:1;margin-bottom:.4rem;
+  font-size:1.45rem;color:var(--cream);letter-spacing:.05em;
+  line-height:1;margin-bottom:.3rem;
 }
 
 /* Description */
 .reward-desc{
-  font-size:.92rem;color:var(--cream-muted);
-  line-height:1.45;margin-bottom:.9rem;
-  min-height:2.5rem;
+  font-size:.82rem;color:var(--cream-muted);
+  line-height:1.4;margin-bottom:.7rem;
+  min-height:2.3rem;
 }
 
 /* Dashed separator */
@@ -558,13 +552,13 @@ body::after{
 }
 .reward-points-num{
   font-family:'Bebas Neue',sans-serif;
-  font-size:2.6rem;color:var(--gold-bright);
+  font-size:2.1rem;color:var(--gold-bright);
   line-height:1;letter-spacing:.02em;
-  filter:drop-shadow(0 0 8px rgba(245,200,66,.3));
+  filter:drop-shadow(0 0 6px rgba(245,200,66,.3));
 }
 .reward-points-label{
   font-family:'Manrope',sans-serif;
-  font-size:.72rem;color:var(--cream-muted);
+  font-size:.66rem;color:var(--cream-muted);
   letter-spacing:.3em;text-transform:uppercase;
 }
 
@@ -573,9 +567,9 @@ body::after{
   background:linear-gradient(90deg,var(--gold-bright),var(--gold));
   color:#1a1a1a;
   font-family:'Bebas Neue',sans-serif;
-  font-size:1.05rem;letter-spacing:.2em;
-  padding:.6rem 1.4rem;border-radius:50px;
-  box-shadow:0 4px 14px rgba(212,175,55,.4);
+  font-size:.92rem;letter-spacing:.2em;
+  padding:.5rem 1.1rem;border-radius:50px;
+  box-shadow:0 3px 10px rgba(212,175,55,.35);
 }
 .reward-tukar-btn .arrow{
   font-size:1.2rem;
@@ -748,8 +742,8 @@ body::after{
   to{opacity:1;transform:translateY(-10px) scale(1.04)}
 }
 .slide.active .event-perk.featured{
-  animation:cardRiseFeaturedSm 1s cubic-bezier(.3,.8,.3,1.1) 1.9s forwards,
-             featuredGlowPulse 3s ease-in-out 3.5s infinite;
+  animation:cardRiseFeaturedSm 1s cubic-bezier(.3,.8,.3,1.1) 1.9s forwards;
+  /* featuredGlowPulse removed — perf */
 }
 
 .event-perk.featured::before{
@@ -870,7 +864,7 @@ body::after{
 
 .join-title{
   font-family:'Bebas Neue',sans-serif;
-  font-size:6rem;line-height:.95;letter-spacing:.02em;
+  font-size:clamp(2.8rem, 7vh, 6rem);line-height:.95;letter-spacing:.02em;
   color:var(--cream);opacity:0;
 }
 .slide.active .join-title{animation:fadeInLeft 1s ease .5s forwards}
@@ -916,24 +910,19 @@ body::after{
 }
 
 .cta-button{
-  display:inline-block;margin-top:1.2rem;
+  display:inline-block;margin-top:.9rem;
   background:linear-gradient(90deg,var(--gold-bright),var(--gold));
   color:#0f0f0f;font-family:'Bebas Neue',sans-serif;
-  font-size:1.6rem;letter-spacing:.18em;
-  padding:1rem 2.4rem;border-radius:50px;
-  box-shadow:0 8px 25px rgba(212,175,55,.4);
+  font-size:1.35rem;letter-spacing:.18em;
+  padding:.8rem 2rem;border-radius:50px;
+  box-shadow:0 6px 18px rgba(212,175,55,.4);
   opacity:0;width:fit-content;position:relative;overflow:hidden;
 }
 .slide.active .cta-button{
-  animation:fadeInUp 1s ease 1.9s forwards,
-             ctaPulse 2s ease-in-out 3s infinite;
+  animation:fadeInUp 1s ease 1.9s forwards;
+  /* ctaPulse removed — box-shadow infinite anim too heavy on TV */
 }
-.cta-button::before{
-  content:'';position:absolute;top:0;left:-100%;
-  width:50%;height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
-  animation:shimmer 3s ease 4s infinite;
-}
+/* ::before shimmer removed — animating `left` triggers layout reflow */
 
 .qr-frame{
   position:relative;
@@ -952,7 +941,7 @@ body::after{
 .qr-frame::after{bottom:-3px;right:-3px;border-left:none;border-top:none}
 
 .qr-code{
-  width:280px;height:280px;
+  width:clamp(180px, 24vh, 280px);height:clamp(180px, 24vh, 280px);
   display:grid;
 }
 .qr-code div{background:#1a1a1a}
@@ -978,7 +967,7 @@ body::after{
 
 /* ===== Slide transition: gold shine sweep ===== */
 .transition-shine{
-  position:fixed;top:0;left:-100%;
+  position:fixed;top:0;left:0;
   width:80%;height:100vh;
   background:linear-gradient(105deg,
     transparent 35%,
@@ -1188,9 +1177,11 @@ body::after{
   animation:progressRun 10s linear forwards;
 }
 
-/* ===== Enhanced sweep — brighter, more dramatic ===== */
+/* ===== Enhanced sweep — brighter, more dramatic =====
+   left:0 (bukan -100%) — biar translate3d di keyframes goldSweep yang
+   kontrol posisi (GPU-accelerated, no layout reflow) */
 .transition-shine{
-  position:fixed;top:0;left:-100%;
+  position:fixed;top:0;left:0;
   width:90%;height:100vh;
   background:linear-gradient(105deg,
     transparent 30%,
@@ -1204,7 +1195,7 @@ body::after{
   pointer-events:none;
   z-index:100;
   opacity:0;
-  filter:blur(2px);
+  /* filter:blur removed — additional GPU cost di TV */
 }
 
 /* === SMALL SCREEN FALLBACK (preview / phone only) ===
