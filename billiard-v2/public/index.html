@@ -1355,6 +1355,13 @@
     z-index: 1;
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  /* Modifier: contain mode — full object terlihat, no crop. Pakai untuk foto
+     produk yg perlu utuh (mis. cue stick yg panjang) */
+  .reward-visual .reward-photo--contain {
+    object-fit: contain;
+    padding: 10px;
+    background: linear-gradient(135deg, #f0eee9 0%, #e0ddd5 100%);
+  }
   .reward-card:hover .reward-photo { transform: scale(1.08); }
   /* Tag at top right of visual */
   .reward-tag {
@@ -1710,6 +1717,12 @@
     object-fit: cover;
     z-index: 1;
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Modifier: contain mode — full object terlihat (mis. cue stick) */
+  .catalog-visual .catalog-photo--contain {
+    object-fit: contain;
+    padding: 6px;
+    background: linear-gradient(135deg, #f0eee9 0%, #e0ddd5 100%);
   }
   .catalog-card:hover .catalog-photo { transform: scale(1.05); }
   .catalog-cat-pill {
@@ -4028,7 +4041,7 @@
     <div class="reward-card reveal reveal-delay-3" data-name="Stick Billiard Entry" data-points="150">
       <div class="reward-visual">
         <span class="reward-category">Premium</span>
-        <img class="reward-photo" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
+        <img class="reward-photo reward-photo--contain" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
       </div>
       <div class="reward-content">
         <div class="reward-name">Stick Billiard Entry</div>
@@ -5202,7 +5215,7 @@
         <div class="catalog-card" data-cat="other" data-name="Stick Billiard Entry" data-points="150">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Premium</span>
-            <img class="catalog-photo" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
+            <img class="catalog-photo catalog-photo--contain" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
           </div>
           <div class="catalog-info">
             <div class="catalog-name">Stick Billiard Entry</div>
