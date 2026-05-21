@@ -32,7 +32,19 @@ html,body{
   width:100vw;height:100vh;overflow:hidden;
   background:var(--bg-deep);color:var(--cream);
   font-family:'Manrope',sans-serif;
-  cursor:none;
+}
+/* TV-specific perf hints — flatten compositing layers, no smooth-scroll */
+html{
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeSpeed;
+}
+/* Respect reduced motion: matikan animation di TV yg auto-set reduced-motion */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.2s !important;
+  }
 }
 
 body{
@@ -47,7 +59,9 @@ body::before{
 }
 body::after{
   content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:2;pointer-events:none;
-  background:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.7) 100%);
+  /* Vignette lebih terang: start dari 50% radius (bukan 25%), max 30% black
+     di edges (bukan 70%) — biar content di pinggir TV 55"+ gak ke-cover gelap */
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.3) 100%);
 }
 
 /* ====== SLIDES ====== */
@@ -56,35 +70,32 @@ body::after{
   position:absolute;top:0;right:0;bottom:0;left:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   opacity:0;
-  transform:scale(1.06);
-  filter:blur(8px) brightness(.7);
   pointer-events:none;
-  transition:
-    opacity 1s cubic-bezier(.3,.7,.3,1),
-    transform 1.4s cubic-bezier(.16,.8,.24,1),
-    filter 1s cubic-bezier(.3,.7,.3,1);
+  /* Crossfade simple — gak ada filter:blur (GPU heavy di TV 4K) atau
+     transform:scale yang bikin frame drop. Animation entry tetep main
+     dari child elements via `.slide.active .xxx` selector */
+  transition: opacity 0.7s ease;
   padding:4vh 6vw;
-  will-change:opacity,transform,filter;
 }
-.slide.active{opacity:1;transform:scale(1);filter:blur(0) brightness(1);pointer-events:auto}
+.slide.active{opacity:1;pointer-events:auto}
 
 /* ====== AMBIENT FLOATERS ====== */
 .ambient{position:fixed;top:0;right:0;bottom:0;left:0;z-index:3;pointer-events:none;overflow:hidden}
 .spark{
   position:absolute;width:3px;height:3px;border-radius:50%;
   background:var(--gold-bright);
-  box-shadow:0 0 8px var(--gold-bright);
+  box-shadow:0 0 6px var(--gold-bright);
   opacity:0;
   animation:floatUp 12s linear infinite;
 }
-.spark:nth-child(1){left:8%;animation-delay:0s;animation-duration:14s}
-.spark:nth-child(2){left:18%;animation-delay:2s;animation-duration:11s}
-.spark:nth-child(3){left:32%;animation-delay:5s;animation-duration:13s}
-.spark:nth-child(4){left:48%;animation-delay:1s;animation-duration:15s}
-.spark:nth-child(5){left:62%;animation-delay:7s;animation-duration:12s}
-.spark:nth-child(6){left:75%;animation-delay:3s;animation-duration:14s}
-.spark:nth-child(7){left:88%;animation-delay:6s;animation-duration:13s}
-.spark:nth-child(8){left:95%;animation-delay:9s;animation-duration:11s}
+/* Reduced dari 8 → 5 sparks biar lebih ringan di TV. Spaced merata
+   biar tetep ambient feel-nya jaga */
+.spark:nth-child(1){left:10%;animation-delay:0s;animation-duration:14s}
+.spark:nth-child(2){left:30%;animation-delay:3s;animation-duration:12s}
+.spark:nth-child(3){left:50%;animation-delay:6s;animation-duration:15s}
+.spark:nth-child(4){left:70%;animation-delay:2s;animation-duration:13s}
+.spark:nth-child(5){left:90%;animation-delay:8s;animation-duration:11s}
+.spark:nth-child(6),.spark:nth-child(7),.spark:nth-child(8){display:none}
 
 @keyframes floatUp{
   0%{transform:translateY(110vh) scale(.3);opacity:0}
@@ -982,13 +993,16 @@ body::after{
   opacity:0;
 }
 .transition-shine.sweep{
-  animation:goldSweep 1.3s cubic-bezier(.5,.1,.5,1) forwards;
+  animation:goldSweep 0.9s cubic-bezier(.5,.1,.5,1) forwards;
+  /* Force GPU layer biar smooth di TV */
+  transform:translate3d(0,0,0);
+  will-change:transform,opacity;
 }
 @keyframes goldSweep{
-  0%{left:-100%;opacity:0}
+  0%{transform:translate3d(-100%,0,0);opacity:0}
   15%{opacity:1}
   85%{opacity:1}
-  100%{left:130%;opacity:0}
+  100%{transform:translate3d(280%,0,0);opacity:0}
 }
 
 /* Subtle edge vignette flash during transition */
@@ -1000,12 +1014,12 @@ body::after{
   background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.5) 100%);
 }
 .transition-vignette.flash{
-  animation:vignetteFlash 1.3s cubic-bezier(.4,.1,.4,1) forwards;
+  animation:vignetteFlash 0.9s cubic-bezier(.4,.1,.4,1) forwards;
 }
 @keyframes vignetteFlash{
   0%{opacity:0}
-  30%{opacity:.7}
-  70%{opacity:.7}
+  30%{opacity:.4}
+  70%{opacity:.4}
   100%{opacity:0}
 }
 
