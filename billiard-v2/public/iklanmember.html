@@ -40,20 +40,20 @@ body{
     radial-gradient(ellipse at 50% 40%,var(--bg-felt-light) 0%,var(--bg-felt) 35%,var(--bg-deep) 75%);
 }
 body::before{
-  content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:1;pointer-events:none;
   background-image:
     repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 5px),
     repeating-linear-gradient(-45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 5px);
 }
 body::after{
-  content:'';position:fixed;inset:0;z-index:2;pointer-events:none;
+  content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:2;pointer-events:none;
   background:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.7) 100%);
 }
 
 /* ====== SLIDES ====== */
 .stage{position:relative;width:100vw;height:100vh;z-index:10}
 .slide{
-  position:absolute;inset:0;
+  position:absolute;top:0;right:0;bottom:0;left:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   opacity:0;
   transform:scale(1.06);
@@ -69,7 +69,7 @@ body::after{
 .slide.active{opacity:1;transform:scale(1);filter:blur(0) brightness(1);pointer-events:auto}
 
 /* ====== AMBIENT FLOATERS ====== */
-.ambient{position:fixed;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.ambient{position:fixed;top:0;right:0;bottom:0;left:0;z-index:3;pointer-events:none;overflow:hidden}
 .spark{
   position:absolute;width:3px;height:3px;border-radius:50%;
   background:var(--gold-bright);
@@ -103,7 +103,7 @@ body::after{
     0 12px 30px rgba(0,0,0,.5);
 }
 .ball::before{
-  content:'';position:absolute;inset:0;border-radius:50%;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;
   background:var(--bcolor,#fff);
   z-index:-1;
 }
@@ -208,7 +208,7 @@ body::after{
     0 8px 22px rgba(0,0,0,.4);
 }
 .member-deco-ball::before{
-  content:'';position:absolute;inset:0;border-radius:50%;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;
   background:var(--bcolor,#fff);z-index:-1;
 }
 .member-deco-ball.top-left{top:8%;left:4%;--bcolor:var(--red)}
@@ -432,7 +432,7 @@ body::after{
 }
 /* Subtle dotted pattern overlay */
 .reward-card::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;
   background-image:radial-gradient(circle,rgba(212,175,55,.1) 1px,transparent 1.5px);
   background-size:14px 14px;
   opacity:.35;
@@ -492,7 +492,7 @@ body::after{
   position:relative;
 }
 .reward-photo::before{
-  content:'';position:absolute;inset:0;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at center,rgba(245,200,66,.05) 0%,transparent 60%);
   pointer-events:none;
 }
@@ -960,7 +960,7 @@ body::after{
 
 
 .ambient-sparks{
-  position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;
+  position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:1;overflow:hidden;
 }
 
 
@@ -993,7 +993,7 @@ body::after{
 
 /* Subtle edge vignette flash during transition */
 .transition-vignette{
-  position:fixed;inset:0;
+  position:fixed;top:0;right:0;bottom:0;left:0;
   pointer-events:none;
   z-index:99;
   opacity:0;
