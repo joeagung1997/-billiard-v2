@@ -3962,40 +3962,60 @@
 
   <!-- 3 Featured Reward Cards -->
   <div class="rewards-grid">
-    <!-- Featured 1: 8 poin Main 1 Jam Gratis — ticket text design -->
+    <!-- Featured 1: 8 poin Main 1 Jam Gratis — HUGE typography, sun burst -->
     <div class="reward-card featured reveal reveal-delay-1" data-name="Main 1 Jam Gratis" data-points="8">
       <div class="reward-visual">
         <span class="reward-category">Free Play</span>
         <span class="reward-tag">Populer</span>
         <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <radialGradient id="glowFeat1">
-              <stop offset="0%" stop-color="#F5B048" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="#F5B048" stop-opacity="0"/>
+            <radialGradient id="glow1bigF" cx="50%" cy="50%">
+              <stop offset="0%" stop-color="#F5B048" stop-opacity="0.65"/>
+              <stop offset="60%" stop-color="#D4882B" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#D4882B" stop-opacity="0"/>
             </radialGradient>
-            <linearGradient id="ticket1Grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#3B2511"/>
+            <linearGradient id="num1bigF" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFE89A"/>
+              <stop offset="50%" stop-color="#F5B048"/>
+              <stop offset="100%" stop-color="#8B5A14"/>
+            </linearGradient>
+            <linearGradient id="grat1F" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#1A100A"/>
+              <stop offset="50%" stop-color="#3B2511"/>
               <stop offset="100%" stop-color="#1A100A"/>
             </linearGradient>
           </defs>
-          <!-- Glow background -->
-          <circle cx="60" cy="60" r="55" fill="url(#glowFeat1)"/>
-          <!-- Ticket body -->
-          <path d="M20 30 L100 30 L100 90 L20 90 Z" fill="url(#ticket1Grad)" stroke="#F5B048" stroke-width="1.5"/>
-          <!-- Side perforation holes -->
-          <circle cx="20" cy="60" r="4" fill="#1A100A"/>
-          <circle cx="100" cy="60" r="4" fill="#1A100A"/>
-          <!-- Dashed divider (center) -->
-          <line x1="28" y1="60" x2="92" y2="60" stroke="#F5B048" stroke-dasharray="2 2" stroke-width="0.6" opacity="0.5"/>
-          <!-- "1 JAM" big typography -->
-          <text x="60" y="54" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="20" fill="#F5B048" letter-spacing="0.05em">1 JAM</text>
-          <!-- "GRATIS" -->
-          <text x="60" y="78" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="14" fill="#F2E8D5" letter-spacing="0.25em">GRATIS</text>
-          <!-- Sparkle accents -->
-          <path d="M28 25 L29.5 27.5 L32 26 L29.5 28.5 L28 31 L26.5 28.5 L24 26 L26.5 27.5 Z" fill="#F5B048" opacity="0.85"/>
-          <path d="M92 25 L93.5 27.5 L96 26 L93.5 28.5 L92 31 L90.5 28.5 L88 26 L90.5 27.5 Z" fill="#F5B048" opacity="0.85"/>
-          <path d="M28 95 L29 96.5 L30.5 96 L29.5 97.5 L29 99 L28.5 97.5 L27 96 L28.5 96.5 Z" fill="#F5B048" opacity="0.5"/>
-          <path d="M92 95 L93 96.5 L94.5 96 L93.5 97.5 L93 99 L92.5 97.5 L91 96 L92.5 96.5 Z" fill="#F5B048" opacity="0.5"/>
+          <!-- Glow burst background -->
+          <circle cx="60" cy="58" r="58" fill="url(#glow1bigF)"/>
+          <!-- Sun rays from center -->
+          <g opacity="0.45" stroke="#F5B048" stroke-width="1.2" stroke-linecap="round">
+            <line x1="60" y1="6" x2="60" y2="14"/>
+            <line x1="14" y1="58" x2="22" y2="58"/>
+            <line x1="98" y1="58" x2="106" y2="58"/>
+            <line x1="22" y1="20" x2="28" y2="26"/>
+            <line x1="92" y1="26" x2="98" y2="20"/>
+            <line x1="22" y1="96" x2="28" y2="90"/>
+            <line x1="92" y1="90" x2="98" y2="96"/>
+          </g>
+          <!-- Sparkles -->
+          <path d="M25 32 L26.5 35 L29.5 35.5 L27 37.5 L28 41 L25 39 L22 41 L23 37.5 L20.5 35.5 L23.5 35 Z" fill="#F5D470" opacity="0.85"/>
+          <path d="M95 28 L96 30.5 L98.5 31 L96.5 32.5 L97 35 L95 33.5 L93 35 L93.5 32.5 L91.5 31 L94 30.5 Z" fill="#F5D470" opacity="0.7"/>
+          <path d="M98 82 L99 84 L101 84.5 L99.5 86 L100 88 L98 87 L96 88 L96.5 86 L95 84.5 L97 84 Z" fill="#F5D470" opacity="0.55"/>
+          <!-- "JAM" label above -->
+          <text x="60" y="24" text-anchor="middle"
+            font-family="Bebas Neue, sans-serif" font-size="13"
+            fill="#F5B048" letter-spacing="0.55em">JAM</text>
+          <!-- HUGE "1" number with outline -->
+          <text x="60" y="80" text-anchor="middle"
+            font-family="Bebas Neue, sans-serif" font-size="78"
+            fill="url(#num1bigF)" stroke="#1A100A" stroke-width="2.2"
+            paint-order="stroke fill"
+            letter-spacing="-0.04em">1</text>
+          <!-- "GRATIS!" banner at bottom -->
+          <rect x="10" y="93" width="100" height="20" rx="3" fill="url(#grat1F)" stroke="#F5B048" stroke-width="1.2"/>
+          <text x="60" y="107" text-anchor="middle"
+            font-family="Bebas Neue, sans-serif" font-size="15"
+            fill="#F5B048" letter-spacing="0.4em" font-weight="700">GRATIS!</text>
         </svg>
       </div>
       <div class="reward-content">
@@ -4990,23 +5010,47 @@
     <div class="reward-catalog">
       <div class="reward-catalog-grid">
 
-        <!-- 8 — Main 1 Jam Gratis — ticket text design -->
+        <!-- 8 — Main 1 Jam Gratis — HUGE number design (match featured) -->
         <div class="catalog-card" data-cat="free-play" data-name="Main 1 Jam Gratis" data-points="8">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Free Play</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="t1cat" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#3B2511"/>
-                  <stop offset="100%" stop-color="#1A100A"/>
+                <radialGradient id="glow1cat">
+                  <stop offset="0%" stop-color="#F5B048" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#F5B048" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="num1cat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FFE89A"/>
+                  <stop offset="50%" stop-color="#F5B048"/>
+                  <stop offset="100%" stop-color="#8B5A14"/>
                 </linearGradient>
               </defs>
-              <path d="M14 22 L66 22 L66 58 L14 58 Z" fill="url(#t1cat)" stroke="#F5B048" stroke-width="1"/>
-              <circle cx="14" cy="40" r="2.5" fill="#1A100A"/>
-              <circle cx="66" cy="40" r="2.5" fill="#1A100A"/>
-              <line x1="19" y1="40" x2="61" y2="40" stroke="#F5B048" stroke-dasharray="1.5 1.5" stroke-width="0.4" opacity="0.5"/>
-              <text x="40" y="38" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="13" fill="#F5B048" letter-spacing="0.05em">1 JAM</text>
-              <text x="40" y="52" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="8" fill="#F2E8D5" letter-spacing="0.2em">GRATIS</text>
+              <!-- Glow -->
+              <circle cx="40" cy="38" r="35" fill="url(#glow1cat)"/>
+              <!-- Rays -->
+              <g opacity="0.4" stroke="#F5B048" stroke-width="0.7" stroke-linecap="round">
+                <line x1="40" y1="6" x2="40" y2="10"/>
+                <line x1="9" y1="40" x2="13" y2="40"/>
+                <line x1="67" y1="40" x2="71" y2="40"/>
+                <line x1="16" y1="16" x2="19" y2="19"/>
+                <line x1="61" y1="19" x2="64" y2="16"/>
+              </g>
+              <!-- JAM label -->
+              <text x="40" y="18" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="8"
+                fill="#F5B048" letter-spacing="0.4em">JAM</text>
+              <!-- BIG "1" -->
+              <text x="40" y="58" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="52"
+                fill="url(#num1cat)" stroke="#1A100A" stroke-width="1.4"
+                paint-order="stroke fill"
+                letter-spacing="-0.04em">1</text>
+              <!-- GRATIS banner -->
+              <rect x="8" y="64" width="64" height="12" rx="2" fill="#1A100A" stroke="#F5B048" stroke-width="0.7"/>
+              <text x="40" y="73" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="9"
+                fill="#F5B048" letter-spacing="0.3em" font-weight="700">GRATIS!</text>
             </svg>
           </div>
           <div class="catalog-info">
@@ -5129,23 +5173,47 @@
           </div>
         </div>
 
-        <!-- 40 — Main 4 Jam Gratis — premium red ticket -->
+        <!-- 40 — Main 4 Jam Gratis — HUGE number, red accent (premium) -->
         <div class="catalog-card" data-cat="free-play" data-name="Main 4 Jam Gratis" data-points="40">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Free Play</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="t4cat" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#3B2511"/>
-                  <stop offset="100%" stop-color="#1A100A"/>
+                <radialGradient id="glow4cat">
+                  <stop offset="0%" stop-color="#E63946" stop-opacity="0.55"/>
+                  <stop offset="100%" stop-color="#E63946" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="num4cat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FF8A8F"/>
+                  <stop offset="50%" stop-color="#E63946"/>
+                  <stop offset="100%" stop-color="#7A1820"/>
                 </linearGradient>
               </defs>
-              <path d="M14 22 L66 22 L66 58 L14 58 Z" fill="url(#t4cat)" stroke="#E63946" stroke-width="1"/>
-              <circle cx="14" cy="40" r="2.5" fill="#1A100A"/>
-              <circle cx="66" cy="40" r="2.5" fill="#1A100A"/>
-              <line x1="19" y1="40" x2="61" y2="40" stroke="#E63946" stroke-dasharray="1.5 1.5" stroke-width="0.4" opacity="0.5"/>
-              <text x="40" y="38" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="13" fill="#E63946" letter-spacing="0.05em">4 JAM</text>
-              <text x="40" y="52" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="8" fill="#F2E8D5" letter-spacing="0.2em">GRATIS</text>
+              <!-- Glow -->
+              <circle cx="40" cy="38" r="35" fill="url(#glow4cat)"/>
+              <!-- Rays -->
+              <g opacity="0.4" stroke="#E63946" stroke-width="0.7" stroke-linecap="round">
+                <line x1="40" y1="6" x2="40" y2="10"/>
+                <line x1="9" y1="40" x2="13" y2="40"/>
+                <line x1="67" y1="40" x2="71" y2="40"/>
+                <line x1="16" y1="16" x2="19" y2="19"/>
+                <line x1="61" y1="19" x2="64" y2="16"/>
+              </g>
+              <!-- JAM label -->
+              <text x="40" y="18" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="8"
+                fill="#E63946" letter-spacing="0.4em">JAM</text>
+              <!-- BIG "4" -->
+              <text x="40" y="58" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="52"
+                fill="url(#num4cat)" stroke="#1A100A" stroke-width="1.4"
+                paint-order="stroke fill"
+                letter-spacing="-0.04em">4</text>
+              <!-- GRATIS banner -->
+              <rect x="8" y="64" width="64" height="12" rx="2" fill="#1A100A" stroke="#E63946" stroke-width="0.7"/>
+              <text x="40" y="73" text-anchor="middle"
+                font-family="Bebas Neue, sans-serif" font-size="9"
+                fill="#E63946" letter-spacing="0.3em" font-weight="700">GRATIS!</text>
             </svg>
           </div>
           <div class="catalog-info">
