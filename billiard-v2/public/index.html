@@ -1345,6 +1345,17 @@
     z-index: 2;
     filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
   }
+  /* Photo image for featured card (real product photo) — fill visual area */
+  .reward-visual .reward-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reward-card:hover .reward-photo { transform: scale(1.08); }
   /* Tag at top right of visual */
   .reward-tag {
     position: absolute;
@@ -1690,6 +1701,17 @@
     z-index: 2;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
   }
+  /* Photo image (real product photo, e.g. /rewards/la-ice.jpg) — fill area */
+  .catalog-visual .catalog-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .catalog-card:hover .catalog-photo { transform: scale(1.05); }
   .catalog-cat-pill {
     position: absolute;
     top: 0.55rem; left: 0.55rem;
@@ -4002,49 +4024,11 @@
       </div>
     </div>
 
-    <!-- Featured 3: 150 poin Stick Billiard Entry — black w/ gold ornament -->
+    <!-- Featured 3: 150 poin Stick Billiard Entry — foto produk asli -->
     <div class="reward-card reveal reveal-delay-3" data-name="Stick Billiard Entry" data-points="150">
       <div class="reward-visual">
         <span class="reward-category">Premium</span>
-        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="goldOrn" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#F5D470"/>
-              <stop offset="50%" stop-color="#D4A027"/>
-              <stop offset="100%" stop-color="#8B6A1A"/>
-            </linearGradient>
-            <radialGradient id="cueGlow">
-              <stop offset="0%" stop-color="#D4A027" stop-opacity="0.35"/>
-              <stop offset="100%" stop-color="#D4A027" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <!-- Premium glow -->
-          <circle cx="55" cy="60" r="45" fill="url(#cueGlow)"/>
-          <!-- Butt cap (deep black) -->
-          <line x1="98" y1="105" x2="78" y2="85" stroke="#0a0a0a" stroke-width="9" stroke-linecap="round"/>
-          <!-- Butt end rubber -->
-          <circle cx="100" cy="107" r="2.5" fill="#1a1a1a"/>
-          <!-- Wrap/ornament section (gold) -->
-          <line x1="78" y1="85" x2="70" y2="77" stroke="url(#goldOrn)" stroke-width="9" stroke-linecap="round"/>
-          <!-- Gold accent lines (oriental ornament feel) -->
-          <line x1="76" y1="83" x2="72" y2="79" stroke="#F5D470" stroke-width="0.8" opacity="0.9"/>
-          <line x1="75" y1="82" x2="73" y2="80" stroke="#fff" stroke-width="0.4" opacity="0.7"/>
-          <!-- Joint ring -->
-          <line x1="70" y1="77" x2="67" y2="74" stroke="#D4A027" stroke-width="8" stroke-linecap="round"/>
-          <!-- Shaft (matte black) -->
-          <line x1="67" y1="74" x2="32" y2="39" stroke="#1a1a1a" stroke-width="6.5" stroke-linecap="round"/>
-          <!-- Shaft subtle highlight -->
-          <line x1="66" y1="72" x2="34" y2="40" stroke="#3a3a3a" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
-          <!-- Ferrule (cream) -->
-          <line x1="32" y1="39" x2="26" y2="33" stroke="#F2E8D5" stroke-width="6" stroke-linecap="round"/>
-          <!-- Tip (brown leather) -->
-          <line x1="26" y1="33" x2="22" y2="29" stroke="#8B4513" stroke-width="5.5" stroke-linecap="round"/>
-          <!-- Sparkle accent near tip -->
-          <path d="M15 18 L17 22 L21 20 L17.5 23.5 L15 28 L12.5 23.5 L9 20 L13 22 Z" fill="#F5B048" opacity="0.8"/>
-          <!-- Cue ball -->
-          <circle cx="105" cy="100" r="9" fill="#F2E8D5" stroke="#1A100A" stroke-width="1.5"/>
-          <ellipse cx="102" cy="97" rx="3" ry="2" fill="#fff" opacity="0.8"/>
-        </svg>
+        <img class="reward-photo" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
       </div>
       <div class="reward-content">
         <div class="reward-name">Stick Billiard Entry</div>
@@ -5098,42 +5082,11 @@
           </div>
         </div>
 
-        <!-- 25 — Rokok LA Ice — white box w/ blue cursive LA -->
+        <!-- 25 — Rokok LA Ice — foto produk asli -->
         <div class="catalog-card" data-cat="tobacco" data-name="Rokok LA Ice" data-points="25">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Tobacco</span>
-            <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="laBox" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#F2E8D5"/>
-                  <stop offset="50%" stop-color="#E8DCC0"/>
-                  <stop offset="100%" stop-color="#F2E8D5"/>
-                </linearGradient>
-              </defs>
-              <!-- Box body -->
-              <rect x="22" y="18" width="36" height="50" rx="1.5" fill="url(#laBox)" stroke="#1A100A" stroke-width="1"/>
-              <!-- Top PERINGATAN band -->
-              <rect x="22" y="18" width="36" height="11" fill="#0a0a0a"/>
-              <text x="40" y="25" text-anchor="middle" font-family="Manrope, sans-serif" font-size="2.8" font-weight="700" fill="#fff" letter-spacing="0.1em">PERINGATAN</text>
-              <!-- Warning image area (dark) -->
-              <rect x="23" y="22" width="34" height="5" fill="#3a3a3a" opacity="0.55"/>
-              <!-- Big cursive blue "LA" -->
-              <text x="40" y="47" text-anchor="middle" font-family="DM Serif Display, serif" font-style="italic" font-weight="700" font-size="15" fill="#1E4080">LA</text>
-              <!-- ICE label -->
-              <text x="48" y="50" text-anchor="middle" font-family="Manrope, sans-serif" font-size="3" font-weight="700" fill="#4A6B9C" letter-spacing="0.05em">ICE</text>
-              <!-- Silver swoosh decoration -->
-              <path d="M28 38 Q40 33 52 38" fill="none" stroke="#999" stroke-width="0.4" opacity="0.6"/>
-              <path d="M28 52 Q40 57 52 52" fill="none" stroke="#999" stroke-width="0.4" opacity="0.6"/>
-              <!-- KRETEK FILTERS -->
-              <text x="40" y="61" text-anchor="middle" font-family="Manrope, sans-serif" font-size="2.4" fill="#7A6A55" letter-spacing="0.2em">KRETEK FILTERS</text>
-              <!-- Bottom shadow band -->
-              <rect x="22" y="64" width="36" height="4" fill="#1A100A" opacity="0.18"/>
-              <!-- Cigarettes peeking from top -->
-              <rect x="27" y="14" width="2.5" height="6" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.4"/>
-              <rect x="31" y="14" width="2.5" height="6" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.4"/>
-              <circle cx="28.25" cy="15" r="0.9" fill="#D4882B"/>
-              <circle cx="32.25" cy="15" r="0.9" fill="#D4882B"/>
-            </svg>
+            <img class="catalog-photo" src="/rewards/la-ice.jpg" alt="Rokok LA Ice" loading="lazy">
           </div>
           <div class="catalog-info">
             <div class="catalog-name">Rokok LA Ice</div>
@@ -5245,39 +5198,11 @@
           </div>
         </div>
 
-        <!-- 150 — Stick Billiard Entry — black w/ gold ornament -->
+        <!-- 150 — Stick Billiard Entry — foto produk asli -->
         <div class="catalog-card" data-cat="other" data-name="Stick Billiard Entry" data-points="150">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Premium</span>
-            <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="goldOrnCat" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#F5D470"/>
-                  <stop offset="50%" stop-color="#D4A027"/>
-                  <stop offset="100%" stop-color="#8B6A1A"/>
-                </linearGradient>
-              </defs>
-              <!-- Butt (black) -->
-              <line x1="65" y1="68" x2="55" y2="58" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
-              <!-- Ornament gold band -->
-              <line x1="55" y1="58" x2="49" y2="52" stroke="url(#goldOrnCat)" stroke-width="6" stroke-linecap="round"/>
-              <line x1="53" y1="56" x2="51" y2="54" stroke="#fff" stroke-width="0.4" opacity="0.7"/>
-              <!-- Joint -->
-              <line x1="49" y1="52" x2="46" y2="49" stroke="#D4A027" stroke-width="5.5" stroke-linecap="round"/>
-              <!-- Shaft (matte black) -->
-              <line x1="46" y1="49" x2="22" y2="25" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
-              <!-- Shaft highlight -->
-              <line x1="45" y1="48" x2="24" y2="26" stroke="#3a3a3a" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
-              <!-- Ferrule -->
-              <line x1="22" y1="25" x2="18" y2="21" stroke="#F2E8D5" stroke-width="4.5" stroke-linecap="round"/>
-              <!-- Tip (brown leather) -->
-              <line x1="18" y1="21" x2="14" y2="17" stroke="#8B4513" stroke-width="4.2" stroke-linecap="round"/>
-              <!-- Cue ball -->
-              <circle cx="68" cy="62" r="6.5" fill="#F2E8D5" stroke="#1A100A" stroke-width="1.2"/>
-              <ellipse cx="65.5" cy="60" rx="2" ry="1.4" fill="#fff" opacity="0.8"/>
-              <!-- Sparkle -->
-              <path d="M10 13 L11.5 15.5 L14 14 L12 16.5 L14 19 L11.5 17.5 L9 19 L10.5 16.5 L9 14 L11.5 15.5 Z" fill="#F5B048" opacity="0.8"/>
-            </svg>
+            <img class="catalog-photo" src="/rewards/stik.jpg" alt="Stick Billiard Entry" loading="lazy">
           </div>
           <div class="catalog-info">
             <div class="catalog-name">Stick Billiard Entry</div>
