@@ -3904,30 +3904,40 @@
 
   <!-- 3 Featured Reward Cards -->
   <div class="rewards-grid">
-    <!-- Featured 1: 8 poin Main 1 Jam Gratis -->
+    <!-- Featured 1: 8 poin Main 1 Jam Gratis — ticket text design -->
     <div class="reward-card featured reveal reveal-delay-1" data-name="Main 1 Jam Gratis" data-points="8">
       <div class="reward-visual">
         <span class="reward-category">Free Play</span>
         <span class="reward-tag">Populer</span>
         <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-          <!-- Glowing aura -->
-          <circle cx="60" cy="60" r="55" fill="url(#glowFeat1)" opacity="0.4"/>
           <defs>
             <radialGradient id="glowFeat1">
-              <stop offset="0%" stop-color="#F5B048" stop-opacity="0.4"/>
+              <stop offset="0%" stop-color="#F5B048" stop-opacity="0.5"/>
               <stop offset="100%" stop-color="#F5B048" stop-opacity="0"/>
             </radialGradient>
+            <linearGradient id="ticket1Grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B2511"/>
+              <stop offset="100%" stop-color="#1A100A"/>
+            </linearGradient>
           </defs>
-          <!-- Billiard ball (yellow/1-ball look but golden) -->
-          <circle cx="60" cy="60" r="38" fill="#1A100A" stroke="#5A3A1C" stroke-width="1.5"/>
-          <circle cx="60" cy="60" r="36" fill="#F5B048"/>
-          <!-- White center stripe -->
-          <ellipse cx="60" cy="60" rx="36" ry="14" fill="#F2E8D5"/>
-          <!-- Number circle -->
-          <circle cx="60" cy="60" r="11" fill="#F2E8D5"/>
-          <text x="60" y="65" text-anchor="middle" font-family="Manrope" font-size="13" font-weight="800" fill="#1A100A">1H</text>
-          <!-- Highlight -->
-          <ellipse cx="50" cy="50" rx="10" ry="6" fill="#fff" opacity="0.35" transform="rotate(-25 50 50)"/>
+          <!-- Glow background -->
+          <circle cx="60" cy="60" r="55" fill="url(#glowFeat1)"/>
+          <!-- Ticket body -->
+          <path d="M20 30 L100 30 L100 90 L20 90 Z" fill="url(#ticket1Grad)" stroke="#F5B048" stroke-width="1.5"/>
+          <!-- Side perforation holes -->
+          <circle cx="20" cy="60" r="4" fill="#1A100A"/>
+          <circle cx="100" cy="60" r="4" fill="#1A100A"/>
+          <!-- Dashed divider (center) -->
+          <line x1="28" y1="60" x2="92" y2="60" stroke="#F5B048" stroke-dasharray="2 2" stroke-width="0.6" opacity="0.5"/>
+          <!-- "1 JAM" big typography -->
+          <text x="60" y="54" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="20" fill="#F5B048" letter-spacing="0.05em">1 JAM</text>
+          <!-- "GRATIS" -->
+          <text x="60" y="78" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="14" fill="#F2E8D5" letter-spacing="0.25em">GRATIS</text>
+          <!-- Sparkle accents -->
+          <path d="M28 25 L29.5 27.5 L32 26 L29.5 28.5 L28 31 L26.5 28.5 L24 26 L26.5 27.5 Z" fill="#F5B048" opacity="0.85"/>
+          <path d="M92 25 L93.5 27.5 L96 26 L93.5 28.5 L92 31 L90.5 28.5 L88 26 L90.5 27.5 Z" fill="#F5B048" opacity="0.85"/>
+          <path d="M28 95 L29 96.5 L30.5 96 L29.5 97.5 L29 99 L28.5 97.5 L27 96 L28.5 96.5 Z" fill="#F5B048" opacity="0.5"/>
+          <path d="M92 95 L93 96.5 L94.5 96 L93.5 97.5 L93 99 L92.5 97.5 L91 96 L92.5 96.5 Z" fill="#F5B048" opacity="0.5"/>
         </svg>
       </div>
       <div class="reward-content">
@@ -3943,26 +3953,40 @@
       </div>
     </div>
 
-    <!-- Featured 2: 30 poin Kaos Warpat -->
+    <!-- Featured 2: 30 poin Kaos Warpat — dark green w/ shading -->
     <div class="reward-card reveal reveal-delay-2" data-name="Kaos Warpat" data-points="30">
       <div class="reward-visual">
         <span class="reward-category">Merchandise</span>
         <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-          <!-- T-shirt -->
+          <defs>
+            <linearGradient id="kaosGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2A5440"/>
+              <stop offset="100%" stop-color="#1F4030"/>
+            </linearGradient>
+            <radialGradient id="kaosHighlight" cx="0.3" cy="0.2">
+              <stop offset="0%" stop-color="#3A6850" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#3A6850" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- T-shirt base -->
           <path d="M30 35 L45 22 Q50 19 60 19 Q70 19 75 22 L90 35 L98 45 L88 50 L88 95 Q88 100 83 100 L37 100 Q32 100 32 95 L32 50 L22 45 Z"
-            fill="#D4882B" stroke="#1A100A" stroke-width="2"/>
+            fill="url(#kaosGrad)" stroke="#0F2820" stroke-width="2"/>
+          <!-- Fabric highlight -->
+          <path d="M30 35 L45 22 Q50 19 60 19 Q70 19 75 22 L90 35 L98 45 L88 50 L88 95 Q88 100 83 100 L37 100 Q32 100 32 95 L32 50 L22 45 Z"
+            fill="url(#kaosHighlight)" opacity="0.6"/>
           <!-- Collar -->
-          <path d="M50 22 Q55 28 60 28 Q65 28 70 22"
-            fill="none" stroke="#1A100A" stroke-width="2"/>
-          <!-- Logo center: 8-ball -->
-          <circle cx="60" cy="62" r="13" fill="#1A100A"/>
-          <circle cx="60" cy="62" r="7" fill="#F2E8D5"/>
-          <text x="60" y="66" text-anchor="middle" font-family="Manrope" font-size="9" font-weight="800" fill="#1A100A">8</text>
-          <!-- Text below logo -->
-          <text x="60" y="86" text-anchor="middle" font-family="Bebas Neue" font-size="7" font-weight="700" fill="#1A100A" letter-spacing="0.05em">WARPAT</text>
-          <!-- Sleeve shadow -->
-          <path d="M32 50 L32 60 L25 55 Z" fill="#1A100A" opacity="0.25"/>
-          <path d="M88 50 L88 60 L95 55 Z" fill="#1A100A" opacity="0.25"/>
+          <path d="M50 22 Q55 28 60 28 Q65 28 70 22 L70 22 Q67 32 60 32 Q53 32 50 22 Z" fill="#0F2820"/>
+          <!-- Sleeve shadows -->
+          <path d="M32 50 L32 62 L25 56 Z" fill="#0F2820" opacity="0.45"/>
+          <path d="M88 50 L88 62 L95 56 Z" fill="#0F2820" opacity="0.45"/>
+          <!-- Center: 8-ball logo with gold ring -->
+          <circle cx="60" cy="60" r="16" fill="none" stroke="#F5B048" stroke-width="1.5"/>
+          <circle cx="60" cy="60" r="13" fill="#1A100A" stroke="#F5B048" stroke-width="0.8"/>
+          <circle cx="60" cy="60" r="7" fill="#F2E8D5"/>
+          <text x="60" y="63.5" text-anchor="middle" font-family="Manrope, sans-serif" font-size="9" font-weight="800" fill="#1A100A">8</text>
+          <!-- WARPAT typography -->
+          <text x="60" y="85" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="8" fill="#F5B048" letter-spacing="0.18em">WARPAT</text>
+          <text x="60" y="93" text-anchor="middle" font-family="Manrope, sans-serif" font-size="3.5" fill="#F2E8D5" letter-spacing="0.2em">JOMBANG</text>
         </svg>
       </div>
       <div class="reward-content">
@@ -3978,40 +4002,55 @@
       </div>
     </div>
 
-    <!-- Featured 3: 100 poin Stick Billiard Entry -->
-    <div class="reward-card reveal reveal-delay-3" data-name="Stick Billiard Entry" data-points="100">
+    <!-- Featured 3: 150 poin Stick Billiard Entry — black w/ gold ornament -->
+    <div class="reward-card reveal reveal-delay-3" data-name="Stick Billiard Entry" data-points="150">
       <div class="reward-visual">
         <span class="reward-category">Premium</span>
         <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-          <!-- Stick (diagonal) with realistic segments -->
-          <!-- Butt cap (dark) -->
-          <line x1="95" y1="100" x2="80" y2="85" stroke="#2A1810" stroke-width="9" stroke-linecap="round"/>
-          <!-- Wrap area (darker brown) -->
-          <line x1="80" y1="85" x2="73" y2="78" stroke="#5A3A1C" stroke-width="8" stroke-linecap="round"/>
-          <!-- Decorative band -->
-          <line x1="77" y1="83" x2="76" y2="82" stroke="#D4882B" stroke-width="1.5"/>
-          <!-- Shaft (light wood) -->
-          <line x1="73" y1="78" x2="40" y2="45" stroke="#C09060" stroke-width="7" stroke-linecap="round"/>
-          <!-- Highlight on shaft -->
-          <line x1="73" y1="76" x2="42" y2="46" stroke="#E0B080" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-          <!-- Ferrule (white/cream) -->
-          <line x1="40" y1="45" x2="33" y2="38" stroke="#F2E8D5" stroke-width="6.5" stroke-linecap="round"/>
-          <!-- Chalk tip (blue) -->
-          <line x1="33" y1="38" x2="27" y2="32" stroke="#3D6BB5" stroke-width="6" stroke-linecap="round"/>
-          <!-- Sparkle near tip -->
-          <g opacity="0.7">
-            <path d="M22 22 L25 28 L31 25 L25 30 L22 36 L19 30 L13 25 L19 28 Z" fill="#F5B048" transform="scale(0.5) translate(15 15)"/>
-          </g>
-          <!-- Cue ball at butt area -->
-          <circle cx="100" cy="95" r="9" fill="#F2E8D5" stroke="#1A100A" stroke-width="1.5"/>
-          <ellipse cx="97" cy="92" rx="3" ry="2" fill="#fff" opacity="0.8"/>
+          <defs>
+            <linearGradient id="goldOrn" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#F5D470"/>
+              <stop offset="50%" stop-color="#D4A027"/>
+              <stop offset="100%" stop-color="#8B6A1A"/>
+            </linearGradient>
+            <radialGradient id="cueGlow">
+              <stop offset="0%" stop-color="#D4A027" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#D4A027" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- Premium glow -->
+          <circle cx="55" cy="60" r="45" fill="url(#cueGlow)"/>
+          <!-- Butt cap (deep black) -->
+          <line x1="98" y1="105" x2="78" y2="85" stroke="#0a0a0a" stroke-width="9" stroke-linecap="round"/>
+          <!-- Butt end rubber -->
+          <circle cx="100" cy="107" r="2.5" fill="#1a1a1a"/>
+          <!-- Wrap/ornament section (gold) -->
+          <line x1="78" y1="85" x2="70" y2="77" stroke="url(#goldOrn)" stroke-width="9" stroke-linecap="round"/>
+          <!-- Gold accent lines (oriental ornament feel) -->
+          <line x1="76" y1="83" x2="72" y2="79" stroke="#F5D470" stroke-width="0.8" opacity="0.9"/>
+          <line x1="75" y1="82" x2="73" y2="80" stroke="#fff" stroke-width="0.4" opacity="0.7"/>
+          <!-- Joint ring -->
+          <line x1="70" y1="77" x2="67" y2="74" stroke="#D4A027" stroke-width="8" stroke-linecap="round"/>
+          <!-- Shaft (matte black) -->
+          <line x1="67" y1="74" x2="32" y2="39" stroke="#1a1a1a" stroke-width="6.5" stroke-linecap="round"/>
+          <!-- Shaft subtle highlight -->
+          <line x1="66" y1="72" x2="34" y2="40" stroke="#3a3a3a" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+          <!-- Ferrule (cream) -->
+          <line x1="32" y1="39" x2="26" y2="33" stroke="#F2E8D5" stroke-width="6" stroke-linecap="round"/>
+          <!-- Tip (brown leather) -->
+          <line x1="26" y1="33" x2="22" y2="29" stroke="#8B4513" stroke-width="5.5" stroke-linecap="round"/>
+          <!-- Sparkle accent near tip -->
+          <path d="M15 18 L17 22 L21 20 L17.5 23.5 L15 28 L12.5 23.5 L9 20 L13 22 Z" fill="#F5B048" opacity="0.8"/>
+          <!-- Cue ball -->
+          <circle cx="105" cy="100" r="9" fill="#F2E8D5" stroke="#1A100A" stroke-width="1.5"/>
+          <ellipse cx="102" cy="97" rx="3" ry="2" fill="#fff" opacity="0.8"/>
         </svg>
       </div>
       <div class="reward-content">
         <div class="reward-name">Stick Billiard Entry</div>
         <div class="reward-desc">Tongkat billiard kualitas entry level — bisa kamu bawa pulang.</div>
         <div class="reward-card-footer">
-          <div class="reward-points">100<small>POIN</small></div>
+          <div class="reward-points">150<small>POIN</small></div>
           <div class="reward-card-action">
             Tukar
             <svg viewBox="0 0 12 12" fill="none"><path d="M2 6h8m0 0L6 2m4 4l-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -4961,17 +5000,23 @@
     <div class="reward-catalog">
       <div class="reward-catalog-grid">
 
-        <!-- 8 — Main 1 Jam Gratis -->
+        <!-- 8 — Main 1 Jam Gratis — ticket text design -->
         <div class="catalog-card" data-cat="free-play" data-name="Main 1 Jam Gratis" data-points="8">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Free Play</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="40" cy="40" r="28" fill="#1A100A" stroke="#5A3A1C" stroke-width="1.2"/>
-              <circle cx="40" cy="40" r="26" fill="#F5B048"/>
-              <ellipse cx="40" cy="40" rx="26" ry="10" fill="#F2E8D5"/>
-              <circle cx="40" cy="40" r="9" fill="#F2E8D5"/>
-              <text x="40" y="44" text-anchor="middle" font-family="Manrope" font-size="11" font-weight="800" fill="#1A100A">1H</text>
-              <ellipse cx="33" cy="33" rx="6" ry="4" fill="#fff" opacity="0.35" transform="rotate(-25 33 33)"/>
+              <defs>
+                <linearGradient id="t1cat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3B2511"/>
+                  <stop offset="100%" stop-color="#1A100A"/>
+                </linearGradient>
+              </defs>
+              <path d="M14 22 L66 22 L66 58 L14 58 Z" fill="url(#t1cat)" stroke="#F5B048" stroke-width="1"/>
+              <circle cx="14" cy="40" r="2.5" fill="#1A100A"/>
+              <circle cx="66" cy="40" r="2.5" fill="#1A100A"/>
+              <line x1="19" y1="40" x2="61" y2="40" stroke="#F5B048" stroke-dasharray="1.5 1.5" stroke-width="0.4" opacity="0.5"/>
+              <text x="40" y="38" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="13" fill="#F5B048" letter-spacing="0.05em">1 JAM</text>
+              <text x="40" y="52" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="8" fill="#F2E8D5" letter-spacing="0.2em">GRATIS</text>
             </svg>
           </div>
           <div class="catalog-info">
@@ -5053,43 +5098,70 @@
           </div>
         </div>
 
-        <!-- 25 — Rokok LA/Esse -->
-        <div class="catalog-card" data-cat="tobacco" data-name="Rokok LA / Esse" data-points="25">
+        <!-- 25 — Rokok LA Ice — white box w/ blue cursive LA -->
+        <div class="catalog-card" data-cat="tobacco" data-name="Rokok LA Ice" data-points="25">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Tobacco</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <rect x="20" y="22" width="40" height="42" rx="3" fill="#2A5440" stroke="#1A100A" stroke-width="1.5"/>
-              <rect x="20" y="22" width="40" height="14" fill="#1A3528"/>
-              <rect x="22" y="38" width="36" height="5" fill="#F2E8D5"/>
-              <text x="40" y="42" text-anchor="middle" font-family="Bebas Neue" font-size="4.5" fill="#1A100A" letter-spacing="0.1em">LA·ESSE</text>
-              <circle cx="40" cy="51" r="4" fill="none" stroke="#F2E8D5" stroke-width="1.2"/>
-              <text x="40" y="53" text-anchor="middle" font-family="Bebas Neue" font-size="5" fill="#F2E8D5">LA</text>
-              <rect x="20" y="58" width="40" height="6" fill="#1A100A"/>
-              <line x1="20" y1="22" x2="60" y2="22" stroke="#1A100A" stroke-width="1.5"/>
-              <rect x="24" y="16" width="3" height="8" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.6"/>
-              <rect x="29" y="16" width="3" height="8" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.6"/>
-              <circle cx="25.5" cy="17" r="1.2" fill="#D4882B"/>
-              <circle cx="30.5" cy="17" r="1.2" fill="#D4882B"/>
+              <defs>
+                <linearGradient id="laBox" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#F2E8D5"/>
+                  <stop offset="50%" stop-color="#E8DCC0"/>
+                  <stop offset="100%" stop-color="#F2E8D5"/>
+                </linearGradient>
+              </defs>
+              <!-- Box body -->
+              <rect x="22" y="18" width="36" height="50" rx="1.5" fill="url(#laBox)" stroke="#1A100A" stroke-width="1"/>
+              <!-- Top PERINGATAN band -->
+              <rect x="22" y="18" width="36" height="11" fill="#0a0a0a"/>
+              <text x="40" y="25" text-anchor="middle" font-family="Manrope, sans-serif" font-size="2.8" font-weight="700" fill="#fff" letter-spacing="0.1em">PERINGATAN</text>
+              <!-- Warning image area (dark) -->
+              <rect x="23" y="22" width="34" height="5" fill="#3a3a3a" opacity="0.55"/>
+              <!-- Big cursive blue "LA" -->
+              <text x="40" y="47" text-anchor="middle" font-family="DM Serif Display, serif" font-style="italic" font-weight="700" font-size="15" fill="#1E4080">LA</text>
+              <!-- ICE label -->
+              <text x="48" y="50" text-anchor="middle" font-family="Manrope, sans-serif" font-size="3" font-weight="700" fill="#4A6B9C" letter-spacing="0.05em">ICE</text>
+              <!-- Silver swoosh decoration -->
+              <path d="M28 38 Q40 33 52 38" fill="none" stroke="#999" stroke-width="0.4" opacity="0.6"/>
+              <path d="M28 52 Q40 57 52 52" fill="none" stroke="#999" stroke-width="0.4" opacity="0.6"/>
+              <!-- KRETEK FILTERS -->
+              <text x="40" y="61" text-anchor="middle" font-family="Manrope, sans-serif" font-size="2.4" fill="#7A6A55" letter-spacing="0.2em">KRETEK FILTERS</text>
+              <!-- Bottom shadow band -->
+              <rect x="22" y="64" width="36" height="4" fill="#1A100A" opacity="0.18"/>
+              <!-- Cigarettes peeking from top -->
+              <rect x="27" y="14" width="2.5" height="6" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.4"/>
+              <rect x="31" y="14" width="2.5" height="6" fill="#F2E8D5" stroke="#1A100A" stroke-width="0.4"/>
+              <circle cx="28.25" cy="15" r="0.9" fill="#D4882B"/>
+              <circle cx="32.25" cy="15" r="0.9" fill="#D4882B"/>
             </svg>
           </div>
           <div class="catalog-info">
-            <div class="catalog-name">Rokok LA / Esse</div>
+            <div class="catalog-name">Rokok LA Ice</div>
             <div class="catalog-points">25<small>POIN</small></div>
           </div>
         </div>
 
-        <!-- 30 — Kaos Warpat -->
+        <!-- 30 — Kaos Warpat — dark green w/ logo -->
         <div class="catalog-card" data-cat="merch" data-name="Kaos Warpat" data-points="30">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Merchandise</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="kaosCatGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2A5440"/>
+                  <stop offset="100%" stop-color="#1F4030"/>
+                </linearGradient>
+              </defs>
               <path d="M22 28 L33 18 Q37 16 40 16 Q43 16 47 18 L58 28 L64 35 L57 38 L57 63 Q57 66 54 66 L26 66 Q23 66 23 63 L23 38 L16 35 Z"
-                fill="#D4882B" stroke="#1A100A" stroke-width="1.5"/>
-              <path d="M35 18 Q38 22 40 22 Q42 22 45 18" fill="none" stroke="#1A100A" stroke-width="1.5"/>
+                fill="url(#kaosCatGrad)" stroke="#0F2820" stroke-width="1.3"/>
+              <path d="M35 18 Q38 22 40 22 Q42 22 45 18 L45 18 Q43 26 40 26 Q37 26 35 18 Z" fill="#0F2820"/>
+              <!-- 8-ball with gold ring -->
+              <circle cx="40" cy="42" r="10" fill="none" stroke="#F5B048" stroke-width="0.8"/>
               <circle cx="40" cy="42" r="8" fill="#1A100A"/>
               <circle cx="40" cy="42" r="4.5" fill="#F2E8D5"/>
-              <text x="40" y="44.5" text-anchor="middle" font-family="Manrope" font-size="5.5" font-weight="800" fill="#1A100A">8</text>
-              <text x="40" y="58" text-anchor="middle" font-family="Bebas Neue" font-size="4.5" font-weight="700" fill="#1A100A" letter-spacing="0.05em">WARPAT</text>
+              <text x="40" y="44.5" text-anchor="middle" font-family="Manrope, sans-serif" font-size="5.5" font-weight="800" fill="#1A100A">8</text>
+              <text x="40" y="58" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="4.5" fill="#F5B048" letter-spacing="0.1em">WARPAT</text>
+              <text x="40" y="62.5" text-anchor="middle" font-family="Manrope, sans-serif" font-size="2.2" fill="#F2E8D5" letter-spacing="0.15em">JOMBANG</text>
             </svg>
           </div>
           <div class="catalog-info">
@@ -5098,17 +5170,23 @@
           </div>
         </div>
 
-        <!-- 40 — Main 4 Jam Gratis -->
+        <!-- 40 — Main 4 Jam Gratis — premium red ticket -->
         <div class="catalog-card" data-cat="free-play" data-name="Main 4 Jam Gratis" data-points="40">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Free Play</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="40" cy="40" r="28" fill="#1A100A" stroke="#5A3A1C" stroke-width="1.2"/>
-              <circle cx="40" cy="40" r="26" fill="#E63946"/>
-              <ellipse cx="40" cy="40" rx="26" ry="10" fill="#F2E8D5"/>
-              <circle cx="40" cy="40" r="9" fill="#F2E8D5"/>
-              <text x="40" y="44" text-anchor="middle" font-family="Manrope" font-size="11" font-weight="800" fill="#1A100A">4H</text>
-              <ellipse cx="33" cy="33" rx="6" ry="4" fill="#fff" opacity="0.35" transform="rotate(-25 33 33)"/>
+              <defs>
+                <linearGradient id="t4cat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3B2511"/>
+                  <stop offset="100%" stop-color="#1A100A"/>
+                </linearGradient>
+              </defs>
+              <path d="M14 22 L66 22 L66 58 L14 58 Z" fill="url(#t4cat)" stroke="#E63946" stroke-width="1"/>
+              <circle cx="14" cy="40" r="2.5" fill="#1A100A"/>
+              <circle cx="66" cy="40" r="2.5" fill="#1A100A"/>
+              <line x1="19" y1="40" x2="61" y2="40" stroke="#E63946" stroke-dasharray="1.5 1.5" stroke-width="0.4" opacity="0.5"/>
+              <text x="40" y="38" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="13" fill="#E63946" letter-spacing="0.05em">4 JAM</text>
+              <text x="40" y="52" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="8" fill="#F2E8D5" letter-spacing="0.2em">GRATIS</text>
             </svg>
           </div>
           <div class="catalog-info">
@@ -5167,29 +5245,43 @@
           </div>
         </div>
 
-        <!-- 100 — Stick Billiard Entry -->
-        <div class="catalog-card" data-cat="other" data-name="Stick Billiard Entry" data-points="100">
+        <!-- 150 — Stick Billiard Entry — black w/ gold ornament -->
+        <div class="catalog-card" data-cat="other" data-name="Stick Billiard Entry" data-points="150">
           <div class="catalog-visual">
             <span class="catalog-cat-pill">Premium</span>
             <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <!-- Cue diagonal -->
-              <line x1="65" y1="68" x2="55" y2="58" stroke="#2A1810" stroke-width="6" stroke-linecap="round"/>
-              <line x1="55" y1="58" x2="50" y2="53" stroke="#5A3A1C" stroke-width="5.5" stroke-linecap="round"/>
-              <line x1="53" y1="56" x2="52" y2="55" stroke="#D4882B" stroke-width="1"/>
-              <line x1="50" y1="53" x2="28" y2="31" stroke="#C09060" stroke-width="5" stroke-linecap="round"/>
-              <line x1="50" y1="52" x2="29" y2="31" stroke="#E0B080" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-              <line x1="28" y1="31" x2="23" y2="26" stroke="#F2E8D5" stroke-width="4.5" stroke-linecap="round"/>
-              <line x1="23" y1="26" x2="18" y2="21" stroke="#3D6BB5" stroke-width="4.2" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="goldOrnCat" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#F5D470"/>
+                  <stop offset="50%" stop-color="#D4A027"/>
+                  <stop offset="100%" stop-color="#8B6A1A"/>
+                </linearGradient>
+              </defs>
+              <!-- Butt (black) -->
+              <line x1="65" y1="68" x2="55" y2="58" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"/>
+              <!-- Ornament gold band -->
+              <line x1="55" y1="58" x2="49" y2="52" stroke="url(#goldOrnCat)" stroke-width="6" stroke-linecap="round"/>
+              <line x1="53" y1="56" x2="51" y2="54" stroke="#fff" stroke-width="0.4" opacity="0.7"/>
+              <!-- Joint -->
+              <line x1="49" y1="52" x2="46" y2="49" stroke="#D4A027" stroke-width="5.5" stroke-linecap="round"/>
+              <!-- Shaft (matte black) -->
+              <line x1="46" y1="49" x2="22" y2="25" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+              <!-- Shaft highlight -->
+              <line x1="45" y1="48" x2="24" y2="26" stroke="#3a3a3a" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+              <!-- Ferrule -->
+              <line x1="22" y1="25" x2="18" y2="21" stroke="#F2E8D5" stroke-width="4.5" stroke-linecap="round"/>
+              <!-- Tip (brown leather) -->
+              <line x1="18" y1="21" x2="14" y2="17" stroke="#8B4513" stroke-width="4.2" stroke-linecap="round"/>
               <!-- Cue ball -->
               <circle cx="68" cy="62" r="6.5" fill="#F2E8D5" stroke="#1A100A" stroke-width="1.2"/>
               <ellipse cx="65.5" cy="60" rx="2" ry="1.4" fill="#fff" opacity="0.8"/>
               <!-- Sparkle -->
-              <path d="M14 16 L15.5 18.5 L18 17 L16 19.5 L18 22 L15.5 20.5 L13 22 L14.5 19.5 L13 17 L15.5 18.5 Z" fill="#F5B048" opacity="0.8"/>
+              <path d="M10 13 L11.5 15.5 L14 14 L12 16.5 L14 19 L11.5 17.5 L9 19 L10.5 16.5 L9 14 L11.5 15.5 Z" fill="#F5B048" opacity="0.8"/>
             </svg>
           </div>
           <div class="catalog-info">
             <div class="catalog-name">Stick Billiard Entry</div>
-            <div class="catalog-points">100<small>POIN</small></div>
+            <div class="catalog-points">150<small>POIN</small></div>
           </div>
         </div>
 
