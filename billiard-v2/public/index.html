@@ -1867,6 +1867,11 @@
     filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5));
   }
   .redeem-visual svg { width: 100%; height: 100%; }
+  .redeem-visual img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    border-radius: 14px;
+  }
   .redeem-eyebrow {
     font-size: 0.6rem;
     color: var(--amber-bright);
@@ -5879,11 +5884,20 @@
     // Extract data from the clicked reward card
     const name = rewardEl.dataset.name || 'Reward';
     const points = rewardEl.dataset.points || '0';
-    // Find the SVG visual — clone from the card
-    const sourceSvg = rewardEl.querySelector('.reward-visual svg, .catalog-visual svg');
-    if (sourceSvg && redeemVisual) {
+    // Find visual — prefer SVG, fallback ke <img> (untuk foto produk asli)
+    const source = rewardEl.querySelector(
+      '.reward-visual svg, .catalog-visual svg, .reward-visual img, .catalog-visual img'
+    );
+    if (source && redeemVisual) {
       redeemVisual.innerHTML = '';
-      redeemVisual.appendChild(sourceSvg.cloneNode(true));
+      const clone = source.cloneNode(true);
+      // Untuk img: reset class/style biar fit di redeem-visual (130x130 box)
+      // tanpa kebawa blend-mode multiply / contain padding dari card asli
+      if (clone.tagName === 'IMG') {
+        clone.className = '';
+        clone.removeAttribute('style');
+      }
+      redeemVisual.appendChild(clone);
     }
     redeemNameEl.textContent = name;
     redeemPointsEl.textContent = points;
