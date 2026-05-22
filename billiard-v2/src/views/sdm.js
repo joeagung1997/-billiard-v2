@@ -30,9 +30,11 @@ const TIPE_COLOR = {
 
 // Hitung ringkasan gaji satu karyawan untuk satu bulan
 function hitungRingkasan(karyawan, trxBulanIni) {
-  const gajiPokok  = Number(karyawan.gaji_pokok) || 0;
-  const uangMakan  = Number(karyawan.uang_makan)  || 0;
-  const totalGaji  = gajiPokok + uangMakan;
+  const gajiPokok      = Number(karyawan.gaji_pokok) || 0;
+  const uangMakanHari  = Number(karyawan.uang_makan)  || 0;
+  const hariKerja      = Number(karyawan.hari_kerja)  || 26;
+  const totalMakan     = uangMakanHari * hariKerja;
+  const totalGaji      = gajiPokok + totalMakan;
   const kasbon     = trxBulanIni.filter((t) => t.tipe === "kasbon").reduce((s, t) => s + Number(t.jumlah), 0);
   const kembali    = trxBulanIni.filter((t) => t.tipe === "kembali_kasbon").reduce((s, t) => s + Number(t.jumlah), 0);
   const dibayar    = trxBulanIni.filter((t) => t.tipe === "gaji").reduce((s, t) => s + Number(t.jumlah), 0);
@@ -42,7 +44,7 @@ function hitungRingkasan(karyawan, trxBulanIni) {
   const sisa       = Math.max(0, totalGaji - totalDibayarkan);
   const status     = totalDibayarkan <= 0 ? "belum"
                    : totalDibayarkan >= totalGaji ? "lunas" : "sebagian";
-  return { gajiPokok, uangMakan, totalGaji, kasbon, kembali, dibayar, thr, bonus, totalDibayarkan, sisa, status };
+  return { gajiPokok, uangMakanHari, hariKerja, totalMakan, totalGaji, kasbon, kembali, dibayar, thr, bonus, totalDibayarkan, sisa, status };
 }
 
 const bulanLabel = (bulan) => {
@@ -170,7 +172,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
           + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div>"
           + shiftBadge + "</td>"
           + "<td class=\"r\"><div>" + rp(r.totalGaji) + "</div>"
-          + (r.uangMakan > 0 ? "<div style=\"font-size:10px;color:var(--txt3);margin-top:1px\">" + rp(r.gajiPokok) + " + makan " + rp(r.uangMakan) + "</div>" : "")
+          + (r.uangMakanHari > 0 ? "<div style=\"font-size:10px;color:var(--txt3);margin-top:1px\">+ makan " + rp(r.uangMakanHari) + "/hari × " + r.hariKerja + "hr</div>" : "")
           + "</td>"
           + "<td class=\"r\">" + (r.kasbon > 0 ? "<span class=\"sdm-td-red\">" + rp(r.kasbon) + "</span>" : "<span class=\"sdm-td-muted\">—</span>") + "</td>"
           + "<td class=\"r\">" + (r.sisa > 0 ? "<span class=\"sdm-td-red\">" + rp(r.sisa) + "</span>" : "<span class=\"sdm-td-green\">✓ Lunas</span>") + "</td>"
@@ -332,8 +334,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "</div></div>"
     + "<div class=\"sdm-info-grid\">"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Gaji Pokok</div><div class=\"sdm-info-val\">" + rp(karyawan.gaji_pokok) + " / bln</div></div>"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Uang Makan</div><div class=\"sdm-info-val\">" + (Number(karyawan.uang_makan) > 0 ? rp(karyawan.uang_makan) + " / bln" : "—") + "</div></div>"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Total Gaji</div><div class=\"sdm-info-val\" style=\"font-weight:700;color:var(--txt)\">" + rp(Number(karyawan.gaji_pokok) + Number(karyawan.uang_makan || 0)) + " / bln</div></div>"
+    + (Number(karyawan.uang_makan) > 0
+        ? "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Uang Makan</div><div class=\"sdm-info-val\">" + rp(karyawan.uang_makan) + "/hari × " + (karyawan.hari_kerja || 26) + " hr</div></div>"
+          + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Total Gaji</div><div class=\"sdm-info-val\" style=\"font-weight:700\">" + rp(Number(karyawan.gaji_pokok) + Number(karyawan.uang_makan) * Number(karyawan.hari_kerja || 26)) + " / bln</div></div>"
+        : "")
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Shift</div><div class=\"sdm-info-val\"><span class=\"sdm-badge sdm-badge-" + (karyawan.shift || "siang") + "\">" + (karyawan.shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span></div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Telepon</div><div class=\"sdm-info-val\">" + escHtml(karyawan.telepon || "—") + "</div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Mulai Kerja</div><div class=\"sdm-info-val\">" + tglMulai + "</div></div>"
@@ -350,8 +354,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "<div class=\"sdm-rekap\">"
     + "<div class=\"sdm-rekap-title\">Ringkasan Gaji</div>"
     + "<div class=\"sdm-rekap-row\"><span>Gaji Pokok</span><span>" + rp(r.gajiPokok) + "</span></div>"
-    + (r.uangMakan > 0 ? "<div class=\"sdm-rekap-row\"><span>Uang Makan</span><span>" + rp(r.uangMakan) + "</span></div>" : "")
-    + (r.uangMakan > 0 ? "<div class=\"sdm-rekap-row\" style=\"font-weight:600\"><span>Total Gaji</span><span>" + rp(r.totalGaji) + "</span></div>" : "")
+    + (r.uangMakanHari > 0
+        ? "<div class=\"sdm-rekap-row\"><span>Uang Makan <span style=\"font-weight:400;font-size:11px;color:var(--txt3)\">" + rp(r.uangMakanHari) + "/hari × " + r.hariKerja + " hari</span></span><span>" + rp(r.totalMakan) + "</span></div>"
+          + "<div class=\"sdm-rekap-row\" style=\"font-weight:600\"><span>Total Gaji</span><span>" + rp(r.totalGaji) + "</span></div>"
+        : "")
     + (r.kasbon > 0 ? "<div class=\"sdm-rekap-row\"><span>Kasbon diambil</span><span style=\"color:var(--red)\">- " + rp(r.kasbon) + "</span></div>" : "")
     + (r.kembali > 0 ? "<div class=\"sdm-rekap-row\"><span>Kembali Kasbon</span><span style=\"color:var(--green)\">+ " + rp(r.kembali) + "</span></div>" : "")
     + (r.dibayar > 0 ? "<div class=\"sdm-rekap-row\"><span>Gaji Dibayar</span><span style=\"color:var(--red)\">- " + rp(r.dibayar) + "</span></div>" : "")
@@ -451,9 +457,10 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     : "/operasional/sdm/karyawan/tambah";
 
   const v = (field, fallback = "") => escHtml(existing ? (existing[field] ?? fallback) : fallback);
-  const gajiVal  = existing ? Number(existing.gaji_pokok).toLocaleString("id-ID") : "";
-  const makanVal = existing && existing.uang_makan ? Number(existing.uang_makan).toLocaleString("id-ID") : "";
-  const tglVal   = existing?.tgl_mulai ? new Date(existing.tgl_mulai).toISOString().slice(0, 10) : "";
+  const gajiVal     = existing ? Number(existing.gaji_pokok).toLocaleString("id-ID") : "";
+  const makanVal    = existing && existing.uang_makan ? Number(existing.uang_makan).toLocaleString("id-ID") : "";
+  const hariKerjaV  = existing?.hari_kerja ?? 26;
+  const tglVal      = existing?.tgl_mulai ? new Date(existing.tgl_mulai).toISOString().slice(0, 10) : "";
 
   const errHtml = showErr
     ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\">Nama dan gaji pokok wajib diisi.</div>"
@@ -481,8 +488,10 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     + "<input class=\"sdm-inp\" type=\"text\" name=\"jabatan\" value=\"" + v("jabatan") + "\" placeholder=\"Kasir, Barista, Jaga Malam, dll\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Gaji Pokok (Rp) *</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" value=\"" + gajiVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Uang Makan (Rp) <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
-    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" value=\"" + makanVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\"></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Uang Makan per Hari (Rp) <span style=\"font-weight:400;text-transform:none\">(opsional — khusus shift malam)</span></label>"
+    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" id=\"inpMakan\" value=\"" + makanVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this);toggleHariKerja()\"></div>"
+    + "<div class=\"sdm-fmg\" id=\"wrapHariKerja\" style=\"" + (Number(existing?.uang_makan) > 0 ? "" : "display:none") + "\"><label class=\"sdm-lbl\">Hari Kerja per Bulan</label>"
+    + "<input class=\"sdm-inp\" type=\"number\" name=\"hari_kerja\" value=\"" + hariKerjaV + "\" min=\"1\" max=\"31\" placeholder=\"26\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nomor HP</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" value=\"" + v("telepon") + "\" placeholder=\"08xxxxxxxxxx\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Shift</label>"
@@ -500,6 +509,7 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     + "</div></div></div>"
     + "<script>"
     + "function sdmFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?Number(raw).toLocaleString('id-ID'):''}"
+    + "function toggleHariKerja(){var v=document.getElementById('inpMakan').value.replace(/\\D/g,'');document.getElementById('wrapHariKerja').style.display=parseInt(v)>0?'':'none';}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "</script>"

@@ -332,19 +332,19 @@ export const getKaryawanById = async (id) => {
   return res.rows[0] ?? null;
 };
 
-export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, tglMulai, telepon, shift }) => {
+export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }) => {
   const res = await query(
-    `INSERT INTO karyawan (nama, jabatan, gaji_pokok, uang_makan, tgl_mulai, telepon, shift)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, tglMulai || null, telepon.trim(), shift || "siang"]
+    `INSERT INTO karyawan (nama, jabatan, gaji_pokok, uang_makan, hari_kerja, tgl_mulai, telepon, shift)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang"]
   );
   return res.rows[0].id;
 };
 
-export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, tglMulai, telepon, shift }) => {
+export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }) => {
   await query(
-    `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, uang_makan=$4, tgl_mulai=$5, telepon=$6, shift=$7 WHERE id=$8`,
-    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, tglMulai || null, telepon.trim(), shift || "siang", id]
+    `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, uang_makan=$4, hari_kerja=$5, tgl_mulai=$6, telepon=$7, shift=$8 WHERE id=$9`,
+    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang", id]
   );
 };
 

@@ -101,12 +101,13 @@ router.post("/sdm/karyawan/tambah", async (req, res) => {
   const jabatan   = (req.body.jabatan  ?? "").trim();
   const gajiPokok = parseInt((req.body.gaji_pokok ?? "").replace(/\D/g, "")) || 0;
   const uangMakan = parseInt((req.body.uang_makan  ?? "").replace(/\D/g, "")) || 0;
+  const hariKerja = Math.min(31, Math.max(1, parseInt(req.body.hari_kerja) || 26));
   const tglMulai  = req.body.tgl_mulai || null;
   const telepon   = (req.body.telepon  ?? "").trim();
   const shift     = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
   if (!nama || gajiPokok <= 0) return res.redirect("/operasional/sdm/karyawan/tambah?err=1");
   try {
-    await addKaryawan({ nama, jabatan, gajiPokok, uangMakan, tglMulai, telepon, shift });
+    await addKaryawan({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
     res.redirect("/operasional/sdm");
   } catch (err) {
     console.error("[SDM] tambah karyawan error:", err.message);
@@ -135,12 +136,13 @@ router.post("/sdm/karyawan/:id/edit", async (req, res) => {
   const jabatan   = (req.body.jabatan  ?? "").trim();
   const gajiPokok = parseInt((req.body.gaji_pokok ?? "").replace(/\D/g, "")) || 0;
   const uangMakan = parseInt((req.body.uang_makan  ?? "").replace(/\D/g, "")) || 0;
+  const hariKerja = Math.min(31, Math.max(1, parseInt(req.body.hari_kerja) || 26));
   const tglMulai  = req.body.tgl_mulai || null;
   const telepon   = (req.body.telepon  ?? "").trim();
   const shift     = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
   if (!id || !nama || gajiPokok <= 0) return res.redirect(`/operasional/sdm/karyawan/${id}/edit?err=1`);
   try {
-    await updateKaryawan(id, { nama, jabatan, gajiPokok, uangMakan, tglMulai, telepon, shift });
+    await updateKaryawan(id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
     res.redirect("/operasional/sdm");
   } catch (err) {
     console.error("[SDM] update karyawan error:", err.message);
