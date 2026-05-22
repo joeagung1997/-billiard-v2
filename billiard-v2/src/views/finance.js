@@ -41,8 +41,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
   const isKat  = page === "kategori";
   const isMenu = page === "menu";
   const isSdm  = page === "sdm";
-  const subOpen = isKeu || isKat || isMenu || isSdm;
-  const opsItemCls = "nav-item" + (subOpen ? " open" : "");
+  const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
+  const opsItemCls = "nav-item open";
 
   const subItem = (href, label, active) =>
     "<a href=\"" + href + "\" class=\"submenu-item" + (active ? " active" : "") + "\">"
@@ -89,10 +89,9 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
     // GROUP: OPERASIONAL
     + "<div class=\"nav-group\">"
     + "<div class=\"nav-group-label\">Operasional</div>"
-    + "<div class=\"" + opsItemCls + "\" onclick=\"toggleSubmenu('ops', this)\">"
+    + "<div class=\"" + opsItemCls + "\">"
     + "<div class=\"nav-item-icon\"><i class=\"ti ti-briefcase\"></i></div>"
     + "<span class=\"nav-item-text\">Operasional</span>"
-    + "<i class=\"ti ti-chevron-down nav-chevron\"></i>"
     + "</div>"
     + "<div class=\"submenu-wrap\">"
     + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
