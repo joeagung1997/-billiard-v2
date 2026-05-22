@@ -675,14 +675,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
       + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">" + escHtml(t.keterangan || "—") + "</div>"
-      + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "") + "</div>"
+      + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "")
+      + (t.bayar === "cash" ? " · <span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? " · <span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
+      + "</div>"
       + reasonHt
       + "</div>"
       + "<div class=\"fr-td\"><span class=\"cat-tag\">" + escHtml(t.kategori || "—") + "</span></div>"
-      + "<div class=\"fr-td right " + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
-      + "<div class=\"fr-td\"><span class=\"t-badge " + (isIn ? "in" : "out") + "\">"
-      + "<i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>"
-      + (isIn ? "Masuk" : "Keluar") + "</span></div>"
+      + "<div class=\"fr-td fr-amount-col\">"
+      + "<div class=\"" + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
+      + "<span class=\"t-badge " + (isIn ? "in" : "out") + "\"><i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>" + (isIn ? "Masuk" : "Keluar") + "</span>"
+      + "</div>"
       + "<div class=\"fr-td right fr-act\">" + aksiHt + "</div>"
       + "</div>";
   };
@@ -721,6 +723,12 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".fin-row-out{border-left:3px solid rgba(239,68,68,.4)}",
     ".fin-row-in:hover{background:#f0fdf4!important}",
     ".fin-row-out:hover{background:#fff5f5!important}",
+    // ── Tabel 5-kolom (merge Jumlah+Tipe) ───────────────────────
+    ".fin-tbl-head,.fin-row{grid-template-columns:110px 1fr 150px 195px 54px!important}",
+    ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
+    ".fr-bayar-cash{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.02em}",
+    ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
+    "@media(max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:90px 1fr 150px!important}.fin-th:nth-child(3),.fr-td:nth-child(3){display:none!important}.fin-th:nth-child(n+5),.fr-td:nth-child(n+5){display:none!important}}",
     // ── Cards rounded ───────────────────────────────────────────
     ".fin-table-card{border-radius:14px!important}",
     ".fin-charts-row .card{border-radius:14px!important}",
@@ -929,10 +937,11 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<canvas id=\"donutChart\"></canvas>"
     + "<div class=\"fin-donut-center\">"
     + "<div class=\"fin-dc-val\">" + rp(chartTotalIn) + "</div>"
-    + "<div class=\"fin-dc-sub\">Total</div>"
+    + "<div class=\"fin-dc-sub\">Pemasukan</div>"
     + "</div>"
     + "</div>"
-    + "<div class=\"fin-donut-leg\">" + donutLegHtml + "</div>"
+    + "<div style=\"border-top:1px solid var(--border);margin:0 16px\"></div>"
+    + "<div class=\"fin-donut-leg\" style=\"padding:12px 16px\">" + donutLegHtml + "</div>"
     + "</div>"
 
     + "</div>"
@@ -949,8 +958,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-th\">Tanggal</div>"
     + "<div class=\"fin-th\">Keterangan</div>"
     + "<div class=\"fin-th\">Kategori</div>"
-    + "<div class=\"fin-th right\">Jumlah</div>"
-    + "<div class=\"fin-th\">Tipe</div>"
+    + "<div class=\"fin-th\">Jumlah &amp; Tipe</div>"
     + "<div class=\"fin-th right\">Aksi</div>"
     + "</div>"
     + rows
