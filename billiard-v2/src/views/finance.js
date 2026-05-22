@@ -836,34 +836,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<button class=\"fsh-cta\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\"></i> Catat Transaksi</button>"
     + "</div>"
 
-    // ── Filter bar (single card) ────────────────────────────────
-    + "<div class=\"fin-filter-bar\">"
-    + "<div class=\"fin-filter-lbl\">Periode</div>"
-    + "<div class=\"fin-period-toggle\">"
-    + "<button class=\"fin-period-btn" + (periodeKey === "hari"   ? " active" : "") + "\" onclick=\"setPeriode('hari')\">Hari Ini</button>"
-    + "<button class=\"fin-period-btn" + (periodeKey === "minggu" ? " active" : "") + "\" onclick=\"setPeriode('minggu')\">Minggu Ini</button>"
-    + "<button class=\"fin-period-btn" + (periodeKey === "bulan"  ? " active" : "") + "\" onclick=\"setPeriode('bulan')\">" + bulanLabelShort + "</button>"
-    + "<select class=\"fin-period-btn fin-bulan-sel\" id=\"fBulan\" onchange=\"applyFilter()\">" + bulanOpts + "</select>"
-    + "</div>"
-    + "<div class=\"fin-filter-sep\"></div>"
-    + "<select class=\"fin-filter-sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
-    + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua Tipe</option>"
-    + "<option value=\"pemasukan\""  + (jFilter === "pemasukan"   ? " selected" : "") + ">Pemasukan</option>"
-    + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
-    + "</select>"
-    + "<select class=\"fin-filter-sel\" id=\"fKategori\" onchange=\"filterByCat()\">"
-    + "<option value=\"\">Semua Kategori</option>"
-    + kategoriOpts
-    + "</select>"
-    + "<div class=\"fin-daterange\">"
-    + "<i class=\"ti ti-calendar\"></i>"
-    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglDari\"  value=\"" + tDari + "\" onchange=\"applyTglFilter()\">"
-    + "<span class=\"fin-date-sep\">—</span>"
-    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
-    + "</div>"
-    + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
-    + "</div>"
-
     // ── Saldo Kas Awal (modal kembalian) ────────────────────────
     + "<div class=\"fin-kas-card\">"
     + "<div class=\"fin-kas-left\">"
@@ -933,6 +905,34 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-stat-val\">" + activeFiltered.length + "</div>"
     + "<div class=\"fin-stat-foot\">" + (voidedCount > 0 ? voidedCount + " dibatalkan" : "Total catatan aktif") + "</div></div>"
 
+    + "</div>"
+
+    // ── Filter bar (dekat chart) ────────────────────────────────
+    + "<div class=\"fin-filter-bar\" style=\"margin-bottom:14px\">"
+    + "<div class=\"fin-filter-lbl\">Periode</div>"
+    + "<div class=\"fin-period-toggle\">"
+    + "<button class=\"fin-period-btn" + (periodeKey === "hari"   ? " active" : "") + "\" onclick=\"setPeriode('hari')\">Hari Ini</button>"
+    + "<button class=\"fin-period-btn" + (periodeKey === "minggu" ? " active" : "") + "\" onclick=\"setPeriode('minggu')\">Minggu Ini</button>"
+    + "<button class=\"fin-period-btn" + (periodeKey === "bulan"  ? " active" : "") + "\" onclick=\"setPeriode('bulan')\">" + bulanLabelShort + "</button>"
+    + "<select class=\"fin-period-btn fin-bulan-sel\" id=\"fBulan\" onchange=\"applyFilter()\">" + bulanOpts + "</select>"
+    + "</div>"
+    + "<div class=\"fin-filter-sep\"></div>"
+    + "<select class=\"fin-filter-sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
+    + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua Tipe</option>"
+    + "<option value=\"pemasukan\""  + (jFilter === "pemasukan"   ? " selected" : "") + ">Pemasukan</option>"
+    + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
+    + "</select>"
+    + "<select class=\"fin-filter-sel\" id=\"fKategori\" onchange=\"filterByCat()\">"
+    + "<option value=\"\">Semua Kategori</option>"
+    + kategoriOpts
+    + "</select>"
+    + "<div class=\"fin-daterange\">"
+    + "<i class=\"ti ti-calendar\"></i>"
+    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglDari\"  value=\"" + tDari + "\" onchange=\"applyTglFilter()\">"
+    + "<span class=\"fin-date-sep\">—</span>"
+    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
+    + "</div>"
+    + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
     + "</div>"
 
     // ── Charts ──────────────────────────────────────────────────
