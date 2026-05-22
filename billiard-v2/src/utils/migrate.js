@@ -106,6 +106,8 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS voided_at   TIMESTAMPTZ`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS void_reason TEXT DEFAULT ''`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bayar       TEXT DEFAULT ''`);
+  // Bukti foto (QRIS transfer proof / nota pengeluaran) — path relatif ke public/
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bukti_url   TEXT DEFAULT ''`);
 
   // Point lifetime — 1 point tiap check-in. Beda dgn total_main yg
   // reset tiap siklus. Backfill dari logs (SCAN + SCAN_RESET +

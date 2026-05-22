@@ -681,6 +681,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
       + "<div class=\"fr-desc-title\">" + escHtml(t.keterangan || "—") + "</div>"
       + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "")
       + (t.bayar === "cash" ? " · <span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? " · <span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
+      + (t.buktiUrl ? " · <a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
       + "</div>"
       + reasonHt
       + "</div>"
@@ -789,6 +790,21 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
     ".toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
     ".toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
+    // ── Dropzone upload bukti foto ───────────────────────────────
+    ".fin-dropzone{border:1.5px dashed var(--border2);border-radius:10px;padding:18px 14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2);color:var(--txt3);font-size:12px;user-select:none}",
+    ".fin-dropzone:hover{border-color:var(--accent);background:rgba(38,96,164,.06);color:var(--txt2)}",
+    ".fin-dropzone.has-file{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.04);cursor:default}",
+    ".fin-dz-icon{font-size:26px;margin-bottom:5px;display:block;line-height:1}",
+    ".fin-dz-lbl{font-size:12px;font-weight:600;margin-bottom:3px;color:inherit}",
+    ".fin-dz-hint{font-size:10px;color:var(--txt3);margin-top:3px}",
+    ".fin-dz-prev{display:flex;flex-direction:column;align-items:center;gap:6px}",
+    ".fin-dz-prev-img{max-width:100%;max-height:160px;border-radius:8px;object-fit:contain;box-shadow:0 2px 10px rgba(0,0,0,.1)}",
+    ".fin-dz-prev-name{font-size:10px;color:var(--txt3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".fin-rm-btn{display:inline-flex;align-items:center;gap:5px;margin-top:7px;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--txt3);font-size:12px;cursor:pointer;font-family:var(--ff);transition:all .15s}",
+    ".fin-rm-btn:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.06)}",
+    // ── Thumbnail bukti di baris tabel ──────────────────────────
+    ".fr-bukti-thumb{width:28px;height:28px;border-radius:5px;object-fit:cover;cursor:pointer;border:1px solid var(--border);transition:opacity .15s;vertical-align:middle;margin-left:4px}",
+    ".fr-bukti-thumb:hover{opacity:.75;box-shadow:0 1px 6px rgba(0,0,0,.12)}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1093,6 +1109,25 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<button type=\"button\" class=\"fin-tog-btn sel\" id=\"wiz-cash\" onclick=\"wizSetBayar('cash')\"><i class=\"ti ti-cash\"></i>Cash</button>"
     + "<button type=\"button\" class=\"fin-tog-btn\" id=\"wiz-qris\" onclick=\"wizSetBayar('qris')\"><i class=\"ti ti-qrcode\"></i>QRIS</button>"
     + "</div></div>"
+    // ── Upload bukti foto (QRIS / nota pengeluaran) ─────────────
+    + "<div class=\"fmg\" id=\"wizUploadWrap\" style=\"display:none\">"
+    + "<label class=\"fin-wiz-lbl\" id=\"wizUploadLbl\">Bukti Foto <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span></label>"
+    + "<div class=\"fin-dropzone\" id=\"wizDropzone\" onclick=\"wizDropzoneClick()\">"
+    + "<div id=\"dzContent\">"
+    + "<i class=\"ti ti-cloud-upload fin-dz-icon\"></i>"
+    + "<div class=\"fin-dz-lbl\" id=\"dzLbl\">Tap untuk upload foto</div>"
+    + "<div class=\"fin-dz-hint\">JPG, PNG, WebP &middot; maks. 5MB &middot; otomatis dikompres</div>"
+    + "</div>"
+    + "<div id=\"dzPreview\" style=\"display:none\" class=\"fin-dz-prev\">"
+    + "<img id=\"dzPreviewImg\" class=\"fin-dz-prev-img\" src=\"\" alt=\"preview\">"
+    + "<div id=\"dzFileName\" class=\"fin-dz-prev-name\"></div>"
+    + "</div>"
+    + "</div>"
+    + "<button type=\"button\" class=\"fin-rm-btn\" id=\"wizRmFileBtn\" onclick=\"wizRemoveFile()\" style=\"display:none\">"
+    + "<i class=\"ti ti-x\" style=\"font-size:12px\"></i> Hapus foto"
+    + "</button>"
+    + "<input type=\"file\" accept=\"image/*\" id=\"wizBuktiInput\" style=\"display:none\" onchange=\"wizHandleFile(this)\">"
+    + "</div>"
     + "</div>"
     // STEP 3
     + "<div id=\"wizStep3\" style=\"display:none\">"
@@ -1115,6 +1150,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<input type=\"hidden\" name=\"keterangan\" id=\"wizFKet\">"
     + "<input type=\"hidden\" name=\"jumlah\" id=\"wizFJ\">"
     + "<input type=\"hidden\" name=\"bayar\" id=\"wizFBayar\" value=\"cash\">"
+    + "<input type=\"hidden\" name=\"bukti_b64\" id=\"wizFBukti\" value=\"\">"
     + "</form>"
     + "</div>"
     // FOOTER
@@ -1222,7 +1258,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "var txt=r.textContent.toLowerCase();"
     + "r.style.display=txt.indexOf(q)>=0?'':'none';});}"
     + "function openTrxModal(){"
-    + "document.getElementById('trxOverlay').classList.add('open');wizGoTo(1);"
+    + "document.getElementById('trxOverlay').classList.add('open');wizRemoveFile();wizGoTo(1);"
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(wizS.tipe==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
     + "wizUpdateDateDisplay();}}"
@@ -1243,7 +1279,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(t==='expense')wizS.act='other';"
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(t==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
-    + "wizUpdateDateDisplay();}}"
+    + "wizUpdateDateDisplay();}wizUpdateUpload();}"
     + "function wizSetAct(a){wizS.act=a;"
     + "['billiard','kopi','other'].forEach(function(x){document.getElementById('wiz-'+x).className='fin-tog-btn'+(x===a?' sel':'');});}"
     + "function wizSetWaktu(w){wizS.waktu=w;"
@@ -1251,7 +1287,8 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wiz-malam').className='fin-tog-btn'+(w==='malam'?' sel-malam':'');}"
     + "function wizSetBayar(b){wizS.bayar=b;"
     + "document.getElementById('wiz-cash').className='fin-tog-btn'+(b==='cash'?' sel':'');"
-    + "document.getElementById('wiz-qris').className='fin-tog-btn'+(b==='qris'?' sel':'');}"
+    + "document.getElementById('wiz-qris').className='fin-tog-btn'+(b==='qris'?' sel':'');"
+    + "wizUpdateUpload();}"
     + "var WIZ_EXTRAS_HTML="
     + safeJson(
         '<div class="wiz-extras" style="grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px">'
@@ -1357,7 +1394,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(os)os.className='fin-dynamic'+(isOth?' open':'');"
     + "var gi=document.getElementById('wizGrpIn'),go=document.getElementById('wizGrpOut');"
     + "if(gi)gi.style.display=wizS.tipe==='income'?'':'none';"
-    + "if(go)go.style.display=wizS.tipe==='expense'?'':'none';}"
+    + "if(go)go.style.display=wizS.tipe==='expense'?'':'none';wizUpdateUpload();}"
     + "if(n===3){"
     + "var actMap={billiard:'Main Billiard',kopi:'Kopi / Snack',other:'Lainnya'};"
     + "document.getElementById('sumTipe').textContent=wizS.tipe==='income'?'Pemasukan':'Pengeluaran';"
@@ -1480,6 +1517,39 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function fmtSaldoKas(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';}"
     + "function saveSaldoKas(){var v=(document.getElementById('finSaldoKas')||{}).value||'';var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');try{localStorage.setItem('fin_saldo_kas',JSON.stringify({v:v,d:today}));}catch(e){}}"
     + "(function(){try{var raw=localStorage.getItem('fin_saldo_kas');if(!raw)return;var obj=JSON.parse(raw);var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(obj&&obj.d===today){var el=document.getElementById('finSaldoKas');if(el&&obj.v)el.value=obj.v;}else{localStorage.removeItem('fin_saldo_kas');}}catch(e){}})();"
+    + "function wizDropzoneClick(){var dz=document.getElementById('wizDropzone');if(dz&&dz.classList.contains('has-file'))return;document.getElementById('wizBuktiInput').click();}"
+    + "function wizUpdateUpload(){var wrap=document.getElementById('wizUploadWrap');var lbl=document.getElementById('wizUploadLbl');var dzLbl=document.getElementById('dzLbl');if(!wrap)return;var showQris=wizS.bayar==='qris';var showNota=wizS.tipe==='expense';var show=showQris||showNota;wrap.style.display=show?'':'none';if(!show)return;"
+    + "if(showNota){if(lbl)lbl.innerHTML='Foto Nota / Struk <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span>';if(dzLbl)dzLbl.textContent='Tap untuk foto nota atau struk';}"
+    + "else{if(lbl)lbl.innerHTML='Bukti Transfer QRIS <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span>';if(dzLbl)dzLbl.textContent='Tap untuk upload bukti transfer QRIS';}}"
+    + "function wizHandleFile(input){var file=input.files[0];if(!file)return;"
+    + "if(file.size>5*1024*1024){alert('Ukuran file maksimal 5MB. Pilih foto yang lebih kecil.');input.value='';return;}"
+    + "var reader=new FileReader();reader.onload=function(e){"
+    + "var img=new Image();img.onload=function(){"
+    + "var MAX=1200;var ratio=Math.min(MAX/img.width,MAX/img.height,1);"
+    + "var w=Math.round(img.width*ratio),h=Math.round(img.height*ratio);"
+    + "var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;"
+    + "canvas.getContext('2d').drawImage(img,0,0,w,h);"
+    + "var dataUrl=canvas.toDataURL('image/jpeg',0.78);"
+    + "document.getElementById('wizFBukti').value=dataUrl;"
+    + "var previewImg=document.getElementById('dzPreviewImg');"
+    + "var fileName=document.getElementById('dzFileName');"
+    + "var content=document.getElementById('dzContent');"
+    + "var preview=document.getElementById('dzPreview');"
+    + "var rmBtn=document.getElementById('wizRmFileBtn');"
+    + "var dz=document.getElementById('wizDropzone');"
+    + "if(previewImg)previewImg.src=dataUrl;"
+    + "if(fileName)fileName.textContent=file.name+' → '+Math.round(dataUrl.length*0.75/1024)+'KB';"
+    + "if(content)content.style.display='none';"
+    + "if(preview)preview.style.display='';"
+    + "if(rmBtn)rmBtn.style.display='';"
+    + "if(dz)dz.classList.add('has-file');"
+    + "};img.src=e.target.result;};reader.readAsDataURL(file);}"
+    + "function wizRemoveFile(){var fb=document.getElementById('wizFBukti');if(fb)fb.value='';"
+    + "var inp=document.getElementById('wizBuktiInput');if(inp)inp.value='';"
+    + "var content=document.getElementById('dzContent');if(content)content.style.display='';"
+    + "var preview=document.getElementById('dzPreview');if(preview)preview.style.display='none';"
+    + "var rmBtn=document.getElementById('wizRmFileBtn');if(rmBtn)rmBtn.style.display='none';"
+    + "var dz=document.getElementById('wizDropzone');if(dz)dz.classList.remove('has-file');}"
     + "function showToast(msg,type){var el=document.getElementById('toast');if(!el)return;el.innerHTML=(type==='ok'?'<i class=\"ti ti-circle-check\" style=\"font-size:15px\"></i>':type==='err'?'<i class=\"ti ti-circle-x\" style=\"font-size:15px\"></i>':'')+' '+msg;el.className='toast '+(type||'ok');void el.offsetWidth;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},3500);}"
     + "function startLoad(){var b=document.getElementById('finPgBar');if(!b)return;b.style.transition='none';b.style.width='0';void b.offsetWidth;b.className='fin-pgbar run';}"
     + "(function(){var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";if(m)showToast(m,t);})();"

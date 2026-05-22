@@ -24,7 +24,7 @@ const app = express();
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 app.use(express.static(join(__dirname, "../public"), {
   etag: true,
   lastModified: true,

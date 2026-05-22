@@ -52,6 +52,7 @@ const rowToTransaksi = (row) => ({
   voidedAt:     row.voided_at    ?? null,
   voidReason:   row.void_reason  ?? "",
   bayar:        row.bayar        ?? "",
+  buktiUrl:     row.bukti_url    ?? "",
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -195,8 +196,8 @@ export const readTransaksi = async () => {
 
 export const appendTransaksi = async (item) => {
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
@@ -204,6 +205,7 @@ export const appendTransaksi = async (item) => {
       item.keterangan ?? "",
       item.jumlah, item.createdAt ?? new Date().toISOString(),
       item.bayar ?? "",
+      item.buktiUrl ?? "",
     ]
   );
 };

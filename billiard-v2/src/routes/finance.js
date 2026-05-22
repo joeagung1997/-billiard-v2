@@ -2,6 +2,14 @@
 // ── Routes: /operasional (pemasukan & pengeluaran) ───────────────
 
 import { Router } from "express";
+import { writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, extname } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __routeDir = dirname(fileURLToPath(import.meta.url));
+// Upload dir: project-root/public/uploads/receipts/
+const RECEIPT_DIR = join(__routeDir, "../../public/uploads/receipts");
 import {
   readTransaksi, appendTransaksi, voidTransaksi,
   readKategori, addKategori, deleteKategori, updateKategoriUrutan,
@@ -42,6 +50,27 @@ router.get("/", async (req, res) => {
 router.get("/tambah", (_req, res) => res.redirect("/operasional"));
 
 // ── POST /operasional/tambah — simpan transaksi (dari modal wizard) ──
+// ── Simpan bukti foto dari base64 → disk ────────────────────────────
+// Browser mengkompresi gambar via canvas sebelum dikirim sebagai base64.
+// Server decode dan simpan ke public/uploads/receipts/.
+function saveBuktiFoto(b64) {
+  if (!b64 || !b64.startsWith("data:image/")) return "";
+  try {
+    const m = b64.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i);
+    if (!m) return "";
+    const ext      = m[1].toLowerCase() === "jpeg" ? "jpg" : m[1].toLowerCase();
+    const buf      = Buffer.from(m[2], "base64");
+    if (buf.length > 5 * 1024 * 1024) return ""; // max 5MB setelah kompresi
+    if (!existsSync(RECEIPT_DIR)) mkdirSync(RECEIPT_DIR, { recursive: true });
+    const fname    = "rcpt-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6) + "." + ext;
+    writeFileSync(join(RECEIPT_DIR, fname), buf);
+    return "/uploads/receipts/" + fname;
+  } catch (e) {
+    console.error("[FINANCE] saveBuktiFoto error:", e.message);
+    return "";
+  }
+}
+
 router.post("/tambah", async (req, res) => {
   const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
   const subKategori = (req.body.sub_kategori ?? "").trim().slice(0, 100);
@@ -57,6 +86,9 @@ router.post("/tambah", async (req, res) => {
     return res.redirect("/operasional?msg=err");
   }
 
+  // Simpan bukti foto jika ada
+  const buktiUrl = saveBuktiFoto((req.body.bukti_b64 ?? "").trim());
+
   try {
     await appendTransaksi({
       id:         Date.now() + "-" + Math.random().toString(36).slice(2, 7),
@@ -70,6 +102,7 @@ router.post("/tambah", async (req, res) => {
       jumlah:     jumlahNum,
       createdAt:  new Date().toISOString(),
       bayar,
+      buktiUrl,
     });
     res.redirect("/operasional?msg=created");
   } catch (err) {
