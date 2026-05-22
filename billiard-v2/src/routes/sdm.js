@@ -108,8 +108,12 @@ router.use(requireSdmPin);
 router.get("/sdm", async (req, res) => {
   try {
     const bulan = req.query.bulan || bulanSekarang();
-    const [karyawan, sdmTrx] = await Promise.all([readKaryawan(), readSdmTransaksi(bulan)]);
-    res.send(sdmDashboard(karyawan, sdmTrx, bulan));
+    const [karyawan, sdmTrx, adminAccounts] = await Promise.all([
+      readKaryawan(),
+      readSdmTransaksi(bulan),
+      readAdminAccounts().catch(() => []),
+    ]);
+    res.send(sdmDashboard(karyawan, sdmTrx, bulan, adminAccounts, req.query.msg));
   } catch (err) {
     console.error("[SDM] dashboard error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -131,13 +135,15 @@ router.post("/sdm/karyawan/tambah", async (req, res) => {
   const tglMulai  = req.body.tgl_mulai || null;
   const telepon   = (req.body.telepon  ?? "").trim();
   const shift     = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
-  if (!nama || gajiPokok <= 0) return res.redirect("/operasional/sdm/karyawan/tambah?err=1");
+  const redirectTo = (req.body.redirect_to ?? "").trim();
+  const backUrl    = redirectTo.startsWith("/operasional/sdm") ? redirectTo : "/operasional/sdm";
+  if (!nama || gajiPokok <= 0) return res.redirect(backUrl + (backUrl.includes("?") ? "&" : "?") + "msg=err_tambah");
   try {
     await addKaryawan({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
-    res.redirect("/operasional/sdm");
+    res.redirect(backUrl + (backUrl.includes("?") ? "&" : "?") + "msg=tambah_ok");
   } catch (err) {
     console.error("[SDM] tambah karyawan error:", err.message);
-    res.redirect("/operasional/sdm/karyawan/tambah?err=1");
+    res.redirect(backUrl + (backUrl.includes("?") ? "&" : "?") + "msg=err_tambah");
   }
 });
 

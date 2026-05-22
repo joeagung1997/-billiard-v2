@@ -155,13 +155,17 @@ const SDM_CSS = [
 ].join("");
 
 // ── Dashboard SDM ─────────────────────────────────────────────
-export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
+export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccounts = [], msg = "") {
   // Group sdmTrx by karyawan_id
   const trxByK = {};
   sdmTrx.forEach((t) => {
     if (!trxByK[t.karyawan_id]) trxByK[t.karyawan_id] = [];
     trxByK[t.karyawan_id].push(t);
   });
+
+  // Lookup username by karyawan nama (match via display_name)
+  const userByName = {};
+  adminAccounts.forEach((a) => { userByName[a.display_name.toLowerCase()] = a.username; });
 
   // ── CSS tambahan untuk card layout ───────────────────────────
   const CARD_CSS = [
@@ -237,6 +241,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
         const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"font-size:10px\">"
           + (shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span>";
 
+        const adminUser = userByName[k.nama.toLowerCase()] || null;
         const makanBtn = (shift === "malam" && k.uang_makan > 0)
           ? "<button type=\"button\" class=\"sdm-btn\" style=\"flex:1;justify-content:center;font-size:11px;padding:7px 4px;background:#e8eaf6;color:#3949ab;border:1px solid #c5cae9;border-radius:6px\" onclick=\"openSdmModal('makan_harian'," + k.id + ",'" + nama + "'," + r.gajiPokok + "," + r.sisa + ",'" + bulan + "','" + k.uang_makan + "')\"><i class=\"ti ti-bowl-spoon\"></i> Makan</button>"
           : "";
@@ -248,6 +253,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
           + "<div class=\"sdm-card-info\">"
           + "<div class=\"sdm-card-nama\">" + nama + "</div>"
           + "<div class=\"sdm-card-meta\">" + escHtml(k.jabatan || "—") + " " + shiftBadge + "</div>"
+          + (adminUser ? "<div style=\"font-size:10px;color:var(--txt3);margin-top:3px;font-family:var(--ff-mono)\">@" + escHtml(adminUser) + "</div>" : "")
           + "</div>"
           + statusBadge(r.status)
           + "</div>"
@@ -309,13 +315,56 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<form method=\"get\" action=\"/operasional/sdm\" style=\"display:inline\">"
     + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + months.join("") + "</select>"
     + "</form>"
-    + "<a href=\"/operasional/sdm/karyawan/tambah\" class=\"sdm-btn-add\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</a>"
+    + "<button type=\"button\" class=\"sdm-btn-add\" onclick=\"openAddKaryawan()\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</button>"
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
     + "</div></div>"
+
+    // Toast
+    + (msg === "tambah_ok"
+        ? "<div style=\"background:#d4edda;color:#1a6b2a;border:1px solid #b8dacc;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-check\"></i> Karyawan berhasil ditambahkan.</div>"
+        : msg === "err_tambah"
+        ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-alert-circle\"></i> Nama dan gaji pokok wajib diisi.</div>"
+        : "")
 
     + summaryStrip
     + "<div class=\"sdm-cards-grid\">" + cards + "</div>"
     + "</div></div></div></div>"
+
+    // Modal tambah karyawan
+    + "<div class=\"sdm-modal-overlay\" id=\"addKaryawanOv\" onclick=\"closeAddKaryawan()\">"
+    + "<div class=\"sdm-modal\" style=\"max-width:480px;max-height:90vh;overflow-y:auto\" onclick=\"event.stopPropagation()\">"
+    + "<div class=\"sdm-modal-title\"><i class=\"ti ti-user-plus\"></i><span>Tambah Karyawan</span>"
+    + "<button class=\"sdm-modal-close\" onclick=\"closeAddKaryawan()\"><i class=\"ti ti-x\"></i></button></div>"
+    + "<form method=\"post\" action=\"/operasional/sdm/karyawan/tambah\" id=\"addKaryawanForm\">"
+    + "<input type=\"hidden\" name=\"redirect_to\" value=\"/operasional/sdm?bulan=" + bulan + "\">"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nama Lengkap *</label>"
+    + "<input class=\"sdm-inp\" type=\"text\" name=\"nama\" placeholder=\"Nama karyawan\" required autocomplete=\"off\"></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jabatan</label>"
+    + "<input class=\"sdm-inp\" type=\"text\" name=\"jabatan\" placeholder=\"Kasir, Barista, Jaga Malam, dll\"></div>"
+    + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px\">"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Gaji Pokok (Rp) *</label>"
+    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Shift</label>"
+    + "<select class=\"sdm-sel\" name=\"shift\" id=\"addShiftSel\" onchange=\"toggleMakanWrap()\">"
+    + "<option value=\"siang\">☀ Shift Siang</option>"
+    + "<option value=\"malam\">☽ Shift Malam</option>"
+    + "</select></div></div>"
+    + "<div id=\"addMakanWrap\" style=\"display:none;display:grid;grid-template-columns:1fr 1fr;gap:10px\">"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Uang Makan/Hari (Rp)</label>"
+    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" id=\"addUangMakan\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\"></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Hari Kerja/Bulan</label>"
+    + "<input class=\"sdm-inp\" type=\"number\" name=\"hari_kerja\" value=\"26\" min=\"1\" max=\"31\"></div>"
+    + "</div>"
+    + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px\">"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nomor HP</label>"
+    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" placeholder=\"08xxxxxxxxxx\"></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Tanggal Mulai</label>"
+    + "<input class=\"sdm-inp\" type=\"date\" name=\"tgl_mulai\"></div>"
+    + "</div>"
+    + "<div class=\"sdm-modal-foot\">"
+    + "<button type=\"button\" class=\"sdm-btn sdm-btn-secondary\" onclick=\"closeAddKaryawan()\">Batal</button>"
+    + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\"><i class=\"ti ti-check\"></i> Tambah</button>"
+    + "</div></form></div></div>"
 
     // Modal transaksi
     + "<div class=\"sdm-modal-overlay\" id=\"sdmModalOv\" onclick=\"closeSdmModal()\">"
@@ -354,6 +403,9 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "setTimeout(function(){jEl.focus();},80);}"
     + "function closeSdmModal(){document.getElementById('sdmModalOv').classList.remove('open');}"
     + "function sdmFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?Number(raw).toLocaleString('id-ID'):''}"
+    + "function openAddKaryawan(){document.getElementById('addKaryawanOv').classList.add('open');setTimeout(function(){document.querySelector('#addKaryawanForm [name=nama]').focus();},80);}"
+    + "function closeAddKaryawan(){document.getElementById('addKaryawanOv').classList.remove('open');document.getElementById('addKaryawanForm').reset();document.getElementById('addMakanWrap').style.display='none';}"
+    + "function toggleMakanWrap(){var s=document.getElementById('addShiftSel').value;document.getElementById('addMakanWrap').style.display=s==='malam'?'grid':'none';}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "</script>"
