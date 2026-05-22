@@ -488,6 +488,10 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const chartSaldo    = chartTotalIn - chartTotalOut;
   const chartMargin   = chartTotalIn > 0 ? ((chartSaldo / chartTotalIn) * 100).toFixed(1) : "0";
 
+  // Breakdown metode pembayaran (pemasukan saja)
+  const totalCash = activeSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "cash").reduce((s, t) => s + t.jumlah, 0);
+  const totalQris = activeSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "qris").reduce((s, t) => s + t.jumlah, 0);
+
   // Summary (exclude voided)
   const pemasukan   = activeFiltered.filter((t) => t.jenis === "pemasukan");
   const pengeluaran = activeFiltered.filter((t) => t.jenis === "pengeluaran");
@@ -743,6 +747,14 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".fin-kas-inp{width:150px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:9px;font-size:16px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface2);text-align:right}",
     ".fin-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12)}",
     ".fin-kas-inp::placeholder{font-weight:400;font-size:13px;color:var(--txt3)}",
+    ".fin-bayar-card{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:14px;background:var(--surface)}",
+    ".fin-bayar-item{padding:14px 18px}",
+    ".fin-bayar-item+.fin-bayar-item{border-left:1px solid var(--border)}",
+    ".fin-bayar-lbl{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:5px;margin-bottom:6px}",
+    ".fin-bayar-val{font-size:20px;font-weight:700;font-family:var(--ff-mono)}",
+    ".fin-bayar-val.cash{color:#16a34a}",
+    ".fin-bayar-val.qris{color:var(--accent)}",
+    ".fin-bayar-sub{font-size:11px;color:var(--txt3);margin-top:3px}",
     // ── Mobile FAB ──────────────────────────────────────────────
     ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:all .15s}",
     ".fin-fab:hover{opacity:.9;transform:translateY(-1px)}",
@@ -859,6 +871,20 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-kas-right\">"
     + "<span class=\"fin-kas-pfx\">Rp</span>"
     + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"Belum diisi\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
+    + "</div>"
+    + "</div>"
+
+    // ── Breakdown metode pembayaran ─────────────────────────────
+    + "<div class=\"fin-bayar-card\">"
+    + "<div class=\"fin-bayar-item\">"
+    + "<div class=\"fin-bayar-lbl\"><i class=\"ti ti-cash\" style=\"font-size:14px\"></i> Cash</div>"
+    + "<div class=\"fin-bayar-val cash\">" + rp(totalCash) + "</div>"
+    + "<div class=\"fin-bayar-sub\">Pemasukan via Cash</div>"
+    + "</div>"
+    + "<div class=\"fin-bayar-item\">"
+    + "<div class=\"fin-bayar-lbl\"><i class=\"ti ti-qrcode\" style=\"font-size:14px\"></i> QRIS</div>"
+    + "<div class=\"fin-bayar-val qris\">" + rp(totalQris) + "</div>"
+    + "<div class=\"fin-bayar-sub\">Pemasukan via QRIS</div>"
     + "</div>"
     + "</div>"
 
