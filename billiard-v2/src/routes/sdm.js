@@ -3,6 +3,8 @@
 
 import { Router }      from "express";
 import { createHmac }  from "crypto";
+import jwt             from "jsonwebtoken";
+import { CONFIG }      from "../config.js";
 import {
   readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
@@ -47,6 +49,28 @@ function requireSdmPin(req, res, next) {
 
 const router = Router();
 const bulanSekarang = () => new Date().toISOString().slice(0, 7);
+
+// ── Finance role guard — SDM hanya untuk owner ────────────────
+// Cek cookie _frt sebelum masuk halaman SDM apapun.
+const FIN_COOKIE = "_frt";
+function getFinanceRole(req) {
+  const entry = (req.headers.cookie || "").split(";").map((s) => s.trim()).find((s) => s.startsWith(FIN_COOKIE + "="));
+  if (!entry) return null;
+  try {
+    const raw = decodeURIComponent(entry.slice(FIN_COOKIE.length + 1));
+    const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
+    return decoded.role || null;
+  } catch { return null; }
+}
+
+router.use("/sdm", (req, res, next) => {
+  const finRole = getFinanceRole(req);
+  // Tidak login sama sekali → ke finance login
+  if (!finRole) return res.redirect("/operasional/login?r=" + encodeURIComponent(req.originalUrl));
+  // Karyawan tidak boleh akses SDM
+  if (finRole !== "owner") return res.redirect("/operasional?msg=no_access");
+  next();
+});
 
 // ── PIN routes (tidak perlu auth) ────────────────────────────
 

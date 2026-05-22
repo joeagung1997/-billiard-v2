@@ -6,6 +6,7 @@ import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, extname } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import jwt from "jsonwebtoken";
 
 const __routeDir = dirname(fileURLToPath(import.meta.url));
 // Upload dir: project-root/public/uploads/receipts/
@@ -20,24 +21,119 @@ import {
 import { CONFIG } from "../config.js";
 import {
   financeDashboard,
+  financeLoginPage,
   financeKategoriPage, financeMenuPage,
 } from "../views/finance.js";
 
 const router = Router();
 
-// Set ftk kosong di semua route (tidak butuh PIN lagi)
-router.use((req, res, next) => { res.locals.ftk = ""; next(); });
+// ── Cookie helpers (tanpa cookie-parser) ─────────────────────────
+const COOKIE_NAME = "_frt"; // finance role token
+
+function getCookie(req, name) {
+  const raw = req.headers.cookie || "";
+  const entry = raw.split(";").map((s) => s.trim()).find((s) => s.startsWith(name + "="));
+  return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
+}
+
+function setRoleCookie(res, role) {
+  const token = jwt.sign({ role }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+  const maxAge = 24 * 3600; // 24 jam
+  res.setHeader("Set-Cookie",
+    `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/operasional; Max-Age=${maxAge}; SameSite=Lax`
+  );
+}
+
+function clearRoleCookie(res) {
+  res.setHeader("Set-Cookie",
+    `${COOKIE_NAME}=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`
+  );
+}
+
+// ── Auth helpers ──────────────────────────────────────────────────
+function getFinanceRole(req) {
+  const raw = getCookie(req, COOKIE_NAME);
+  if (!raw) return null;
+  try {
+    const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
+    return decoded.role || null;
+  } catch {
+    return null;
+  }
+}
+
+function requireFinanceAuth(req, res, next) {
+  const role = getFinanceRole(req);
+  if (!role) {
+    return res.redirect("/operasional/login?r=" + encodeURIComponent(req.originalUrl));
+  }
+  res.locals.financeRole = role;
+  next();
+}
+
+function requireOwner(req, res, next) {
+  if (res.locals.financeRole !== "owner") {
+    return res.redirect("/operasional?msg=no_access");
+  }
+  next();
+}
+
+// ── Login / Logout ────────────────────────────────────────────────
+router.get("/login", (req, res) => {
+  // Sudah login? Redirect ke dashboard
+  const role = getFinanceRole(req);
+  if (role) return res.redirect("/operasional");
+  res.send(financeLoginPage(!!req.query.err));
+});
+
+router.post("/login", (req, res) => {
+  const pin   = (req.body.pin ?? "").trim();
+  const redir = (req.query.r  ?? "").slice(0, 300);
+
+  let role = null;
+  if (pin === CONFIG.OWNER_PIN)    role = "owner";
+  else if (pin === CONFIG.KARYAWAN_PIN) role = "karyawan";
+
+  if (!role) {
+    const back = "/operasional/login?err=1" + (redir ? "&r=" + encodeURIComponent(redir) : "");
+    return res.redirect(back);
+  }
+
+  setRoleCookie(res, role);
+  res.redirect(redir || "/operasional");
+});
+
+router.get("/logout", (req, res) => {
+  clearRoleCookie(res);
+  res.redirect("/operasional/login");
+});
+
+// ── Terapkan auth ke SEMUA route di bawah ini ─────────────────────
+router.use(requireFinanceAuth);
 
 // ── GET /operasional — dashboard ─────────────────────────────────
 router.get("/", async (req, res) => {
   try {
-    const [transaksi, kategoriList, subKategoriList, menuItems, toppings] = await Promise.all([readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings()]);
-    const bulanFilter = req.query.bulan      ?? "";
-    const jenisFilter = req.query.jenis      ?? "";
-    const tglDari     = req.query.tgl_dari   ?? "";
-    const tglSampai   = req.query.tgl_sampai ?? "";
+    const role = res.locals.financeRole;
+    const [transaksi, kategoriList, subKategoriList, menuItems, toppings] = await Promise.all([
+      readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
+    ]);
 
-    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, subKategoriList, menuItems, toppings, msg: req.query.msg || "" }));
+    // Karyawan: dikunci ke hari ini saja
+    const today      = new Date().toISOString().slice(0, 10);
+    const todayBulan = today.slice(0, 7);
+
+    const bulanFilter = role === "karyawan" ? todayBulan  : (req.query.bulan      ?? "");
+    const jenisFilter = role === "karyawan" ? ""          : (req.query.jenis      ?? "");
+    const tglDari     = role === "karyawan" ? today       : (req.query.tgl_dari   ?? "");
+    const tglSampai   = role === "karyawan" ? today       : (req.query.tgl_sampai ?? "");
+
+    res.send(financeDashboard({
+      transaksi, token: "", role,
+      bulanFilter, jenisFilter, tglDari, tglSampai,
+      kategoriList, subKategoriList, menuItems, toppings,
+      msg: req.query.msg || "",
+    }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -45,14 +141,10 @@ router.get("/", async (req, res) => {
 });
 
 // ── GET /operasional/tambah — redirect ke dashboard (modal wizard) ───
-// Form tambah standalone sudah dihapus. Catat transaksi sekarang via
-// modal wizard "Catat Transaksi" di halaman dashboard /operasional.
 router.get("/tambah", (_req, res) => res.redirect("/operasional"));
 
 // ── POST /operasional/tambah — simpan transaksi (dari modal wizard) ──
 // ── Simpan bukti foto dari base64 → disk ────────────────────────────
-// Browser mengkompresi gambar via canvas sebelum dikirim sebagai base64.
-// Server decode dan simpan ke public/uploads/receipts/.
 function saveBuktiFoto(b64) {
   if (!b64 || !b64.startsWith("data:image/")) return "";
   try {
@@ -112,8 +204,7 @@ router.post("/tambah", async (req, res) => {
 });
 
 // ── POST /operasional/void — soft void transaksi (immutable) ────────
-// Transaksi tidak boleh di-edit. Untuk koreksi: void yg salah +
-// input transaksi baru yg benar. Audit trail tetap utuh.
+// Karyawan juga boleh void (koreksi langsung di shift).
 router.post("/void", async (req, res) => {
   const id     = (req.body.id ?? "").trim();
   const reason = (req.body.reason ?? "").trim();
@@ -129,11 +220,11 @@ router.post("/void", async (req, res) => {
   }
 });
 
-// ── GET /operasional/kategori — kelola kategori ──────────────────
-router.get("/kategori", async (req, res) => {
+// ── GET /operasional/kategori — kelola kategori (owner only) ────
+router.get("/kategori", requireOwner, async (req, res) => {
   try {
     const [kategori, subKategori] = await Promise.all([readKategori(), readSubKategori()]);
-    res.send(financeKategoriPage("", kategori, !!req.query.err, subKategori));
+    res.send(financeKategoriPage(res.locals.financeRole, kategori, !!req.query.err, subKategori));
   } catch (err) {
     console.error("[FINANCE] kategori error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -141,7 +232,7 @@ router.get("/kategori", async (req, res) => {
 });
 
 // ── POST /operasional/kategori/tambah ───────────────────────────
-router.post("/kategori/tambah", async (req, res) => {
+router.post("/kategori/tambah", requireOwner, async (req, res) => {
   const nama  = (req.body.nama  ?? "").trim();
   const jenis = req.body.jenis  ?? "";
 
@@ -159,7 +250,7 @@ router.post("/kategori/tambah", async (req, res) => {
 });
 
 // ── GET /operasional/kategori/hapus — hapus kategori ────────────
-router.get("/kategori/hapus", async (req, res) => {
+router.get("/kategori/hapus", requireOwner, async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
     try { await deleteKategori(id); } catch (err) {
@@ -170,7 +261,7 @@ router.get("/kategori/hapus", async (req, res) => {
 });
 
 // ── POST /operasional/kategori/sub/tambah ───────────────────────
-router.post("/kategori/sub/tambah", async (req, res) => {
+router.post("/kategori/sub/tambah", requireOwner, async (req, res) => {
   const kategoriId = parseInt(req.body.kategori_id) || 0;
   const nama = (req.body.nama ?? "").trim();
   if (!kategoriId || !nama) return res.redirect("/operasional/kategori?err=1");
@@ -184,7 +275,7 @@ router.post("/kategori/sub/tambah", async (req, res) => {
 });
 
 // ── GET /operasional/kategori/sub/hapus ─────────────────────────
-router.get("/kategori/sub/hapus", async (req, res) => {
+router.get("/kategori/sub/hapus", requireOwner, async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
     try { await deleteSubKategori(id); } catch (err) {
@@ -195,9 +286,7 @@ router.get("/kategori/sub/hapus", async (req, res) => {
 });
 
 // ── POST /operasional/kategori/urutan — reorder via drag-and-drop ───
-// Body: { ids: [3, 1, 2, ...] } — array id berurutan untuk SATU jenis.
-// Client kirim 1x per drop. Backend assign urutan = 1..N untuk id tsb.
-router.post("/kategori/urutan", async (req, res) => {
+router.post("/kategori/urutan", requireOwner, async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
   if (!ids) return res.status(400).json({ ok: false, error: "ids harus array" });
   try {
@@ -209,13 +298,13 @@ router.post("/kategori/urutan", async (req, res) => {
   }
 });
 
-// ── GET /operasional/menu — kelola menu item kopi/snack ─────────
-router.get("/menu", async (req, res) => {
+// ── GET /operasional/menu — kelola menu item (owner only) ────────
+router.get("/menu", requireOwner, async (req, res) => {
   try {
     const [items, toppings] = await Promise.all([readMenuItems(), readMenuToppings()]);
     const editId  = parseInt(req.query.edit) || 0;
     const editItem = editId ? items.find((m) => m.id === editId) || null : null;
-    res.send(financeMenuPage("", items, toppings, !!req.query.err, editItem));
+    res.send(financeMenuPage(res.locals.financeRole, items, toppings, !!req.query.err, editItem));
   } catch (err) {
     console.error("[FINANCE] menu GET error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -223,7 +312,7 @@ router.get("/menu", async (req, res) => {
 });
 
 // ── POST /operasional/menu/tambah ────────────────────────────────
-router.post("/menu/tambah", async (req, res) => {
+router.post("/menu/tambah", requireOwner, async (req, res) => {
   const nama       = (req.body.nama     ?? "").trim();
   const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
   const hargaHot   = parseInt((req.body.harga_hot ?? "").replace(/\D/g, "")) || null;
@@ -240,7 +329,7 @@ router.post("/menu/tambah", async (req, res) => {
 });
 
 // ── POST /operasional/menu/edit ──────────────────────────────────
-router.post("/menu/edit", async (req, res) => {
+router.post("/menu/edit", requireOwner, async (req, res) => {
   const id         = parseInt(req.body.id) || 0;
   const nama       = (req.body.nama     ?? "").trim();
   const harga      = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
@@ -258,7 +347,7 @@ router.post("/menu/edit", async (req, res) => {
 });
 
 // ── GET /operasional/menu/hapus ──────────────────────────────────
-router.get("/menu/hapus", async (req, res) => {
+router.get("/menu/hapus", requireOwner, async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
     try { await deleteMenuItem(id); } catch (err) {
@@ -269,7 +358,7 @@ router.get("/menu/hapus", async (req, res) => {
 });
 
 // ── POST /operasional/menu/topping/tambah ────────────────────────
-router.post("/menu/topping/tambah", async (req, res) => {
+router.post("/menu/topping/tambah", requireOwner, async (req, res) => {
   const itemId = parseInt(req.body.item_id) || 0;
   const nama   = (req.body.nama  ?? "").trim();
   const harga  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
@@ -284,7 +373,7 @@ router.post("/menu/topping/tambah", async (req, res) => {
 });
 
 // ── GET /operasional/menu/topping/hapus ─────────────────────────
-router.get("/menu/topping/hapus", async (req, res) => {
+router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
   const id = parseInt(req.query.id) || 0;
   if (id) {
     try { await deleteMenuTopping(id); } catch (err) {

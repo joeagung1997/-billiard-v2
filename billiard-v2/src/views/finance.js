@@ -35,7 +35,8 @@ export function docHeadV4(title) {
     + "<link rel=\"stylesheet\" href=\"/admin.css?v=16\">";
 }
 
-export function buildFinanceSidebar(ftk, page = "keuangan") {
+export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
+  const isOwner = role === "owner";
   const isKeu  = page === "keuangan";
   const isKat  = page === "kategori";
   const isMenu = page === "menu";
@@ -47,6 +48,13 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     "<a href=\"" + href + "\" class=\"submenu-item" + (active ? " active" : "") + "\">"
     + "<div class=\"sub-dot\"></div>" + label + "</a>";
 
+  // Label & avatar berdasarkan role
+  const profileName   = isOwner ? "Owner" : "Karyawan";
+  const profileRole   = isOwner ? "Akses Penuh" : "Akses Terbatas";
+  const profileAvatar = isOwner ? "OW" : "KR";
+  const roleBadgeColor = isOwner ? "#2d6624" : "#1e40af";
+  const roleBadgeBg    = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
+
   return "<aside class=\"sidebar\">"
     // ── Logo ───────────────────────────────────────
     + "<div class=\"logo-area\">"
@@ -54,7 +62,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<div class=\"logo-mark\"><i class=\"ti ti-circle-number-8\"></i><div class=\"logo-online\"></div></div>"
     + "<div class=\"logo-text\">"
     + "<div class=\"logo-name\">" + CONFIG.NAMA_ARENA + "</div>"
-    + "<div class=\"logo-sub\">Admin Panel</div>"
+    + "<div class=\"logo-sub\">Operasional</div>"
     + "</div>"
     + "</div>"
     + "</div>"
@@ -63,20 +71,22 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     // ── Nav scroll ─────────────────────────────────
     + "<div class=\"nav-scroll\">"
 
-    // GROUP: UTAMA (link kembali ke admin)
-    + "<div class=\"nav-group\">"
-    + "<div class=\"nav-group-label\">Utama</div>"
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
-    + "<div class=\"nav-item-icon\"><i class=\"ti ti-layout-dashboard\"></i></div>"
-    + "<span class=\"nav-item-text\">Dashboard</span>"
-    + "</a>"
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
-    + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
-    + "<span class=\"nav-item-text\">Kelola Member</span>"
-    + "</a>"
-    + "</div>"
+    // GROUP: UTAMA (hanya tampil untuk owner)
+    + (isOwner
+      ? "<div class=\"nav-group\">"
+        + "<div class=\"nav-group-label\">Utama</div>"
+        + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
+        + "<div class=\"nav-item-icon\"><i class=\"ti ti-layout-dashboard\"></i></div>"
+        + "<span class=\"nav-item-text\">Dashboard</span>"
+        + "</a>"
+        + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
+        + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
+        + "<span class=\"nav-item-text\">Kelola Member</span>"
+        + "</a>"
+        + "</div>"
+      : "")
 
-    // GROUP: OPERASIONAL (auto-open karena kita di dalamnya)
+    // GROUP: OPERASIONAL
     + "<div class=\"nav-group\">"
     + "<div class=\"nav-group-label\">Operasional</div>"
     + "<div class=\"" + opsItemCls + "\" onclick=\"toggleSubmenu('ops', this)\">"
@@ -87,9 +97,9 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<div class=\"submenu-wrap\">"
     + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
     + subItem("/operasional", "Dashboard Keuangan", isKeu)
-    + subItem("/operasional/kategori", "Kelola Kategori", isKat)
-    + subItem("/operasional/menu", "Kelola Menu", isMenu)
-    + subItem("/operasional/sdm", "SDM & Penggajian", isSdm)
+    + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
+    + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
+    + (isOwner ? subItem("/operasional/sdm",      "SDM & Penggajian", isSdm) : "")
     + "</div>"
     + "</div>"
     + "</div>"
@@ -101,22 +111,22 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     + "<div class=\"quick-actions\">"
     + "<div class=\"nav-group-label\" style=\"padding-bottom:8px\">Aksi Cepat</div>"
     + "<div class=\"qa-grid\">"
-    + "<a href=\"/scan\" class=\"qa-btn\"><i class=\"ti ti-qrcode\"></i>Scan Member</a>"
+    + (isOwner ? "<a href=\"/scan\" class=\"qa-btn\"><i class=\"ti ti-qrcode\"></i>Scan Member</a>" : "")
     + "<a href=\"/operasional\" class=\"qa-btn\"><i class=\"ti ti-plus\"></i>Transaksi</a>"
-    + "<button class=\"qa-btn danger\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i>Keluar</button>"
+    + "<button class=\"qa-btn danger\" onclick=\"financeLogout()\"><i class=\"ti ti-logout\"></i>Keluar</button>"
     + "</div>"
     + "</div>"
 
     // ── Profile ────────────────────────────────────
     + "<div class=\"sidebar-bottom\">"
     + "<div class=\"profile-card\">"
-    + "<div class=\"profile-avatar\">AD</div>"
+    + "<div class=\"profile-avatar\" style=\"background:" + roleBadgeBg + ";color:" + roleBadgeColor + "\">" + profileAvatar + "</div>"
     + "<div class=\"profile-info\">"
-    + "<div class=\"profile-name\">Admin</div>"
-    + "<div class=\"profile-role\">Administrator</div>"
+    + "<div class=\"profile-name\">" + profileName + "</div>"
+    + "<div class=\"profile-role\">" + profileRole + "</div>"
     + "</div>"
     + "<div class=\"profile-actions\">"
-    + "<button class=\"profile-btn danger\" title=\"Logout\" onclick=\"adminLogout()\"><i class=\"ti ti-logout\"></i></button>"
+    + "<button class=\"profile-btn danger\" title=\"Logout\" onclick=\"financeLogout()\"><i class=\"ti ti-logout\"></i></button>"
     + "</div>"
     + "</div>"
     + "</div>"
@@ -128,57 +138,74 @@ export function buildFinanceSidebar(ftk, page = "keuangan") {
     + "var open=sub.classList.contains('open');"
     + "sub.classList.toggle('open',!open);"
     + "el.classList.toggle('open',!open);}"
-    + "function adminLogout(){"
-    + "if(!confirm('Keluar dari sesi admin?'))return;"
-    + "try{localStorage.removeItem('warpat_atk')}catch(_){};"
-    + "window.location.href='/';}"
+    + "function financeLogout(){"
+    + "if(!confirm('Keluar dari sesi keuangan?'))return;"
+    + "window.location.href='/operasional/logout';}"
+    + "function adminLogout(){financeLogout();}"
     + "</script>";
 }
 
 // ── Bottom nav untuk halaman /operasional/* (mobile) ─────────────
-// Menggunakan goAdmin/goMembers (baca token dari localStorage) karena
-// halaman finance tidak punya admin token di server-side.
-export function buildFinanceBottomNav() {
+export function buildFinanceBottomNav(role = "owner") {
+  const isOwner = role === "owner";
   return "<nav class=\"bottom-nav\">"
-    + "<a href=\"#\" class=\"bn-item\" onclick=\"goAdmin();return false\">"
-    + "<span class=\"bn-icon\"><i class=\"ti ti-layout-dashboard\"></i></span>Home"
-    + "</a>"
-    + "<a href=\"#\" class=\"bn-item\" onclick=\"goMembers();return false\">"
-    + "<span class=\"bn-icon\"><i class=\"ti ti-users\"></i></span>Member"
-    + "</a>"
+    + (isOwner
+      ? "<a href=\"#\" class=\"bn-item\" onclick=\"goAdmin();return false\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-layout-dashboard\"></i></span>Home"
+        + "</a>"
+      : "<a href=\"/operasional/logout\" class=\"bn-item\" onclick=\"event.preventDefault();financeLogout()\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-logout\"></i></span>Keluar"
+        + "</a>")
+    + (isOwner
+      ? "<a href=\"#\" class=\"bn-item\" onclick=\"goMembers();return false\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-users\"></i></span>Member"
+        + "</a>"
+      : "<a href=\"/scan\" class=\"bn-item\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
+        + "</a>")
     + "<button type=\"button\" class=\"bn-item active\" onclick=\"openBnSheet()\">"
     + "<span class=\"bn-icon\"><i class=\"ti ti-briefcase\"></i></span>Operasional"
     + "</button>"
-    + "<a href=\"/scan\" class=\"bn-item\">"
-    + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
-    + "</a>"
+    + (isOwner
+      ? "<a href=\"/scan\" class=\"bn-item\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
+        + "</a>"
+      : "<a href=\"#\" class=\"bn-item\" onclick=\"openTrxModal();return false\">"
+        + "<span class=\"bn-icon\"><i class=\"ti ti-plus\"></i></span>Catat"
+        + "</a>")
     + "</nav>"
 
     // ── Bottom sheet sub-menu Operasional ──────────────────────
     + "<div class=\"bn-sheet-overlay\" id=\"bnSheetOv\" onclick=\"closeBnSheet()\"></div>"
     + "<div class=\"bn-sheet\" id=\"bnSheet\" role=\"dialog\" aria-label=\"Sub-menu Operasional\">"
     + "<div class=\"bn-sheet-handle\"></div>"
-    + "<div class=\"bn-sheet-title\">Operasional</div>"
+    + "<div class=\"bn-sheet-title\">Operasional"
+    + "<span style=\"margin-left:8px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;"
+    + "background:" + (isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)") + ";"
+    + "color:" + (isOwner ? "#2d6624" : "#1e40af") + "\">"
+    + (isOwner ? "Owner" : "Karyawan") + "</span></div>"
     + "<a href=\"/operasional\" class=\"bn-sheet-item\">"
     + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-wallet\"></i></div>"
     + "<div><div class=\"bn-sheet-name\">Dashboard Keuangan</div>"
     + "<div class=\"bn-sheet-sub\">Pemasukan, pengeluaran &amp; saldo</div></div>"
     + "</a>"
-    + "<a href=\"/operasional/kategori\" class=\"bn-sheet-item\">"
-    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-tag\"></i></div>"
-    + "<div><div class=\"bn-sheet-name\">Kelola Kategori</div>"
-    + "<div class=\"bn-sheet-sub\">Atur kategori pemasukan &amp; pengeluaran</div></div>"
-    + "</a>"
-    + "<a href=\"/operasional/menu\" class=\"bn-sheet-item\">"
-    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-coffee\"></i></div>"
-    + "<div><div class=\"bn-sheet-name\">Kelola Menu</div>"
-    + "<div class=\"bn-sheet-sub\">Kopi, snack, rokok &amp; topping</div></div>"
-    + "</a>"
-    + "<a href=\"/operasional/sdm\" class=\"bn-sheet-item\">"
-    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-users\"></i></div>"
-    + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
-    + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
-    + "</a>"
+    + (isOwner
+      ? "<a href=\"/operasional/kategori\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-tag\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">Kelola Kategori</div>"
+        + "<div class=\"bn-sheet-sub\">Atur kategori pemasukan &amp; pengeluaran</div></div>"
+        + "</a>"
+        + "<a href=\"/operasional/menu\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-coffee\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">Kelola Menu</div>"
+        + "<div class=\"bn-sheet-sub\">Kopi, snack, rokok &amp; topping</div></div>"
+        + "</a>"
+        + "<a href=\"/operasional/sdm\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-users\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
+        + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
+        + "</a>"
+      : "")
     + "</div>"
 
     + "<script>"
@@ -410,12 +437,14 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
-  const toastMsg  = msg === "created" ? "Transaksi berhasil dicatat"
-    : msg === "voided"  ? "Transaksi berhasil dibatalkan"
-    : msg === "err"     ? "Gagal menyimpan, coba lagi"
+export function financeDashboard({ transaksi, token, role = "owner", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
+  const isOwner = role === "owner";
+  const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
+    : msg === "voided"    ? "Transaksi berhasil dibatalkan"
+    : msg === "err"       ? "Gagal menyimpan, coba lagi"
+    : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner"
     : "";
-  const toastType = msg === "err" ? "err" : "ok";
+  const toastType = (msg === "err" || msg === "no_access") ? "err" : "ok";
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
@@ -812,7 +841,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "keuangan")
+    + buildFinanceSidebar(token, "keuangan", role)
     + "<div class=\"main-wrap\">"
 
     // Mobile topbar
@@ -831,10 +860,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
     // ── Desktop topbar ──────────────────────────────────────────
     + "<div class=\"dash-topbar\">"
-    + "<div><div class=\"page-title\">Dashboard Keuangan</div>"
-    + "<div class=\"page-sub\">Laporan pemasukan, pengeluaran &amp; saldo</div></div>"
+    + "<div><div class=\"page-title\">Dashboard Keuangan"
+    + "<span style=\"margin-left:10px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;"
+    + "background:" + (isOwner ? "rgba(45,102,36,.1)" : "rgba(30,64,175,.1)") + ";"
+    + "color:" + (isOwner ? "#2d6624" : "#1e40af") + ";vertical-align:middle\">"
+    + (isOwner ? "Owner" : "Karyawan") + "</span></div>"
+    + "<div class=\"page-sub\">"
+    + (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu")
+    + "</div></div>"
     + "<div class=\"topbar-actions\">"
-    + "<a href=\"/operasional/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
+    + (isOwner ? "<a href=\"/operasional/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>" : "")
     + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
     + "</div></div>"
 
@@ -910,32 +945,42 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
 
     // ── Filter bar (dekat chart) ────────────────────────────────
-    + "<div class=\"fin-filter-bar\" style=\"margin-bottom:14px\">"
-    + "<div class=\"fin-filter-lbl\">Periode</div>"
-    + "<div class=\"fin-period-toggle\">"
-    + "<button class=\"fin-period-btn" + (periodeKey === "hari"   ? " active" : "") + "\" onclick=\"setPeriode('hari')\">Hari Ini</button>"
-    + "<button class=\"fin-period-btn" + (periodeKey === "minggu" ? " active" : "") + "\" onclick=\"setPeriode('minggu')\">Minggu Ini</button>"
-    + "<button class=\"fin-period-btn" + (periodeKey === "bulan"  ? " active" : "") + "\" onclick=\"setPeriode('bulan')\">" + bulanLabelShort + "</button>"
-    + "<select class=\"fin-period-btn fin-bulan-sel\" id=\"fBulan\" onchange=\"applyFilter()\">" + bulanOpts + "</select>"
-    + "</div>"
-    + "<div class=\"fin-filter-sep\"></div>"
-    + "<select class=\"fin-filter-sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
-    + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua Tipe</option>"
-    + "<option value=\"pemasukan\""  + (jFilter === "pemasukan"   ? " selected" : "") + ">Pemasukan</option>"
-    + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
-    + "</select>"
-    + "<select class=\"fin-filter-sel\" id=\"fKategori\" onchange=\"filterByCat()\">"
-    + "<option value=\"\">Semua Kategori</option>"
-    + kategoriOpts
-    + "</select>"
-    + "<div class=\"fin-daterange\">"
-    + "<i class=\"ti ti-calendar\"></i>"
-    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglDari\"  value=\"" + tDari + "\" onchange=\"applyTglFilter()\">"
-    + "<span class=\"fin-date-sep\">—</span>"
-    + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
-    + "</div>"
-    + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
-    + "</div>"
+    + (isOwner
+      // Owner: filter lengkap
+      ? "<div class=\"fin-filter-bar\" style=\"margin-bottom:14px\">"
+        + "<div class=\"fin-filter-lbl\">Periode</div>"
+        + "<div class=\"fin-period-toggle\">"
+        + "<button class=\"fin-period-btn" + (periodeKey === "hari"   ? " active" : "") + "\" onclick=\"setPeriode('hari')\">Hari Ini</button>"
+        + "<button class=\"fin-period-btn" + (periodeKey === "minggu" ? " active" : "") + "\" onclick=\"setPeriode('minggu')\">Minggu Ini</button>"
+        + "<button class=\"fin-period-btn" + (periodeKey === "bulan"  ? " active" : "") + "\" onclick=\"setPeriode('bulan')\">" + bulanLabelShort + "</button>"
+        + "<select class=\"fin-period-btn fin-bulan-sel\" id=\"fBulan\" onchange=\"applyFilter()\">" + bulanOpts + "</select>"
+        + "</div>"
+        + "<div class=\"fin-filter-sep\"></div>"
+        + "<select class=\"fin-filter-sel\" onchange=\"applyFilter()\" id=\"fJenis\">"
+        + "<option value=\"\"" + (!jFilter ? " selected" : "") + ">Semua Tipe</option>"
+        + "<option value=\"pemasukan\""  + (jFilter === "pemasukan"   ? " selected" : "") + ">Pemasukan</option>"
+        + "<option value=\"pengeluaran\"" + (jFilter === "pengeluaran" ? " selected" : "") + ">Pengeluaran</option>"
+        + "</select>"
+        + "<select class=\"fin-filter-sel\" id=\"fKategori\" onchange=\"filterByCat()\">"
+        + "<option value=\"\">Semua Kategori</option>"
+        + kategoriOpts
+        + "</select>"
+        + "<div class=\"fin-daterange\">"
+        + "<i class=\"ti ti-calendar\"></i>"
+        + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglDari\"  value=\"" + tDari + "\" onchange=\"applyTglFilter()\">"
+        + "<span class=\"fin-date-sep\">—</span>"
+        + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
+        + "</div>"
+        + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
+        + "</div>"
+      // Karyawan: info strip periode terkunci
+      : "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;"
+        + "background:rgba(30,64,175,.06);border:1px solid rgba(30,64,175,.15);border-radius:10px;"
+        + "font-size:12px;color:#1e40af\">"
+        + "<i class=\"ti ti-lock\" style=\"font-size:15px;flex-shrink:0\"></i>"
+        + "<span><strong>Tampilan terkunci ke hari ini</strong> &mdash; "
+        + new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+        + "</span></div>")
 
     // ── Charts ──────────────────────────────────────────────────
     + "<div class=\"fin-charts-row\">"
@@ -1208,6 +1253,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "const WIZ_TOPPINGS=" + safeJson(toppingsByName) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function financeLogout(){if(!confirm('Keluar dari sesi keuangan?'))return;window.location.href='/operasional/logout';}"
     + "function buildUrl(){"
     + "var b=document.getElementById('fBulan').value;"
     + "var j=document.getElementById('fJenis').value;"
@@ -1554,12 +1600,12 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function startLoad(){var b=document.getElementById('finPgBar');if(!b)return;b.style.transition='none';b.style.width='0';void b.offsetWidth;b.className='fin-pgbar run';}"
     + "(function(){var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";if(m)showToast(m,t);})();"
     + "</script>"
-    + buildFinanceBottomNav()
+    + buildFinanceBottomNav(role)
     + "</body></html>";
 }
 
 // ── Halaman kelola kategori ───────────────────────────────────
-export function financeKategoriPage(token, kategoriList = [], showErr = false, subKategoriList = []) {
+export function financeKategoriPage(role = "owner", kategoriList = [], showErr = false, subKategoriList = []) {
   const errHtml = showErr
     ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-alert-circle\"></i> Kategori sudah ada atau tidak valid.</div>"
     : "";
@@ -1696,7 +1742,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false, s
     + "<style>" + extraCss + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "kategori")
+    + buildFinanceSidebar("", "kategori", role)
     + "<div class=\"main-wrap\">"
     + "<header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
@@ -1798,7 +1844,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false, s
     + "if(typeof Sortable==='undefined')return;"
     + "Sortable.create(el,{animation:160,handle:'.ki-grip',ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',onEnd:function(e){if(e.oldIndex!==e.newIndex)saveUrutan(el);}});});"
     + "</script>"
-    + buildFinanceBottomNav()
+    + buildFinanceBottomNav("owner")
     + "</body></html>";
 }
 
@@ -1820,7 +1866,7 @@ function katSelect(name, selected = "minuman", extraStyle = "") {
     + "</select>";
 }
 
-export function financeMenuPage(token, items = [], toppings = [], hasErr = false, editItem = null) {
+export function financeMenuPage(role = "owner", items = [], toppings = [], hasErr = false, editItem = null) {
   const rpFmt = (n) => "Rp " + Number(n).toLocaleString("id-ID");
 
   // Build topping map by item_id
@@ -2135,7 +2181,7 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "<style>" + css + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "menu")
+    + buildFinanceSidebar("", "menu", role)
     + "<div class=\"main-wrap\">"
     + "<header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
@@ -2183,6 +2229,6 @@ export function financeMenuPage(token, items = [], toppings = [], hasErr = false
     + "</div>"
     + "</div></div></div>"
     + "<script>" + js + "</script>"
-    + buildFinanceBottomNav()
+    + buildFinanceBottomNav("owner")
     + "</body></html>";
 }

@@ -12,6 +12,9 @@ export const CONFIG = Object.freeze({
   ADMIN_PIN:    process.env.ADMIN_PIN            ?? "1234",
   KASIR_PIN:    process.env.KASIR_PIN            ?? "5678",
   FINANCE_PIN:  process.env.FINANCE_PIN          ?? "2024",
+  // Role-based PIN untuk /operasional: owner (akses penuh) vs karyawan (catat + lihat hari ini)
+  OWNER_PIN:    process.env.OWNER_PIN    ?? process.env.FINANCE_PIN ?? "2024",
+  KARYAWAN_PIN: process.env.KARYAWAN_PIN ?? "1111",
   KODE_PREFIX: process.env.KODE_PREFIX          ?? "JMB",
   JWT_SECRET:  process.env.JWT_SECRET           ?? "billiard-warpat-secret-2026",
   JWT_EXPIRES: process.env.JWT_EXPIRES          ?? "24h",
