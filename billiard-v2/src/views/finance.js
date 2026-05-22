@@ -299,11 +299,10 @@ const CSS = [
   ".empty-state { text-align:center; padding:32px; color:var(--txt3); font-size:13px; }",
 
   // toast
-  ".toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%);",
-  "  background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.3);",
-  "  border-radius:var(--r-md); padding:8px 20px; font-size:12px; font-weight:700;",
-  "  z-index:200; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .3s; }",
-  ".toast.show { opacity:1; }",
+  ".toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:24px;font-size:13px;font-weight:600;z-index:9998;white-space:nowrap;pointer-events:none;opacity:0;transition:all .25s ease;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.12)}",
+  ".toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
+  ".toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
+  ".toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
 ].join("\n");
 
 // ── Login page ────────────────────────────────────────────────
@@ -411,7 +410,12 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [] }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
+  const toastMsg  = msg === "created" ? "Transaksi berhasil dicatat"
+    : msg === "voided"  ? "Transaksi berhasil dibatalkan"
+    : msg === "err"     ? "Gagal menyimpan, coba lagi"
+    : "";
+  const toastType = msg === "err" ? "err" : "ok";
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
@@ -730,6 +734,11 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
     "@media(max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:90px 1fr 150px!important}.fin-th:nth-child(3),.fr-td:nth-child(3){display:none!important}.fin-th:nth-child(n+5),.fr-td:nth-child(n+5){display:none!important}}",
     // ── Cards rounded ───────────────────────────────────────────
+    ".fin-pgbar{position:fixed;top:0;left:0;z-index:9999;height:3px;background:var(--accent);width:0;pointer-events:none}",
+    ".fin-pgbar.run{width:82%;transition:width 9s cubic-bezier(.12,0,.39,0)}",
+    ".fin-pgbar.done{width:100%;opacity:0;transition:width .15s ease,opacity .4s ease .15s}",
+    "@keyframes finSpin{to{transform:rotate(360deg)}}",
+    ".fin-spin{display:inline-block;animation:finSpin .65s linear infinite}",
     ".fin-table-card{border-radius:14px!important}",
     ".fin-charts-row .card{border-radius:14px!important}",
     ".fin-filter-bar{box-shadow:0 1px 6px rgba(0,0,0,.05);border-radius:12px!important}",
@@ -977,6 +986,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div>"
     + "</div>"
 
+    + "<div class=\"fin-pgbar\" id=\"finPgBar\"></div>"
     + "<div class=\"toast\" id=\"toast\"></div>"
 
     // ── Modal Catat Transaksi (3-step wizard) ────────────────────
@@ -1135,7 +1145,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<span id=\"voidAmount\" style=\"font-size:14px;font-weight:700;color:#1a2318;font-family:'DM Mono',monospace\">—</span>"
     + "</div>"
     + "</div>"
-    + "<form id=\"voidForm\" action=\"/operasional/void\" method=\"post\">"
+    + "<form id=\"voidForm\" action=\"/operasional/void\" method=\"post\" onsubmit=\"startLoad()\">"
     + "<input type=\"hidden\" name=\"id\" id=\"voidId\">"
     + "<label style=\"font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7a8c78;margin-bottom:8px;display:block\">"
     + "Alasan Pembatalan <span style=\"color:#a32d2d;text-transform:none;letter-spacing:0\">*</span></label>"
@@ -1167,18 +1177,18 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(d)url+='&tgl_dari='+d;"
     + "if(s)url+='&tgl_sampai='+s;"
     + "return url;}"
-    + "function applyFilter(){window.location.href=buildUrl();}"
+    + "function applyFilter(){startLoad();window.location.href=buildUrl();}"
     + "function applyTglFilter(){"
     + "var d=document.getElementById('fTglDari').value;"
     + "var s=document.getElementById('fTglSampai').value;"
     + "if(d&&s&&s<d)document.getElementById('fTglSampai').value=d;"
-    + "window.location.href=buildUrl();}"
+    + "startLoad();window.location.href=buildUrl();}"
     + "function clearTgl(){"
     + "var b=document.getElementById('fBulan').value;"
     + "var j=document.getElementById('fJenis').value;"
     + "var url='/operasional?bulan='+b;"
     + "if(j)url+='&jenis='+j;"
-    + "window.location.href=url;}"
+    + "startLoad();window.location.href=url;}"
     + "function setPeriode(p){"
     + "var b=document.getElementById('fBulan').value;"
     + "var j=document.getElementById('fJenis').value;"
@@ -1188,7 +1198,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(j)url+='&jenis='+j;"
     + "if(p==='hari'){url+='&tgl_dari='+ymd(today)+'&tgl_sampai='+ymd(today);}"
     + "else if(p==='minggu'){var dow=today.getDay()===0?6:today.getDay()-1;var mon=new Date(today);mon.setDate(today.getDate()-dow);url+='&tgl_dari='+ymd(mon)+'&tgl_sampai='+ymd(today);}"
-    + "window.location.href=url;}"
+    + "startLoad();window.location.href=url;}"
     + "function filterByCat(){"
     + "var k=document.getElementById('fKategori').value.toLowerCase();"
     + "var rows=document.querySelectorAll('#trxRows .fin-row');"
@@ -1400,7 +1410,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wizBtnBack').style.display=n>1?'':'none';"
     + "var nb=document.getElementById('wizBtnNext');"
     + "if(n===3){nb.innerHTML='<i class=\"ti ti-check\" style=\"font-size:15px\"></i> Simpan Transaksi';"
-    + "nb.onclick=function(){document.getElementById('wizForm').submit();};}"
+    + "nb.onclick=function(){nb.disabled=true;nb.style.opacity='.7';nb.innerHTML='<i class=\"fin-spin ti ti-loader-2\" style=\"font-size:15px\"></i> Menyimpan...';startLoad();document.getElementById('wizForm').submit();};}"
     + "else{nb.innerHTML='Lanjut <i class=\"ti ti-arrow-right\" style=\"font-size:15px\"></i>';nb.onclick=wizNext;}"
     + "var icons={1:'ti-receipt',2:'ti-forms',3:'ti-circle-check'};"
     + "document.getElementById('wizIcon').innerHTML='<i class=\"ti '+icons[n]+'\"></i>';}"
@@ -1465,6 +1475,9 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "function fmtSaldoKas(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';}"
     + "function saveSaldoKas(){var v=(document.getElementById('finSaldoKas')||{}).value||'';var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');try{localStorage.setItem('fin_saldo_kas',JSON.stringify({v:v,d:today}));}catch(e){}}"
     + "(function(){try{var raw=localStorage.getItem('fin_saldo_kas');if(!raw)return;var obj=JSON.parse(raw);var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(obj&&obj.d===today){var el=document.getElementById('finSaldoKas');if(el&&obj.v)el.value=obj.v;}else{localStorage.removeItem('fin_saldo_kas');}}catch(e){}})();"
+    + "function showToast(msg,type){var el=document.getElementById('toast');if(!el)return;el.innerHTML=(type==='ok'?'<i class=\"ti ti-circle-check\" style=\"font-size:15px\"></i>':type==='err'?'<i class=\"ti ti-circle-x\" style=\"font-size:15px\"></i>':'')+' '+msg;el.className='toast '+(type||'ok');void el.offsetWidth;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},3500);}"
+    + "function startLoad(){var b=document.getElementById('finPgBar');if(!b)return;b.style.transition='none';b.style.width='0';void b.offsetWidth;b.className='fin-pgbar run';}"
+    + "(function(){var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";if(m)showToast(m,t);})();"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";

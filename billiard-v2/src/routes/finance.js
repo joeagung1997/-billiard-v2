@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
     const tglDari     = req.query.tgl_dari   ?? "";
     const tglSampai   = req.query.tgl_sampai ?? "";
 
-    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, subKategoriList, menuItems, toppings }));
+    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, subKategoriList, menuItems, toppings, msg: req.query.msg || "" }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -51,10 +51,10 @@ router.post("/tambah", async (req, res) => {
 
   const jumlahNum = parseInt((jumlah ?? "").replace(/\./g, "")) || 0;
   if (!jenis || !tanggal || !kategori || jumlahNum <= 0) {
-    return res.redirect("/operasional");
+    return res.redirect("/operasional?msg=err");
   }
   if (jenis !== "pemasukan" && jenis !== "pengeluaran") {
-    return res.redirect("/operasional");
+    return res.redirect("/operasional?msg=err");
   }
 
   try {
@@ -71,10 +71,10 @@ router.post("/tambah", async (req, res) => {
       createdAt:  new Date().toISOString(),
       bayar,
     });
-    res.redirect("/operasional");
+    res.redirect("/operasional?msg=created");
   } catch (err) {
     console.error("[FINANCE] tambah POST error:", err.message);
-    res.redirect("/operasional");
+    res.redirect("/operasional?msg=err");
   }
 });
 
@@ -85,14 +85,14 @@ router.post("/void", async (req, res) => {
   const id     = (req.body.id ?? "").trim();
   const reason = (req.body.reason ?? "").trim();
 
-  if (!id || !reason) return res.redirect("/operasional");
+  if (!id || !reason) return res.redirect("/operasional?msg=err");
 
   try {
     await voidTransaksi(id, reason);
-    res.redirect("/operasional");
+    res.redirect("/operasional?msg=voided");
   } catch (err) {
     console.error("[FINANCE] void error:", err.message);
-    res.redirect("/operasional");
+    res.redirect("/operasional?msg=err");
   }
 });
 
