@@ -467,8 +467,11 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
           + "<div style=\"display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap\">"
           + "<div>"
           + "<span class=\"sdm-badge sdm-badge-" + color + "\" style=\"font-size:11px\">" + (TIPE_LABEL[t.tipe] || t.tipe) + "</span>"
-          + "<div style=\"font-size:11px;color:var(--txt3);margin-top:5px\"><i class=\"ti ti-calendar\" style=\"font-size:10px;margin-right:3px\"></i>"
-          + hariNm + ", " + tglStr + " <span style=\"margin:0 3px\">·</span> <i class=\"ti ti-clock\" style=\"font-size:10px;margin-right:2px\"></i>" + jamStr
+          + "<div style=\"font-size:11px;color:var(--txt3);margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap\">"
+          + "<span><i class=\"ti ti-calendar\" style=\"font-size:10px;margin-right:3px\"></i>" + hariNm + ", " + tglStr + "</span>"
+          + "<span><i class=\"ti ti-clock\" style=\"font-size:10px;margin-right:2px\"></i>" + jamStr + "</span>"
+          + "<span style=\"background:" + (t.metode === "transfer" ? "#dbeafe" : "#d4edda") + ";color:" + (t.metode === "transfer" ? "#1e40af" : "#1a6b2a") + ";padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600\">"
+          + (t.metode === "transfer" ? "🏦 Transfer" : "💵 Cash") + "</span>"
           + "</div>"
           + (t.keterangan ? "<div style=\"font-size:12px;color:var(--txt2);margin-top:5px;font-style:italic\">\"" + escHtml(t.keterangan) + "\"</div>" : "")
           + "</div>"
@@ -491,6 +494,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     ".det-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}",
     ".det-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:10px;margin-top:2px}",
     ".det-row span:last-child{font-family:var(--ff-mono);font-size:12px}",
+    ".metode-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border:1.5px solid var(--border2);border-radius:var(--r-md);font-size:12px;font-weight:600;color:var(--txt2);transition:all .15s;user-select:none}",
+    "input[name=metode]:checked + .metode-btn{background:var(--green-bg);border-color:var(--accent);color:var(--accent)}",
   ].join("");
 
   return docHeadV4("SDM — " + karyawan.nama)
@@ -569,6 +574,15 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "</select></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jumlah (Rp)</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"jumlah\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Metode Pembayaran</label>"
+    + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px\">"
+    + "<label style=\"cursor:pointer\">"
+    + "<input type=\"radio\" name=\"metode\" value=\"cash\" checked style=\"display:none\" onchange=\"updateMetodeBtn()\">"
+    + "<div class=\"metode-btn\" data-val=\"cash\"><i class=\"ti ti-cash\"></i> Cash</div></label>"
+    + "<label style=\"cursor:pointer\">"
+    + "<input type=\"radio\" name=\"metode\" value=\"transfer\" style=\"display:none\" onchange=\"updateMetodeBtn()\">"
+    + "<div class=\"metode-btn\" data-val=\"transfer\"><i class=\"ti ti-building-bank\"></i> Transfer</div></label>"
+    + "</div></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Keterangan <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
     + "<input class=\"sdm-inp\" type=\"text\" name=\"keterangan\" placeholder=\"Catatan tambahan...\"></div>"
     + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"width:100%;justify-content:center;padding:10px\"><i class=\"ti ti-check\"></i> Simpan Transaksi</button>"

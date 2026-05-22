@@ -200,6 +200,7 @@ router.post("/sdm/transaksi", async (req, res) => {
   const jumlah     = parseInt((req.body.jumlah ?? "").replace(/\D/g, "")) || 0;
   const bulan      = req.body.bulan || bulanSekarang();
   const keterangan = (req.body.keterangan ?? "").trim().slice(0, 200);
+  const metode     = ["cash", "transfer"].includes(req.body.metode) ? req.body.metode : "cash";
   const redirect   = req.body.redirect_to || "/operasional/sdm";
 
   const TIPE_VALID = ["gaji", "kasbon", "kembali_kasbon", "thr", "bonus", "makan_harian"];
@@ -213,7 +214,7 @@ router.post("/sdm/transaksi", async (req, res) => {
 
     const trxId = Date.now() + "-sdm-" + Math.random().toString(36).slice(2, 6);
     await appendSdmTransaksi({
-      id: trxId, karyawanId, tipe, jumlah, bulan, keterangan,
+      id: trxId, karyawanId, tipe, jumlah, bulan, keterangan, metode,
       createdAt: new Date().toISOString(),
     });
 

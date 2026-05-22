@@ -376,10 +376,10 @@ export const readSdmTransaksiByKaryawan = async (karyawanId) => {
 
 export const appendSdmTransaksi = async (item) => {
   await query(
-    `INSERT INTO sdm_transaksi (id, karyawan_id, tipe, jumlah, bulan, keterangan, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    `INSERT INTO sdm_transaksi (id, karyawan_id, tipe, jumlah, bulan, keterangan, metode, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
     [item.id, item.karyawanId, item.tipe, item.jumlah, item.bulan,
-     item.keterangan ?? "", item.createdAt ?? new Date().toISOString()]
+     item.keterangan ?? "", item.metode ?? "cash", item.createdAt ?? new Date().toISOString()]
   );
 };
 
