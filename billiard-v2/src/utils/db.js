@@ -315,3 +315,70 @@ export const addMenuTopping = async (itemId, nama, harga) => {
 export const deleteMenuTopping = async (id) => {
   await query("DELETE FROM menu_toppings WHERE id=$1", [id]);
 };
+
+// ── Karyawan ──────────────────────────────────────────────────
+
+export const readKaryawan = async (includeNonaktif = false) => {
+  const res = await query(
+    includeNonaktif
+      ? "SELECT * FROM karyawan ORDER BY created_at"
+      : "SELECT * FROM karyawan WHERE status = 'aktif' ORDER BY created_at"
+  );
+  return res.rows;
+};
+
+export const getKaryawanById = async (id) => {
+  const res = await query("SELECT * FROM karyawan WHERE id = $1", [id]);
+  return res.rows[0] ?? null;
+};
+
+export const addKaryawan = async ({ nama, jabatan, gajiPokok, tglMulai, telepon }) => {
+  const res = await query(
+    `INSERT INTO karyawan (nama, jabatan, gaji_pokok, tgl_mulai, telepon)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [nama.trim(), jabatan.trim(), gajiPokok, tglMulai || null, telepon.trim()]
+  );
+  return res.rows[0].id;
+};
+
+export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, tglMulai, telepon }) => {
+  await query(
+    `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, tgl_mulai=$4, telepon=$5 WHERE id=$6`,
+    [nama.trim(), jabatan.trim(), gajiPokok, tglMulai || null, telepon.trim(), id]
+  );
+};
+
+export const nonaktifkanKaryawan = async (id) => {
+  await query(`UPDATE karyawan SET status = 'nonaktif' WHERE id = $1`, [id]);
+};
+
+// ── SDM Transaksi ─────────────────────────────────────────────
+
+export const readSdmTransaksi = async (bulan) => {
+  const res = await query(
+    "SELECT * FROM sdm_transaksi WHERE bulan = $1 ORDER BY created_at DESC",
+    [bulan]
+  );
+  return res.rows;
+};
+
+export const readSdmTransaksiByKaryawan = async (karyawanId) => {
+  const res = await query(
+    "SELECT * FROM sdm_transaksi WHERE karyawan_id = $1 ORDER BY bulan DESC, created_at DESC",
+    [karyawanId]
+  );
+  return res.rows;
+};
+
+export const appendSdmTransaksi = async (item) => {
+  await query(
+    `INSERT INTO sdm_transaksi (id, karyawan_id, tipe, jumlah, bulan, keterangan, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [item.id, item.karyawanId, item.tipe, item.jumlah, item.bulan,
+     item.keterangan ?? "", item.createdAt ?? new Date().toISOString()]
+  );
+};
+
+export const deleteSdmTransaksi = async (id) => {
+  await query("DELETE FROM sdm_transaksi WHERE id = $1", [id]);
+};

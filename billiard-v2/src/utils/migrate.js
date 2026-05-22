@@ -227,6 +227,33 @@ export const runMigrations = async () => {
     }
   }
 
+  // ── Tabel SDM (karyawan & penggajian) ────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS karyawan (
+      id         SERIAL PRIMARY KEY,
+      nama       TEXT    NOT NULL,
+      jabatan    TEXT    DEFAULT '',
+      gaji_pokok INTEGER NOT NULL DEFAULT 0,
+      tgl_mulai  DATE,
+      status     TEXT    DEFAULT 'aktif',
+      telepon    TEXT    DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS sdm_transaksi (
+      id          TEXT    PRIMARY KEY,
+      karyawan_id INTEGER NOT NULL,
+      tipe        TEXT    NOT NULL,
+      jumlah      BIGINT  NOT NULL,
+      bulan       TEXT    NOT NULL,
+      keterangan  TEXT    DEFAULT '',
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_sdm_trx_karyawan ON sdm_transaksi (karyawan_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_sdm_trx_bulan    ON sdm_transaksi (bulan)`);
+
   // ── Index untuk performa query ──────────────────────────────
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts           ON logs      (ts DESC)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_aksi         ON logs      (aksi)`);

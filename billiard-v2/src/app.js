@@ -14,6 +14,7 @@ import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
 import shareRouter    from "./routes/share.js";
 import financeRouter  from "./routes/finance.js";
+import sdmRouter      from "./routes/sdm.js";
 import apiRouter      from "./routes/api.js";
 import { swaggerSpec } from "./utils/swagger.js";
 import { resultPage } from "./views/member.js";
@@ -53,6 +54,7 @@ app.use("/", scanRouter);
 app.use("/admin", adminRouter);
 app.use("/admin", qrRouter);
 app.use("/operasional", financeRouter);
+app.use("/operasional", sdmRouter);
 // Backward-compat: redirect URL lama /keuangan/* ke /operasional/*
 app.use("/keuangan", (req, res) => res.redirect(308, "/operasional" + req.url));
 app.use("/", shareRouter);

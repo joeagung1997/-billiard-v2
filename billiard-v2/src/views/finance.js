@@ -12,7 +12,7 @@ const rp = (n) => {
   return "Rp " + parts.join(".");
 };
 
-const escHtml = (s) =>
+export const escHtml = (s) =>
   String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -25,7 +25,7 @@ function docHead(title) {
     + "<link rel=\"stylesheet\" href=\"/finance.css?v=3\">";
 }
 
-function docHeadV4(title) {
+export function docHeadV4(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
@@ -35,12 +35,12 @@ function docHeadV4(title) {
     + "<link rel=\"stylesheet\" href=\"/admin.css?v=16\">";
 }
 
-function buildFinanceSidebar(ftk, page = "keuangan") {
-  const isKeu = page === "keuangan";
-  const isKat = page === "kategori";
+export function buildFinanceSidebar(ftk, page = "keuangan") {
+  const isKeu  = page === "keuangan";
+  const isKat  = page === "kategori";
   const isMenu = page === "menu";
-  // Sub-menu terbuka otomatis kalau sedang di salah satu halaman operasional
-  const subOpen = isKeu || isKat || isMenu;
+  const isSdm  = page === "sdm";
+  const subOpen = isKeu || isKat || isMenu || isSdm;
   const opsItemCls = "nav-item" + (subOpen ? " open" : "");
 
   const subItem = (href, label, active) =>
@@ -89,6 +89,7 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
     + subItem("/operasional", "Dashboard Keuangan", isKeu)
     + subItem("/operasional/kategori", "Kelola Kategori", isKat)
     + subItem("/operasional/menu", "Kelola Menu", isMenu)
+    + subItem("/operasional/sdm", "SDM & Penggajian", isSdm)
     + "</div>"
     + "</div>"
     + "</div>"
@@ -137,7 +138,7 @@ function buildFinanceSidebar(ftk, page = "keuangan") {
 // ── Bottom nav untuk halaman /operasional/* (mobile) ─────────────
 // Menggunakan goAdmin/goMembers (baca token dari localStorage) karena
 // halaman finance tidak punya admin token di server-side.
-function buildFinanceBottomNav() {
+export function buildFinanceBottomNav() {
   return "<nav class=\"bottom-nav\">"
     + "<a href=\"#\" class=\"bn-item\" onclick=\"goAdmin();return false\">"
     + "<span class=\"bn-icon\"><i class=\"ti ti-layout-dashboard\"></i></span>Home"
@@ -172,6 +173,11 @@ function buildFinanceBottomNav() {
     + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-coffee\"></i></div>"
     + "<div><div class=\"bn-sheet-name\">Kelola Menu</div>"
     + "<div class=\"bn-sheet-sub\">Kopi, snack, rokok &amp; topping</div></div>"
+    + "</a>"
+    + "<a href=\"/operasional/sdm\" class=\"bn-sheet-item\">"
+    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-users\"></i></div>"
+    + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
+    + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
     + "</a>"
     + "</div>"
 
