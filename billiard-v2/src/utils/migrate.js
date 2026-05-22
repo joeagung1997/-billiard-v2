@@ -105,6 +105,7 @@ export const runMigrations = async () => {
   // Soft-void: transaksi tidak boleh di-edit, hanya bisa di-void + re-entry
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS voided_at   TIMESTAMPTZ`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS void_reason TEXT DEFAULT ''`);
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bayar       TEXT DEFAULT ''`);
 
   // Point lifetime — 1 point tiap check-in. Beda dgn total_main yg
   // reset tiap siklus. Backfill dari logs (SCAN + SCAN_RESET +

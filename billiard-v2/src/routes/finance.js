@@ -45,6 +45,7 @@ router.get("/tambah", (_req, res) => res.redirect("/operasional"));
 router.post("/tambah", async (req, res) => {
   const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
   const subKategori = (req.body.sub_kategori ?? "").trim().slice(0, 100);
+  const bayar       = ["cash", "qris"].includes(req.body.bayar) ? req.body.bayar : "";
   const tanggal = (datetime ?? "").slice(0, 10);
   const jam     = (datetime ?? "").slice(11, 16);
 
@@ -68,6 +69,7 @@ router.post("/tambah", async (req, res) => {
       keterangan: (keterangan ?? "").trim().slice(0, 200),
       jumlah:     jumlahNum,
       createdAt:  new Date().toISOString(),
+      bayar,
     });
     res.redirect("/operasional");
   } catch (err) {
