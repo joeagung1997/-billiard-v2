@@ -421,6 +421,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
   const trxBulan = allTrx.filter((t) => t.bulan === bulan);
   const r        = hitungRingkasan(karyawan, trxBulan);
 
+  const HARI = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+
   // Bulan selector
   const bulans = [...new Set(allTrx.map((t) => t.bulan))];
   if (!bulans.includes(bulan)) bulans.unshift(bulan);
@@ -429,89 +431,133 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     "<option value=\"" + b + "\"" + (b === bulan ? " selected" : "") + ">" + bulanLabel(b) + "</option>"
   ).join("");
 
-  // Riwayat transaksi bulan ini
-  const trxRows = trxBulan.length > 0
-    ? trxBulan.map((t) => {
-        const isIn  = t.tipe === "kembali_kasbon";
-        const color = TIPE_COLOR[t.tipe] || "orange";
-        return "<div class=\"sdm-trx-row\">"
-          + "<div><div class=\"sdm-trx-tipe\">"
-          + "<span class=\"sdm-badge sdm-badge-" + color + "\">" + (TIPE_LABEL[t.tipe] || t.tipe) + "</span>"
-          + "</div>"
-          + (t.keterangan ? "<div class=\"sdm-trx-ket\">" + escHtml(t.keterangan) + "</div>" : "")
-          + "<div style=\"font-size:10px;color:var(--txt3);margin-top:2px\">" + new Date(t.created_at).toLocaleDateString("id-ID") + "</div>"
-          + "</div>"
-          + "<div class=\"sdm-trx-jml " + (isIn ? "in" : "out") + "\">" + (isIn ? "+" : "-") + rp(t.jumlah) + "</div>"
-          + "<div class=\"sdm-trx-act\">"
-          + "<a href=\"/operasional/sdm/transaksi/hapus?id=" + encodeURIComponent(t.id) + "&redirect=/operasional/sdm/" + karyawan.id + "%3Fbulan=" + bulan + "\" class=\"sdm-btn sdm-btn-danger\" onclick=\"return confirm('Hapus transaksi ini?')\" style=\"padding:3px 7px;font-size:10px\"><i class=\"ti ti-trash\"></i></a>"
-          + "</div></div>";
-      }).join("")
-    : "<div class=\"sdm-empty\"><i class=\"ti ti-inbox\"></i>Belum ada transaksi bulan ini</div>";
+  // Avatar inisial
+  const shift = karyawan.shift || "siang";
+  const _w    = karyawan.nama.trim().split(/\s+/);
+  const inits = _w.length > 1 ? _w.slice(0, 2).map((w) => w[0]).join("").toUpperCase() : karyawan.nama.trim().slice(0, 2).toUpperCase();
 
   const tglMulai = karyawan.tgl_mulai
     ? new Date(karyawan.tgl_mulai).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
     : "—";
 
+  // Progress
+  const pct      = r.gajiPokok > 0 ? Math.min(100, Math.round(r.totalDibayarkan / r.gajiPokok * 100)) : 0;
+  const progColor = pct >= 100 ? "var(--accent)" : pct > 0 ? "#f59e0b" : "var(--border)";
+
+  // ── Riwayat timeline ────────────────────────────────────────
+  const timeline = trxBulan.length > 0
+    ? trxBulan.map((t) => {
+        const isIn   = t.tipe === "kembali_kasbon";
+        const color  = TIPE_COLOR[t.tipe] || "orange";
+        const d      = new Date(t.created_at);
+        const hariNm = HARI[d.getDay()];
+        const tglStr = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+        const jamStr = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false });
+        const hapusUrl = "/operasional/sdm/transaksi/hapus?id=" + encodeURIComponent(t.id)
+          + "&redirect=/operasional/sdm/" + karyawan.id + "%3Fbulan=" + bulan;
+
+        return "<div style=\"display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)\">"
+          // dot
+          + "<div style=\"display:flex;flex-direction:column;align-items:center;padding-top:3px\">"
+          + "<div style=\"width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0\"></div>"
+          + "<div style=\"flex:1;width:1px;background:var(--border);margin-top:4px\"></div>"
+          + "</div>"
+          // content
+          + "<div style=\"flex:1;min-width:0\">"
+          + "<div style=\"display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap\">"
+          + "<div>"
+          + "<span class=\"sdm-badge sdm-badge-" + color + "\" style=\"font-size:11px\">" + (TIPE_LABEL[t.tipe] || t.tipe) + "</span>"
+          + "<div style=\"font-size:11px;color:var(--txt3);margin-top:5px\"><i class=\"ti ti-calendar\" style=\"font-size:10px;margin-right:3px\"></i>"
+          + hariNm + ", " + tglStr + " <span style=\"margin:0 3px\">·</span> <i class=\"ti ti-clock\" style=\"font-size:10px;margin-right:2px\"></i>" + jamStr
+          + "</div>"
+          + (t.keterangan ? "<div style=\"font-size:12px;color:var(--txt2);margin-top:5px;font-style:italic\">\"" + escHtml(t.keterangan) + "\"</div>" : "")
+          + "</div>"
+          + "<div style=\"display:flex;align-items:center;gap:8px;flex-shrink:0\">"
+          + "<div style=\"font-size:13px;font-weight:700;font-family:var(--ff-mono);color:" + (isIn ? "var(--green)" : "var(--red)") + "\">"
+          + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
+          + "<a href=\"" + hapusUrl + "\" onclick=\"return confirm('Hapus transaksi ini?')\" style=\"display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--red-bg);color:var(--red);text-decoration:none;font-size:12px\"><i class=\"ti ti-trash\"></i></a>"
+          + "</div></div>"
+          + "</div></div>";
+      }).join("")
+    : "<div class=\"sdm-empty\" style=\"padding:36px 0;border:none\"><i class=\"ti ti-inbox\" style=\"font-size:28px;display:block;margin-bottom:8px;opacity:.3\"></i>Belum ada transaksi bulan ini</div>";
+
+  // ── CSS tambahan ─────────────────────────────────────────────
+  const DETAIL_CSS = [
+    ".det-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}",
+    "@media(max-width:640px){.det-grid{grid-template-columns:1fr}}",
+    ".det-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px}",
+    ".det-card-title{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;display:flex;align-items:center;gap:6px}",
+    ".det-card-title i{font-size:13px;color:var(--accent)}",
+    ".det-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}",
+    ".det-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:10px;margin-top:2px}",
+    ".det-row span:last-child{font-family:var(--ff-mono);font-size:12px}",
+  ].join("");
+
   return docHeadV4("SDM — " + karyawan.nama)
-    + "<style>" + SDM_CSS + "</style>"
+    + "<style>" + SDM_CSS + DETAIL_CSS + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar("", "sdm")
     + "<div class=\"main-wrap\"><header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
-    + "<a href=\"/operasional/sdm\" style=\"color:var(--accent);font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px;text-decoration:none;margin-right:10px\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> SDM</a>"
+    + "<a href=\"/operasional/sdm\" style=\"color:var(--accent);font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px;text-decoration:none;margin-right:10px\"><i class=\"ti ti-arrow-left\"></i> SDM</a>"
     + "<div><div class=\"topbar-name\">" + escHtml(karyawan.nama) + "</div><div class=\"topbar-label\">Detail Karyawan</div></div>"
     + "</div></header>"
-    + "<div class=\"page\"><div class=\"sdm-page\">"
+    + "<div class=\"page\"><div class=\"sdm-page\" style=\"max-width:760px\">"
 
-    // Info karyawan
-    + "<div class=\"sdm-info-card\">"
-    + "<div style=\"display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px\">"
-    + "<div><div style=\"font-size:17px;font-weight:700;color:var(--txt)\">" + escHtml(karyawan.nama) + "</div>"
-    + "<div style=\"font-size:12px;color:var(--txt3);margin-top:2px\">" + escHtml(karyawan.jabatan || "—") + "</div></div>"
-    + "<div style=\"display:flex;gap:6px\">"
+    // ── Hero card karyawan ──────────────────────────────────────
+    + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:16px\">"
+    + "<div style=\"display:flex;align-items:center;gap:14px;flex-wrap:wrap\">"
+    + "<div style=\"width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;background:" + (shift === "malam" ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "linear-gradient(135deg,#f59e0b,#ef4444)") + "\">" + inits + "</div>"
+    + "<div style=\"flex:1;min-width:0\">"
+    + "<div style=\"font-size:18px;font-weight:700;color:var(--txt)\">" + escHtml(karyawan.nama) + "</div>"
+    + "<div style=\"display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap\">"
+    + "<span style=\"font-size:12px;color:var(--txt3)\">" + escHtml(karyawan.jabatan || "—") + "</span>"
+    + "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"font-size:10px\">" + (shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span>"
+    + "</div></div>"
+    + "<div style=\"display:flex;gap:6px;flex-shrink:0\">"
     + "<a href=\"/operasional/sdm/karyawan/" + karyawan.id + "/edit\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-edit\"></i> Edit</a>"
     + "<a href=\"/operasional/sdm/karyawan/" + karyawan.id + "/nonaktif\" class=\"sdm-btn sdm-btn-danger\" onclick=\"return confirm('Nonaktifkan karyawan ini?')\"><i class=\"ti ti-user-off\"></i> Nonaktif</a>"
     + "</div></div>"
-    + "<div class=\"sdm-info-grid\">"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Gaji Pokok</div><div class=\"sdm-info-val\">" + rp(karyawan.gaji_pokok) + " / bln</div></div>"
-    + (Number(karyawan.uang_makan) > 0
-        ? "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Uang Makan</div><div class=\"sdm-info-val\">" + rp(karyawan.uang_makan) + "/hari <span style=\"color:var(--txt3);font-size:11px\">(di luar gaji)</span></div></div>"
-        : "")
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Shift</div><div class=\"sdm-info-val\"><span class=\"sdm-badge sdm-badge-" + (karyawan.shift || "siang") + "\">" + (karyawan.shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span></div></div>"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Telepon</div><div class=\"sdm-info-val\">" + escHtml(karyawan.telepon || "—") + "</div></div>"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Mulai Kerja</div><div class=\"sdm-info-val\">" + tglMulai + "</div></div>"
-    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Status</div><div class=\"sdm-info-val\">" + escHtml(karyawan.status) + "</div></div>"
+    + "<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)\">"
+    + "<div><div class=\"sdm-info-lbl\">Gaji Pokok</div><div class=\"sdm-info-val\">" + rp(karyawan.gaji_pokok) + "<span style=\"font-size:10px;color:var(--txt3)\">/bln</span></div></div>"
+    + (Number(karyawan.uang_makan) > 0 ? "<div><div class=\"sdm-info-lbl\">Uang Makan</div><div class=\"sdm-info-val\">" + rp(karyawan.uang_makan) + "<span style=\"font-size:10px;color:var(--txt3)\">/hari</span></div></div>" : "")
+    + "<div><div class=\"sdm-info-lbl\">Telepon</div><div class=\"sdm-info-val\">" + escHtml(karyawan.telepon || "—") + "</div></div>"
+    + "<div><div class=\"sdm-info-lbl\">Mulai Kerja</div><div class=\"sdm-info-val\">" + tglMulai + "</div></div>"
     + "</div></div>"
 
-    // Bulan selector + rekap
-    + "<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px\">"
-    + "<div style=\"font-size:14px;font-weight:600;color:var(--txt)\">Rekap " + bulanLabel(bulan) + "</div>"
-    + "<form method=\"get\"><input type=\"hidden\" name=\"id\" value=\"" + karyawan.id + "\">"
-    + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + bulanOpts + "</select></form>"
+    // ── Bulan selector ─────────────────────────────────────────
+    + "<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px\">"
+    + "<div style=\"font-size:14px;font-weight:600;color:var(--txt)\">Rekap <span style=\"color:var(--accent)\">" + bulanLabel(bulan) + "</span></div>"
+    + "<form method=\"get\" action=\"/operasional/sdm/" + karyawan.id + "\"><select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + bulanOpts + "</select></form>"
     + "</div>"
 
-    + "<div class=\"sdm-rekap\">"
-    + "<div class=\"sdm-rekap-title\">Ringkasan Gaji</div>"
-    + "<div class=\"sdm-rekap-row\"><span>Gaji Pokok</span><span>" + rp(r.gajiPokok) + "</span></div>"
-    + (r.kasbon > 0 ? "<div class=\"sdm-rekap-row\"><span>Kasbon diambil</span><span style=\"color:var(--red)\">- " + rp(r.kasbon) + "</span></div>" : "")
-    + (r.kembali > 0 ? "<div class=\"sdm-rekap-row\"><span>Kembali Kasbon</span><span style=\"color:var(--green)\">+ " + rp(r.kembali) + "</span></div>" : "")
-    + (r.dibayar > 0 ? "<div class=\"sdm-rekap-row\"><span>Gaji Dibayar</span><span style=\"color:var(--red)\">- " + rp(r.dibayar) + "</span></div>" : "")
-    + (r.thr > 0 ? "<div class=\"sdm-rekap-row\"><span>THR</span><span style=\"color:var(--red)\">- " + rp(r.thr) + "</span></div>" : "")
-    + (r.bonus > 0 ? "<div class=\"sdm-rekap-row\"><span>Bonus</span><span style=\"color:var(--red)\">- " + rp(r.bonus) + "</span></div>" : "")
-    + "<div class=\"sdm-rekap-row\"><span>Sisa yang Harus Dibayar</span><span style=\"color:" + (r.sisa > 0 ? "var(--red)" : "var(--green)") + "\">"
-    + (r.sisa > 0 ? rp(r.sisa) : "✓ Lunas") + "</span></div>"
+    // ── Grid: Ringkasan + Catat Transaksi ──────────────────────
+    + "<div class=\"det-grid\">"
+
+    // Ringkasan gaji
+    + "<div class=\"det-card\">"
+    + "<div class=\"det-card-title\"><i class=\"ti ti-report-money\"></i> Ringkasan Gaji</div>"
+    + "<div style=\"margin-bottom:12px\">"
+    + "<div style=\"display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);margin-bottom:5px\"><span>" + pct + "% dibayar</span><span>" + statusBadge(r.status) + "</span></div>"
+    + "<div style=\"height:6px;background:var(--border);border-radius:99px;overflow:hidden\"><div style=\"height:100%;width:" + pct + "%;background:" + progColor + ";border-radius:99px\"></div></div>"
+    + "</div>"
+    + "<div class=\"det-row\"><span>Gaji Pokok</span><span>" + rp(r.gajiPokok) + "</span></div>"
+    + (r.kasbon > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Kasbon</span><span style=\"color:var(--red)\">" + rp(r.kasbon) + "</span></div>" : "")
+    + (r.kembali > 0 ? "<div class=\"det-row\"><span style=\"color:var(--green)\">+ Kembali Kasbon</span><span style=\"color:var(--green)\">" + rp(r.kembali) + "</span></div>" : "")
+    + (r.dibayar > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Gaji Dibayar</span><span style=\"color:var(--red)\">" + rp(r.dibayar) + "</span></div>" : "")
+    + (r.thr > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− THR</span><span style=\"color:var(--red)\">" + rp(r.thr) + "</span></div>" : "")
+    + (r.bonus > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Bonus</span><span style=\"color:var(--red)\">" + rp(r.bonus) + "</span></div>" : "")
+    + "<div class=\"det-row\"><span>Sisa Harus Dibayar</span><span style=\"color:" + (r.sisa > 0 ? "var(--red)" : "var(--green)") + ";font-size:14px\">" + (r.sisa > 0 ? rp(r.sisa) : "✓ Lunas") + "</span></div>"
     + "</div>"
 
-
-    // Form catat transaksi
-    + "<div class=\"sdm-add-trx\">"
-    + "<div class=\"sdm-add-trx-title\"><i class=\"ti ti-circle-plus\"></i> Catat Transaksi</div>"
+    // Catat transaksi
+    + "<div class=\"det-card\">"
+    + "<div class=\"det-card-title\"><i class=\"ti ti-circle-plus\"></i> Catat Transaksi</div>"
     + "<form method=\"post\" action=\"/operasional/sdm/transaksi\">"
     + "<input type=\"hidden\" name=\"karyawan_id\" value=\"" + karyawan.id + "\">"
     + "<input type=\"hidden\" name=\"bulan\" value=\"" + bulan + "\">"
     + "<input type=\"hidden\" name=\"redirect_to\" value=\"/operasional/sdm/" + karyawan.id + "?bulan=" + bulan + "\">"
-    + "<div class=\"sdm-add-form-grid\">"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Tipe</label>"
     + "<select class=\"sdm-sel\" name=\"tipe\">"
     + "<option value=\"gaji\">Bayar Gaji</option>"
@@ -523,16 +569,17 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "</select></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jumlah (Rp)</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"jumlah\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
-    + "</div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Keterangan <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
     + "<input class=\"sdm-inp\" type=\"text\" name=\"keterangan\" placeholder=\"Catatan tambahan...\"></div>"
-    + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"width:100%;justify-content:center;padding:9px\"><i class=\"ti ti-check\"></i> Simpan</button>"
+    + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"width:100%;justify-content:center;padding:10px\"><i class=\"ti ti-check\"></i> Simpan Transaksi</button>"
     + "</form></div>"
 
-    // Riwayat transaksi
-    + "<div class=\"sdm-trx-list\">"
-    + "<div class=\"sdm-trx-head\"><div>Tipe / Keterangan</div><div>Jumlah</div><div style=\"text-align:right\">Aksi</div></div>"
-    + trxRows
+    + "</div>" // end det-grid
+
+    // ── Timeline riwayat ────────────────────────────────────────
+    + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px\">"
+    + "<div class=\"det-card-title\"><i class=\"ti ti-history\"></i> Riwayat Transaksi — " + bulanLabel(bulan) + " <span style=\"margin-left:auto;font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:20px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3)\">" + trxBulan.length + " transaksi</span></div>"
+    + "<div>" + timeline + "</div>"
     + "</div>"
 
     + "</div></div></div></div>"
