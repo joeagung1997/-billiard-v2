@@ -152,6 +152,8 @@ const SDM_CSS = [
   ".sdm-add-trx-title i{font-size:14px;color:var(--accent)}",
   ".sdm-add-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
   "@media(max-width:500px){.sdm-add-form-grid{grid-template-columns:1fr}.sdm-stat-row{grid-template-columns:1fr}}",
+  ".metode-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border:1.5px solid var(--border2);border-radius:var(--r-md);font-size:12px;font-weight:600;color:var(--txt2);transition:all .15s;user-select:none}",
+  "input[name=metode]:checked + .metode-btn{background:var(--green-bg);border-color:var(--accent);color:var(--accent)}",
 ].join("");
 
 // ── Dashboard SDM ─────────────────────────────────────────────
@@ -382,6 +384,11 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + "<input type=\"hidden\" name=\"redirect_to\" id=\"sdmFRedirect\" value=\"/operasional/sdm?bulan=" + bulan + "\">"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jumlah (Rp)</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" id=\"sdmFJumlah\" name=\"jumlah\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Metode Pembayaran</label>"
+    + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px\">"
+    + "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"metode\" value=\"cash\" checked style=\"display:none\"><div class=\"metode-btn\"><i class=\"ti ti-cash\"></i> Cash</div></label>"
+    + "<label style=\"cursor:pointer\"><input type=\"radio\" name=\"metode\" value=\"transfer\" style=\"display:none\"><div class=\"metode-btn\"><i class=\"ti ti-building-bank\"></i> Transfer</div></label>"
+    + "</div></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Keterangan <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
     + "<input class=\"sdm-inp\" type=\"text\" name=\"keterangan\" placeholder=\"Catatan...\"></div>"
     + "<div class=\"sdm-modal-foot\">"
@@ -402,6 +409,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + "if(tipe==='gaji'&&sisa>0){jEl.value=Number(sisa).toLocaleString('id-ID');}"
     + "else if(tipe==='makan_harian'&&makanHari>0){jEl.value=Number(makanHari).toLocaleString('id-ID');}"
     + "else{jEl.value='';}"
+    + "var radC=document.querySelector('#sdmModalForm input[name=metode][value=cash]');if(radC)radC.checked=true;"
     + "document.getElementById('sdmModalOv').classList.add('open');"
     + "setTimeout(function(){jEl.focus();},80);}"
     + "function closeSdmModal(){document.getElementById('sdmModalOv').classList.remove('open');}"
@@ -494,8 +502,6 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     ".det-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}",
     ".det-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:10px;margin-top:2px}",
     ".det-row span:last-child{font-family:var(--ff-mono);font-size:12px}",
-    ".metode-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border:1.5px solid var(--border2);border-radius:var(--r-md);font-size:12px;font-weight:600;color:var(--txt2);transition:all .15s;user-select:none}",
-    "input[name=metode]:checked + .metode-btn{background:var(--green-bg);border-color:var(--accent);color:var(--accent)}",
   ].join("");
 
   return docHeadV4("SDM — " + karyawan.nama)
