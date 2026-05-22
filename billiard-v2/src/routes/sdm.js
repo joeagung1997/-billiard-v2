@@ -1,17 +1,82 @@
 // src/routes/sdm.js
 // ── Routes: /operasional/sdm ──────────────────────────────────
 
-import { Router } from "express";
+import { Router }      from "express";
+import { createHmac }  from "crypto";
 import {
   readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
   appendTransaksi,
 } from "../utils/db.js";
-import { sdmDashboard, sdmDetailPage, sdmFormKaryawan } from "../views/sdm.js";
+import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage } from "../views/sdm.js";
+
+// ── PIN auth ─────────────────────────────────────────────────
+const SDM_PIN    = process.env.SDM_PIN    || "2222";
+const SDM_SECRET = process.env.SDM_SECRET || "warpat-sdm-key-v1";
+const SDM_COOKIE = "sdm_v";
+const SDM_TTL_MS = 8 * 60 * 60 * 1000; // 8 jam
+
+function getCookie(req, name) {
+  const raw = req.headers.cookie || "";
+  const entry = raw.split(";").map((s) => s.trim()).find((s) => s.startsWith(name + "="));
+  return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
+}
+
+function makeToken() {
+  const ts  = Date.now().toString(36);
+  const sig = createHmac("sha256", SDM_SECRET).update(ts).digest("hex").slice(0, 20);
+  return ts + "." + sig;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== "string") return false;
+  const dot = token.lastIndexOf(".");
+  if (dot < 0) return false;
+  const ts       = token.slice(0, dot);
+  const sig      = token.slice(dot + 1);
+  const expected = createHmac("sha256", SDM_SECRET).update(ts).digest("hex").slice(0, 20);
+  if (sig !== expected) return false;
+  const ms = parseInt(ts, 36);
+  return !isNaN(ms) && Date.now() - ms < SDM_TTL_MS;
+}
+
+function requireSdmPin(req, res, next) {
+  if (verifyToken(getCookie(req, SDM_COOKIE))) return next();
+  res.redirect("/operasional/sdm/pin?r=" + encodeURIComponent(req.originalUrl));
+}
 
 const router = Router();
-
 const bulanSekarang = () => new Date().toISOString().slice(0, 7);
+
+// ── PIN routes (tidak perlu auth) ────────────────────────────
+
+router.get("/sdm/pin", (req, res) => {
+  res.send(sdmPinPage(!!req.query.err, req.query.r || "/operasional/sdm"));
+});
+
+router.post("/sdm/pin", (req, res) => {
+  const pin      = (req.body.pin      ?? "").trim();
+  const redirect = (req.body.redirect_to ?? "/operasional/sdm").trim();
+  const safe     = redirect.startsWith("/operasional/sdm") ? redirect : "/operasional/sdm";
+  if (pin !== SDM_PIN) {
+    return res.redirect("/operasional/sdm/pin?err=1&r=" + encodeURIComponent(safe));
+  }
+  const token = makeToken();
+  res.setHeader("Set-Cookie",
+    `${SDM_COOKIE}=${encodeURIComponent(token)}; Path=/operasional/sdm; HttpOnly; Max-Age=${Math.floor(SDM_TTL_MS / 1000)}; SameSite=Strict`
+  );
+  res.redirect(safe);
+});
+
+router.get("/sdm/logout", (_req, res) => {
+  res.setHeader("Set-Cookie",
+    `${SDM_COOKIE}=; Path=/operasional/sdm; HttpOnly; Max-Age=0; SameSite=Strict`
+  );
+  res.redirect("/operasional/sdm/pin");
+});
+
+// ── Middleware PIN — semua route di bawah ini butuh PIN ───────
+router.use(requireSdmPin);
 
 // ── GET /operasional/sdm ─────────────────────────────────────
 router.get("/sdm", async (req, res) => {
@@ -114,7 +179,6 @@ router.post("/sdm/transaksi", async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    // Sync otomatis ke laporan keuangan
     const isIncome = tipe === "kembali_kasbon";
     const tipeLabel = { gaji: "Gaji", kasbon: "Kasbon", kembali_kasbon: "Kembali Kasbon", thr: "THR", bonus: "Bonus" };
     const ket = k.nama + (keterangan ? " — " + keterangan : "");

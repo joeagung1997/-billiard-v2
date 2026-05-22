@@ -204,6 +204,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + months.join("") + "</select>"
     + "</form>"
     + "<a href=\"/operasional/sdm/karyawan/tambah\" class=\"sdm-btn-add\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</a>"
+    + "<a href=\"/operasional/sdm/logout\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Keluar PIN\"><i class=\"ti ti-lock\"></i></a>"
     + "</div></div>"
 
     // Tabel karyawan
@@ -382,6 +383,47 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "</script>"
     + buildFinanceBottomNav()
+    + "</body></html>";
+}
+
+// ── Halaman PIN ───────────────────────────────────────────────
+export function sdmPinPage(showErr = false, redirect = "/operasional/sdm") {
+  const PIN_CSS = [
+    "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}",
+    "body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);font-family:var(--ff)}",
+    ".pin-wrap{width:100%;max-width:360px;padding:24px 16px}",
+    ".pin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:32px 28px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)}",
+    ".pin-icon{width:52px;height:52px;border-radius:14px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}",
+    ".pin-title{font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px}",
+    ".pin-sub{font-size:12px;color:var(--txt3);margin-bottom:24px}",
+    ".pin-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.2);border-radius:8px;padding:9px 12px;font-size:12px;margin-bottom:16px}",
+    ".pin-inp{width:100%;padding:12px 16px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:22px;letter-spacing:6px;text-align:center;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;margin-bottom:14px;transition:border-color .15s}",
+    ".pin-inp:focus{border-color:var(--accent);background:var(--surface)}",
+    ".pin-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-md);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
+    ".pin-btn:hover{opacity:.85}",
+    ".pin-back{display:block;margin-top:14px;font-size:11px;color:var(--txt3);text-decoration:none}",
+    ".pin-back:hover{color:var(--accent)}",
+  ].join("");
+
+  const errHtml = showErr
+    ? "<div class=\"pin-err\"><i class=\"ti ti-alert-circle\" style=\"margin-right:4px\"></i>PIN salah. Coba lagi.</div>"
+    : "";
+
+  return docHeadV4("SDM — Masuk")
+    + "<style>" + PIN_CSS + "</style>"
+    + "</head><body>"
+    + "<div class=\"pin-wrap\"><div class=\"pin-card\">"
+    + "<div class=\"pin-icon\"><i class=\"ti ti-users\"></i></div>"
+    + "<div class=\"pin-title\">SDM & Penggajian</div>"
+    + "<div class=\"pin-sub\">Masukkan PIN untuk melanjutkan</div>"
+    + errHtml
+    + "<form method=\"post\" action=\"/operasional/sdm/pin\">"
+    + "<input type=\"hidden\" name=\"redirect_to\" value=\"" + escHtml(redirect) + "\">"
+    + "<input class=\"pin-inp\" type=\"password\" name=\"pin\" inputmode=\"numeric\" maxlength=\"8\" placeholder=\"••••\" autocomplete=\"off\" autofocus>"
+    + "<button class=\"pin-btn\" type=\"submit\"><i class=\"ti ti-lock-open\" style=\"margin-right:6px\"></i>Masuk</button>"
+    + "</form>"
+    + "<a href=\"/\" class=\"pin-back\">← Kembali ke beranda</a>"
+    + "</div></div>"
     + "</body></html>";
 }
 
