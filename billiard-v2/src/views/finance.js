@@ -733,10 +733,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".fin-table-card{border-radius:14px!important}",
     ".fin-charts-row .card{border-radius:14px!important}",
     ".fin-filter-bar{box-shadow:0 1px 6px rgba(0,0,0,.05);border-radius:12px!important}",
-    ".fin-saldo-kas-wrap{display:flex;align-items:center;gap:6px}",
-    ".fin-saldo-kas-wrap label{font-size:11px;font-weight:600;color:var(--txt3);white-space:nowrap;letter-spacing:.04em;display:flex;align-items:center;gap:3px}",
-    ".fin-saldo-kas-inp{width:110px;padding:5px 8px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface)}",
-    ".fin-saldo-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12)}",
+    ".fin-kas-card{background:var(--surface);border:1.5px solid rgba(38,96,164,.18);border-radius:13px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}",
+    ".fin-kas-left{display:flex;align-items:center;gap:12px}",
+    ".fin-kas-icon{width:38px;height:38px;background:rgba(38,96,164,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:19px;flex-shrink:0}",
+    ".fin-kas-lbl{font-size:13px;font-weight:700;color:var(--txt)}",
+    ".fin-kas-note{font-size:11px;color:var(--txt3);margin-top:2px}",
+    ".fin-kas-right{display:flex;align-items:center;gap:6px}",
+    ".fin-kas-pfx{font-size:14px;font-weight:700;color:var(--txt2)}",
+    ".fin-kas-inp{width:150px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:9px;font-size:16px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface2);text-align:right}",
+    ".fin-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12)}",
+    ".fin-kas-inp::placeholder{font-weight:400;font-size:13px;color:var(--txt3)}",
     // ── Mobile FAB ──────────────────────────────────────────────
     ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:all .15s}",
     ".fin-fab:hover{opacity:.9;transform:translateY(-1px)}",
@@ -839,10 +845,20 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<input type=\"date\" class=\"fin-date-inp\" id=\"fTglSampai\" value=\"" + tSampai + "\" onchange=\"applyTglFilter()\">"
     + "</div>"
     + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
-    + "<div class=\"fin-filter-sep\"></div>"
-    + "<div class=\"fin-saldo-kas-wrap\">"
-    + "<label for=\"finSaldoKas\"><i class=\"ti ti-wallet\" style=\"font-size:13px\"></i> Saldo Kas</label>"
-    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-saldo-kas-inp\" placeholder=\"0\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
+    + "</div>"
+
+    // ── Saldo Kas Awal (modal kembalian) ────────────────────────
+    + "<div class=\"fin-kas-card\">"
+    + "<div class=\"fin-kas-left\">"
+    + "<div class=\"fin-kas-icon\"><i class=\"ti ti-wallet\"></i></div>"
+    + "<div>"
+    + "<div class=\"fin-kas-lbl\">Saldo Kas Awal Hari Ini</div>"
+    + "<div class=\"fin-kas-note\"><i class=\"ti ti-info-circle\" style=\"font-size:11px\"></i> Modal kembalian — tidak dihitung sebagai pemasukan</div>"
+    + "</div>"
+    + "</div>"
+    + "<div class=\"fin-kas-right\">"
+    + "<span class=\"fin-kas-pfx\">Rp</span>"
+    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"Belum diisi\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
     + "</div>"
     + "</div>"
 
