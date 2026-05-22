@@ -170,7 +170,7 @@ router.post("/sdm/transaksi", async (req, res) => {
   const keterangan = (req.body.keterangan ?? "").trim().slice(0, 200);
   const redirect   = req.body.redirect_to || "/operasional/sdm";
 
-  const TIPE_VALID = ["gaji", "kasbon", "kembali_kasbon", "thr", "bonus"];
+  const TIPE_VALID = ["gaji", "kasbon", "kembali_kasbon", "thr", "bonus", "makan_harian"];
   if (!karyawanId || !TIPE_VALID.includes(tipe) || jumlah <= 0) {
     return res.redirect(redirect);
   }
@@ -186,14 +186,17 @@ router.post("/sdm/transaksi", async (req, res) => {
     });
 
     const isIncome = tipe === "kembali_kasbon";
-    const tipeLabel = { gaji: "Gaji", kasbon: "Kasbon", kembali_kasbon: "Kembali Kasbon", thr: "THR", bonus: "Bonus" };
+    const tipeLabel = {
+      gaji: "Gaji", kasbon: "Kasbon", kembali_kasbon: "Kembali Kasbon",
+      thr: "THR", bonus: "Bonus", makan_harian: "Makan Harian",
+    };
     const ket = k.nama + (keterangan ? " — " + keterangan : "");
     await appendTransaksi({
       id:          trxId + "-k",
       tanggal:     new Date().toISOString().slice(0, 10),
       jam:         new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }),
       jenis:       isIncome ? "pemasukan" : "pengeluaran",
-      waktu:       "siang",
+      waktu:       tipe === "makan_harian" ? "malam" : "siang",
       kategori:    "SDM",
       subKategori: tipeLabel[tipe] || tipe,
       keterangan:  ket,

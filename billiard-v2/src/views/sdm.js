@@ -18,6 +18,7 @@ const TIPE_LABEL = {
   kembali_kasbon:"Kembali Kasbon",
   thr:           "THR",
   bonus:         "Bonus",
+  makan_harian:  "Makan Harian",
 };
 
 const TIPE_COLOR = {
@@ -26,6 +27,7 @@ const TIPE_COLOR = {
   kembali_kasbon:"blue",
   thr:           "purple",
   bonus:         "purple",
+  makan_harian:  "malam",
 };
 
 // Hitung ringkasan gaji satu karyawan untuk satu bulan
@@ -40,11 +42,12 @@ function hitungRingkasan(karyawan, trxBulanIni) {
   const dibayar    = trxBulanIni.filter((t) => t.tipe === "gaji").reduce((s, t) => s + Number(t.jumlah), 0);
   const thr        = trxBulanIni.filter((t) => t.tipe === "thr").reduce((s, t) => s + Number(t.jumlah), 0);
   const bonus      = trxBulanIni.filter((t) => t.tipe === "bonus").reduce((s, t) => s + Number(t.jumlah), 0);
-  const totalDibayarkan = kasbon + dibayar + thr + bonus - kembali;
+  const makanTrx   = trxBulanIni.filter((t) => t.tipe === "makan_harian").reduce((s, t) => s + Number(t.jumlah), 0);
+  const totalDibayarkan = kasbon + dibayar + thr + bonus + makanTrx - kembali;
   const sisa       = Math.max(0, totalGaji - totalDibayarkan);
   const status     = totalDibayarkan <= 0 ? "belum"
                    : totalDibayarkan >= totalGaji ? "lunas" : "sebagian";
-  return { gajiPokok, uangMakanHari, hariKerja, totalMakan, totalGaji, kasbon, kembali, dibayar, thr, bonus, totalDibayarkan, sisa, status };
+  return { gajiPokok, uangMakanHari, hariKerja, totalMakan, totalGaji, kasbon, kembali, dibayar, thr, bonus, makanTrx, totalDibayarkan, sisa, status };
 }
 
 const bulanLabel = (bulan) => {
@@ -179,6 +182,9 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
           + "<td class=\"c\">" + statusBadge(r.status) + "</td>"
           + "<td><div class=\"sdm-act-group\">"
           + "<a href=\"/operasional/sdm/" + k.id + "?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-eye\"></i> Detail</a>"
+          + (shift === "malam" && k.uang_makan > 0
+              ? "<button type=\"button\" class=\"sdm-btn\" style=\"background:#e8eaf6;color:#3949ab;border-color:#c5cae9\" onclick=\"openSdmModal('makan_harian'," + k.id + ",'" + nama + "'," + r.totalGaji + "," + r.sisa + ",'" + bulan + "','" + k.uang_makan + "')\"><i class=\"ti ti-bowl-spoon\"></i> Makan</button>"
+              : "")
           + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + nama + "'," + r.totalGaji + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
           + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + nama + "'," + r.totalGaji + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
           + "</div></td>"
@@ -254,18 +260,20 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "</div></form></div></div>"
 
     + "<script>"
-    + "function openSdmModal(tipe,kid,nama,gaji,sisa,bulan){"
-    + "var labels={gaji:'Bayar Gaji',kasbon:'Catat Kasbon',kembali_kasbon:'Kembali Kasbon',thr:'Bayar THR',bonus:'Bayar Bonus'};"
+    + "function openSdmModal(tipe,kid,nama,gaji,sisa,bulan,makanHari){"
+    + "var labels={gaji:'Bayar Gaji',kasbon:'Catat Kasbon',kembali_kasbon:'Kembali Kasbon',thr:'Bayar THR',bonus:'Bayar Bonus',makan_harian:'Makan Harian'};"
     + "document.getElementById('sdmModalTitle').textContent=labels[tipe]||tipe;"
     + "document.getElementById('sdmFKid').value=kid;"
     + "document.getElementById('sdmFTipe').value=tipe;"
     + "document.getElementById('sdmFBulan').value=bulan;"
     + "var infoEl=document.getElementById('sdmModalInfo');"
-    + "infoEl.innerHTML='<strong>'+nama+'</strong> &nbsp;|&nbsp; Gaji pokok: <strong>Rp '+Number(gaji).toLocaleString('id-ID')+'</strong>'+(tipe==='gaji'?' &nbsp;|&nbsp; Sisa: <strong>Rp '+Number(sisa).toLocaleString('id-ID')+'</strong>':'');"
-    + "if(tipe==='gaji'&&sisa>0){var jEl=document.getElementById('sdmFJumlah');jEl.value=Number(sisa).toLocaleString('id-ID');}"
-    + "else{document.getElementById('sdmFJumlah').value='';}"
+    + "infoEl.innerHTML='<strong>'+nama+'</strong> &nbsp;|&nbsp; Total gaji: <strong>Rp '+Number(gaji).toLocaleString('id-ID')+'</strong>'+(tipe==='gaji'?' &nbsp;|&nbsp; Sisa: <strong>Rp '+Number(sisa).toLocaleString('id-ID')+'</strong>':'');"
+    + "var jEl=document.getElementById('sdmFJumlah');"
+    + "if(tipe==='gaji'&&sisa>0){jEl.value=Number(sisa).toLocaleString('id-ID');}"
+    + "else if(tipe==='makan_harian'&&makanHari>0){jEl.value=Number(makanHari).toLocaleString('id-ID');}"
+    + "else{jEl.value='';}"
     + "document.getElementById('sdmModalOv').classList.add('open');"
-    + "setTimeout(function(){document.getElementById('sdmFJumlah').focus();},80);}"
+    + "setTimeout(function(){jEl.focus();},80);}"
     + "function closeSdmModal(){document.getElementById('sdmModalOv').classList.remove('open');}"
     + "function sdmFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?Number(raw).toLocaleString('id-ID'):''}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
@@ -361,6 +369,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + (r.kasbon > 0 ? "<div class=\"sdm-rekap-row\"><span>Kasbon diambil</span><span style=\"color:var(--red)\">- " + rp(r.kasbon) + "</span></div>" : "")
     + (r.kembali > 0 ? "<div class=\"sdm-rekap-row\"><span>Kembali Kasbon</span><span style=\"color:var(--green)\">+ " + rp(r.kembali) + "</span></div>" : "")
     + (r.dibayar > 0 ? "<div class=\"sdm-rekap-row\"><span>Gaji Dibayar</span><span style=\"color:var(--red)\">- " + rp(r.dibayar) + "</span></div>" : "")
+    + (r.makanTrx > 0 ? "<div class=\"sdm-rekap-row\"><span>Makan Harian <span style=\"font-weight:400;font-size:11px;color:var(--txt3)\">(" + trxBulan.filter(t=>t.tipe==="makan_harian").length + "× tercatat)</span></span><span style=\"color:var(--red)\">- " + rp(r.makanTrx) + "</span></div>" : "")
     + (r.thr > 0 ? "<div class=\"sdm-rekap-row\"><span>THR</span><span style=\"color:var(--red)\">- " + rp(r.thr) + "</span></div>" : "")
     + (r.bonus > 0 ? "<div class=\"sdm-rekap-row\"><span>Bonus</span><span style=\"color:var(--red)\">- " + rp(r.bonus) + "</span></div>" : "")
     + "<div class=\"sdm-rekap-row\"><span>Sisa yang Harus Dibayar</span><span style=\"color:" + (r.sisa > 0 ? "var(--red)" : "var(--green)") + "\">"
@@ -382,6 +391,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "<option value=\"kembali_kasbon\">Kembali Kasbon</option>"
     + "<option value=\"thr\">THR</option>"
     + "<option value=\"bonus\">Bonus</option>"
+    + (karyawan.shift === "malam" ? "<option value=\"makan_harian\">Makan Harian</option>" : "")
     + "</select></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jumlah (Rp)</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"jumlah\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
