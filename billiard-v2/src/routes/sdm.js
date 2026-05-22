@@ -199,9 +199,16 @@ router.post("/sdm/transaksi", async (req, res) => {
   const tipe       = req.body.tipe ?? "";
   const jumlah     = parseInt((req.body.jumlah ?? "").replace(/\D/g, "")) || 0;
   const bulan      = req.body.bulan || bulanSekarang();
-  const keterangan = (req.body.keterangan ?? "").trim().slice(0, 200);
   const metode     = ["cash", "transfer"].includes(req.body.metode) ? req.body.metode : "cash";
   const redirect   = req.body.redirect_to || "/operasional/sdm";
+
+  // Auto-label keterangan: gaji selalu sertakan nama bulan
+  const _BULAN_NM   = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+  const _bulanLabel = (b) => { const [y, m] = b.split("-"); return (_BULAN_NM[parseInt(m) - 1] || m) + " " + y; };
+  const _ketRaw     = (req.body.keterangan ?? "").trim().slice(0, 180);
+  const keterangan  = tipe === "gaji"
+    ? ("Gaji " + _bulanLabel(bulan) + (_ketRaw ? " — " + _ketRaw : ""))
+    : _ketRaw;
 
   const TIPE_VALID = ["gaji", "kasbon", "kembali_kasbon", "thr", "bonus", "makan_harian"];
   if (!karyawanId || !TIPE_VALID.includes(tipe) || jumlah <= 0) {
