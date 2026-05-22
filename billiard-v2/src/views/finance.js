@@ -784,6 +784,11 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     ".fin-cs-val.inc{color:#16a34a}",
     ".fin-cs-val.out{color:#dc2626}",
     ".fin-cs-val.mg{color:var(--accent)}",
+    // ── Toast notifikasi ────────────────────────────────────────
+    ".toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:24px;font-size:13px;font-weight:600;z-index:9998;white-space:nowrap;pointer-events:none;opacity:0;transition:all .25s ease;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15)}",
+    ".toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
+    ".toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
+    ".toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1410,7 +1415,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wizBtnBack').style.display=n>1?'':'none';"
     + "var nb=document.getElementById('wizBtnNext');"
     + "if(n===3){nb.innerHTML='<i class=\"ti ti-check\" style=\"font-size:15px\"></i> Simpan Transaksi';"
-    + "nb.onclick=function(){nb.disabled=true;nb.style.opacity='.7';nb.innerHTML='<i class=\"fin-spin ti ti-loader-2\" style=\"font-size:15px\"></i> Menyimpan...';startLoad();document.getElementById('wizForm').submit();};}"
+    + "nb.onclick=function(){nb.disabled=true;nb.style.opacity='.7';nb.innerHTML='<i class=\"fin-spin ti ti-loader-2\" style=\"font-size:15px\"></i> Menyimpan...';startLoad();setTimeout(function(){document.getElementById('wizForm').submit();},80);};}"
     + "else{nb.innerHTML='Lanjut <i class=\"ti ti-arrow-right\" style=\"font-size:15px\"></i>';nb.onclick=wizNext;}"
     + "var icons={1:'ti-receipt',2:'ti-forms',3:'ti-circle-check'};"
     + "document.getElementById('wizIcon').innerHTML='<i class=\"ti '+icons[n]+'\"></i>';}"
