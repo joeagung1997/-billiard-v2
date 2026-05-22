@@ -555,7 +555,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
       day: "numeric", month: "short", year: "numeric",
     });
-    const rowCls   = "fin-row" + (isVoid ? " trx-voided" : "");
+    const rowCls   = "fin-row " + (isVoid ? "trx-voided" : (isIn ? "fin-row-in" : "fin-row-out"));
     const reasonHt = isVoid
       ? "<div class=\"trx-void-reason\" title=\"Dibatalkan: " + escHtml(t.voidReason || "—") + "\">"
         + "<i class=\"ti ti-ban\"></i> Dibatalkan: " + escHtml(t.voidReason || "—") + "</div>"
@@ -612,7 +612,56 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const donutLabelsJson = safeJson(donutLabels);
   const donutColorsJson = safeJson(donutColors);
 
+  const dashExtraCss = [
+    // ── Saldo hero card ─────────────────────────────────────────
+    ".fin-saldo-hero{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1a4b8a 0%,#2660a4 100%);border-radius:16px;padding:22px 26px;margin-bottom:20px;color:#fff;gap:16px}",
+    ".fsh-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;opacity:.75;margin-bottom:6px}",
+    ".fsh-val{font-size:30px;font-weight:700;font-family:var(--ff-mono);letter-spacing:-.02em;line-height:1.1;margin-bottom:5px}",
+    ".fsh-val.positive{color:#6ee7b7}",
+    ".fsh-val.negative{color:#fca5a5}",
+    ".fsh-foot{font-size:12px;opacity:.7;display:flex;align-items:center;gap:4px}",
+    ".fsh-mini{display:flex;gap:20px;flex-shrink:0}",
+    ".fsh-mini-item{text-align:right}",
+    ".fsh-mini-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.65;margin-bottom:4px}",
+    ".fsh-mini-val{font-size:15px;font-weight:700;font-family:var(--ff-mono)}",
+    ".fsh-mini-val.inc{color:#6ee7b7}",
+    ".fsh-mini-val.out{color:#fca5a5}",
+    ".fsh-cta{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.25);color:#fff;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:700;font-family:var(--ff);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}",
+    ".fsh-cta:hover{background:rgba(255,255,255,.28)}",
+    ".fsh-cta i{font-size:16px}",
+    "@media(max-width:600px){.fin-saldo-hero{flex-direction:column;align-items:flex-start}.fsh-mini{align-self:stretch;justify-content:space-between}.fsh-cta{width:100%;justify-content:center}}",
+    // ── Stat card upgrades ───────────────────────────────────────
+    ".fin-stat-card.income{background:linear-gradient(145deg,#edfaf2 0%,#fff 65%);border-color:rgba(34,197,94,.2)}",
+    ".fin-stat-card.expense{background:linear-gradient(145deg,#fdf3f3 0%,#fff 65%);border-color:rgba(239,68,68,.2)}",
+    ".fin-stat-card.saldo{background:linear-gradient(145deg,#eef5ff 0%,#fff 65%);border-color:rgba(38,96,164,.2)}",
+    ".fin-stat-card.trx{background:linear-gradient(145deg,#fdf8ec 0%,#fff 65%);border-color:rgba(196,127,26,.2)}",
+    ".fin-stat-card::before{height:4px!important}",
+    ".fin-stat-icon{width:40px!important;height:40px!important;border-radius:12px!important;font-size:18px!important}",
+    ".fin-stat-card{border-radius:14px!important;padding:20px 22px!important}",
+    ".fin-stat-val{font-size:22px!important}",
+    // ── Period toggle active — accent color ──────────────────────
+    ".fin-period-btn.active{background:var(--accent)!important;color:#fff!important;box-shadow:0 2px 6px rgba(38,96,164,.22)!important}",
+    // ── Transaction row color accents ────────────────────────────
+    ".fin-row-in{border-left:3px solid rgba(34,197,94,.45)}",
+    ".fin-row-out{border-left:3px solid rgba(239,68,68,.4)}",
+    ".fin-row-in:hover{background:#f0fdf4!important}",
+    ".fin-row-out:hover{background:#fff5f5!important}",
+    // ── Cards rounded ───────────────────────────────────────────
+    ".fin-table-card{border-radius:14px!important}",
+    ".fin-charts-row .card{border-radius:14px!important}",
+    ".fin-filter-bar{box-shadow:0 1px 6px rgba(0,0,0,.05);border-radius:12px!important}",
+    // ── Mobile FAB ──────────────────────────────────────────────
+    ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:all .15s}",
+    ".fin-fab:hover{opacity:.9;transform:translateY(-1px)}",
+    ".fin-fab i{font-size:18px}",
+    "@media(max-width:768px){.fin-fab{display:flex!important}.topbar-actions .btn-primary{display:none!important}}",
+    // ── Search input polish ─────────────────────────────────────
+    ".fin-search-wrap{border-radius:9px!important;background:#f8faf7}",
+    ".fin-search-inp{background:transparent!important}",
+  ].join("");
+
   return docHeadV4("Keuangan")
+    + "<style>" + dashExtraCss + "</style>"
     + "</head><body>"
 
     + "<div class=\"layout\">"
@@ -631,14 +680,35 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
     + "<div class=\"page\">"
 
+    + "<button class=\"fin-fab\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\"></i> Catat Transaksi</button>"
+
     // ── Desktop topbar ──────────────────────────────────────────
     + "<div class=\"dash-topbar\">"
-    + "<div><div class=\"page-title\">Keuangan</div>"
-    + "<div class=\"page-sub\">Laporan pemasukan, pengeluaran &amp; saldo — " + bulanLabel + "</div></div>"
+    + "<div><div class=\"page-title\">Dashboard Keuangan</div>"
+    + "<div class=\"page-sub\">Laporan pemasukan, pengeluaran &amp; saldo</div></div>"
     + "<div class=\"topbar-actions\">"
     + "<a href=\"/operasional/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>"
     + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
     + "</div></div>"
+
+    // ── Saldo hero card ──────────────────────────────────────────
+    + "<div class=\"fin-saldo-hero\">"
+    + "<div>"
+    + "<div class=\"fsh-label\">Saldo Bersih &bull; " + bulanLabel + "</div>"
+    + "<div class=\"fsh-val" + (saldo >= 0 ? " positive" : " negative") + "\">" + (saldo < 0 ? "−" : "") + rp(Math.abs(saldo)) + "</div>"
+    + "<div class=\"fsh-foot\">"
+    + (inDelta !== 0
+        ? "<i class=\"ti ti-trending-" + (inDelta >= 0 ? "up" : "down") + "\" style=\"font-size:13px\"></i>"
+          + (inDelta >= 0 ? "+" : "") + inDelta + "% pendapatan vs " + prevLabel
+        : "<i class=\"ti ti-minus\" style=\"font-size:13px\"></i> Tidak ada data bulan sebelumnya")
+    + "</div>"
+    + "</div>"
+    + "<div class=\"fsh-mini\">"
+    + "<div class=\"fsh-mini-item\"><div class=\"fsh-mini-lbl\">Pemasukan</div><div class=\"fsh-mini-val inc\">" + rp(totalIn) + "</div></div>"
+    + "<div class=\"fsh-mini-item\"><div class=\"fsh-mini-lbl\">Pengeluaran</div><div class=\"fsh-mini-val out\">" + rp(totalOut) + "</div></div>"
+    + "</div>"
+    + "<button class=\"fsh-cta\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\"></i> Catat Transaksi</button>"
+    + "</div>"
 
     // ── Filter bar (single card) ────────────────────────────────
     + "<div class=\"fin-filter-bar\">"
