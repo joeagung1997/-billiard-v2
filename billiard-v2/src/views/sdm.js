@@ -371,14 +371,6 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + (r.sisa > 0 ? rp(r.sisa) : "✓ Lunas") + "</span></div>"
     + "</div>"
 
-    // Blok makan harian — terpisah dari rekap gaji
-    + (r.uangMakanHari > 0
-        ? "<div style=\"background:var(--surface);border:1px solid #c5cae9;border-radius:var(--r-lg);padding:14px 20px;margin-bottom:20px\">"
-          + "<div style=\"font-size:11px;font-weight:700;color:#3949ab;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px\">☽ Makan Harian (di luar gaji)</div>"
-          + "<div style=\"display:flex;justify-content:space-between;font-size:13px;padding:4px 0\"><span style=\"color:var(--txt2)\">Estimasi bulan ini</span><span style=\"font-family:var(--ff-mono)\">" + rp(r.uangMakanHari) + " × " + r.hariKerja + " hr = " + rp(r.totalMakanEst) + "</span></div>"
-          + "<div style=\"display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--border);margin-top:4px\"><span style=\"color:var(--txt2)\">Sudah tercatat</span><span style=\"font-family:var(--ff-mono);color:" + (r.makanTrx > 0 ? "#3949ab" : "var(--txt3)") + "\">" + (r.makanCount > 0 ? r.makanCount + "× = " + rp(r.makanTrx) : "—") + "</span></div>"
-          + "</div>"
-        : "")
 
     // Form catat transaksi
     + "<div class=\"sdm-add-trx\">"
