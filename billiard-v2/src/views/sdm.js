@@ -224,7 +224,6 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "</form>"
     + "<a href=\"/operasional/sdm/karyawan/tambah\" class=\"sdm-btn-add\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</a>"
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
-    + "<a href=\"/operasional/sdm/logout\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Keluar PIN\"><i class=\"ti ti-lock\"></i></a>"
     + "</div></div>"
 
     // Tabel karyawan
