@@ -163,35 +163,123 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     trxByK[t.karyawan_id].push(t);
   });
 
-  const tableBody = karyawan.length > 0
+  // ── CSS tambahan untuk card layout ───────────────────────────
+  const CARD_CSS = [
+    ".sdm-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:4px}",
+    ".sdm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s}",
+    ".sdm-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}",
+    // head
+    ".sdm-card-head{display:flex;align-items:center;gap:12px;padding:16px 18px}",
+    ".sdm-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.02em}",
+    ".sdm-av-siang{background:linear-gradient(135deg,#f59e0b,#ef4444)}",
+    ".sdm-av-malam{background:linear-gradient(135deg,#6366f1,#8b5cf6)}",
+    ".sdm-card-info{flex:1;min-width:0}",
+    ".sdm-card-nama{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".sdm-card-meta{font-size:11px;color:var(--txt3);margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}",
+    // progress
+    ".sdm-card-prog{padding:0 18px 12px}",
+    ".sdm-prog-track{height:5px;background:var(--border);border-radius:99px;overflow:hidden}",
+    ".sdm-prog-fill{height:100%;border-radius:99px;transition:width .3s}",
+    ".sdm-prog-fill-none{background:var(--border)}",
+    ".sdm-prog-fill-part{background:#f59e0b}",
+    ".sdm-prog-fill-full{background:var(--accent)}",
+    ".sdm-prog-label{font-size:10px;color:var(--txt3);margin-top:4px;display:flex;justify-content:space-between}",
+    // stats
+    ".sdm-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;padding:12px 18px;gap:4px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}",
+    ".sdm-stat-item{}",
+    ".sdm-stat-lbl{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}",
+    ".sdm-stat-val{font-size:12px;font-weight:700;color:var(--txt);font-family:var(--ff-mono);margin-top:3px}",
+    ".sdm-stat-val.red{color:var(--red)}",
+    ".sdm-stat-val.green{color:var(--green)}",
+    ".sdm-stat-val.muted{color:var(--txt3);font-weight:400}",
+    ".sdm-stat-sub{font-size:10px;color:var(--txt3);margin-top:1px}",
+    // actions
+    ".sdm-card-actions{display:flex;gap:6px;padding:12px 18px;margin-top:auto}",
+    ".sdm-card-actions .sdm-btn{flex:1;justify-content:center;font-size:11px;padding:7px 4px}",
+    "@media(max-width:600px){.sdm-cards-grid{grid-template-columns:1fr}}",
+  ].join("");
+
+  // ── Summary strip ─────────────────────────────────────────────
+  const totalGaji    = karyawan.reduce((s, k) => s + (Number(k.gaji_pokok) || 0), 0);
+  const totalKasbon  = karyawan.reduce((s, k) => {
+    const trxK = trxByK[k.id] || [];
+    return s + trxK.filter((t) => t.tipe === "kasbon").reduce((a, t) => a + Number(t.jumlah), 0)
+             - trxK.filter((t) => t.tipe === "kembali_kasbon").reduce((a, t) => a + Number(t.jumlah), 0);
+  }, 0);
+  const totalSisa    = karyawan.reduce((s, k) => {
+    const r = hitungRingkasan(k, trxByK[k.id] || []);
+    return s + r.sisa;
+  }, 0);
+  const summaryStrip = karyawan.length > 0
+    ? "<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px\">"
+      + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px\">"
+      + "<div style=\"font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em\">Total Gaji Bulan Ini</div>"
+      + "<div style=\"font-size:15px;font-weight:700;color:var(--txt);font-family:var(--ff-mono);margin-top:4px\">" + rp(totalGaji) + "</div></div>"
+      + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px\">"
+      + "<div style=\"font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em\">Kasbon Berjalan</div>"
+      + "<div style=\"font-size:15px;font-weight:700;font-family:var(--ff-mono);margin-top:4px;color:" + (totalKasbon > 0 ? "var(--red)" : "var(--txt3)") + "\">" + (totalKasbon > 0 ? rp(totalKasbon) : "—") + "</div></div>"
+      + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px\">"
+      + "<div style=\"font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em\">Sisa Belum Dibayar</div>"
+      + "<div style=\"font-size:15px;font-weight:700;font-family:var(--ff-mono);margin-top:4px;color:" + (totalSisa > 0 ? "var(--red)" : "var(--green)") + "\">" + (totalSisa > 0 ? rp(totalSisa) : "✓ Lunas") + "</div></div>"
+      + "</div>"
+    : "";
+
+  // ── Cards ─────────────────────────────────────────────────────
+  const cards = karyawan.length > 0
     ? karyawan.map((k) => {
-        const trxK = trxByK[k.id] || [];
-        const r    = hitungRingkasan(k, trxK);
-        const nama = escHtml(k.nama);
+        const trxK  = trxByK[k.id] || [];
+        const r     = hitungRingkasan(k, trxK);
+        const nama  = escHtml(k.nama);
         const shift = k.shift || "siang";
-        const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"margin-top:3px;display:inline-block\">"
+        const inits = k.nama.trim().slice(0, 2).toUpperCase();
+        const pct   = r.gajiPokok > 0 ? Math.min(100, Math.round(r.totalDibayarkan / r.gajiPokok * 100)) : 0;
+        const progCls = pct >= 100 ? "sdm-prog-fill-full" : pct > 0 ? "sdm-prog-fill-part" : "sdm-prog-fill-none";
+        const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"font-size:10px\">"
           + (shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span>";
-        return "<tr>"
-          + "<td><div class=\"sdm-td-nama\">" + nama + "</div>"
-          + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div>"
-          + shiftBadge + "</td>"
-          + "<td class=\"r\"><div>" + rp(r.gajiPokok) + "</div>"
-          + (r.uangMakanHari > 0 ? "<div style=\"font-size:10px;color:var(--txt3);margin-top:1px\">+ makan " + rp(r.uangMakanHari) + "/hari</div>" : "")
-          + "</td>"
-          + "<td class=\"r\">" + (r.kasbon > 0 ? "<span class=\"sdm-td-red\">" + rp(r.kasbon) + "</span>" : "<span class=\"sdm-td-muted\">—</span>") + "</td>"
-          + "<td class=\"r\">" + (r.sisa > 0 ? "<span class=\"sdm-td-red\">" + rp(r.sisa) + "</span>" : "<span class=\"sdm-td-green\">✓ Lunas</span>") + "</td>"
-          + "<td class=\"c\">" + statusBadge(r.status) + "</td>"
-          + "<td><div class=\"sdm-act-group\">"
+
+        const makanBtn = (shift === "malam" && k.uang_makan > 0)
+          ? "<button type=\"button\" class=\"sdm-btn\" style=\"flex:1;justify-content:center;font-size:11px;padding:7px 4px;background:#e8eaf6;color:#3949ab;border:1px solid #c5cae9;border-radius:6px\" onclick=\"openSdmModal('makan_harian'," + k.id + ",'" + nama + "'," + r.gajiPokok + "," + r.sisa + ",'" + bulan + "','" + k.uang_makan + "')\"><i class=\"ti ti-bowl-spoon\"></i> Makan</button>"
+          : "";
+
+        return "<div class=\"sdm-card\">"
+          // head
+          + "<div class=\"sdm-card-head\">"
+          + "<div class=\"sdm-av sdm-av-" + shift + "\">" + inits + "</div>"
+          + "<div class=\"sdm-card-info\">"
+          + "<div class=\"sdm-card-nama\">" + nama + "</div>"
+          + "<div class=\"sdm-card-meta\">" + escHtml(k.jabatan || "—") + " " + shiftBadge + "</div>"
+          + "</div>"
+          + statusBadge(r.status)
+          + "</div>"
+          // progress
+          + "<div class=\"sdm-card-prog\">"
+          + "<div class=\"sdm-prog-track\"><div class=\"sdm-prog-fill " + progCls + "\" style=\"width:" + pct + "%\"></div></div>"
+          + "<div class=\"sdm-prog-label\"><span>" + pct + "% gaji dibayar</span>"
+          + (r.makanCount > 0 ? "<span style=\"color:var(--txt3)\">" + r.makanCount + "× makan</span>" : "")
+          + "</div></div>"
+          // stats
+          + "<div class=\"sdm-card-stats\">"
+          + "<div class=\"sdm-stat-item\"><div class=\"sdm-stat-lbl\">Gaji Pokok</div>"
+          + "<div class=\"sdm-stat-val\">" + rp(r.gajiPokok) + "</div>"
+          + (r.uangMakanHari > 0 ? "<div class=\"sdm-stat-sub\">+ " + rp(r.uangMakanHari) + "/hari</div>" : "")
+          + "</div>"
+          + "<div class=\"sdm-stat-item\"><div class=\"sdm-stat-lbl\">Kasbon</div>"
+          + "<div class=\"sdm-stat-val " + (r.kasbon > 0 ? "red" : "muted") + "\">" + (r.kasbon > 0 ? rp(r.kasbon) : "—") + "</div></div>"
+          + "<div class=\"sdm-stat-item\"><div class=\"sdm-stat-lbl\">Sisa Gaji</div>"
+          + "<div class=\"sdm-stat-val " + (r.sisa > 0 ? "red" : "green") + "\">" + (r.sisa > 0 ? rp(r.sisa) : "✓ Lunas") + "</div></div>"
+          + "</div>"
+          // actions
+          + "<div class=\"sdm-card-actions\">"
           + "<a href=\"/operasional/sdm/" + k.id + "?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-eye\"></i> Detail</a>"
-          + (shift === "malam" && k.uang_makan > 0
-              ? "<button type=\"button\" class=\"sdm-btn\" style=\"background:#e8eaf6;color:#3949ab;border-color:#c5cae9\" onclick=\"openSdmModal('makan_harian'," + k.id + ",'" + nama + "'," + r.gajiPokok + "," + r.sisa + ",'" + bulan + "','" + k.uang_makan + "')\"><i class=\"ti ti-bowl-spoon\"></i> Makan</button>"
-              : "")
+          + makanBtn
           + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + nama + "'," + r.gajiPokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
           + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + nama + "'," + r.gajiPokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
-          + "</div></td>"
-          + "</tr>";
+          + "</div>"
+          + "</div>";
       }).join("")
-    : "<tr><td colspan=\"6\" class=\"sdm-empty\"><i class=\"ti ti-users\"></i>Belum ada karyawan. <a href=\"/operasional/sdm/karyawan/tambah\" style=\"color:var(--accent)\">Tambah sekarang</a></td></tr>";
+    : "<div class=\"sdm-empty\" style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center\">"
+      + "<i class=\"ti ti-users\" style=\"font-size:32px;display:block;margin-bottom:10px;opacity:.3\"></i>"
+      + "Belum ada karyawan. <a href=\"/operasional/sdm/karyawan/tambah\" style=\"color:var(--accent)\">Tambah sekarang</a></div>";
 
   // Bulan selector — 12 bulan terakhir
   const now    = new Date();
@@ -203,7 +291,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
   }
 
   return docHeadV4("SDM & Penggajian")
-    + "<style>" + SDM_CSS + "</style>"
+    + "<style>" + SDM_CSS + CARD_CSS + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar("", "sdm")
@@ -214,10 +302,9 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "</div></header>"
     + "<div class=\"page\"><div class=\"sdm-page\">"
 
-    // Header
     + "<div class=\"sdm-header\">"
     + "<div><div class=\"sdm-title\">Manajemen SDM</div>"
-    + "<div class=\"sdm-sub\">Karyawan aktif: " + karyawan.length + " orang</div></div>"
+    + "<div class=\"sdm-sub\">Karyawan aktif: " + karyawan.length + " orang · " + bulanLabel(bulan) + "</div></div>"
     + "<div class=\"sdm-hactions\">"
     + "<form method=\"get\" action=\"/operasional/sdm\" style=\"display:inline\">"
     + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + months.join("") + "</select>"
@@ -226,18 +313,8 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
     + "</div></div>"
 
-    // Tabel karyawan
-    + "<div class=\"sdm-table-wrap\"><table class=\"sdm-table\">"
-    + "<thead><tr>"
-    + "<th>Nama / Jabatan</th>"
-    + "<th class=\"r\">Gaji Pokok</th>"
-    + "<th class=\"r\">Kasbon</th>"
-    + "<th class=\"r\">Sisa Gaji</th>"
-    + "<th class=\"c\">Status</th>"
-    + "<th class=\"r\">Aksi</th>"
-    + "</tr></thead>"
-    + "<tbody>" + tableBody + "</tbody>"
-    + "</table></div>"
+    + summaryStrip
+    + "<div class=\"sdm-cards-grid\">" + cards + "</div>"
     + "</div></div></div></div>"
 
     // Modal transaksi
@@ -250,7 +327,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<input type=\"hidden\" name=\"karyawan_id\" id=\"sdmFKid\">"
     + "<input type=\"hidden\" name=\"tipe\" id=\"sdmFTipe\">"
     + "<input type=\"hidden\" name=\"bulan\" id=\"sdmFBulan\">"
-    + "<input type=\"hidden\" name=\"redirect_to\" id=\"sdmFRedirect\" value=\"" + "/operasional/sdm?bulan=" + bulan + "\">"
+    + "<input type=\"hidden\" name=\"redirect_to\" id=\"sdmFRedirect\" value=\"/operasional/sdm?bulan=" + bulan + "\">"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jumlah (Rp)</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" id=\"sdmFJumlah\" name=\"jumlah\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Keterangan <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
