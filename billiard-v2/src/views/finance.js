@@ -1194,7 +1194,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "if(t==='expense')wizS.act='other';"
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(t==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
-    + "wizUpdateDateDisplay();}"
+    + "wizUpdateDateDisplay();}}"
     + "function wizSetAct(a){wizS.act=a;"
     + "['billiard','kopi','other'].forEach(function(x){document.getElementById('wiz-'+x).className='fin-tog-btn'+(x===a?' sel':'');});}"
     + "function wizSetWaktu(w){wizS.waktu=w;"
