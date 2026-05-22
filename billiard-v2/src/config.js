@@ -15,9 +15,9 @@ export const CONFIG = Object.freeze({
   // Override via env: OWNER_ADMIN_PIN, KARYAWAN1_ADMIN_PIN, dst.
   ADMIN_USERS: [
     { username: "agung97",   pin: process.env.OWNER_ADMIN_PIN     ?? "2024", role: "owner"    },
-    { username: "karyawan1", pin: process.env.KARYAWAN1_ADMIN_PIN ?? "1111", role: "karyawan" },
-    { username: "karyawan2", pin: process.env.KARYAWAN2_ADMIN_PIN ?? "2222", role: "karyawan" },
-    { username: "karyawan3", pin: process.env.KARYAWAN3_ADMIN_PIN ?? "3333", role: "karyawan" },
+    { username: "ardu",       pin: process.env.KARYAWAN1_ADMIN_PIN ?? "1111", role: "karyawan" },
+    { username: "zidankecil", pin: process.env.KARYAWAN2_ADMIN_PIN ?? "2222", role: "karyawan" },
+    { username: "zidanbesar", pin: process.env.KARYAWAN3_ADMIN_PIN ?? "3333", role: "karyawan" },
   ],
   FINANCE_PIN:  process.env.FINANCE_PIN          ?? "2024",
   // Role-based PIN untuk /operasional: owner (akses penuh) vs karyawan (catat + lihat hari ini)
