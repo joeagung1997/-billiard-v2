@@ -405,7 +405,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], menuItems = [], toppings = [] }) {
+export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [] }) {
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
@@ -439,6 +439,19 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
   const modalGrpOut = kategoriList.filter((k) => k.jenis === "pengeluaran")
     .map((k) => "<option>" + escHtml(k.nama) + "</option>").join("");
+
+  // Sub-kategori lookup keyed by kategori nama (untuk JS di client)
+  const subByKatId2 = {};
+  subKategoriList.forEach((s) => {
+    if (!subByKatId2[s.kategori_id]) subByKatId2[s.kategori_id] = [];
+    subByKatId2[s.kategori_id].push(s.nama);
+  });
+  const subKatByName = {};
+  kategoriList.forEach((k) => {
+    const subs = subByKatId2[k.id];
+    if (subs && subs.length > 0) subKatByName[k.nama] = subs;
+  });
+  const subKatJson = JSON.stringify(subKatByName);
 
   // Filter & sort — bulan + jenis untuk stats; date range untuk tabel
   const filtered = transaksi.filter((t) => {
@@ -838,10 +851,14 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "</div></div>"
     + "<div id=\"wizOther\" class=\"fin-dynamic\">"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Kategori</label>"
-    + "<select class=\"fsel\" id=\"wizKatSel\">"
+    + "<select class=\"fsel\" id=\"wizKatSel\" onchange=\"wizOnKatChange(this)\">"
     + "<optgroup label=\"Pemasukan\" id=\"wizGrpIn\">" + modalGrpIn + "</optgroup>"
     + "<optgroup label=\"Pengeluaran\" id=\"wizGrpOut\">" + modalGrpOut + "</optgroup>"
-    + "</select></div></div>"
+    + "</select></div>"
+    + "<div class=\"fmg\" id=\"wizSubKatWrap\" style=\"display:none\">"
+    + "<label class=\"fin-wiz-lbl\">Sub Kategori <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span></label>"
+    + "<select class=\"fsel\" id=\"wizSubKatSel\"><option value=\"\">— Pilih sub kategori —</option></select>"
+    + "</div></div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Jumlah (Rp)</label>"
     + "<div class=\"fin-inp-pfx\"><span class=\"fin-pfx-lbl\">Rp</span>"
     + "<input class=\"fin-pfx-inp\" type=\"text\" inputmode=\"numeric\" id=\"wizJumlah\" placeholder=\"0\" oninput=\"wizFmtJ(this)\"></div>"
@@ -867,6 +884,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<input type=\"hidden\" name=\"waktu\" id=\"wizFWaktu\" value=\"siang\">"
     + "<input type=\"hidden\" name=\"datetime\" id=\"wizFDt\">"
     + "<input type=\"hidden\" name=\"kategori\" id=\"wizFKat\">"
+    + "<input type=\"hidden\" name=\"sub_kategori\" id=\"wizFSubKat\">"
     + "<input type=\"hidden\" name=\"keterangan\" id=\"wizFKet\">"
     + "<input type=\"hidden\" name=\"jumlah\" id=\"wizFJ\">"
     + "</form>"
@@ -1136,6 +1154,8 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('wizFWaktu').value=wizS.waktu;"
     + "var dtEl=document.getElementById('wizDatetime');document.getElementById('wizFDt').value=dtEl?dtEl.value:'';"
     + "document.getElementById('wizFKat').value=kat;"
+    + "var subEl2=document.getElementById('wizSubKatSel');var subKatVal=(subEl2&&subEl2.value&&subEl2.value!=='')?subEl2.options[subEl2.selectedIndex].text:'';"
+    + "document.getElementById('wizFSubKat').value=subKatVal;"
     + "document.getElementById('wizFKet').value=ket;"
     + "document.getElementById('wizFJ').value=jRaw;}"
     + "var pct={1:33,2:66,3:100};document.getElementById('wizProg').style.width=pct[n]+'%';"
@@ -1175,6 +1195,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "}"
     + "if(wizS.step<3)wizGoTo(wizS.step+1);}"
     + "function wizPrev(){if(wizS.step>1)wizGoTo(wizS.step-1);}"
+    + "var subKatData=" + subKatJson + ";"
+    + "function wizOnKatChange(sel){"
+    + "var katName=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';"
+    + "var subs=subKatData[katName]||[];"
+    + "var wrap=document.getElementById('wizSubKatWrap');"
+    + "var subSel=document.getElementById('wizSubKatSel');"
+    + "if(subs.length>0&&wrap&&subSel){"
+    + "subSel.innerHTML='<option value=\"\">— Pilih sub kategori —</option>'+subs.map(function(n){return '<option>'+n+'</option>';}).join('');"
+    + "wrap.style.display='';}"
+    + "else if(wrap){wrap.style.display='none';}}"
     // Charts
     + "(function(){"
     + "var bc=document.getElementById('barChart');"
@@ -1195,7 +1225,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 }
 
 // ── Halaman kelola kategori ───────────────────────────────────
-export function financeKategoriPage(token, kategoriList = [], showErr = false) {
+export function financeKategoriPage(token, kategoriList = [], showErr = false, subKategoriList = []) {
   const errHtml = showErr
     ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\">Kategori sudah ada atau tidak valid.</div>"
     : "";
@@ -1203,14 +1233,44 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
   const inList  = kategoriList.filter((k) => k.jenis === "pemasukan");
   const outList = kategoriList.filter((k) => k.jenis === "pengeluaran");
 
+  const subByKatId = {};
+  subKategoriList.forEach((s) => {
+    if (!subByKatId[s.kategori_id]) subByKatId[s.kategori_id] = [];
+    subByKatId[s.kategori_id].push(s);
+  });
+
   const makeRows = (list, jenis) => list.length > 0
-    ? list.map((k) =>
-        "<div class=\"kat-row\" data-id=\"" + k.id + "\">"
-        + "<div class=\"kat-name\"><i class=\"ti ti-grip-vertical kat-grip\" title=\"Geser untuk ubah urutan\"></i><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
-        + "<div class=\"kat-act\">"
-        + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
-        + "</div></div>"
-      ).join("")
+    ? list.map((k) => {
+        const subs = subByKatId[k.id] || [];
+        const subBadge = subs.length > 0
+          ? "<span class=\"sub-count-badge\">" + subs.length + "</span>"
+          : "";
+        const subRows = subs.map((s) =>
+          "<div class=\"kat-sub-row\">"
+          + "<i class=\"ti ti-corner-down-right sub-arrow\"></i>"
+          + "<span class=\"kat-sub-name\">" + escHtml(s.nama) + "</span>"
+          + "<a href=\"/operasional/kategori/sub/hapus?id=" + s.id + "\" class=\"btn-sub-del\" onclick=\"return confirm('Hapus sub kategori ini?')\"><i class=\"ti ti-x\"></i></a>"
+          + "</div>"
+        ).join("");
+        return "<div class=\"kat-row\" data-id=\"" + k.id + "\">"
+          + "<div class=\"kat-row-head\">"
+          + "<div class=\"kat-name\"><i class=\"ti ti-grip-vertical kat-grip\" title=\"Geser untuk ubah urutan\"></i><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
+          + "<div class=\"kat-act\">"
+          + "<button type=\"button\" class=\"btn-sub-toggle\" onclick=\"toggleSub(" + k.id + ")\" title=\"Sub kategori\">"
+          + "<i class=\"ti ti-chevron-right kat-chev\" id=\"chev-" + k.id + "\"></i>" + subBadge
+          + "</button>"
+          + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
+          + "</div></div>"
+          + "<div class=\"kat-sub-wrap\" id=\"sub-" + k.id + "\" style=\"display:none\">"
+          + "<div class=\"kat-sub-list\">" + subRows + "</div>"
+          + "<form action=\"/operasional/kategori/sub/tambah\" method=\"post\" class=\"kat-sub-add-form\">"
+          + "<input type=\"hidden\" name=\"kategori_id\" value=\"" + k.id + "\">"
+          + "<input type=\"text\" name=\"nama\" class=\"sub-add-inp\" placeholder=\"Tambah sub kategori...\" required>"
+          + "<button type=\"submit\" class=\"btn-sub-add\"><i class=\"ti ti-plus\"></i></button>"
+          + "</form>"
+          + "</div>"
+          + "</div>";
+      }).join("")
     : "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada kategori</div>";
 
   const extraCss = [
@@ -1228,20 +1288,39 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     ".kat-table-head{display:grid;grid-template-columns:1fr 64px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
     ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
     ".kat-th.r{text-align:right}",
-    ".kat-row{display:grid;grid-template-columns:1fr 64px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s;background:var(--surface)}",
+    ".kat-row{display:block;border-bottom:1px solid var(--border);background:var(--surface)}",
     ".kat-row:last-child{border-bottom:none}",
-    ".kat-row:hover{background:var(--surface2)}",
     ".kat-row.sortable-ghost{opacity:.35;background:var(--green-bg)}",
     ".kat-row.sortable-chosen{background:var(--surface2)}",
     ".kat-row.sortable-drag{box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid var(--border2);border-radius:8px;cursor:grabbing}",
+    ".kat-row-head{display:grid;grid-template-columns:1fr auto;align-items:center;padding:11px 18px;gap:8px;transition:background .1s}",
+    ".kat-row-head:hover{background:var(--surface2)}",
     ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
     ".kat-grip{font-size:16px;color:var(--txt3);cursor:grab;opacity:.55;transition:opacity .15s,color .15s;flex-shrink:0;margin-right:-2px}",
-    ".kat-row:hover .kat-grip{opacity:1;color:var(--txt2)}",
+    ".kat-row-head:hover .kat-grip{opacity:1;color:var(--txt2)}",
     ".kat-grip:active{cursor:grabbing}",
+    ".btn-sub-toggle{display:inline-flex;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;color:var(--txt3);transition:background .1s,color .1s}",
+    ".btn-sub-toggle:hover{background:var(--surface2);color:var(--txt)}",
+    ".kat-chev{font-size:13px;transition:transform .15s}",
+    ".kat-chev.open{transform:rotate(90deg)}",
+    ".sub-count-badge{font-size:10px;font-weight:600;background:var(--accent);color:#fff;padding:1px 6px;border-radius:10px;line-height:1.5}",
+    ".kat-sub-wrap{background:var(--surface2);border-top:1px dashed var(--border)}",
+    ".kat-sub-list{padding:4px 18px 2px 40px}",
+    ".kat-sub-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt2)}",
+    ".kat-sub-row:last-child{border-bottom:none}",
+    ".sub-arrow{font-size:12px;color:var(--txt3);flex-shrink:0}",
+    ".kat-sub-name{flex:1}",
+    ".btn-sub-del{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;text-decoration:none;flex-shrink:0;transition:background .1s,color .1s}",
+    ".btn-sub-del:hover{background:var(--red-bg);color:var(--red)}",
+    ".kat-sub-add-form{display:flex;gap:6px;padding:8px 18px 8px 40px}",
+    ".sub-add-inp{flex:1;padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--ff);color:var(--txt);background:var(--surface);outline:none}",
+    ".sub-add-inp:focus{border-color:var(--accent)}",
+    ".btn-sub-add{padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;transition:opacity .15s}",
+    ".btn-sub-add:hover{opacity:.85}",
     ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
     ".kat-dot.income{background:var(--green)}",
     ".kat-dot.expense{background:var(--red)}",
-    ".kat-act{display:flex;justify-content:flex-end}",
+    ".kat-act{display:flex;align-items:center;justify-content:flex-end;gap:4px}",
     ".btn-del{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(184,48,48,.25);background:var(--red-bg);color:var(--red);text-decoration:none;transition:opacity .15s}",
     ".btn-del:hover{opacity:.75}",
     ".btn-del i{font-size:12px}",
@@ -1386,6 +1465,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "document.getElementById('catInput').focus();}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function toggleSub(id){var w=document.getElementById('sub-'+id);var c=document.getElementById('chev-'+id);if(!w)return;var open=w.style.display!=='none';w.style.display=open?'none':'';if(c)c.className='ti ti-chevron-right kat-chev'+(open?'':' open');}"
     + "function showKatToast(msg,isErr){var t=document.getElementById('katToast');var m=document.getElementById('katToastMsg');if(!t||!m)return;m.textContent=msg;t.className='kat-toast show'+(isErr?' err':'');clearTimeout(window._katToastT);window._katToastT=setTimeout(function(){t.className='kat-toast'+(isErr?' err':'');},1800);}"
     + "function saveUrutan(listEl){"
     + "  var ids=Array.from(listEl.querySelectorAll('.kat-row')).map(function(r){return parseInt(r.getAttribute('data-id'))||0;}).filter(Boolean);"

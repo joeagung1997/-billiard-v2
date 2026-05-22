@@ -39,17 +39,18 @@ const rowToMember = (row) => {
 };
 
 const rowToTransaksi = (row) => ({
-  id:         row.id,
-  tanggal:    row.tanggal,
-  jam:        row.jam         ?? "",
-  jenis:      row.jenis,
-  waktu:      row.waktu       ?? "siang",
-  kategori:   row.kategori    ?? "",
-  keterangan: row.keterangan  ?? "",
-  jumlah:     Number(row.jumlah),
-  createdAt:  row.created_at  ?? null,
-  voidedAt:   row.voided_at   ?? null,
-  voidReason: row.void_reason ?? "",
+  id:           row.id,
+  tanggal:      row.tanggal,
+  jam:          row.jam          ?? "",
+  jenis:        row.jenis,
+  waktu:        row.waktu        ?? "siang",
+  kategori:     row.kategori     ?? "",
+  subKategori:  row.sub_kategori ?? "",
+  keterangan:   row.keterangan   ?? "",
+  jumlah:       Number(row.jumlah),
+  createdAt:    row.created_at   ?? null,
+  voidedAt:     row.voided_at    ?? null,
+  voidReason:   row.void_reason  ?? "",
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -193,12 +194,13 @@ export const readTransaksi = async () => {
 
 export const appendTransaksi = async (item) => {
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, keterangan, jumlah, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
-      item.kategori ?? "", item.keterangan ?? "",
+      item.kategori ?? "", item.subKategori ?? "",
+      item.keterangan ?? "",
       item.jumlah, item.createdAt ?? new Date().toISOString(),
     ]
   );
@@ -251,6 +253,26 @@ export const updateKategoriUrutan = async (ids) => {
     if (!idNum) continue;
     await query("UPDATE kategori SET urutan = $1 WHERE id = $2", [i + 1, idNum]);
   }
+};
+
+// ── Sub Kategori ──────────────────────────────────────────────
+
+export const readSubKategori = async () => {
+  const res = await query("SELECT * FROM sub_kategori ORDER BY kategori_id, urutan, id");
+  return res.rows;
+};
+
+export const addSubKategori = async (kategoriId, nama) => {
+  await query(
+    `INSERT INTO sub_kategori (kategori_id, nama, urutan)
+     VALUES ($1, $2, COALESCE((SELECT MAX(urutan) FROM sub_kategori WHERE kategori_id = $1), 0) + 1)
+     ON CONFLICT (kategori_id, nama) DO NOTHING`,
+    [kategoriId, nama.trim()]
+  );
+};
+
+export const deleteSubKategori = async (id) => {
+  await query("DELETE FROM sub_kategori WHERE id = $1", [id]);
 };
 
 // ── Menu Items (kopi/snack) ───────────────────────────────────

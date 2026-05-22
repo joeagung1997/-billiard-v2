@@ -162,6 +162,45 @@ export const runMigrations = async () => {
     }
   }
 
+  // ── Tabel sub_kategori ───────────────────────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS sub_kategori (
+      id          SERIAL  PRIMARY KEY,
+      kategori_id INTEGER NOT NULL,
+      nama        TEXT    NOT NULL,
+      urutan      INTEGER DEFAULT 0,
+      UNIQUE(kategori_id, nama)
+    )
+  `);
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS sub_kategori TEXT DEFAULT ''`);
+
+  // Insert default sub-kategori (jalankan sekali — sentinel: tabel kosong)
+  const subCount = await query("SELECT COUNT(*) FROM sub_kategori");
+  if (parseInt(subCount.rows[0].count) === 0) {
+    const DEFAULT_SUB = {
+      "Operasional Rutin":       ["Token Listrik", "Wifi / Internet", "Gaji 3 orang", "Makan 2 orang"],
+      "Stok Bahan-bahan":        ["Minuman saset", "Gula", "Susu kaleng", "Bahan masak", "Rokok", "Air Galon isi ulang", "Bahan makanan"],
+      "Perlengkapan Habis Pakai":["Sedotan", "Tisu", "Plastik sampah", "Sabun cuci piring", "Sabun lantai", "Pembersih kamar mandi", "Korek api"],
+      "Khusus Billiard":         ["Kapur stik (Chalk)", "Cue tip / kepala stik", "Bola billiard pengganti", "Pembersih bola billiard"],
+      "Aset & Perbaikan":        ["Service peralatan", "Beli alat baru", "Renovasi kecil"],
+      "SDM":                     ["Konsumsi / makan crew", "Bonus & THR", "Transportasi / bensin"],
+      "Lain-lain":               ["Marketing", "Kas darurat / dana tak terduga"],
+    };
+    for (const [parentNama, subList] of Object.entries(DEFAULT_SUB)) {
+      const parent = await query(
+        `SELECT id FROM kategori WHERE nama = $1 AND jenis = 'pengeluaran' LIMIT 1`, [parentNama]
+      );
+      if (parent.rows.length === 0) continue;
+      const parentId = parent.rows[0].id;
+      for (let i = 0; i < subList.length; i++) {
+        await query(
+          `INSERT INTO sub_kategori (kategori_id, nama, urutan) VALUES ($1, $2, $3) ON CONFLICT (kategori_id, nama) DO NOTHING`,
+          [parentId, subList[i], i + 1]
+        );
+      }
+    }
+  }
+
   // ── Kolom tambahan menu_items (idempotent) ───────────────────────
   await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS kategori    TEXT    DEFAULT 'minuman'`);
   await query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS best_seller BOOLEAN DEFAULT FALSE`);

@@ -5,6 +5,7 @@ import { Router } from "express";
 import {
   readTransaksi, appendTransaksi, voidTransaksi,
   readKategori, addKategori, deleteKategori, updateKategoriUrutan,
+  readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
 } from "../utils/db.js";
@@ -22,13 +23,13 @@ router.use((req, res, next) => { res.locals.ftk = ""; next(); });
 // ── GET /operasional — dashboard ─────────────────────────────────
 router.get("/", async (req, res) => {
   try {
-    const [transaksi, kategoriList, menuItems, toppings] = await Promise.all([readTransaksi(), readKategori(), readMenuItems(), readMenuToppings()]);
+    const [transaksi, kategoriList, subKategoriList, menuItems, toppings] = await Promise.all([readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings()]);
     const bulanFilter = req.query.bulan      ?? "";
     const jenisFilter = req.query.jenis      ?? "";
     const tglDari     = req.query.tgl_dari   ?? "";
     const tglSampai   = req.query.tgl_sampai ?? "";
 
-    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, menuItems, toppings }));
+    res.send(financeDashboard({ transaksi, token: "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList, subKategoriList, menuItems, toppings }));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -43,6 +44,7 @@ router.get("/tambah", (_req, res) => res.redirect("/operasional"));
 // ── POST /operasional/tambah — simpan transaksi (dari modal wizard) ──
 router.post("/tambah", async (req, res) => {
   const { jenis, datetime, kategori, keterangan, jumlah } = req.body;
+  const subKategori = (req.body.sub_kategori ?? "").trim().slice(0, 100);
   const tanggal = (datetime ?? "").slice(0, 10);
   const jam     = (datetime ?? "").slice(11, 16);
 
@@ -62,6 +64,7 @@ router.post("/tambah", async (req, res) => {
       jenis,
       waktu:      ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
       kategori:   (kategori ?? "").trim(),
+      subKategori,
       keterangan: (keterangan ?? "").trim().slice(0, 200),
       jumlah:     jumlahNum,
       createdAt:  new Date().toISOString(),
@@ -94,8 +97,8 @@ router.post("/void", async (req, res) => {
 // ── GET /operasional/kategori — kelola kategori ──────────────────
 router.get("/kategori", async (req, res) => {
   try {
-    const kategori = await readKategori();
-    res.send(financeKategoriPage("", kategori, !!req.query.err));
+    const [kategori, subKategori] = await Promise.all([readKategori(), readSubKategori()]);
+    res.send(financeKategoriPage("", kategori, !!req.query.err, subKategori));
   } catch (err) {
     console.error("[FINANCE] kategori error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -126,6 +129,31 @@ router.get("/kategori/hapus", async (req, res) => {
   if (id) {
     try { await deleteKategori(id); } catch (err) {
       console.error("[FINANCE] kategori hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/kategori");
+});
+
+// ── POST /operasional/kategori/sub/tambah ───────────────────────
+router.post("/kategori/sub/tambah", async (req, res) => {
+  const kategoriId = parseInt(req.body.kategori_id) || 0;
+  const nama = (req.body.nama ?? "").trim();
+  if (!kategoriId || !nama) return res.redirect("/operasional/kategori?err=1");
+  try {
+    await addSubKategori(kategoriId, nama);
+    res.redirect("/operasional/kategori");
+  } catch (err) {
+    console.error("[FINANCE] sub kategori tambah error:", err.message);
+    res.redirect("/operasional/kategori?err=1");
+  }
+});
+
+// ── GET /operasional/kategori/sub/hapus ─────────────────────────
+router.get("/kategori/sub/hapus", async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteSubKategori(id); } catch (err) {
+      console.error("[FINANCE] sub kategori hapus error:", err.message);
     }
   }
   res.redirect("/operasional/kategori");
