@@ -265,5 +265,32 @@ export const runMigrations = async () => {
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_aksi         ON logs      (aksi)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_transaksi_tanggal ON transaksi (tanggal DESC)`);
 
+  // ── Tabel akun admin login ────────────────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS admin_accounts (
+      id           SERIAL PRIMARY KEY,
+      username     TEXT UNIQUE NOT NULL,
+      pin          TEXT NOT NULL,
+      role         TEXT NOT NULL DEFAULT 'karyawan',
+      display_name TEXT NOT NULL DEFAULT ''
+    )
+  `);
+  // Seed akun awal dari config — hanya jika tabel masih kosong
+  const akunCount = await query("SELECT COUNT(*) FROM admin_accounts");
+  if (parseInt(akunCount.rows[0].count) === 0) {
+    const seeds = [
+      { username: "agung97",  pin: "2024", role: "owner",    display_name: "Owner"       },
+      { username: "ardu11",   pin: "1111", role: "karyawan", display_name: "Ardu"        },
+      { username: "zidank22", pin: "2222", role: "karyawan", display_name: "Zidan Kecil" },
+      { username: "zidanb33", pin: "3333", role: "karyawan", display_name: "Zidan Besar" },
+    ];
+    for (const s of seeds) {
+      await query(
+        `INSERT INTO admin_accounts (username, pin, role, display_name) VALUES ($1,$2,$3,$4) ON CONFLICT (username) DO NOTHING`,
+        [s.username, s.pin, s.role, s.display_name]
+      );
+    }
+  }
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };

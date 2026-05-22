@@ -8,6 +8,7 @@ import {
   saveMember, deleteMember, resetScanHarian,
   createMember, findMember, findMemberIndex,
   resetQrMember, appendLog, checkBonusExpiry,
+  readAdminAccounts,
 } from "../utils/db.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
@@ -45,14 +46,32 @@ router.get("/", async (req, res) => {
 });
 
 // ── POST /admin/login ─────────────────────────────────────────
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const username = (req.body.username ?? "").trim().toLowerCase();
   const pin      = (req.body.pin      ?? "").trim();
 
-  // Cari user yang cocok username + PIN
-  const found = CONFIG.ADMIN_USERS.find(
-    (u) => u.username.toLowerCase() === username && u.pin === pin
-  );
+  // Cari user dari DB admin_accounts (dengan fallback ke CONFIG)
+  let found = null;
+  try {
+    const accounts = await readAdminAccounts();
+    if (accounts.length > 0) {
+      const row = accounts.find(
+        (u) => u.username.toLowerCase() === username && u.pin === pin
+      );
+      if (row) found = { username: row.username, role: row.role };
+    }
+  } catch (err) {
+    console.error("[ADMIN] DB accounts lookup failed, fallback ke CONFIG:", err.message);
+  }
+
+  // Fallback: cek CONFIG.ADMIN_USERS jika DB gagal / kosong
+  if (!found) {
+    const fromConfig = CONFIG.ADMIN_USERS.find(
+      (u) => u.username.toLowerCase() === username && u.pin === pin
+    );
+    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role };
+  }
+
   if (!found) return res.redirect("/admin?err=1");
 
   const token = createToken({ username: found.username, role: found.role });

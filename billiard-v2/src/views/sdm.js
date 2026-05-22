@@ -223,6 +223,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + months.join("") + "</select>"
     + "</form>"
     + "<a href=\"/operasional/sdm/karyawan/tambah\" class=\"sdm-btn-add\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</a>"
+    + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
     + "<a href=\"/operasional/sdm/logout\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Keluar PIN\"><i class=\"ti ti-lock\"></i></a>"
     + "</div></div>"
 
@@ -518,6 +519,83 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     + "function toggleHariKerja(){var v=document.getElementById('inpMakan').value.replace(/\\D/g,'');document.getElementById('wrapHariKerja').style.display=parseInt(v)>0?'':'none';}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "</script>"
+    + buildFinanceBottomNav()
+    + "</body></html>";
+}
+
+// ── Halaman Kelola Akun Admin ─────────────────────────────────
+export function sdmAkunPage(accounts = [], msg = "", err = "") {
+  const ROLE_BADGE = {
+    owner:    "<span class=\"sdm-badge sdm-badge-purple\" style=\"font-size:10px\">👑 Owner</span>",
+    karyawan: "<span class=\"sdm-badge sdm-badge-blue\"   style=\"font-size:10px\">🧑 Karyawan</span>",
+  };
+
+  const ERR_MSG = {
+    username:      "Username minimal 3 karakter.",
+    username_fmt:  "Username hanya boleh huruf kecil, angka, dan underscore (tanpa spasi).",
+    username_taken:"Username sudah dipakai akun lain, pilih yang lain.",
+    pin:           "PIN harus berupa angka minimal 4 digit.",
+    server:        "Terjadi kesalahan server. Coba lagi.",
+    invalid:       "ID akun tidak valid.",
+  };
+
+  const toast = msg === "ok"
+    ? "<div style=\"background:#d4edda;color:#1a6b2a;border:1px solid #b8dacc;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:18px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-check\"></i> Akun berhasil diperbarui.</div>"
+    : err
+    ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:18px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-alert-circle\"></i> " + (ERR_MSG[err] || "Terjadi kesalahan.") + "</div>"
+    : "";
+
+  const cards = accounts.map((a) => {
+    const badge = ROLE_BADGE[a.role] || ROLE_BADGE.karyawan;
+    return "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px\">"
+      + "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:16px\">"
+      + "<div style=\"width:36px;height:36px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px\">"
+      + (a.role === "owner" ? "👑" : "🧑") + "</div>"
+      + "<div><div style=\"font-size:14px;font-weight:700;color:var(--txt)\">" + escHtml(a.display_name) + "</div>"
+      + "<div style=\"margin-top:3px\">" + badge + "</div></div>"
+      + "</div>"
+      + "<form method=\"post\" action=\"/operasional/sdm/akun/" + a.id + "\">"
+      + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px\" class=\"akun-form-grid\">"
+      + "<div><label class=\"sdm-lbl\">Username</label>"
+      + "<input class=\"sdm-inp\" type=\"text\" name=\"username\" value=\"" + escHtml(a.username) + "\" required minlength=\"3\" pattern=\"[a-z0-9_]+\" placeholder=\"min 3 karakter\" autocomplete=\"off\"></div>"
+      + "<div><label class=\"sdm-lbl\">PIN (angka)</label>"
+      + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"pin\" value=\"" + escHtml(a.pin) + "\" required minlength=\"4\" pattern=\"[0-9]+\" placeholder=\"min 4 digit\" autocomplete=\"off\"></div>"
+      + "</div>"
+      + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"width:100%;justify-content:center;padding:9px\"><i class=\"ti ti-device-floppy\"></i> Simpan</button>"
+      + "</form></div>";
+  }).join("");
+
+  const empty = accounts.length === 0
+    ? "<div class=\"sdm-empty\"><i class=\"ti ti-user-off\"></i>Belum ada akun. Tunggu migrasi database selesai.</div>"
+    : "";
+
+  return docHeadV4("Kelola Akun Admin")
+    + "<style>" + SDM_CSS
+    + "@media(max-width:500px){.akun-form-grid{grid-template-columns:1fr!important}}"
+    + "</style>"
+    + "</head><body>"
+    + "<div class=\"layout\">"
+    + buildFinanceSidebar("", "sdm")
+    + "<div class=\"main-wrap\"><header class=\"topbar\">"
+    + "<div class=\"topbar-brand\">"
+    + "<a href=\"/operasional/sdm\" style=\"color:var(--accent);font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px;text-decoration:none;margin-right:10px\"><i class=\"ti ti-arrow-left\"></i> SDM</a>"
+    + "<div><div class=\"topbar-name\">Kelola Akun Admin</div><div class=\"topbar-label\">SDM</div></div>"
+    + "</div></header>"
+    + "<div class=\"page\"><div class=\"sdm-page\" style=\"max-width:620px\">"
+    + "<div class=\"sdm-header\">"
+    + "<div><div class=\"sdm-title\">Akun Login Admin</div>"
+    + "<div class=\"sdm-sub\">Atur username & PIN untuk akses dashboard /admin</div></div>"
+    + "</div>"
+    + toast
+    + cards + empty
+    + "<div style=\"font-size:11px;color:var(--txt3);margin-top:4px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)\">"
+    + "<i class=\"ti ti-info-circle\" style=\"margin-right:4px\"></i>"
+    + "Perubahan langsung berlaku saat login berikutnya. Username: huruf kecil, angka, underscore. PIN: angka minimal 4 digit."
+    + "</div>"
+    + "</div></div></div></div>"
+    + "<script>"
+    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";

@@ -8,9 +8,9 @@ import { CONFIG }      from "../config.js";
 import {
   readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
-  appendTransaksi,
+  appendTransaksi, readAdminAccounts, updateAdminAccount,
 } from "../utils/db.js";
-import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage } from "../views/sdm.js";
+import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage } from "../views/sdm.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
 const SDM_PIN    = process.env.SDM_PIN    || "2222";
@@ -245,6 +245,41 @@ router.get("/sdm/transaksi/hapus", async (req, res) => {
     }
   }
   res.redirect(redirect);
+});
+
+// ── GET /operasional/sdm/akun — kelola username & PIN admin ──
+// HARUS sebelum /sdm/:id agar tidak tertangkap sebagai :id
+router.get("/sdm/akun", async (req, res) => {
+  try {
+    const accounts = await readAdminAccounts();
+    res.send(sdmAkunPage(accounts, req.query.msg, req.query.err));
+  } catch (err) {
+    console.error("[SDM] akun error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+// ── POST /operasional/sdm/akun/:id — simpan perubahan akun ───
+router.post("/sdm/akun/:id", async (req, res) => {
+  const id       = parseInt(req.params.id) || 0;
+  const username = (req.body.username ?? "").trim().toLowerCase();
+  const pin      = (req.body.pin      ?? "").trim();
+
+  if (!id)                        return res.redirect("/operasional/sdm/akun?err=invalid");
+  if (!username || username.length < 3)
+                                  return res.redirect("/operasional/sdm/akun?err=username");
+  if (!/^[a-z0-9_]+$/.test(username))
+                                  return res.redirect("/operasional/sdm/akun?err=username_fmt");
+  if (!pin || !/^\d{4,}$/.test(pin))
+                                  return res.redirect("/operasional/sdm/akun?err=pin");
+  try {
+    await updateAdminAccount(id, username, pin);
+    res.redirect("/operasional/sdm/akun?msg=ok");
+  } catch (err) {
+    console.error("[SDM] update akun error:", err.message);
+    const isUnique = err.message?.includes("unique") || err.code === "23505";
+    res.redirect("/operasional/sdm/akun?err=" + (isUnique ? "username_taken" : "server"));
+  }
 });
 
 // ── GET /operasional/sdm/:id — detail karyawan ───────────────

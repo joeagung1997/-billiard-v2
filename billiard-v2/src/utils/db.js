@@ -386,3 +386,19 @@ export const appendSdmTransaksi = async (item) => {
 export const deleteSdmTransaksi = async (id) => {
   await query("DELETE FROM sdm_transaksi WHERE id = $1", [id]);
 };
+
+// ── Admin Accounts ────────────────────────────────────────────
+
+export const readAdminAccounts = async () => {
+  const res = await query(
+    "SELECT * FROM admin_accounts ORDER BY (role = 'owner') DESC, id"
+  );
+  return res.rows;
+};
+
+export const updateAdminAccount = async (id, username, pin) => {
+  await query(
+    "UPDATE admin_accounts SET username=$1, pin=$2 WHERE id=$3",
+    [username.toLowerCase(), pin, parseInt(id)]
+  );
+};
