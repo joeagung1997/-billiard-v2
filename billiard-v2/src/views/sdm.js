@@ -235,7 +235,10 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
         const r     = hitungRingkasan(k, trxK);
         const nama  = escHtml(k.nama);
         const shift = k.shift || "siang";
-        const inits = k.nama.trim().slice(0, 2).toUpperCase();
+        const _words = k.nama.trim().split(/\s+/);
+        const inits  = _words.length > 1
+          ? _words.slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+          : k.nama.trim().slice(0, 2).toUpperCase();
         const pct   = r.gajiPokok > 0 ? Math.min(100, Math.round(r.totalDibayarkan / r.gajiPokok * 100)) : 0;
         const progCls = pct >= 100 ? "sdm-prog-fill-full" : pct > 0 ? "sdm-prog-fill-part" : "sdm-prog-fill-none";
         const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"font-size:10px\">"
