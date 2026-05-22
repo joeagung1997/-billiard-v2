@@ -478,8 +478,15 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
 
   // Voided transaksi DIKECUALIKAN dari semua perhitungan stats.
   // Tetap ditampilkan di tabel dengan styling khusus.
-  const activeFiltered = filtered.filter((t) => !t.voidedAt);
-  const voidedCount    = filtered.length - activeFiltered.length;
+  const activeFiltered  = filtered.filter((t) => !t.voidedAt);
+  const voidedCount     = filtered.length - activeFiltered.length;
+  const activeSortedTbl = tDari
+    ? activeFiltered.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
+    : activeFiltered;
+  const chartTotalIn  = activeSortedTbl.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
+  const chartTotalOut = activeSortedTbl.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
+  const chartSaldo    = chartTotalIn - chartTotalOut;
+  const chartMargin   = chartTotalIn > 0 ? ((chartSaldo / chartTotalIn) * 100).toFixed(1) : "0";
 
   // Summary (exclude voided)
   const pemasukan   = activeFiltered.filter((t) => t.jenis === "pemasukan");
@@ -515,23 +522,100 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     "<option value=\"" + escHtml(k) + "\">" + escHtml(k) + "</option>"
   ).join("");
 
-  // ── Weekly breakdown for bar chart (exclude voided) ─────────
-  const weekIn  = [0, 0, 0, 0];
-  const weekOut = [0, 0, 0, 0];
-  activeFiltered.forEach(function(t) {
-    const day = parseInt((t.tanggal || "").split("-")[2] || "1", 10);
-    const wi  = Math.min(Math.floor((day - 1) / 7), 3);
-    if (t.jenis === "pemasukan")    weekIn[wi]  += t.jumlah;
-    else                            weekOut[wi] += t.jumlah;
-  });
+  // ── Chart data berdasarkan periodeKey ────────────────────────
+  let chartLabels, chartIn, chartOut, chartSubtitle;
+
+  if (periodeKey === "hari") {
+    const SLOTS = [
+      { lbl: "Dini Hari", h0: 0,  h1: 6  },
+      { lbl: "Pagi",      h0: 6,  h1: 12 },
+      { lbl: "Siang",     h0: 12, h1: 16 },
+      { lbl: "Sore",      h0: 16, h1: 19 },
+      { lbl: "Malam",     h0: 19, h1: 24 },
+    ];
+    chartLabels = SLOTS.map((s) => s.lbl);
+    chartIn  = SLOTS.map(() => 0);
+    chartOut = SLOTS.map(() => 0);
+    activeSortedTbl.forEach(function(t) {
+      const h   = parseInt((t.jam || "00:00").split(":")[0]) || 0;
+      const idx = SLOTS.findIndex((s) => h >= s.h0 && h < s.h1);
+      const i   = idx < 0 ? 0 : idx;
+      if (t.jenis === "pemasukan") chartIn[i]  += t.jumlah;
+      else                         chartOut[i] += t.jumlah;
+    });
+    const todayFmt = new Date(todayStr + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
+    chartSubtitle = "Hari ini · " + todayFmt;
+
+  } else if (periodeKey === "minggu") {
+    const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+    chartLabels = DAYS;
+    chartIn  = [0, 0, 0, 0, 0, 0, 0];
+    chartOut = [0, 0, 0, 0, 0, 0, 0];
+    const monMs = new Date(mondayStr + "T00:00:00").getTime();
+    activeSortedTbl.forEach(function(t) {
+      const diff = Math.floor((new Date(t.tanggal + "T00:00:00").getTime() - monMs) / 86400000);
+      if (diff >= 0 && diff < 7) {
+        if (t.jenis === "pemasukan") chartIn[diff]  += t.jumlah;
+        else                         chartOut[diff] += t.jumlah;
+      }
+    });
+    const sunDate = new Date(new Date(mondayStr + "T00:00:00").getTime() + 6 * 86400000);
+    const monFmt  = new Date(mondayStr + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    const sunFmt  = sunDate.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    chartSubtitle = "Minggu ini · " + monFmt + " — " + sunFmt;
+
+  } else if (periodeKey === "custom" && tDari) {
+    const fromMs   = new Date(tDari + "T00:00:00").getTime();
+    const toMs     = new Date(tSampaiEff + "T00:00:00").getTime();
+    const diffDays = Math.round((toMs - fromMs) / 86400000) + 1;
+    if (diffDays <= 14) {
+      chartLabels = [];
+      chartIn  = [];
+      chartOut = [];
+      for (let i = 0; i < diffDays; i++) {
+        const d    = new Date(fromMs + i * 86400000);
+        const dStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        chartLabels.push(d.getDate() + "/" + (d.getMonth() + 1));
+        chartIn.push(activeSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0));
+        chartOut.push(activeSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0));
+      }
+    } else {
+      const numWeeks = Math.ceil(diffDays / 7);
+      chartLabels = Array.from({ length: numWeeks }, (_, i) => "Minggu " + (i + 1));
+      chartIn  = new Array(numWeeks).fill(0);
+      chartOut = new Array(numWeeks).fill(0);
+      activeSortedTbl.forEach(function(t) {
+        const wi = Math.min(Math.floor((new Date(t.tanggal + "T00:00:00").getTime() - fromMs) / (7 * 86400000)), numWeeks - 1);
+        if (wi >= 0) {
+          if (t.jenis === "pemasukan") chartIn[wi]  += t.jumlah;
+          else                         chartOut[wi] += t.jumlah;
+        }
+      });
+    }
+    const fromFmt = new Date(tDari + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    const toFmt   = new Date(tSampaiEff + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    chartSubtitle = tDari === tSampaiEff ? fromFmt : fromFmt + " — " + toFmt;
+
+  } else {
+    chartLabels = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"];
+    chartIn     = [0, 0, 0, 0];
+    chartOut    = [0, 0, 0, 0];
+    activeSortedTbl.forEach(function(t) {
+      const day = parseInt((t.tanggal || "").split("-")[2] || "1", 10);
+      const wi  = Math.min(Math.floor((day - 1) / 7), 3);
+      if (t.jenis === "pemasukan") chartIn[wi]  += t.jumlah;
+      else                         chartOut[wi] += t.jumlah;
+    });
+    chartSubtitle = bulanLabel + " · per minggu";
+  }
 
   // ── Category breakdown for donut chart ───────────────────────
   const catMap = {};
-  pemasukan.forEach(function(t) {
+  activeSortedTbl.filter((t) => t.jenis === "pemasukan").forEach(function(t) {
     catMap[t.kategori || "Lainnya"] = (catMap[t.kategori || "Lainnya"] || 0) + t.jumlah;
   });
   const catEntries = Object.entries(catMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 4);
-  const DONUT_COLORS = ["#3a7d2c", "#2660a4", "#c47f1a", "#d4ddd2"];
+  const DONUT_COLORS = ["#22c55e", "#2660a4", "#f59e0b", "#8b5cf6"];
   const donutVals   = catEntries.length ? catEntries.map(function(e) { return e[1]; }) : [1];
   const donutLabels = catEntries.length ? catEntries.map(function(e) { return e[0]; }) : ["Tidak ada data"];
   const donutColors = catEntries.length ? catEntries.map(function(_, i) { return DONUT_COLORS[i] || "#d4ddd2"; }) : ["#e8ede6"];
@@ -539,14 +623,14 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   // ── Donut legend HTML ─────────────────────────────────────────
   const donutLegHtml = catEntries.length
     ? catEntries.map(function(e, i) {
-        const pct = totalIn > 0 ? Math.round((e[1] / totalIn) * 100) : 0;
+        const pct = chartTotalIn > 0 ? Math.round((e[1] / chartTotalIn) * 100) : 0;
         return "<div class=\"dl-item\">"
           + "<div class=\"dl-left\"><div class=\"dl-dot\" style=\"background:" + (DONUT_COLORS[i] || "#d4ddd2") + "\"></div>"
           + "<div><div class=\"dl-name\">" + escHtml(e[0]) + "</div><div class=\"dl-pct\">" + pct + "%</div></div></div>"
           + "<div class=\"dl-amt\">" + rp(e[1]) + "</div>"
           + "</div>";
       }).join("")
-    : "<div class=\"empty-donut-leg\"><i class=\"ti ti-chart-donut\"></i>Belum ada pemasukan</div>";
+    : "<div class=\"empty-donut-leg\"><i class=\"ti ti-chart-donut\"></i>Belum ada data</div>";
 
   // ── Transaction rows ────────────────────────────────────────
   const makeRow = function(t) {
@@ -605,9 +689,9 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   // memutus tag </script> kalau data user mengandung karakter HTML.
   const safeJson = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 
-  const chartLabelsJson = safeJson(["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]);
-  const chartInJson     = safeJson(weekIn);
-  const chartOutJson    = safeJson(weekOut);
+  const chartLabelsJson = safeJson(chartLabels);
+  const chartInJson     = safeJson(chartIn);
+  const chartOutJson    = safeJson(chartOut);
   const donutValsJson   = safeJson(donutVals);
   const donutLabelsJson = safeJson(donutLabels);
   const donutColorsJson = safeJson(donutColors);
@@ -658,6 +742,22 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     // ── Search input polish ─────────────────────────────────────
     ".fin-search-wrap{border-radius:9px!important;background:#f8faf7}",
     ".fin-search-inp{background:transparent!important}",
+    // ── Chart cards redesign ─────────────────────────────────────
+    ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
+    ".fin-chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 8px;gap:12px;flex-wrap:wrap}",
+    ".fin-chart-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}",
+    ".fin-chart-sub{font-size:11px;color:var(--txt3);font-family:var(--ff-mono);margin-top:2px}",
+    ".fin-chart-leg{display:flex;gap:14px;font-size:11px;color:var(--txt3);flex-shrink:0;padding-top:2px;flex-wrap:wrap}",
+    ".fin-chart-leg span{display:flex;align-items:center;gap:5px;white-space:nowrap}",
+    ".fin-chart-body{padding:4px 16px 16px;height:260px}",
+    ".fin-chart-stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border)}",
+    ".fin-cs-item{padding:11px 14px;text-align:center}",
+    ".fin-cs-item+.fin-cs-item{border-left:1px solid var(--border)}",
+    ".fin-cs-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px}",
+    ".fin-cs-val{font-size:13px;font-weight:700;font-family:var(--ff-mono)}",
+    ".fin-cs-val.inc{color:#16a34a}",
+    ".fin-cs-val.out{color:#dc2626}",
+    ".fin-cs-val.mg{color:var(--accent)}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -775,39 +875,32 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-charts-row\">"
 
     // Bar chart card
-    + "<div class=\"card\">"
-    + "<div class=\"card-header\"><div>"
-    + "<div class=\"card-title\">Grafik Pemasukan &amp; Pengeluaran</div>"
-    + "<div class=\"card-sub\">" + bulanLabel + " per minggu</div>"
-    + "</div>"
-    + "<div style=\"display:flex;align-items:center;gap:14px;font-size:11px;color:var(--txt3)\">"
-    + "<span><span class=\"leg-dot\" style=\"background:#3a7d2c\"></span>&nbsp;Pemasukan</span>"
-    + "<span><span class=\"leg-dot\" style=\"background:#f09595\"></span>&nbsp;Pengeluaran</span>"
+    + "<div class=\"fin-chart-card\">"
+    + "<div class=\"fin-chart-hdr\">"
+    + "<div><div class=\"fin-chart-title\">Pemasukan &amp; Pengeluaran</div>"
+    + "<div class=\"fin-chart-sub\">" + escHtml(chartSubtitle) + "</div></div>"
+    + "<div class=\"fin-chart-leg\">"
+    + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#22c55e\"></span>&nbsp;Pemasukan</span>"
+    + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#ef4444\"></span>&nbsp;Pengeluaran</span>"
     + "</div></div>"
-    + "<div class=\"chart-wrap\" style=\"height:200px\"><canvas id=\"barChart\"></canvas></div>"
-    + "<div class=\"fin-chart-foot\">"
-    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Total Pemasukan</div>"
-    + "<div class=\"fin-cf-val\" style=\"color:#2d6624\">" + rp(totalIn) + "</div>"
-    + "<div class=\"fin-cf-sub\">" + bulanLabelShort + "</div></div>"
-    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Total Pengeluaran</div>"
-    + "<div class=\"fin-cf-val\" style=\"color:#a32d2d\">" + rp(totalOut) + "</div>"
-    + "<div class=\"fin-cf-sub\">" + bulanLabelShort + "</div></div>"
-    + "<div class=\"fin-cf-item\"><div class=\"fin-cf-lbl\">Margin Bersih</div>"
-    + "<div class=\"fin-cf-val\">" + margin + "%</div>"
-    + "<div class=\"fin-cf-sub\">dari pemasukan</div></div>"
+    + "<div class=\"fin-chart-body\"><canvas id=\"barChart\"></canvas></div>"
+    + "<div class=\"fin-chart-stats\">"
+    + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pemasukan</div><div class=\"fin-cs-val inc\">" + rp(chartTotalIn) + "</div></div>"
+    + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pengeluaran</div><div class=\"fin-cs-val out\">" + rp(chartTotalOut) + "</div></div>"
+    + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Margin</div><div class=\"fin-cs-val mg\">" + chartMargin + "%</div></div>"
     + "</div>"
     + "</div>"
 
     // Donut chart card
-    + "<div class=\"card\">"
-    + "<div class=\"card-header\"><div>"
-    + "<div class=\"card-title\">Komposisi Pemasukan</div>"
-    + "<div class=\"card-sub\">Berdasarkan kategori</div>"
-    + "</div></div>"
+    + "<div class=\"fin-chart-card\">"
+    + "<div class=\"fin-chart-hdr\">"
+    + "<div><div class=\"fin-chart-title\">Komposisi Pemasukan</div>"
+    + "<div class=\"fin-chart-sub\">" + escHtml(chartSubtitle) + "</div></div>"
+    + "</div>"
     + "<div class=\"fin-donut-wrap\">"
     + "<canvas id=\"donutChart\"></canvas>"
     + "<div class=\"fin-donut-center\">"
-    + "<div class=\"fin-dc-val\">" + rp(totalIn) + "</div>"
+    + "<div class=\"fin-dc-val\">" + rp(chartTotalIn) + "</div>"
     + "<div class=\"fin-dc-sub\">Total</div>"
     + "</div>"
     + "</div>"
@@ -1335,16 +1428,23 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     // Charts
     + "(function(){"
     + "var bc=document.getElementById('barChart');"
-    + "if(bc)new Chart(bc,{type:'bar',data:{labels:" + chartLabelsJson + ",datasets:["
-    + "{label:'Pemasukan',data:" + chartInJson + ",backgroundColor:'#3a7d2c',borderRadius:6,borderSkipped:false},"
-    + "{label:'Pengeluaran',data:" + chartOutJson + ",backgroundColor:'#f09595',borderRadius:6,borderSkipped:false}"
-    + "]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},"
-    + "scales:{x:{grid:{display:false},ticks:{font:{size:11,family:'DM Sans'},color:'#7a8c78'}},"
-    + "y:{beginAtZero:true,grid:{color:'#f0f3ef'},ticks:{font:{size:11,family:'DM Sans'},color:'#7a8c78',"
-    + "callback:function(v){return 'Rp '+(v>=1000?(v/1000).toFixed(0)+'rb':v);}}}}}}); "
+    + "if(bc){var bctx=bc.getContext('2d');"
+    + "var inGrad=bctx.createLinearGradient(0,0,0,240);inGrad.addColorStop(0,'rgba(34,197,94,.9)');inGrad.addColorStop(1,'rgba(34,197,94,.45)');"
+    + "var outGrad=bctx.createLinearGradient(0,0,0,240);outGrad.addColorStop(0,'rgba(239,68,68,.85)');outGrad.addColorStop(1,'rgba(239,68,68,.35)');"
+    + "new Chart(bc,{type:'bar',data:{labels:" + chartLabelsJson + ",datasets:["
+    + "{label:'Pemasukan',data:" + chartInJson + ",backgroundColor:inGrad,borderRadius:6,borderSkipped:false,borderWidth:0},"
+    + "{label:'Pengeluaran',data:" + chartOutJson + ",backgroundColor:outGrad,borderRadius:6,borderSkipped:false,borderWidth:0}"
+    + "]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},"
+    + "plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.88)',titleColor:'#e2e8f0',bodyColor:'#94a3b8',padding:10,cornerRadius:8,"
+    + "callbacks:{label:function(ctx){var v=ctx.raw||0;return ' '+ctx.dataset.label+': Rp '+Number(v).toLocaleString('id-ID');}}}},"
+    + "scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:11},color:'#94a3b8'}},"
+    + "y:{beginAtZero:true,grid:{color:'rgba(148,163,184,.15)'},border:{display:false},ticks:{font:{size:11},color:'#94a3b8',"
+    + "callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'jt':v>=1000?(v/1000).toFixed(0)+'rb':v;}}}}}}); }"
     + "var dc=document.getElementById('donutChart');"
-    + "if(dc)new Chart(dc,{type:'doughnut',data:{labels:" + donutLabelsJson + ",datasets:[{data:" + donutValsJson + ",backgroundColor:" + donutColorsJson + ",borderWidth:0,hoverOffset:4}]},"
-    + "options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}});"
+    + "if(dc)new Chart(dc,{type:'doughnut',data:{labels:" + donutLabelsJson + ",datasets:[{data:" + donutValsJson + ",backgroundColor:" + donutColorsJson + ",borderWidth:2,borderColor:'#fff',hoverOffset:8}]},"
+    + "options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},"
+    + "tooltip:{backgroundColor:'rgba(15,23,42,.88)',titleColor:'#e2e8f0',bodyColor:'#94a3b8',padding:10,cornerRadius:8,"
+    + "callbacks:{label:function(ctx){return ' '+ctx.label+': Rp '+Number(ctx.raw||0).toLocaleString('id-ID');}}}}}}); "
     + "})();"
     + "</script>"
     + buildFinanceBottomNav()
