@@ -535,6 +535,11 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
   const isMingguIni = tDari === mondayStr && tSampai === todayStr;
   const isBulanIni  = !tDari && bFilter === curBulan;
   const periodeKey  = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
+  const periodeLabel = isHariIni
+    ? "Hari ini · " + now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+    : isMingguIni ? "Minggu ini"
+    : tDari ? (tDari === tSampaiEff ? tDari : tDari + " – " + tSampaiEff)
+    : bulanLabel;
 
   // ── Chart data berdasarkan periodeKey ────────────────────────
   let chartLabels, chartIn, chartOut, chartSubtitle;
@@ -895,23 +900,32 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Pemasukan</div>"
     + "<div class=\"fin-stat-icon income\"><i class=\"ti ti-trending-up\"></i></div></div>"
     + "<div class=\"fin-stat-val\">" + rp(totalIn) + "</div>"
-    + "<div class=\"fin-stat-foot\">"
+    + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
+    + "<div>"
     + (inDelta !== 0
         ? "<span class=\"" + (inDelta >= 0 ? "fin-badge-up" : "fin-badge-down") + "\"><i class=\"ti ti-arrow-" + (inDelta >= 0 ? "up" : "down") + "\" style=\"font-size:10px\"></i> " + Math.abs(inDelta) + "%</span>&nbsp;vs " + prevLabel
         : "<span>vs " + prevLabel + "</span>")
+    + "</div>"
+    + "<div style=\"font-size:10px\">" + pemasukan.length + " transaksi · " + escHtml(periodeLabel) + "</div>"
     + "</div></div>"
 
     + "<div class=\"fin-stat-card expense\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Pengeluaran</div>"
     + "<div class=\"fin-stat-icon expense\"><i class=\"ti ti-trending-down\"></i></div></div>"
     + "<div class=\"fin-stat-val\">" + rp(totalOut) + "</div>"
-    + "<div class=\"fin-stat-foot\">" + bulanLabel + "</div></div>"
+    + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
+    + "<div>" + pengeluaran.length + " transaksi pengeluaran</div>"
+    + "<div style=\"font-size:10px\">" + escHtml(periodeLabel) + "</div>"
+    + "</div></div>"
 
     + "<div class=\"fin-stat-card saldo\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Saldo Bersih</div>"
     + "<div class=\"fin-stat-icon saldo\"><i class=\"ti ti-scale\"></i></div></div>"
     + "<div class=\"fin-stat-val\" style=\"" + (saldo < 0 ? "color:#a32d2d" : "") + "\">" + (saldo < 0 ? "−" : "") + rp(Math.abs(saldo)) + "</div>"
-    + "<div class=\"fin-stat-foot\">Akumulasi " + bulanLabelShort + "</div></div>"
+    + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
+    + "<div>" + (saldo >= 0 ? "<span style=\"color:#16a34a;font-weight:700\">Untung</span>" : "<span style=\"color:#a32d2d;font-weight:700\">Rugi</span>") + " · Margin " + margin + "%</div>"
+    + "<div style=\"font-size:10px\">Pemasukan − Pengeluaran · " + escHtml(periodeLabel) + "</div>"
+    + "</div></div>"
 
     + "<div class=\"fin-stat-card trx\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Transaksi</div>"
