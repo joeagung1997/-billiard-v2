@@ -1176,7 +1176,7 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     + "document.getElementById('trxOverlay').classList.add('open');wizGoTo(1);"
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(wizS.tipe==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
-    + "wizUpdateDateDisplay();}"
+    + "wizUpdateDateDisplay();}}"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
     + "function openVoidModal(btn){"
     + "document.getElementById('voidId').value=btn.dataset.id;"
