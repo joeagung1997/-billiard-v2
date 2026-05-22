@@ -522,6 +522,16 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     "<option value=\"" + escHtml(k) + "\">" + escHtml(k) + "</option>"
   ).join("");
 
+  // ── Periode aktif detection ───────────────────────────────────
+  const todayStr   = now.toISOString().slice(0, 10);
+  const dayOfWeek  = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const mondayDate = new Date(now); mondayDate.setDate(now.getDate() - dayOfWeek);
+  const mondayStr  = mondayDate.toISOString().slice(0, 10);
+  const isHariIni   = tDari === todayStr && tSampai === todayStr;
+  const isMingguIni = tDari === mondayStr && tSampai === todayStr;
+  const isBulanIni  = !tDari && bFilter === curBulan;
+  const periodeKey  = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
+
   // ── Chart data berdasarkan periodeKey ────────────────────────
   let chartLabels, chartIn, chartOut, chartSubtitle;
 
@@ -673,17 +683,6 @@ export function financeDashboard({ transaksi, token, bulanFilter, jenisFilter, t
     : "<div class=\"empty-state\" id=\"emptyState\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
 
   const hasDateFilter = !!tDari;
-
-  // ── Periode aktif detection ───────────────────────────────────
-  const todayStr = now.toISOString().slice(0, 10);
-  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // Senin=0
-  const mondayDate = new Date(now); mondayDate.setDate(now.getDate() - dayOfWeek);
-  const mondayStr = mondayDate.toISOString().slice(0, 10);
-
-  const isHariIni    = tDari === todayStr && tSampai === todayStr;
-  const isMingguIni  = tDari === mondayStr && tSampai === todayStr;
-  const isBulanIni   = !tDari && bFilter === curBulan;
-  const periodeKey   = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
 
   // Safe JSON serializer untuk embed di <script> — escape `<` agar tidak
   // memutus tag </script> kalau data user mengandung karakter HTML.
