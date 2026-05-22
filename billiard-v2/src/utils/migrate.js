@@ -253,7 +253,8 @@ export const runMigrations = async () => {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_sdm_trx_karyawan ON sdm_transaksi (karyawan_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_sdm_trx_bulan    ON sdm_transaksi (bulan)`);
-  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS shift TEXT DEFAULT 'siang'`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS shift      TEXT    DEFAULT 'siang'`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS uang_makan INTEGER DEFAULT 0`);
 
   // ── Index untuk performa query ──────────────────────────────
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts           ON logs      (ts DESC)`);

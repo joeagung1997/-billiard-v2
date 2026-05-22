@@ -31,16 +31,18 @@ const TIPE_COLOR = {
 // Hitung ringkasan gaji satu karyawan untuk satu bulan
 function hitungRingkasan(karyawan, trxBulanIni) {
   const gajiPokok  = Number(karyawan.gaji_pokok) || 0;
+  const uangMakan  = Number(karyawan.uang_makan)  || 0;
+  const totalGaji  = gajiPokok + uangMakan;
   const kasbon     = trxBulanIni.filter((t) => t.tipe === "kasbon").reduce((s, t) => s + Number(t.jumlah), 0);
   const kembali    = trxBulanIni.filter((t) => t.tipe === "kembali_kasbon").reduce((s, t) => s + Number(t.jumlah), 0);
   const dibayar    = trxBulanIni.filter((t) => t.tipe === "gaji").reduce((s, t) => s + Number(t.jumlah), 0);
   const thr        = trxBulanIni.filter((t) => t.tipe === "thr").reduce((s, t) => s + Number(t.jumlah), 0);
   const bonus      = trxBulanIni.filter((t) => t.tipe === "bonus").reduce((s, t) => s + Number(t.jumlah), 0);
   const totalDibayarkan = kasbon + dibayar + thr + bonus - kembali;
-  const sisa       = Math.max(0, gajiPokok - totalDibayarkan);
+  const sisa       = Math.max(0, totalGaji - totalDibayarkan);
   const status     = totalDibayarkan <= 0 ? "belum"
-                   : totalDibayarkan >= gajiPokok ? "lunas" : "sebagian";
-  return { gajiPokok, kasbon, kembali, dibayar, thr, bonus, totalDibayarkan, sisa, status };
+                   : totalDibayarkan >= totalGaji ? "lunas" : "sebagian";
+  return { gajiPokok, uangMakan, totalGaji, kasbon, kembali, dibayar, thr, bonus, totalDibayarkan, sisa, status };
 }
 
 const bulanLabel = (bulan) => {
@@ -167,14 +169,16 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
           + "<td><div class=\"sdm-td-nama\">" + nama + "</div>"
           + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div>"
           + shiftBadge + "</td>"
-          + "<td class=\"r\">" + rp(k.gaji_pokok) + "</td>"
+          + "<td class=\"r\"><div>" + rp(r.totalGaji) + "</div>"
+          + (r.uangMakan > 0 ? "<div style=\"font-size:10px;color:var(--txt3);margin-top:1px\">" + rp(r.gajiPokok) + " + makan " + rp(r.uangMakan) + "</div>" : "")
+          + "</td>"
           + "<td class=\"r\">" + (r.kasbon > 0 ? "<span class=\"sdm-td-red\">" + rp(r.kasbon) + "</span>" : "<span class=\"sdm-td-muted\">—</span>") + "</td>"
           + "<td class=\"r\">" + (r.sisa > 0 ? "<span class=\"sdm-td-red\">" + rp(r.sisa) + "</span>" : "<span class=\"sdm-td-green\">✓ Lunas</span>") + "</td>"
           + "<td class=\"c\">" + statusBadge(r.status) + "</td>"
           + "<td><div class=\"sdm-act-group\">"
           + "<a href=\"/operasional/sdm/" + k.id + "?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-eye\"></i> Detail</a>"
-          + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + nama + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
-          + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + nama + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
+          + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + nama + "'," + r.totalGaji + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
+          + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + nama + "'," + r.totalGaji + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
           + "</div></td>"
           + "</tr>";
       }).join("")
@@ -328,6 +332,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "</div></div>"
     + "<div class=\"sdm-info-grid\">"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Gaji Pokok</div><div class=\"sdm-info-val\">" + rp(karyawan.gaji_pokok) + " / bln</div></div>"
+    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Uang Makan</div><div class=\"sdm-info-val\">" + (Number(karyawan.uang_makan) > 0 ? rp(karyawan.uang_makan) + " / bln" : "—") + "</div></div>"
+    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Total Gaji</div><div class=\"sdm-info-val\" style=\"font-weight:700;color:var(--txt)\">" + rp(Number(karyawan.gaji_pokok) + Number(karyawan.uang_makan || 0)) + " / bln</div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Shift</div><div class=\"sdm-info-val\"><span class=\"sdm-badge sdm-badge-" + (karyawan.shift || "siang") + "\">" + (karyawan.shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span></div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Telepon</div><div class=\"sdm-info-val\">" + escHtml(karyawan.telepon || "—") + "</div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Mulai Kerja</div><div class=\"sdm-info-val\">" + tglMulai + "</div></div>"
@@ -344,6 +350,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "<div class=\"sdm-rekap\">"
     + "<div class=\"sdm-rekap-title\">Ringkasan Gaji</div>"
     + "<div class=\"sdm-rekap-row\"><span>Gaji Pokok</span><span>" + rp(r.gajiPokok) + "</span></div>"
+    + (r.uangMakan > 0 ? "<div class=\"sdm-rekap-row\"><span>Uang Makan</span><span>" + rp(r.uangMakan) + "</span></div>" : "")
+    + (r.uangMakan > 0 ? "<div class=\"sdm-rekap-row\" style=\"font-weight:600\"><span>Total Gaji</span><span>" + rp(r.totalGaji) + "</span></div>" : "")
     + (r.kasbon > 0 ? "<div class=\"sdm-rekap-row\"><span>Kasbon diambil</span><span style=\"color:var(--red)\">- " + rp(r.kasbon) + "</span></div>" : "")
     + (r.kembali > 0 ? "<div class=\"sdm-rekap-row\"><span>Kembali Kasbon</span><span style=\"color:var(--green)\">+ " + rp(r.kembali) + "</span></div>" : "")
     + (r.dibayar > 0 ? "<div class=\"sdm-rekap-row\"><span>Gaji Dibayar</span><span style=\"color:var(--red)\">- " + rp(r.dibayar) + "</span></div>" : "")
@@ -443,8 +451,9 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     : "/operasional/sdm/karyawan/tambah";
 
   const v = (field, fallback = "") => escHtml(existing ? (existing[field] ?? fallback) : fallback);
-  const gajiVal = existing ? Number(existing.gaji_pokok).toLocaleString("id-ID") : "";
-  const tglVal  = existing?.tgl_mulai ? new Date(existing.tgl_mulai).toISOString().slice(0, 10) : "";
+  const gajiVal  = existing ? Number(existing.gaji_pokok).toLocaleString("id-ID") : "";
+  const makanVal = existing && existing.uang_makan ? Number(existing.uang_makan).toLocaleString("id-ID") : "";
+  const tglVal   = existing?.tgl_mulai ? new Date(existing.tgl_mulai).toISOString().slice(0, 10) : "";
 
   const errHtml = showErr
     ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\">Nama dan gaji pokok wajib diisi.</div>"
@@ -472,6 +481,8 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     + "<input class=\"sdm-inp\" type=\"text\" name=\"jabatan\" value=\"" + v("jabatan") + "\" placeholder=\"Kasir, Barista, Jaga Malam, dll\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Gaji Pokok (Rp) *</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" value=\"" + gajiVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Uang Makan (Rp) <span style=\"font-weight:400;text-transform:none\">(opsional)</span></label>"
+    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" value=\"" + makanVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nomor HP</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" value=\"" + v("telepon") + "\" placeholder=\"08xxxxxxxxxx\"></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Shift</label>"
