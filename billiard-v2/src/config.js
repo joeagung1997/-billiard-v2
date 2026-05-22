@@ -14,7 +14,7 @@ export const CONFIG = Object.freeze({
   // Multi-user admin: tiap user punya username + PIN + role sendiri
   // Override via env: OWNER_ADMIN_PIN, KARYAWAN1_ADMIN_PIN, dst.
   ADMIN_USERS: [
-    { username: "owner",     pin: process.env.OWNER_ADMIN_PIN     ?? "2024", role: "owner"    },
+    { username: "agung97",   pin: process.env.OWNER_ADMIN_PIN     ?? "2024", role: "owner"    },
     { username: "karyawan1", pin: process.env.KARYAWAN1_ADMIN_PIN ?? "1111", role: "karyawan" },
     { username: "karyawan2", pin: process.env.KARYAWAN2_ADMIN_PIN ?? "2222", role: "karyawan" },
     { username: "karyawan3", pin: process.env.KARYAWAN3_ADMIN_PIN ?? "3333", role: "karyawan" },
