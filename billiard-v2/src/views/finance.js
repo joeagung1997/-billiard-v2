@@ -1205,8 +1205,8 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
 
   const makeRows = (list, jenis) => list.length > 0
     ? list.map((k) =>
-        "<div class=\"kat-row\">"
-        + "<div class=\"kat-name\"><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
+        "<div class=\"kat-row\" data-id=\"" + k.id + "\">"
+        + "<div class=\"kat-name\"><i class=\"ti ti-grip-vertical kat-grip\" title=\"Geser untuk ubah urutan\"></i><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
         + "<div class=\"kat-act\">"
         + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
         + "</div></div>"
@@ -1228,10 +1228,16 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     ".kat-table-head{display:grid;grid-template-columns:1fr 64px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
     ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
     ".kat-th.r{text-align:right}",
-    ".kat-row{display:grid;grid-template-columns:1fr 64px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s}",
+    ".kat-row{display:grid;grid-template-columns:1fr 64px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s;background:var(--surface)}",
     ".kat-row:last-child{border-bottom:none}",
     ".kat-row:hover{background:var(--surface2)}",
+    ".kat-row.sortable-ghost{opacity:.35;background:var(--green-bg)}",
+    ".kat-row.sortable-chosen{background:var(--surface2)}",
+    ".kat-row.sortable-drag{box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid var(--border2);border-radius:8px;cursor:grabbing}",
     ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
+    ".kat-grip{font-size:16px;color:var(--txt3);cursor:grab;opacity:.55;transition:opacity .15s,color .15s;flex-shrink:0;margin-right:-2px}",
+    ".kat-row:hover .kat-grip{opacity:1;color:var(--txt2)}",
+    ".kat-grip:active{cursor:grabbing}",
     ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
     ".kat-dot.income{background:var(--green)}",
     ".kat-dot.expense{background:var(--red)}",
@@ -1266,6 +1272,11 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     ".sm-icon.expense{background:var(--red-bg);color:var(--red)}",
     ".sm-label{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}",
     ".sm-count{font-size:22px;font-weight:600;color:var(--txt);font-family:var(--ff-mono)}",
+    ".kat-hint{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px dashed var(--border2);border-radius:var(--r-md);padding:9px 14px;font-size:12px;color:var(--txt2);margin-bottom:14px}",
+    ".kat-hint i.ti-info-circle{color:var(--accent);font-size:15px}",
+    ".kat-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
+    ".kat-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
+    ".kat-toast.err{background:var(--red)}",
   ].join("");
 
   return docHeadV4("Kelola Kategori")
@@ -1329,6 +1340,11 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;white-space:nowrap\"><i class=\"ti ti-plus\" style=\"font-size:16px\"></i> Tambah</button>"
     + "</div></form></div>"
 
+    // Drag hint
+    + "<div class=\"kat-hint\"><i class=\"ti ti-info-circle\"></i>"
+    + "Geser ikon <i class=\"ti ti-grip-vertical\" style=\"font-size:13px;vertical-align:-2px\"></i> untuk mengubah urutan kategori. Perubahan tersimpan otomatis."
+    + "</div>"
+
     // Category grid
     + "<div class=\"kat-grid\">"
 
@@ -1339,7 +1355,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "<div class=\"count-chip income\">" + inList.length + "</div>"
     + "</div></div>"
     + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
-    + "<div>" + makeRows(inList, "income") + "</div>"
+    + "<div class=\"kat-list\" data-jenis=\"pemasukan\">" + makeRows(inList, "income") + "</div>"
     + "</div>"
 
     // Pengeluaran
@@ -1349,7 +1365,7 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "<div class=\"count-chip expense\">" + outList.length + "</div>"
     + "</div></div>"
     + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
-    + "<div>" + makeRows(outList, "expense") + "</div>"
+    + "<div class=\"kat-list\" data-jenis=\"pengeluaran\">" + makeRows(outList, "expense") + "</div>"
     + "</div>"
 
     + "</div>"
@@ -1357,6 +1373,10 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "</div>"
     + "</div>"
 
+    // Toast container untuk feedback save
+    + "<div class=\"kat-toast\" id=\"katToast\"><i class=\"ti ti-check\"></i><span id=\"katToastMsg\">Urutan disimpan</span></div>"
+
+    + "<script src=\"https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js\"><\/script>"
     + "<script>"
     + "function selectType(type){"
     + "document.getElementById('jenisInput').value=type==='income'?'pemasukan':'pengeluaran';"
@@ -1366,6 +1386,26 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false) {
     + "document.getElementById('catInput').focus();}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "function showKatToast(msg,isErr){var t=document.getElementById('katToast');var m=document.getElementById('katToastMsg');if(!t||!m)return;m.textContent=msg;t.className='kat-toast show'+(isErr?' err':'');clearTimeout(window._katToastT);window._katToastT=setTimeout(function(){t.className='kat-toast'+(isErr?' err':'');},1800);}"
+    + "function saveUrutan(listEl){"
+    + "  var ids=Array.from(listEl.querySelectorAll('.kat-row')).map(function(r){return parseInt(r.getAttribute('data-id'))||0;}).filter(Boolean);"
+    + "  if(!ids.length)return;"
+    + "  fetch('/operasional/kategori/urutan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})})"
+    + "    .then(function(r){return r.ok?r.json():Promise.reject(r);})"
+    + "    .then(function(d){if(d&&d.ok)showKatToast('Urutan disimpan',false);else showKatToast('Gagal simpan urutan',true);})"
+    + "    .catch(function(){showKatToast('Gagal simpan urutan',true);});"
+    + "}"
+    + "document.querySelectorAll('.kat-list').forEach(function(el){"
+    + "  if(typeof Sortable==='undefined')return;"
+    + "  Sortable.create(el,{"
+    + "    animation:160,"
+    + "    handle:'.kat-grip',"
+    + "    ghostClass:'sortable-ghost',"
+    + "    chosenClass:'sortable-chosen',"
+    + "    dragClass:'sortable-drag',"
+    + "    onEnd:function(evt){if(evt.oldIndex!==evt.newIndex)saveUrutan(el);}"
+    + "  });"
+    + "});"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";

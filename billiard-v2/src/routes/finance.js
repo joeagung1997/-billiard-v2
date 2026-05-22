@@ -4,7 +4,7 @@
 import { Router } from "express";
 import {
   readTransaksi, appendTransaksi, voidTransaksi,
-  readKategori, addKategori, deleteKategori,
+  readKategori, addKategori, deleteKategori, updateKategoriUrutan,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
 } from "../utils/db.js";
@@ -129,6 +129,21 @@ router.get("/kategori/hapus", async (req, res) => {
     }
   }
   res.redirect("/operasional/kategori");
+});
+
+// ── POST /operasional/kategori/urutan — reorder via drag-and-drop ───
+// Body: { ids: [3, 1, 2, ...] } — array id berurutan untuk SATU jenis.
+// Client kirim 1x per drop. Backend assign urutan = 1..N untuk id tsb.
+router.post("/kategori/urutan", async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+  if (!ids) return res.status(400).json({ ok: false, error: "ids harus array" });
+  try {
+    await updateKategoriUrutan(ids);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[FINANCE] kategori urutan error:", err.message);
+    res.status(500).json({ ok: false, error: "gagal simpan urutan" });
+  }
 });
 
 // ── GET /operasional/menu — kelola menu item kopi/snack ─────────

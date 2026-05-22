@@ -225,19 +225,32 @@ export const voidTransaksi = async (id, reason) => {
 // ── Kategori ──────────────────────────────────────────────────
 
 export const readKategori = async () => {
-  const res = await query("SELECT * FROM kategori ORDER BY jenis, nama");
+  const res = await query("SELECT * FROM kategori ORDER BY jenis, urutan, id");
   return res.rows;
 };
 
 export const addKategori = async (nama, jenis) => {
   await query(
-    `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
+    `INSERT INTO kategori (nama, jenis, urutan)
+     VALUES ($1, $2, COALESCE((SELECT MAX(urutan) FROM kategori WHERE jenis = $2), 0) + 1)
+     ON CONFLICT (nama, jenis) DO NOTHING`,
     [nama.trim(), jenis]
   );
 };
 
 export const deleteKategori = async (id) => {
   await query("DELETE FROM kategori WHERE id = $1", [id]);
+};
+
+// Reorder kategori — terima array ids berurutan, set urutan 1..N.
+// Hanya update id yang valid; id tak dikenal di-skip dgn aman.
+export const updateKategoriUrutan = async (ids) => {
+  if (!Array.isArray(ids) || ids.length === 0) return;
+  for (let i = 0; i < ids.length; i += 1) {
+    const idNum = parseInt(ids[i]);
+    if (!idNum) continue;
+    await query("UPDATE kategori SET urutan = $1 WHERE id = $2", [i + 1, idNum]);
+  }
 };
 
 // ── Menu Items (kopi/snack) ───────────────────────────────────

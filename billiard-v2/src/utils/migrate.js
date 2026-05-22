@@ -116,13 +116,20 @@ export const runMigrations = async () => {
     WHERE m.kode = sub.kode AND m.total_point = 0
   `);
 
+  // Urutan kategori — drag-and-drop di halaman Kelola Kategori
+  await query(`ALTER TABLE kategori ADD COLUMN IF NOT EXISTS urutan INTEGER DEFAULT 0`);
+  // Backfill urutan = id untuk row lama yang masih 0
+  await query(`UPDATE kategori SET urutan = id WHERE urutan = 0`);
+
   // ── Insert default kategori hanya jika tabel masih kosong ───
   const katCount = await query("SELECT COUNT(*) FROM kategori");
   if (parseInt(katCount.rows[0].count) === 0) {
+    let idx = 0;
     for (const k of DEFAULT_KATEGORI) {
+      idx += 1;
       await query(
-        `INSERT INTO kategori (nama, jenis) VALUES ($1, $2) ON CONFLICT (nama, jenis) DO NOTHING`,
-        [k.nama, k.jenis]
+        `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, $2, $3) ON CONFLICT (nama, jenis) DO NOTHING`,
+        [k.nama, k.jenis, idx]
       );
     }
   }
