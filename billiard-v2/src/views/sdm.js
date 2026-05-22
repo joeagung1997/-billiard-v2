@@ -77,6 +77,8 @@ const SDM_CSS = [
   ".sdm-badge-red{background:var(--red-bg);color:var(--red)}",
   ".sdm-badge-blue{background:#d1ecf1;color:#0c5460}",
   ".sdm-badge-purple{background:#e8d5f5;color:#6f42c1}",
+  ".sdm-badge-siang{background:#fff8e1;color:#e65100}",
+  ".sdm-badge-malam{background:#e8eaf6;color:#3949ab}",
   // Tabel utama
   ".sdm-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
   ".sdm-table{width:100%;border-collapse:collapse}",
@@ -158,9 +160,13 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
         const trxK = trxByK[k.id] || [];
         const r    = hitungRingkasan(k, trxK);
         const nama = escHtml(k.nama);
+        const shift = k.shift || "siang";
+        const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"margin-top:3px;display:inline-block\">"
+          + (shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span>";
         return "<tr>"
           + "<td><div class=\"sdm-td-nama\">" + nama + "</div>"
-          + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div></td>"
+          + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div>"
+          + shiftBadge + "</td>"
           + "<td class=\"r\">" + rp(k.gaji_pokok) + "</td>"
           + "<td class=\"r\">" + (r.kasbon > 0 ? "<span class=\"sdm-td-red\">" + rp(r.kasbon) + "</span>" : "<span class=\"sdm-td-muted\">—</span>") + "</td>"
           + "<td class=\"r\">" + (r.sisa > 0 ? "<span class=\"sdm-td-red\">" + rp(r.sisa) + "</span>" : "<span class=\"sdm-td-green\">✓ Lunas</span>") + "</td>"
@@ -322,6 +328,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "</div></div>"
     + "<div class=\"sdm-info-grid\">"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Gaji Pokok</div><div class=\"sdm-info-val\">" + rp(karyawan.gaji_pokok) + " / bln</div></div>"
+    + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Shift</div><div class=\"sdm-info-val\"><span class=\"sdm-badge sdm-badge-" + (karyawan.shift || "siang") + "\">" + (karyawan.shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span></div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Telepon</div><div class=\"sdm-info-val\">" + escHtml(karyawan.telepon || "—") + "</div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Mulai Kerja</div><div class=\"sdm-info-val\">" + tglMulai + "</div></div>"
     + "<div class=\"sdm-info-item\"><div class=\"sdm-info-lbl\">Status</div><div class=\"sdm-info-val\">" + escHtml(karyawan.status) + "</div></div>"
@@ -467,6 +474,11 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" value=\"" + gajiVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nomor HP</label>"
     + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" value=\"" + v("telepon") + "\" placeholder=\"08xxxxxxxxxx\"></div>"
+    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Shift</label>"
+    + "<select class=\"sdm-sel\" name=\"shift\">"
+    + "<option value=\"siang\"" + ((!existing || existing.shift === "siang") ? " selected" : "") + ">☀ Shift Siang</option>"
+    + "<option value=\"malam\"" + (existing?.shift === "malam" ? " selected" : "") + ">☽ Shift Malam</option>"
+    + "</select></div>"
     + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Tanggal Mulai Kerja</label>"
     + "<input class=\"sdm-inp\" type=\"date\" name=\"tgl_mulai\" value=\"" + tglVal + "\"></div>"
     + "<div style=\"display:flex;gap:8px;margin-top:6px\">"
