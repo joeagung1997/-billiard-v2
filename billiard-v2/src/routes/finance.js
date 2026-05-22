@@ -104,8 +104,11 @@ router.post("/login", (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
+  const role = getFinanceRole(req); // baca sebelum cookie dihapus
   clearRoleCookie(res);
-  res.redirect("/operasional/login");
+  // Owner kembali ke /admin (login admin sudah auto-set _frt),
+  // karyawan kembali ke halaman login operasional.
+  res.redirect(role === "owner" ? "/admin" : "/operasional/login");
 });
 
 // ── Terapkan auth ke SEMUA route di bawah ini ─────────────────────
