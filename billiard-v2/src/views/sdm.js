@@ -71,26 +71,29 @@ const SDM_CSS = [
   ".sdm-bulan-sel:focus{border-color:var(--accent)}",
   ".sdm-btn-add{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-md);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .15s}",
   ".sdm-btn-add:hover{opacity:.85}",
-  ".sdm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}",
-  ".sdm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column}",
-  ".sdm-card-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}",
-  ".sdm-card-nama{font-size:14px;font-weight:600;color:var(--txt)}",
-  ".sdm-card-jabatan{font-size:11px;color:var(--txt3);margin-top:2px}",
-  ".sdm-card-gaji{font-size:11px;color:var(--txt2);margin-top:4px}",
   ".sdm-badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}",
   ".sdm-badge-green{background:#d4edda;color:#1a6b2a}",
   ".sdm-badge-orange{background:#fff3cd;color:#856404}",
   ".sdm-badge-red{background:var(--red-bg);color:var(--red)}",
   ".sdm-badge-blue{background:#d1ecf1;color:#0c5460}",
   ".sdm-badge-purple{background:#e8d5f5;color:#6f42c1}",
-  ".sdm-card-body{padding:12px 16px;flex:1}",
-  ".sdm-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}",
-  ".sdm-stat{background:var(--surface2);border-radius:var(--r-md);padding:8px 10px}",
-  ".sdm-stat-lbl{font-size:10px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}",
-  ".sdm-stat-val{font-size:13px;font-weight:600;color:var(--txt);font-family:var(--ff-mono)}",
-  ".sdm-stat-val.red{color:var(--red)}",
-  ".sdm-stat-val.green{color:var(--green)}",
-  ".sdm-card-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}",
+  // Tabel utama
+  ".sdm-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
+  ".sdm-table{width:100%;border-collapse:collapse}",
+  ".sdm-table th{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;text-align:left;white-space:nowrap}",
+  ".sdm-table th.r{text-align:right}",
+  ".sdm-table th.c{text-align:center}",
+  ".sdm-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;color:var(--txt)}",
+  ".sdm-table tr:last-child td{border-bottom:none}",
+  ".sdm-table tr:hover td{background:var(--surface2)}",
+  ".sdm-table td.r{text-align:right;font-family:var(--ff-mono);font-size:12px}",
+  ".sdm-table td.c{text-align:center}",
+  ".sdm-td-nama{font-weight:600;color:var(--txt)}",
+  ".sdm-td-jabatan{font-size:11px;color:var(--txt3);margin-top:2px}",
+  ".sdm-td-red{color:var(--red);font-family:var(--ff-mono);font-size:12px}",
+  ".sdm-td-green{color:var(--green);font-family:var(--ff-mono);font-size:12px}",
+  ".sdm-td-muted{color:var(--txt3);font-size:12px}",
+  ".sdm-act-group{display:flex;align-items:center;gap:4px;justify-content:flex-end}",
   ".sdm-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;text-decoration:none;transition:opacity .15s;font-family:var(--ff)}",
   ".sdm-btn:hover{opacity:.8}",
   ".sdm-btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}",
@@ -150,37 +153,26 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     trxByK[t.karyawan_id].push(t);
   });
 
-  const cards = karyawan.length > 0
+  const tableBody = karyawan.length > 0
     ? karyawan.map((k) => {
         const trxK = trxByK[k.id] || [];
         const r    = hitungRingkasan(k, trxK);
-        return "<div class=\"sdm-card\">"
-          + "<div class=\"sdm-card-head\">"
-          + "<div>"
-          + "<div class=\"sdm-card-nama\">" + escHtml(k.nama) + "</div>"
-          + "<div class=\"sdm-card-jabatan\">" + escHtml(k.jabatan || "—") + "</div>"
-          + "<div class=\"sdm-card-gaji\">" + rp(k.gaji_pokok) + " / bln</div>"
-          + "</div>"
-          + statusBadge(r.status)
-          + "</div>"
-          + "<div class=\"sdm-card-body\">"
-          + "<div class=\"sdm-stat-row\">"
-          + "<div class=\"sdm-stat\"><div class=\"sdm-stat-lbl\">Kasbon</div>"
-          + "<div class=\"sdm-stat-val" + (r.kasbon > 0 ? " red" : "") + "\">"
-          + (r.kasbon > 0 ? rp(r.kasbon) : "—") + "</div></div>"
-          + "<div class=\"sdm-stat\"><div class=\"sdm-stat-lbl\">Sisa Gaji</div>"
-          + "<div class=\"sdm-stat-val" + (r.sisa > 0 ? " red" : " green") + "\">"
-          + (r.sisa > 0 ? rp(r.sisa) : "Lunas") + "</div></div>"
-          + "</div>"
-          + "</div>"
-          + "<div class=\"sdm-card-foot\">"
+        const nama = escHtml(k.nama);
+        return "<tr>"
+          + "<td><div class=\"sdm-td-nama\">" + nama + "</div>"
+          + "<div class=\"sdm-td-jabatan\">" + escHtml(k.jabatan || "—") + "</div></td>"
+          + "<td class=\"r\">" + rp(k.gaji_pokok) + "</td>"
+          + "<td class=\"r\">" + (r.kasbon > 0 ? "<span class=\"sdm-td-red\">" + rp(r.kasbon) + "</span>" : "<span class=\"sdm-td-muted\">—</span>") + "</td>"
+          + "<td class=\"r\">" + (r.sisa > 0 ? "<span class=\"sdm-td-red\">" + rp(r.sisa) + "</span>" : "<span class=\"sdm-td-green\">✓ Lunas</span>") + "</td>"
+          + "<td class=\"c\">" + statusBadge(r.status) + "</td>"
+          + "<td><div class=\"sdm-act-group\">"
           + "<a href=\"/operasional/sdm/" + k.id + "?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-eye\"></i> Detail</a>"
-          + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + escHtml(k.nama) + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
-          + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + escHtml(k.nama) + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
-          + "</div>"
-          + "</div>";
+          + "<button type=\"button\" class=\"sdm-btn sdm-btn-warn\" onclick=\"openSdmModal('kasbon'," + k.id + ",'" + nama + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-cash\"></i> Kasbon</button>"
+          + "<button type=\"button\" class=\"sdm-btn sdm-btn-primary\" onclick=\"openSdmModal('gaji'," + k.id + ",'" + nama + "'," + k.gaji_pokok + "," + r.sisa + ",'" + bulan + "')\"><i class=\"ti ti-wallet\"></i> Bayar</button>"
+          + "</div></td>"
+          + "</tr>";
       }).join("")
-    : "<div class=\"sdm-empty\"><i class=\"ti ti-users\"></i>Belum ada karyawan. <a href=\"/operasional/sdm/karyawan/tambah\" style=\"color:var(--accent)\">Tambah sekarang</a></div>";
+    : "<tr><td colspan=\"6\" class=\"sdm-empty\"><i class=\"ti ti-users\"></i>Belum ada karyawan. <a href=\"/operasional/sdm/karyawan/tambah\" style=\"color:var(--accent)\">Tambah sekarang</a></td></tr>";
 
   // Bulan selector — 12 bulan terakhir
   const now    = new Date();
@@ -214,8 +206,18 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "") {
     + "<a href=\"/operasional/sdm/karyawan/tambah\" class=\"sdm-btn-add\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</a>"
     + "</div></div>"
 
-    // Cards
-    + "<div class=\"sdm-cards\">" + cards + "</div>"
+    // Tabel karyawan
+    + "<div class=\"sdm-table-wrap\"><table class=\"sdm-table\">"
+    + "<thead><tr>"
+    + "<th>Nama / Jabatan</th>"
+    + "<th class=\"r\">Gaji Pokok</th>"
+    + "<th class=\"r\">Kasbon</th>"
+    + "<th class=\"r\">Sisa Gaji</th>"
+    + "<th class=\"c\">Status</th>"
+    + "<th class=\"r\">Aksi</th>"
+    + "</tr></thead>"
+    + "<tbody>" + tableBody + "</tbody>"
+    + "</table></div>"
     + "</div></div></div></div>"
 
     // Modal transaksi
