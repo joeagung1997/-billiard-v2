@@ -16,18 +16,25 @@ const DEFAULT_MENU_ITEMS = [
 
 const DEFAULT_KATEGORI = [
   // Pemasukan
-  { nama: "Sewa Meja",           jenis: "pemasukan"   },
-  { nama: "Makanan / Minuman",   jenis: "pemasukan"   },
-  { nama: "Turnamen",            jenis: "pemasukan"   },
-  { nama: "Registrasi Member",   jenis: "pemasukan"   },
-  { nama: "Lain-lain",           jenis: "pemasukan"   },
+  { nama: "Sewa Meja",               jenis: "pemasukan"   },
+  { nama: "Makanan / Minuman",       jenis: "pemasukan"   },
+  { nama: "Turnamen",                jenis: "pemasukan"   },
+  { nama: "Registrasi Member",       jenis: "pemasukan"   },
+  { nama: "Lain-lain",               jenis: "pemasukan"   },
   // Pengeluaran
-  { nama: "Listrik / Air",       jenis: "pengeluaran" },
-  { nama: "Gaji / Honor",        jenis: "pengeluaran" },
-  { nama: "Stok / Perlengkapan", jenis: "pengeluaran" },
-  { nama: "Perawatan",           jenis: "pengeluaran" },
-  { nama: "Operasional",         jenis: "pengeluaran" },
-  { nama: "Lain-lain",           jenis: "pengeluaran" },
+  { nama: "Operasional Rutin",       jenis: "pengeluaran" },
+  { nama: "Stok Bahan-bahan",        jenis: "pengeluaran" },
+  { nama: "Perlengkapan Habis Pakai",jenis: "pengeluaran" },
+  { nama: "Khusus Billiard",         jenis: "pengeluaran" },
+  { nama: "Aset & Perbaikan",        jenis: "pengeluaran" },
+  { nama: "SDM",                     jenis: "pengeluaran" },
+  { nama: "Lain-lain",               jenis: "pengeluaran" },
+];
+
+// Kategori pengeluaran lama yang digantikan oleh struktur baru
+const OLD_PENGELUARAN = [
+  "Listrik / Air", "Gaji / Honor", "Stok / Perlengkapan",
+  "Perawatan", "Operasional",
 ];
 
 export const runMigrations = async () => {
@@ -120,6 +127,27 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE kategori ADD COLUMN IF NOT EXISTS urutan INTEGER DEFAULT 0`);
   // Backfill urutan = id untuk row lama yang masih 0
   await query(`UPDATE kategori SET urutan = id WHERE urutan = 0`);
+
+  // ── Restrukturisasi kategori pengeluaran (jalankan sekali) ──
+  // Cek via sentinel: jika 'Operasional Rutin' belum ada, jalankan migrasi.
+  const sentinelCheck = await query(
+    `SELECT 1 FROM kategori WHERE nama = 'Operasional Rutin' AND jenis = 'pengeluaran' LIMIT 1`
+  );
+  if (sentinelCheck.rows.length === 0) {
+    for (const nama of OLD_PENGELUARAN) {
+      await query(`DELETE FROM kategori WHERE nama = $1 AND jenis = 'pengeluaran'`, [nama]);
+    }
+    const NEW_PENGELUARAN = [
+      "Operasional Rutin", "Stok Bahan-bahan", "Perlengkapan Habis Pakai",
+      "Khusus Billiard", "Aset & Perbaikan", "SDM", "Lain-lain",
+    ];
+    for (let i = 0; i < NEW_PENGELUARAN.length; i++) {
+      await query(
+        `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, 'pengeluaran', $2) ON CONFLICT (nama, jenis) DO NOTHING`,
+        [NEW_PENGELUARAN[i], i + 1]
+      );
+    }
+  }
 
   // ── Insert default kategori hanya jika tabel masih kosong ───
   const katCount = await query("SELECT COUNT(*) FROM kategori");
