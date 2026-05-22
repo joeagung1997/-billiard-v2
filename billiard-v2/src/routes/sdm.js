@@ -43,6 +43,8 @@ function verifyToken(token) {
 }
 
 function requireSdmPin(req, res, next) {
+  // Owner tidak perlu PIN SDM — sudah terautentikasi via _frt cookie
+  if (getFinanceRole(req) === "owner") return next();
   if (verifyToken(getCookie(req, SDM_COOKIE))) return next();
   res.redirect("/operasional/sdm/pin?r=" + encodeURIComponent(req.originalUrl));
 }
