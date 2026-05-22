@@ -46,8 +46,8 @@ function docHead(title) {
 
 export function adminLoginPage(showError) {
   const errHtml = showError
-    ? '<div class="error-msg show"><i class="ti ti-alert-circle"></i><span>PIN salah. Silakan coba lagi.</span></div>'
-    : '<div class="error-msg"><i class="ti ti-alert-circle"></i><span>PIN salah. Silakan coba lagi.</span></div>';
+    ? '<div class="error-msg show"><i class="ti ti-alert-circle"></i><span>Username atau PIN salah. Silakan coba lagi.</span></div>'
+    : '<div class="error-msg"><i class="ti ti-alert-circle"></i><span>Username atau PIN salah. Silakan coba lagi.</span></div>';
 
   // ── Login design clean v2 — Fraunces + Geist, light theme, single wrapper card ──
   const css = [
@@ -120,6 +120,16 @@ export function adminLoginPage(showError) {
     '.np-btn.go-btn{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 2px 8px rgba(31,92,40,.2);font-size:17px}',
     '.np-btn.go-btn:hover{background:var(--green-lt);box-shadow:0 4px 14px rgba(31,92,40,.28)}',
 
+    /* Username input */
+    '.uname-wrap{margin-bottom:20px;opacity:0;animation:slideUp .4s ease .22s both}',
+    '.uname-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;display:block}',
+    '.uname-inp{width:100%;padding:11px 14px;border:1.5px solid var(--border-mid);border-radius:10px;font-family:"Geist",sans-serif;font-size:14px;font-weight:400;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s,background .15s;-webkit-appearance:none}',
+    '.uname-inp:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(31,92,40,.1);background:var(--white)}',
+    '.uname-inp::placeholder{color:var(--text-muted);font-weight:300;font-size:13px}',
+    '.uname-inp.err{border-color:#DC2626;box-shadow:0 0 0 3px rgba(220,38,38,.08)}',
+    /* PIN section label */
+    '.pin-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;display:block;opacity:0;animation:slideUp .4s ease .24s both}',
+
     /* Or divider + back btn */
     '.or-row{display:flex;align-items:center;gap:12px;margin:18px 0;opacity:0;animation:slideUp .4s ease .35s both}',
     '.or-row::before,.or-row::after{content:"";flex:1;height:1px;background:var(--border)}',
@@ -142,12 +152,30 @@ export function adminLoginPage(showError) {
     'function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}',
     'function del(){_pin=_pin.slice(0,-1);upd();}',
     'function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById("d"+i);if(d)d.classList.toggle("filled",i<_pin.length);}}',
-    'function go(){if(!_pin.length)return;document.getElementById("pi").value=_pin;document.getElementById("pf").submit();}',
+    'function go(){',
+    '  var un=document.getElementById("unameInp");',
+    '  if(!un||!un.value.trim()){',
+    '    if(un){un.focus();un.classList.add("err");setTimeout(function(){un.classList.remove("err");},600);}',
+    '    return;',
+    '  }',
+    '  if(!_pin.length)return;',
+    '  document.getElementById("pi").value=_pin;',
+    '  document.getElementById("pun").value=un.value.trim();',
+    '  document.getElementById("pf").submit();',
+    '}',
+    // Keyboard: jika fokus di username input, biarkan native. Jika Enter, pindah ke PIN / submit.
     'document.addEventListener("keydown",function(e){',
-    'if(e.key>="0"&&e.key<="9")press(e.key);',
-    'else if(e.key==="Backspace")del();',
-    'else if(e.key==="Enter")go();',
+    '  var un=document.getElementById("unameInp");',
+    '  if(document.activeElement===un){',
+    '    if(e.key==="Enter"){e.preventDefault();if(!_pin.length){document.getElementById("d0")&&document.getElementById("d0").parentElement.focus();}else{go();}}',
+    '    return;',
+    '  }',
+    '  if(e.key>="0"&&e.key<="9")press(e.key);',
+    '  else if(e.key==="Backspace")del();',
+    '  else if(e.key==="Enter")go();',
     '});',
+    // Auto-focus username on load
+    'window.addEventListener("load",function(){var u=document.getElementById("unameInp");if(u)u.focus();});',
   ].join('');
 
   const dots = [0,1,2,3,4,5].map(function(i) { return '<div class="dot" id="d' + i + '"></div>'; }).join('');
@@ -189,14 +217,23 @@ export function adminLoginPage(showError) {
     + '</div>'
     + '</div>'
 
-    // RIGHT FORM PANEL — PIN numpad
+    // RIGHT FORM PANEL — username + PIN numpad
     + '<div class="form-panel">'
     + '<div class="form-eyebrow">Admin Panel</div>'
     + '<h1 class="form-title">Masuk</h1>'
-    + '<p class="form-sub">Masukkan PIN admin Anda untuk akses dashboard.</p>'
+    + '<p class="form-sub">Masukkan username dan PIN Anda untuk akses dashboard.</p>'
 
     + errHtml
 
+    // Username input
+    + '<div class="uname-wrap">'
+    + '<label class="uname-lbl" for="unameInp">Username</label>'
+    + '<input type="text" id="unameInp" class="uname-inp" placeholder="contoh: owner / karyawan1"'
+    + ' autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false">'
+    + '</div>'
+
+    // PIN section
+    + '<span class="pin-lbl">PIN</span>'
     + '<div class="pin-dots">' + dots + '</div>'
 
     + '<div class="numpad">'
@@ -214,13 +251,16 @@ export function adminLoginPage(showError) {
     + '<button type="button" class="np-btn go-btn" onclick="go()" aria-label="Masuk"><i class="ti ti-arrow-right"></i></button>'
     + '</div>'
 
-    + '<form id="pf" action="/admin/login" method="post"><input type="hidden" name="pin" id="pi"></form>'
+    + '<form id="pf" action="/admin/login" method="post">'
+    + '<input type="hidden" name="pin"      id="pi">'
+    + '<input type="hidden" name="username" id="pun">'
+    + '</form>'
 
     + '<div class="or-row"><span>atau</span></div>'
 
     + '<a href="/" class="back-btn"><i class="ti ti-arrow-left" style="font-size:14px"></i> Kembali ke halaman utama</a>'
 
-    + '<p class="form-note">Tap angka atau gunakan keyboard.<br>Tekan Enter atau ➜ untuk masuk.</p>'
+    + '<p class="form-note">Isi username → tap PIN → tekan ➜ untuk masuk.</p>'
     + '</div>'
 
     + '</div>'

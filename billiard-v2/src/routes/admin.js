@@ -23,21 +23,20 @@ const router = Router();
 
 // ── GET /admin — login atau dashboard ────────────────────────
 router.get("/", async (req, res) => {
-  const tk  = req.query.tk ?? "";
-  const pin = verifyToken(tk);
+  const tk   = req.query.tk ?? "";
+  const user = verifyToken(tk);
 
-  if (!pin || pin !== CONFIG.ADMIN_PIN) {
+  if (!user) {
     return res.send(adminLoginPage(!!req.query.err));
   }
 
   try {
     await checkBonusExpiry();
-    const token     = tk || createToken(pin);
     const db        = await readDB();
     const log       = await readLog();
     const transaksi = await readTransaksi();
 
-    res.send(adminDashboard({ db, log, transaksi, token, req }));
+    res.send(adminDashboard({ db, log, transaksi, token: tk, req }));
   } catch (err) {
     console.error("[ADMIN] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -46,9 +45,16 @@ router.get("/", async (req, res) => {
 
 // ── POST /admin/login ─────────────────────────────────────────
 router.post("/login", (req, res) => {
-  const pin = (req.body.pin ?? "").trim();
-  if (pin !== CONFIG.ADMIN_PIN) return res.redirect("/admin?err=1");
-  const token = createToken(pin);
+  const username = (req.body.username ?? "").trim().toLowerCase();
+  const pin      = (req.body.pin      ?? "").trim();
+
+  // Cari user yang cocok username + PIN
+  const found = CONFIG.ADMIN_USERS.find(
+    (u) => u.username.toLowerCase() === username && u.pin === pin
+  );
+  if (!found) return res.redirect("/admin?err=1");
+
+  const token = createToken({ username: found.username, role: found.role });
   res.redirect(`/admin?tk=${token}`);
 });
 

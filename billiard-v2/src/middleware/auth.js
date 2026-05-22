@@ -2,29 +2,21 @@
 // ── Middleware: validasi session token admin ──────────────────
 
 import { verifyToken } from "../utils/session.js";
-import { CONFIG } from "../config.js";
 
+// Cek token ?tk= dari query atau body. Set res.locals.tk, adminUser, adminRole.
 export const requireAdmin = (req, res, next) => {
-  const tk  = req.query.tk ?? req.body.tk ?? "";
-  const pin = verifyToken(tk);
+  const tk   = req.query.tk ?? req.body.tk ?? "";
+  const user = verifyToken(tk);
 
-  if (!pin || pin !== CONFIG.ADMIN_PIN) {
+  if (!user) {
     return res.redirect("/admin");
   }
 
-  res.locals.tk  = tk;
-  res.locals.pin = pin;
+  res.locals.tk        = tk;
+  res.locals.adminUser = user.username;
+  res.locals.adminRole = user.role;
   next();
 };
 
-export const requireFinance = (req, res, next) => {
-  const ftk = req.query.ftk ?? req.body.ftk ?? "";
-  const pin = verifyToken(ftk);
-
-  if (!pin || pin !== CONFIG.FINANCE_PIN) {
-    return res.redirect("/operasional");
-  }
-
-  res.locals.ftk = ftk;
-  next();
-};
+// Alias — sudah tidak dipakai (finance pakai JWT cookie sendiri)
+export const requireFinance = (_req, _res, next) => next();
