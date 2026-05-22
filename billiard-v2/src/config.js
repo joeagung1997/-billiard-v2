@@ -9,12 +9,12 @@ export const CONFIG = Object.freeze({
   NAMA_ARENA: process.env.NAMA_ARENA           ?? "Warpat Jombang",
   BATAS_MAIN: parseInt(process.env.BATAS_MAIN) || 10,
   BATAS_HARI: parseInt(process.env.BATAS_HARI) || 30,
-  ADMIN_PIN:    process.env.ADMIN_PIN            ?? "1234", // legacy, masih dipakai fallback
+  ADMIN_PIN:    process.env.ADMIN_PIN            ?? "1234", // legacy — tidak dipakai lagi untuk auth
   KASIR_PIN:    process.env.KASIR_PIN            ?? "5678",
   // Multi-user admin: tiap user punya username + PIN + role sendiri
   // Override via env: OWNER_ADMIN_PIN, KARYAWAN1_ADMIN_PIN, dst.
   ADMIN_USERS: [
-    { username: "owner",     pin: process.env.OWNER_ADMIN_PIN     ?? process.env.ADMIN_PIN ?? "2024", role: "owner"    },
+    { username: "owner",     pin: process.env.OWNER_ADMIN_PIN     ?? "2024", role: "owner"    },
     { username: "karyawan1", pin: process.env.KARYAWAN1_ADMIN_PIN ?? "1111", role: "karyawan" },
     { username: "karyawan2", pin: process.env.KARYAWAN2_ADMIN_PIN ?? "2222", role: "karyawan" },
     { username: "karyawan3", pin: process.env.KARYAWAN3_ADMIN_PIN ?? "3333", role: "karyawan" },
