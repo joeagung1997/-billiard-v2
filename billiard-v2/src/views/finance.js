@@ -1247,251 +1247,224 @@ export function financeKategoriPage(token, kategoriList = [], showErr = false, s
 
   const makeRows = (list, jenis) => list.length > 0
     ? list.map((k) => {
-        const subs = subByKatId[k.id] || [];
-        const subBadge = subs.length > 0
-          ? "<span class=\"sub-count-badge\">" + subs.length + "</span>"
-          : "";
-        const subRows = subs.map((s) =>
-          "<div class=\"kat-sub-row\">"
-          + "<i class=\"ti ti-corner-down-right sub-arrow\"></i>"
-          + "<span class=\"kat-sub-name\">" + escHtml(s.nama) + "</span>"
-          + "<a href=\"/operasional/kategori/sub/hapus?id=" + s.id + "\" class=\"btn-sub-del\" onclick=\"return confirm('Hapus sub kategori ini?')\"><i class=\"ti ti-x\"></i></a>"
-          + "</div>"
-        ).join("");
+        const subs    = subByKatId[k.id] || [];
+        const hasSub  = subs.length > 0;
+        const subLabel = hasSub ? subs.length + " Sub" : "Sub";
+        const subRows  = subs.length > 0
+          ? subs.map((s) =>
+              "<div class=\"ks-row\">"
+              + "<i class=\"ti ti-corner-down-right ks-arrow\"></i>"
+              + "<span class=\"ks-name\">" + escHtml(s.nama) + "</span>"
+              + "<a href=\"/operasional/kategori/sub/hapus?id=" + s.id + "\" class=\"ks-del\" title=\"Hapus\" onclick=\"return confirm('Hapus sub kategori ini?')\"><i class=\"ti ti-x\"></i></a>"
+              + "</div>"
+            ).join("")
+          : "<div class=\"ks-empty\"><i class=\"ti ti-folder-open\"></i> Belum ada sub kategori</div>";
+
         return "<div class=\"kat-row\" data-id=\"" + k.id + "\">"
-          + "<div class=\"kat-row-head\">"
-          + "<div class=\"kat-name\"><i class=\"ti ti-grip-vertical kat-grip\" title=\"Geser untuk ubah urutan\"></i><div class=\"kat-dot " + jenis + "\"></div>" + escHtml(k.nama) + "</div>"
-          + "<div class=\"kat-act\">"
-          + "<button type=\"button\" class=\"btn-sub-toggle\" onclick=\"toggleSub(" + k.id + ")\" title=\"Sub kategori\">"
-          + "<i class=\"ti ti-chevron-right kat-chev\" id=\"chev-" + k.id + "\"></i>" + subBadge
+          + "<div class=\"kat-row-main\">"
+          + "<i class=\"ti ti-grip-vertical kat-grip\" title=\"Geser untuk ubah urutan\"></i>"
+          + "<div class=\"kat-dot " + jenis + "\"></div>"
+          + "<span class=\"kat-row-name\">" + escHtml(k.nama) + "</span>"
+          + "<button type=\"button\" class=\"kat-sub-btn" + (hasSub ? " active" : "") + "\" id=\"subtoggle-" + k.id + "\" onclick=\"toggleSub(" + k.id + ")\" title=\"Kelola sub kategori\">"
+          + "<i class=\"ti ti-chevron-right\"></i> " + subLabel
           + "</button>"
-          + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"btn-del\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i> Hapus</a>"
-          + "</div></div>"
-          + "<div class=\"kat-sub-wrap\" id=\"sub-" + k.id + "\" style=\"display:none\">"
-          + "<div class=\"kat-sub-list\">" + subRows + "</div>"
-          + "<form action=\"/operasional/kategori/sub/tambah\" method=\"post\" class=\"kat-sub-add-form\">"
+          + "<a href=\"/operasional/kategori/hapus?id=" + k.id + "\" class=\"kat-del\" title=\"Hapus kategori\" onclick=\"return confirm('Hapus kategori ini?')\"><i class=\"ti ti-trash\"></i></a>"
+          + "</div>"
+          + "<div class=\"kat-sub-area\" id=\"sub-" + k.id + "\">"
+          + "<div class=\"ks-list\">" + subRows + "</div>"
+          + "<form action=\"/operasional/kategori/sub/tambah\" method=\"post\" class=\"ks-add-form\">"
           + "<input type=\"hidden\" name=\"kategori_id\" value=\"" + k.id + "\">"
-          + "<input type=\"text\" name=\"nama\" class=\"sub-add-inp\" placeholder=\"Tambah sub kategori...\" required>"
-          + "<button type=\"submit\" class=\"btn-sub-add\"><i class=\"ti ti-plus\"></i></button>"
+          + "<input type=\"text\" name=\"nama\" class=\"ks-inp\" placeholder=\"Tambah sub kategori baru...\" required>"
+          + "<button type=\"submit\" class=\"ks-add-btn\"><i class=\"ti ti-plus\"></i> Tambah</button>"
           + "</form>"
           + "</div>"
           + "</div>";
       }).join("")
-    : "<div class=\"kat-empty\"><i class=\"ti ti-inbox\"></i>Belum ada kategori</div>";
+    : "<div class=\"kat-empty-row\"><i class=\"ti ti-inbox\"></i><div>Belum ada kategori.<br><span>Gunakan form di atas untuk menambah.</span></div></div>";
 
   const extraCss = [
-    ".kat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}",
-    "@media(max-width:860px){.kat-grid{grid-template-columns:1fr}}",
-    ".kat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
-    ".kat-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border)}",
-    ".kat-header-left{display:flex;align-items:center;gap:8px}",
-    ".kat-type-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}",
-    ".kat-type-badge.income{color:var(--accent)}",
-    ".kat-type-badge.expense{color:var(--red)}",
-    ".count-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}",
-    ".count-chip.income{background:var(--green-bg);color:var(--accent)}",
-    ".count-chip.expense{background:var(--red-bg);color:var(--red)}",
-    ".kat-table-head{display:grid;grid-template-columns:1fr 64px;padding:8px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}",
-    ".kat-th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em}",
-    ".kat-th.r{text-align:right}",
-    ".kat-row{display:block;border-bottom:1px solid var(--border);background:var(--surface)}",
+    // Grid
+    ".kat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:20px}",
+    "@media(max-width:820px){.kat-grid{grid-template-columns:1fr}}",
+    // Add card
+    ".kat-add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px}",
+    ".kat-add-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:12px;display:flex;align-items:center;gap:6px}",
+    ".kat-add-label i{color:var(--accent);font-size:14px}",
+    ".kat-type-row{display:flex;gap:6px;margin-bottom:12px}",
+    ".kat-pill{display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;user-select:none}",
+    ".kat-pill.inc{background:var(--green-bg);color:var(--accent);border-color:rgba(45,102,36,.2)}",
+    ".kat-pill.inc.on{background:var(--accent);color:#fff;border-color:var(--accent)}",
+    ".kat-pill.exp{background:var(--red-bg);color:var(--red);border-color:rgba(184,48,48,.2)}",
+    ".kat-pill.exp.on{background:var(--red);color:#fff;border-color:var(--red)}",
+    ".kat-form-row{display:flex;gap:8px}",
+    ".kat-inp-wrap{flex:1;position:relative}",
+    ".kat-inp-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px;pointer-events:none}",
+    ".kat-name-inp{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}",
+    ".kat-name-inp:focus{border-color:var(--accent);background:var(--surface)}",
+    ".kat-name-inp::placeholder{color:var(--txt3)}",
+    // Column card
+    ".kat-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
+    ".kat-col-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);position:relative}",
+    ".kat-col-head::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}",
+    ".kat-col.inc .kat-col-head::before{background:var(--green)}",
+    ".kat-col.exp .kat-col-head::before{background:var(--red)}",
+    ".kat-col-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}",
+    ".kat-col.inc .kat-col-title{color:var(--accent)}",
+    ".kat-col.exp .kat-col-title{color:var(--red)}",
+    ".kat-col-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;line-height:1.5}",
+    ".kat-col.inc .kat-col-badge{background:var(--green-bg);color:var(--accent)}",
+    ".kat-col.exp .kat-col-badge{background:var(--red-bg);color:var(--red)}",
+    ".kat-drag-tip{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)}",
+    // Category rows
+    ".kat-row{border-bottom:1px solid var(--border);background:var(--surface)}",
     ".kat-row:last-child{border-bottom:none}",
-    ".kat-row.sortable-ghost{opacity:.35;background:var(--green-bg)}",
+    ".kat-row.sortable-ghost{opacity:.3;background:var(--surface2)}",
     ".kat-row.sortable-chosen{background:var(--surface2)}",
-    ".kat-row.sortable-drag{box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid var(--border2);border-radius:8px;cursor:grabbing}",
-    ".kat-row-head{display:grid;grid-template-columns:1fr auto;align-items:center;padding:11px 18px;gap:8px;transition:background .1s}",
-    ".kat-row-head:hover{background:var(--surface2)}",
-    ".kat-name{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt)}",
-    ".kat-grip{font-size:16px;color:var(--txt3);cursor:grab;opacity:.55;transition:opacity .15s,color .15s;flex-shrink:0;margin-right:-2px}",
-    ".kat-row-head:hover .kat-grip{opacity:1;color:var(--txt2)}",
+    ".kat-row.sortable-drag{box-shadow:0 4px 16px rgba(0,0,0,.1);border-radius:8px;border:1px solid var(--border2)}",
+    ".kat-row-main{display:flex;align-items:center;gap:8px;padding:10px 14px;transition:background .1s}",
+    ".kat-row-main:hover{background:var(--surface2)}",
+    ".kat-grip{font-size:18px;color:var(--border2);cursor:grab;flex-shrink:0;transition:color .15s;line-height:1}",
+    ".kat-row-main:hover .kat-grip{color:var(--txt3)}",
     ".kat-grip:active{cursor:grabbing}",
-    ".btn-sub-toggle{display:inline-flex;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;color:var(--txt3);transition:background .1s,color .1s}",
-    ".btn-sub-toggle:hover{background:var(--surface2);color:var(--txt)}",
-    ".kat-chev{font-size:13px;transition:transform .15s}",
-    ".kat-chev.open{transform:rotate(90deg)}",
-    ".sub-count-badge{font-size:10px;font-weight:600;background:var(--accent);color:#fff;padding:1px 6px;border-radius:10px;line-height:1.5}",
-    ".kat-sub-wrap{background:var(--surface2);border-top:1px dashed var(--border)}",
-    ".kat-sub-list{padding:4px 18px 2px 40px}",
-    ".kat-sub-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt2)}",
-    ".kat-sub-row:last-child{border-bottom:none}",
-    ".sub-arrow{font-size:12px;color:var(--txt3);flex-shrink:0}",
-    ".kat-sub-name{flex:1}",
-    ".btn-sub-del{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;text-decoration:none;flex-shrink:0;transition:background .1s,color .1s}",
-    ".btn-sub-del:hover{background:var(--red-bg);color:var(--red)}",
-    ".kat-sub-add-form{display:flex;gap:6px;padding:8px 18px 8px 40px}",
-    ".sub-add-inp{flex:1;padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--ff);color:var(--txt);background:var(--surface);outline:none}",
-    ".sub-add-inp:focus{border-color:var(--accent)}",
-    ".btn-sub-add{padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;transition:opacity .15s}",
-    ".btn-sub-add:hover{opacity:.85}",
-    ".kat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}",
+    ".kat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}",
     ".kat-dot.income{background:var(--green)}",
     ".kat-dot.expense{background:var(--red)}",
-    ".kat-act{display:flex;align-items:center;justify-content:flex-end;gap:4px}",
-    ".btn-del{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--ff);cursor:pointer;border:1px solid rgba(184,48,48,.25);background:var(--red-bg);color:var(--red);text-decoration:none;transition:opacity .15s}",
-    ".btn-del:hover{opacity:.75}",
-    ".btn-del i{font-size:12px}",
-    ".kat-empty{padding:24px 18px;text-align:center;font-size:12px;color:var(--txt3)}",
-    ".kat-empty i{font-size:24px;display:block;margin-bottom:6px;opacity:.35}",
-    ".add-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:24px}",
-    ".add-card-title{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px;display:flex;align-items:center;gap:6px}",
-    ".add-card-title i{font-size:14px;color:var(--accent)}",
-    ".type-pills{display:flex;gap:6px;margin-bottom:14px}",
-    ".type-pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s}",
-    ".type-pill.income{background:var(--green-bg);color:var(--accent);border-color:rgba(45,102,36,.2)}",
-    ".type-pill.income.active{background:var(--accent);color:#fff;border-color:var(--accent)}",
-    ".type-pill.expense{background:var(--red-bg);color:var(--red);border-color:rgba(184,48,48,.2)}",
-    ".type-pill.expense.active{background:var(--red);color:#fff;border-color:var(--red)}",
-    ".add-form{display:flex;gap:10px;align-items:stretch}",
-    ".inp-wrap{position:relative;flex:1}",
-    ".inp-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}",
-    ".cat-input{width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;height:42px}",
-    ".cat-input:focus{border-color:var(--accent);background:var(--surface)}",
-    ".cat-input::placeholder{color:var(--txt3)}",
-    ".stats-mini{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}",
-    ".stat-mini{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}",
-    ".stat-mini::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:var(--r-lg) var(--r-lg) 0 0}",
-    ".stat-mini.income::before{background:var(--green)}",
-    ".stat-mini.expense::before{background:var(--red)}",
-    ".sm-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}",
-    ".sm-icon.income{background:var(--green-bg);color:var(--accent)}",
-    ".sm-icon.expense{background:var(--red-bg);color:var(--red)}",
-    ".sm-label{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}",
-    ".sm-count{font-size:22px;font-weight:600;color:var(--txt);font-family:var(--ff-mono)}",
-    ".kat-hint{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px dashed var(--border2);border-radius:var(--r-md);padding:9px 14px;font-size:12px;color:var(--txt2);margin-bottom:14px}",
-    ".kat-hint i.ti-info-circle{color:var(--accent);font-size:15px}",
-    ".kat-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
+    ".kat-row-name{flex:1;font-size:13px;font-weight:500;color:var(--txt)}",
+    ".kat-sub-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--txt3);transition:all .15s;white-space:nowrap;flex-shrink:0}",
+    ".kat-sub-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
+    ".kat-sub-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}",
+    ".kat-sub-btn.active:hover{opacity:.85}",
+    ".kat-sub-btn i{font-size:12px;transition:transform .18s}",
+    ".kat-sub-btn.expanded i{transform:rotate(90deg)}",
+    ".kat-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;color:var(--txt3);text-decoration:none;flex-shrink:0;transition:all .15s;font-size:14px}",
+    ".kat-del:hover{background:var(--red-bg);color:var(--red)}",
+    // Sub-category area
+    ".kat-sub-area{display:none;border-top:1px dashed var(--border);background:var(--surface2)}",
+    ".kat-sub-area.open{display:block}",
+    ".ks-list{padding:6px 14px 6px 44px}",
+    ".ks-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt2)}",
+    ".ks-row:last-child{border-bottom:none}",
+    ".ks-arrow{font-size:12px;color:var(--txt3);flex-shrink:0}",
+    ".ks-name{flex:1}",
+    ".ks-del{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;font-size:12px;color:var(--txt3);text-decoration:none;flex-shrink:0;transition:all .15s}",
+    ".ks-del:hover{background:var(--red-bg);color:var(--red)}",
+    ".ks-empty{padding:10px 0 4px;font-size:11px;color:var(--txt3);font-style:italic;display:flex;align-items:center;gap:5px}",
+    ".ks-add-form{display:flex;gap:6px;padding:8px 14px 10px 44px;border-top:1px solid var(--border)}",
+    ".ks-inp{flex:1;padding:7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--ff);color:var(--txt);background:var(--surface);outline:none}",
+    ".ks-inp:focus{border-color:var(--accent)}",
+    ".ks-add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--ff);cursor:pointer;transition:opacity .15s;white-space:nowrap}",
+    ".ks-add-btn:hover{opacity:.85}",
+    // Empty state
+    ".kat-empty-row{display:flex;align-items:center;gap:14px;padding:24px 18px;color:var(--txt3)}",
+    ".kat-empty-row i{font-size:30px;opacity:.25;flex-shrink:0}",
+    ".kat-empty-row div{font-size:12px;line-height:1.7;color:var(--txt3)}",
+    // Toast
+    ".kat-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--surface);border:1px solid var(--border);color:var(--txt);padding:10px 18px;border-radius:24px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.1);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
     ".kat-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
-    ".kat-toast.err{background:var(--red)}",
+    ".kat-toast.ok{background:var(--accent);color:#fff;border-color:var(--accent)}",
+    ".kat-toast.err{background:var(--red);color:#fff;border-color:var(--red)}",
   ].join("");
 
   return docHeadV4("Kelola Kategori")
     + "<style>" + extraCss + "</style>"
     + "</head><body>"
-
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "kategori")
     + "<div class=\"main-wrap\">"
-
-    // Mobile topbar
     + "<header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
-    + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-circle-number-8\"></i></div>"
-    + "<div><div class=\"topbar-name\">Kelola Kategori</div>"
-    + "<div class=\"topbar-label\">Keuangan</div></div>"
-    + "</div>"
-    + "</header>"
-
+    + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-category\"></i></div>"
+    + "<div><div class=\"topbar-name\">Kelola Kategori</div><div class=\"topbar-label\">Keuangan</div></div>"
+    + "</div></header>"
     + "<div class=\"page\">"
 
-    // Breadcrumb
-    + "<div style=\"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3);margin-bottom:18px\">"
-    + "<a href=\"/operasional\" style=\"color:var(--accent);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px\">"
-    + "<i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
-    + "</div>"
+    + "<a href=\"/operasional\" style=\"display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:500;margin-bottom:16px\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
 
-    // Page title
-    + "<div class=\"dash-topbar\">"
+    + "<div class=\"dash-topbar\" style=\"margin-bottom:20px\">"
     + "<div><div class=\"page-title\">Kelola Kategori</div>"
-    + "<div class=\"page-sub\">Tambah atau hapus kategori transaksi keuangan</div></div>"
+    + "<div class=\"page-sub\">Atur kategori &amp; sub kategori untuk transaksi keuangan</div></div>"
     + "</div>"
 
     + errHtml
 
-    // Stats mini
-    + "<div class=\"stats-mini\">"
-    + "<div class=\"stat-mini income\">"
-    + "<div class=\"sm-icon income\"><i class=\"ti ti-arrow-up-circle\"></i></div>"
-    + "<div><div class=\"sm-label\">Kategori Pemasukan</div>"
-    + "<div class=\"sm-count\">" + inList.length + "</div></div></div>"
-    + "<div class=\"stat-mini expense\">"
-    + "<div class=\"sm-icon expense\"><i class=\"ti ti-arrow-down-circle\"></i></div>"
-    + "<div><div class=\"sm-label\">Kategori Pengeluaran</div>"
-    + "<div class=\"sm-count\">" + outList.length + "</div></div></div>"
-    + "</div>"
-
-    // Add card
-    + "<div class=\"add-card\">"
-    + "<div class=\"add-card-title\"><i class=\"ti ti-circle-plus\"></i> Tambah Kategori Baru</div>"
-    + "<div class=\"type-pills\">"
-    + "<div class=\"type-pill income active\" id=\"pill-income\" onclick=\"selectType('income')\"><i class=\"ti ti-arrow-up\" style=\"font-size:12px\"></i> Pemasukan</div>"
-    + "<div class=\"type-pill expense\" id=\"pill-expense\" onclick=\"selectType('expense')\"><i class=\"ti ti-arrow-down\" style=\"font-size:12px\"></i> Pengeluaran</div>"
+    // ── Tambah form ─────────────────────────────────────────────
+    + "<div class=\"kat-add-card\">"
+    + "<div class=\"kat-add-label\"><i class=\"ti ti-circle-plus\"></i> Tambah Kategori Baru</div>"
+    + "<div class=\"kat-type-row\">"
+    + "<div class=\"kat-pill inc on\" id=\"pill-inc\" onclick=\"selectType('income')\"><i class=\"ti ti-arrow-up\" style=\"font-size:11px\"></i> Pemasukan</div>"
+    + "<div class=\"kat-pill exp\" id=\"pill-exp\" onclick=\"selectType('expense')\"><i class=\"ti ti-arrow-down\" style=\"font-size:11px\"></i> Pengeluaran</div>"
     + "</div>"
     + "<form action=\"/operasional/kategori/tambah\" method=\"post\">"
-    + ""
     + "<input type=\"hidden\" name=\"jenis\" id=\"jenisInput\" value=\"pemasukan\">"
-    + "<div class=\"add-form\">"
-    + "<div class=\"inp-wrap\"><i class=\"ti ti-tag\"></i>"
-    + "<input class=\"cat-input\" name=\"nama\" type=\"text\" id=\"catInput\" placeholder=\"Nama kategori pemasukan...\" required></div>"
-    + "<button type=\"submit\" class=\"btn-primary\" style=\"height:42px;white-space:nowrap\"><i class=\"ti ti-plus\" style=\"font-size:16px\"></i> Tambah</button>"
-    + "</div></form></div>"
-
-    // Drag hint
-    + "<div class=\"kat-hint\"><i class=\"ti ti-info-circle\"></i>"
-    + "Geser ikon <i class=\"ti ti-grip-vertical\" style=\"font-size:13px;vertical-align:-2px\"></i> untuk mengubah urutan kategori. Perubahan tersimpan otomatis."
+    + "<div class=\"kat-form-row\">"
+    + "<div class=\"kat-inp-wrap\"><i class=\"ti ti-tag\"></i>"
+    + "<input class=\"kat-name-inp\" name=\"nama\" id=\"catInput\" type=\"text\" placeholder=\"Nama kategori pemasukan...\" required></div>"
+    + "<button type=\"submit\" class=\"btn-primary\" style=\"height:41px;white-space:nowrap;padding:0 18px\"><i class=\"ti ti-plus\"></i> Tambah</button>"
     + "</div>"
+    + "</form></div>"
 
-    // Category grid
+    // ── Grid dua kolom ──────────────────────────────────────────
     + "<div class=\"kat-grid\">"
 
     // Pemasukan
-    + "<div class=\"kat-card\">"
-    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
-    + "<div class=\"kat-type-badge income\"><i class=\"ti ti-arrow-up\"></i> Pemasukan</div>"
-    + "<div class=\"count-chip income\">" + inList.length + "</div>"
-    + "</div></div>"
-    + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
+    + "<div class=\"kat-col inc\">"
+    + "<div class=\"kat-col-head\">"
+    + "<div class=\"kat-col-title\"><i class=\"ti ti-arrow-up\"></i> Pemasukan <span class=\"kat-col-badge\">" + inList.length + "</span></div>"
+    + "<div class=\"kat-drag-tip\"><i class=\"ti ti-grip-vertical\"></i> Geser = urutan</div>"
+    + "</div>"
     + "<div class=\"kat-list\" data-jenis=\"pemasukan\">" + makeRows(inList, "income") + "</div>"
     + "</div>"
 
     // Pengeluaran
-    + "<div class=\"kat-card\">"
-    + "<div class=\"kat-card-header\"><div class=\"kat-header-left\">"
-    + "<div class=\"kat-type-badge expense\"><i class=\"ti ti-arrow-down\"></i> Pengeluaran</div>"
-    + "<div class=\"count-chip expense\">" + outList.length + "</div>"
-    + "</div></div>"
-    + "<div class=\"kat-table-head\"><div class=\"kat-th\">Nama Kategori</div><div class=\"kat-th r\">Aksi</div></div>"
+    + "<div class=\"kat-col exp\">"
+    + "<div class=\"kat-col-head\">"
+    + "<div class=\"kat-col-title\"><i class=\"ti ti-arrow-down\"></i> Pengeluaran <span class=\"kat-col-badge\">" + outList.length + "</span></div>"
+    + "<div class=\"kat-drag-tip\"><i class=\"ti ti-grip-vertical\"></i> Geser = urutan</div>"
+    + "</div>"
     + "<div class=\"kat-list\" data-jenis=\"pengeluaran\">" + makeRows(outList, "expense") + "</div>"
     + "</div>"
 
     + "</div>"
-    + "</div>"
-    + "</div>"
-    + "</div>"
+    + "</div></div></div>"
 
-    // Toast container untuk feedback save
-    + "<div class=\"kat-toast\" id=\"katToast\"><i class=\"ti ti-check\"></i><span id=\"katToastMsg\">Urutan disimpan</span></div>"
+    + "<div class=\"kat-toast\" id=\"katToast\"><span id=\"katToastMsg\"></span></div>"
 
     + "<script src=\"https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js\"><\/script>"
     + "<script>"
-    + "function selectType(type){"
-    + "document.getElementById('jenisInput').value=type==='income'?'pemasukan':'pengeluaran';"
-    + "document.getElementById('pill-income').className='type-pill income'+(type==='income'?' active':'');"
-    + "document.getElementById('pill-expense').className='type-pill expense'+(type==='expense'?' active':'');"
-    + "document.getElementById('catInput').placeholder=type==='income'?'Nama kategori pemasukan...':'Nama kategori pengeluaran...';"
-    + "document.getElementById('catInput').focus();}"
+    + "function selectType(t){"
+    + "var isInc=t==='income';"
+    + "document.getElementById('jenisInput').value=isInc?'pemasukan':'pengeluaran';"
+    + "document.getElementById('pill-inc').className='kat-pill inc'+(isInc?' on':'');"
+    + "document.getElementById('pill-exp').className='kat-pill exp'+(!isInc?' on':'');"
+    + "var inp=document.getElementById('catInput');"
+    + "inp.placeholder=isInc?'Nama kategori pemasukan...':'Nama kategori pengeluaran...';"
+    + "inp.focus();}"
+    + "function toggleSub(id){"
+    + "var area=document.getElementById('sub-'+id);"
+    + "var btn=document.getElementById('subtoggle-'+id);"
+    + "if(!area)return;"
+    + "var open=area.classList.contains('open');"
+    + "area.classList.toggle('open',!open);"
+    + "if(btn)btn.classList.toggle('expanded',!open);}"
+    + "function showKatToast(msg,type){"
+    + "var t=document.getElementById('katToast'),m=document.getElementById('katToastMsg');"
+    + "if(!t||!m)return;"
+    + "m.textContent=msg;"
+    + "t.className='kat-toast show '+(type||'ok');"
+    + "clearTimeout(window._ktt);"
+    + "window._ktt=setTimeout(function(){t.className='kat-toast';},2000);}"
+    + "function saveUrutan(listEl){"
+    + "var ids=Array.from(listEl.querySelectorAll('.kat-row')).map(function(r){return parseInt(r.getAttribute('data-id'))||0;}).filter(Boolean);"
+    + "if(!ids.length)return;"
+    + "fetch('/operasional/kategori/urutan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})})"
+    + ".then(function(r){return r.ok?r.json():Promise.reject();})"
+    + ".then(function(d){showKatToast(d&&d.ok?'Urutan tersimpan ✓':'Gagal simpan',d&&d.ok?'ok':'err');})"
+    + ".catch(function(){showKatToast('Gagal simpan urutan','err');});}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
-    + "function toggleSub(id){var w=document.getElementById('sub-'+id);var c=document.getElementById('chev-'+id);if(!w)return;var open=w.style.display!=='none';w.style.display=open?'none':'';if(c)c.className='ti ti-chevron-right kat-chev'+(open?'':' open');}"
-    + "function showKatToast(msg,isErr){var t=document.getElementById('katToast');var m=document.getElementById('katToastMsg');if(!t||!m)return;m.textContent=msg;t.className='kat-toast show'+(isErr?' err':'');clearTimeout(window._katToastT);window._katToastT=setTimeout(function(){t.className='kat-toast'+(isErr?' err':'');},1800);}"
-    + "function saveUrutan(listEl){"
-    + "  var ids=Array.from(listEl.querySelectorAll('.kat-row')).map(function(r){return parseInt(r.getAttribute('data-id'))||0;}).filter(Boolean);"
-    + "  if(!ids.length)return;"
-    + "  fetch('/operasional/kategori/urutan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})})"
-    + "    .then(function(r){return r.ok?r.json():Promise.reject(r);})"
-    + "    .then(function(d){if(d&&d.ok)showKatToast('Urutan disimpan',false);else showKatToast('Gagal simpan urutan',true);})"
-    + "    .catch(function(){showKatToast('Gagal simpan urutan',true);});"
-    + "}"
     + "document.querySelectorAll('.kat-list').forEach(function(el){"
-    + "  if(typeof Sortable==='undefined')return;"
-    + "  Sortable.create(el,{"
-    + "    animation:160,"
-    + "    handle:'.kat-grip',"
-    + "    ghostClass:'sortable-ghost',"
-    + "    chosenClass:'sortable-chosen',"
-    + "    dragClass:'sortable-drag',"
-    + "    onEnd:function(evt){if(evt.oldIndex!==evt.newIndex)saveUrutan(el);}"
-    + "  });"
-    + "});"
+    + "if(typeof Sortable==='undefined')return;"
+    + "Sortable.create(el,{animation:160,handle:'.kat-grip',ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',onEnd:function(e){if(e.oldIndex!==e.newIndex)saveUrutan(el);}});});"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";
