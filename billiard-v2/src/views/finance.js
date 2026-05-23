@@ -976,11 +976,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-bayar-val.qris{color:var(--accent)}",
     ".fin-bayar-sub{font-size:11px;color:var(--txt3);margin-top:3px}",
     // ── Mobile FAB ──────────────────────────────────────────────
-    ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;top:auto;left:auto;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:top .35s cubic-bezier(.4,.0,.2,1),left .35s cubic-bezier(.4,.0,.2,1),right .35s cubic-bezier(.4,.0,.2,1),bottom .35s cubic-bezier(.4,.0,.2,1),transform .35s cubic-bezier(.4,.0,.2,1),opacity .15s}",
+    ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;top:auto;left:auto;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:opacity .25s ease,transform .25s ease}",
     ".fin-fab:hover{opacity:.9}",
-    // Saat user scroll ke bottom (pagination terlihat) — FAB pindah ke kanan, ¾ ke bawah
-    ".fin-fab.centered{top:68%!important;right:16px!important;left:auto!important;bottom:auto!important;transform:translateY(-50%)!important;box-shadow:0 8px 28px rgba(38,96,164,.5)}",
-    ".fin-fab.centered:hover{transform:translateY(-50%) scale(1.04)!important}",
+    // Saat user scroll ke bottom (pagination terlihat) — FAB fade-out total
+    ".fin-fab.fab-hidden{opacity:0!important;transform:translateY(20px) scale(.9)!important;pointer-events:none!important}",
     ".fin-fab i{font-size:18px}",
     "@media(max-width:768px){.fin-fab{display:flex!important}.topbar-actions .btn-primary{display:none!important}}",
     // ── Search input polish ─────────────────────────────────────
@@ -1825,15 +1824,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "pgEl.innerHTML=html;}"
     + "function goTblPage(n){tblState.page=Math.max(1,n);renderTbl();}"
     + "window.addEventListener('DOMContentLoaded',function(){renderTbl();});"
-    // FAB auto-pindah ke tengah saat footer pagination terlihat (mobile)
+    // FAB auto-hide saat footer pagination terlihat (mobile) — biar tdk nutup info+pagination
     + "window.addEventListener('DOMContentLoaded',function(){"
     +   "if(!window.IntersectionObserver)return;"
     +   "var fab=document.querySelector('.fin-fab');"
     +   "var trigger=document.querySelector('.fin-tbl-footer');"
     +   "if(!fab||!trigger)return;"
     +   "var obs=new IntersectionObserver(function(entries){"
-    +     "entries.forEach(function(e){fab.classList.toggle('centered',e.isIntersecting);});"
-    +   "},{threshold:0.15});"
+    +     "entries.forEach(function(e){fab.classList.toggle('fab-hidden',e.isIntersecting);});"
+    +   "},{threshold:0.1});"
     +   "obs.observe(trigger);"
     + "});"
     + "function openTrxModal(){"
