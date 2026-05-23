@@ -984,7 +984,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-search-wrap{border-radius:9px!important;background:#f8faf7}",
     ".fin-search-inp{background:transparent!important}",
     // ── Filter chips + pagination di tabel transaksi ────────────
-    ".fin-tbl-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}",
+    ".fin-tbl-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto;min-width:0}",
     ".fin-tbl-chip{padding:6px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:18px;font-size:11.5px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:var(--ff);white-space:nowrap;transition:all .15s}",
     ".fin-tbl-chip:hover{background:var(--surface);color:var(--txt)}",
     ".fin-tbl-chip.active{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:#2563eb;color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.25)}",
@@ -996,7 +996,18 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-pg-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}",
     ".fin-pg-btn:disabled{opacity:.4;cursor:not-allowed}",
     ".fin-pg-info{font-size:11px;color:var(--txt3);padding:0 8px;font-family:var(--ff-mono)}",
-    "@media(max-width:640px){.fin-tbl-chips{width:100%;margin-left:0;margin-top:8px}.fin-pagination{margin:8px auto 0}}",
+    // Mobile: toolbar wrap, search & chips stack vertikal (search width 100% bukan flex:0)
+    "@media(max-width:640px){"
+    +   ".fin-tbl-toolbar{flex-wrap:wrap!important;padding:12px 14px!important}"
+    +   ".fin-search-wrap{flex:1 1 100%!important;min-width:0!important;width:100%!important}"
+    +   ".fin-search-inp{font-size:16px!important;padding:10px 12px 10px 36px!important}"
+    +   ".fin-tbl-chips{width:100%;margin-left:0;margin-top:0;justify-content:flex-start}"
+    +   ".fin-tbl-chip{padding:7px 14px;font-size:12px}"
+    +   ".fin-pagination{margin:8px auto 0;width:100%;justify-content:center}"
+    +   // Meta sub-text di row tabel: lebih rapi
+    +   ".fr-desc-meta{display:flex;flex-wrap:wrap;gap:4px 8px;line-height:1.6;font-size:10.5px}"
+    +   ".fin-row,.fin-tbl-head{padding:12px 14px!important}"
+    + "}",
     // ── Chart cards redesign ─────────────────────────────────────
     ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
     ".fin-chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 8px;gap:12px;flex-wrap:wrap}",
