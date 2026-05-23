@@ -2610,10 +2610,20 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
 }
 
 // ── /operasional/analisis — halaman detail analisis target ────
-export function financeAnalisisPage({ role = "owner", displayName = "", analisis, trend30 = [] }) {
+export function financeAnalisisPage({ role = "owner", displayName = "", analisis, trend30 = [], msg = "" }) {
   const an = analisis;
   const bd = an.costBreakdown;
   const sim = an.simulasi;
+
+  const toastMsg  = msg === "added"   ? "Biaya berhasil ditambah"
+    : msg === "updated" ? "Biaya berhasil diupdate"
+    : msg === "deleted" ? "Biaya berhasil dihapus"
+    : msg === "err"     ? "Gagal: pastikan nama & nominal terisi"
+    : "";
+  const toastType = msg === "err" ? "err" : "ok";
+  const toastHtml = toastMsg
+    ? "<div class=\"ap-toast " + toastType + " show\" id=\"apToast\">" + escHtml(toastMsg) + "</div>"
+    : "";
 
   // 3 mini-card status (full version)
   const scopeCard = (lbl, sub, data) => {
@@ -2656,12 +2666,38 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
       + "</div>";
   }).join("");
 
-  // Breakdown items
-  const breakdownItems = bd.monthly.map((x) =>
-    "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + "</span><span>" + rp(x.amount) + "</span></div>"
-  ).join("") + bd.daily.map((x) =>
-    "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + " (" + rp(x.amount) + "/hr × 30)</span><span>" + rp(x.perBulan) + "</span></div>"
-  ).join("") + "<div class=\"an-bd-item\"><span>Makan (26 reg @" + rp(bd.meal.regular) + " + 4 weekend @" + rp(bd.meal.weekend) + ")</span><span>" + rp(bd.meal.perBulan) + "</span></div>";
+  // ── Breakdown rows (CRUD) ──
+  const frekLabel = (f) =>
+    f === "harian"   ? "Harian"
+    : f === "mingguan" ? "Mingguan"
+    : "Bulanan";
+  const frekHint  = (f, n) =>
+    f === "harian"   ? "(× 30 hari)"
+    : f === "mingguan" ? "(× 4.3 minggu)"
+    : "";
+
+  const biayaRows = bd.items.length === 0
+    ? "<div class=\"ap-empty\"><i class=\"ti ti-database-off\"></i> Belum ada biaya tercatat. Klik <strong>+ Tambah Biaya</strong> untuk mulai.</div>"
+    : "<div class=\"ap-biaya-list\">" + bd.items.map((x) => {
+      const dataAttrs = " data-id=\"" + x.id + "\" data-nama=\"" + escHtml(x.nama)
+        + "\" data-frek=\"" + x.frekuensi + "\" data-nominal=\"" + x.nominal + "\"";
+      return "<div class=\"ap-biaya-row\">"
+        + "<div class=\"ap-biaya-meta\">"
+        +   "<div class=\"ap-biaya-nama\">" + escHtml(x.nama) + "</div>"
+        +   "<div class=\"ap-biaya-sub\">"
+        +     "<span class=\"ap-biaya-frek\">" + frekLabel(x.frekuensi) + "</span>"
+        +     " · " + rp(x.nominal) + "/" + (x.frekuensi === "harian" ? "hari" : x.frekuensi === "mingguan" ? "minggu" : "bulan")
+        +     " <span style=\"color:var(--txt3)\">" + frekHint(x.frekuensi) + "</span>"
+        +   "</div>"
+        + "</div>"
+        + "<div class=\"ap-biaya-total\">" + rp(x.perBulan) + "<span class=\"ap-biaya-pct\">" + Math.round(x.share * 100) + "%</span></div>"
+        + "<div class=\"ap-biaya-act\">"
+        +   "<button class=\"ap-act-btn\" type=\"button\"" + dataAttrs + " onclick=\"openEditBiaya(this)\" title=\"Edit\"><i class=\"ti ti-edit\"></i></button>"
+        +   "<a class=\"ap-act-btn danger\" href=\"/operasional/analisis/biaya/hapus?id=" + x.id + "\""
+        +     " onclick=\"return confirm('Hapus biaya &quot;" + escHtml(x.nama).replace(/'/g, "\\'") + "&quot;?')\" title=\"Hapus\"><i class=\"ti ti-trash\"></i></a>"
+        + "</div>"
+        + "</div>";
+    }).join("") + "</div>";
 
   const pageCss = [
     ".ap-page{max-width:1100px;margin:0 auto;padding-bottom:60px}",
@@ -2717,6 +2753,51 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".an-sim-cell-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}",
     ".an-sim-cell-val{font-size:14px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
     ".an-sim-rec{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}",
+    // CRUD biaya
+    ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
+    ".ap-add-btn:hover{opacity:.85}",
+    ".ap-biaya-list{display:flex;flex-direction:column;gap:6px}",
+    ".ap-biaya-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:12px 14px;background:var(--surface2);border-radius:10px;transition:background .15s}",
+    ".ap-biaya-row:hover{background:var(--surface)}",
+    ".ap-biaya-nama{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}",
+    ".ap-biaya-sub{font-size:11px;color:var(--txt2)}",
+    ".ap-biaya-frek{display:inline-block;font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 7px;border-radius:8px;background:rgba(59,130,246,.12);color:#3b82f6;letter-spacing:.06em}",
+    ".ap-biaya-total{font-family:var(--ff-mono);font-weight:700;color:var(--txt);font-size:13px;text-align:right;display:flex;flex-direction:column;gap:2px;align-items:flex-end}",
+    ".ap-biaya-pct{font-size:10px;color:var(--txt3);font-weight:500}",
+    ".ap-biaya-act{display:flex;gap:4px}",
+    ".ap-act-btn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);border-radius:7px;color:var(--txt2);cursor:pointer;text-decoration:none;font-size:13px;transition:all .15s}",
+    ".ap-act-btn:hover{border-color:var(--accent);color:var(--accent)}",
+    ".ap-act-btn.danger:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.05)}",
+    ".ap-empty{text-align:center;padding:30px 20px;color:var(--txt3);font-size:13px;background:var(--surface2);border-radius:10px}",
+    ".ap-empty i{font-size:32px;display:block;margin-bottom:8px;opacity:.5}",
+    "@media(max-width:540px){.ap-biaya-row{grid-template-columns:1fr auto}.ap-biaya-act{grid-column:1/-1;justify-content:flex-end}}",
+    // Modal
+    ".ap-modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px}",
+    ".ap-modal-overlay.open{display:flex}",
+    ".ap-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}",
+    ".ap-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}",
+    ".ap-modal-title{font-size:15px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:7px}",
+    ".ap-modal-close{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;padding:4px}",
+    "#biayaForm{padding:18px 22px 22px}",
+    ".ap-fmg{margin-bottom:14px}",
+    ".ap-lbl{display:block;font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}",
+    ".ap-inp{width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;font-size:13px;color:var(--txt);font-family:var(--ff);outline:none;box-sizing:border-box}",
+    ".ap-inp:focus{border-color:var(--accent)}",
+    ".ap-tog{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px}",
+    ".ap-tog-btn{flex:1;padding:8px;background:transparent;border:none;border-radius:7px;font-size:12px;font-weight:600;color:var(--txt3);cursor:pointer;font-family:var(--ff);transition:all .15s}",
+    ".ap-tog-btn.sel{background:var(--accent);color:#fff}",
+    ".ap-hint{font-size:10.5px;color:var(--txt3);margin-top:5px;font-style:italic}",
+    ".ap-inp-pfx{display:flex;align-items:stretch;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;overflow:hidden}",
+    ".ap-inp-pfx:focus-within{border-color:var(--accent)}",
+    ".ap-pfx-lbl{padding:10px 12px;background:var(--surface);font-size:12px;font-weight:600;color:var(--txt2);display:flex;align-items:center}",
+    ".ap-inp-pfx-inp{flex:1;padding:10px 12px;background:transparent;border:none;font-size:13px;color:var(--txt);font-family:var(--ff);outline:none;font-family:var(--ff-mono);font-weight:600}",
+    ".ap-submit{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);margin-top:6px;display:inline-flex;align-items:center;justify-content:center;gap:6px}",
+    ".ap-submit:hover{opacity:.9}",
+    // Toast
+    ".ap-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;white-space:nowrap;pointer-events:none;opacity:0;transition:all .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.15)}",
+    ".ap-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
+    ".ap-toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
+    ".ap-toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
   ].join("");
 
   return docHeadV4("Analisis Target")
@@ -2766,12 +2847,15 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "</div>"
     + "</div>"
 
-    // Breakdown
+    // Biaya Wajib (CRUD)
     + "<div class=\"ap-card\">"
     +   "<div class=\"ap-card-title\"><i class=\"ti ti-list-details\" style=\"color:#f59e0b\"></i>"
-    +     "Breakdown Biaya Wajib"
-    +     "<span class=\"ap-card-title-sub\">Per bulan</span></div>"
-    +   "<div class=\"an-bd-list\">" + breakdownItems + "</div>"
+    +     "Biaya Wajib"
+    +     "<span class=\"ap-card-title-sub\">Total " + rp(bd.totalMonthly) + " / bulan</span>"
+    +     "<button class=\"ap-add-btn\" type=\"button\" onclick=\"openAddBiaya()\">"
+    +       "<i class=\"ti ti-plus\"></i> Tambah Biaya</button>"
+    +   "</div>"
+    +   biayaRows
     +   "<div class=\"an-bd-total\"><span>Total per bulan</span><span>" + rp(bd.totalMonthly) + "</span></div>"
     + "</div>"
 
@@ -2804,6 +2888,43 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     + "</div>"
 
     + "</div></div></div>"
+
+    // ── Modal Tambah/Edit Biaya ──
+    + "<div class=\"ap-modal-overlay\" id=\"biayaModal\" onclick=\"if(event.target===this)closeBiayaModal()\">"
+    +   "<div class=\"ap-modal\">"
+    +     "<div class=\"ap-modal-hdr\">"
+    +       "<div class=\"ap-modal-title\" id=\"bmTitle\"><i class=\"ti ti-plus\"></i> Tambah Biaya Wajib</div>"
+    +       "<button class=\"ap-modal-close\" onclick=\"closeBiayaModal()\"><i class=\"ti ti-x\"></i></button>"
+    +     "</div>"
+    +     "<form id=\"biayaForm\" method=\"post\">"
+    +       "<input type=\"hidden\" name=\"id\" id=\"bmId\">"
+    +       "<div class=\"ap-fmg\">"
+    +         "<label class=\"ap-lbl\">Nama Biaya</label>"
+    +         "<input class=\"ap-inp\" type=\"text\" name=\"nama\" id=\"bmNama\" placeholder=\"mis. WiFi, Gaji 3 orang, dll\" required maxlength=\"80\">"
+    +       "</div>"
+    +       "<div class=\"ap-fmg\">"
+    +         "<label class=\"ap-lbl\">Frekuensi</label>"
+    +         "<div class=\"ap-tog\">"
+    +           "<button type=\"button\" class=\"ap-tog-btn\" data-frek=\"bulanan\" onclick=\"bmSetFrek('bulanan')\">Bulanan</button>"
+    +           "<button type=\"button\" class=\"ap-tog-btn\" data-frek=\"harian\" onclick=\"bmSetFrek('harian')\">Harian</button>"
+    +           "<button type=\"button\" class=\"ap-tog-btn\" data-frek=\"mingguan\" onclick=\"bmSetFrek('mingguan')\">Mingguan</button>"
+    +         "</div>"
+    +         "<input type=\"hidden\" name=\"frekuensi\" id=\"bmFrek\" value=\"bulanan\">"
+    +         "<div class=\"ap-hint\" id=\"bmHint\">Nominal per bulan</div>"
+    +       "</div>"
+    +       "<div class=\"ap-fmg\">"
+    +         "<label class=\"ap-lbl\">Nominal (Rp)</label>"
+    +         "<div class=\"ap-inp-pfx\"><span class=\"ap-pfx-lbl\">Rp</span>"
+    +           "<input class=\"ap-inp-pfx-inp\" type=\"text\" inputmode=\"numeric\" name=\"nominal\" id=\"bmNominal\" placeholder=\"0\" oninput=\"bmFmt(this)\" required>"
+    +         "</div>"
+    +       "</div>"
+    +       "<button type=\"submit\" class=\"ap-submit\"><i class=\"ti ti-check\"></i> Simpan</button>"
+    +     "</form>"
+    +   "</div>"
+    + "</div>"
+
+    + toastHtml
+
     + buildFinanceBottomNav(role)
     + "<script>"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
@@ -2811,6 +2932,30 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     + "function financeLogout(){if(!confirm('Keluar dari sesi keuangan?'))return;window.location.href='/operasional/logout';}"
     + "function toggleTheme(){var d=document.documentElement;var cur=d.getAttribute('data-theme');d.setAttribute('data-theme',cur==='light'?'dark':'light');try{localStorage.setItem('theme',d.getAttribute('data-theme'))}catch(_){}}"
     + "try{var _t=localStorage.getItem('theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(_){}"
+    // Modal handlers
+    + "function bmFmt(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';}"
+    + "function bmSetFrek(f){document.getElementById('bmFrek').value=f;"
+    +   "document.querySelectorAll('.ap-tog-btn').forEach(function(b){b.classList.toggle('sel',b.getAttribute('data-frek')===f);});"
+    +   "var h=document.getElementById('bmHint');h.textContent=f==='harian'?'Nominal per hari (auto × 30 untuk bulanan)':f==='mingguan'?'Nominal per minggu (auto × 4.3 untuk bulanan)':'Nominal per bulan';}"
+    + "function openAddBiaya(){document.getElementById('bmTitle').innerHTML='<i class=\"ti ti-plus\"></i> Tambah Biaya Wajib';"
+    +   "document.getElementById('biayaForm').action='/operasional/analisis/biaya/tambah';"
+    +   "document.getElementById('bmId').value='';"
+    +   "document.getElementById('bmNama').value='';"
+    +   "document.getElementById('bmNominal').value='';"
+    +   "bmSetFrek('bulanan');"
+    +   "document.getElementById('biayaModal').classList.add('open');"
+    +   "setTimeout(function(){document.getElementById('bmNama').focus();},100);}"
+    + "function openEditBiaya(btn){var d=btn.dataset;"
+    +   "document.getElementById('bmTitle').innerHTML='<i class=\"ti ti-edit\"></i> Edit Biaya';"
+    +   "document.getElementById('biayaForm').action='/operasional/analisis/biaya/edit';"
+    +   "document.getElementById('bmId').value=d.id;"
+    +   "document.getElementById('bmNama').value=d.nama;"
+    +   "document.getElementById('bmNominal').value=Number(d.nominal).toLocaleString('id-ID');"
+    +   "bmSetFrek(d.frek);"
+    +   "document.getElementById('biayaModal').classList.add('open');}"
+    + "function closeBiayaModal(){document.getElementById('biayaModal').classList.remove('open');}"
+    // Auto-hide toast
+    + "setTimeout(function(){var t=document.getElementById('apToast');if(t)setTimeout(function(){t.classList.remove('show');},3000);},100);"
     + "</script>"
     + "</body></html>";
 }

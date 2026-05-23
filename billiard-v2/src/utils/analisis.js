@@ -1,69 +1,49 @@
 // src/utils/analisis.js
 // ── Analisis target operasional ────────────────────────────────
-// Hitung total biaya wajib (fixed + daily + meal), target pemasukan
-// per hari/minggu/bulan, dan status (minus / sepi / target / ramai / ramai sekali).
+// Hitung target pemasukan & status berdasarkan biaya wajib di DB
+// (tabel fixed_costs). Owner bisa CRUD via /operasional/analisis.
 
-// ── Fixed costs (default value, hard-coded). Bisa di-override via env. ──
-export const FIXED_COSTS = {
-  monthly: [
-    { name: "WiFi",                amount: parseInt(process.env.COST_WIFI     ?? "455000",  10) },
-    { name: "Gaji 3 orang (total)", amount: parseInt(process.env.COST_GAJI     ?? "2700000", 10) },
-    { name: "Token listrik",       amount: parseInt(process.env.COST_LISTRIK  ?? "1000000", 10) },
-  ],
-  daily: [
-    { name: "Bensin",       amount: parseInt(process.env.COST_BENSIN ?? "10000", 10) },
-    { name: "Air mineral",  amount: parseInt(process.env.COST_AIR    ?? "10000", 10) },
-  ],
-  meal: {
-    regular: parseInt(process.env.COST_MAKAN_REGULER ?? "25000", 10), // per hari (Min-Jum)
-    weekend: parseInt(process.env.COST_MAKAN_WEEKEND ?? "35000", 10), // per hari (Sabtu malam)
-  },
-};
+import { readFixedCosts } from "./db.js";
 
-// ── Estimasi biaya makan per bulan ─────────────────────────────
-// Dalam 1 bulan rata-rata 4 Sabtu, sisanya hari regular.
-function estimateMealMonthly() {
-  const sabtuCount = 4;
-  const regularDays = 30 - sabtuCount;
-  return regularDays * FIXED_COSTS.meal.regular + sabtuCount * FIXED_COSTS.meal.weekend;
+// ── Convert per-item nominal → biaya per bulan ────────────────
+// Asumsi: 30 hari/bulan, 4.286 minggu/bulan
+function toMonthly(item) {
+  switch (item.frekuensi) {
+    case "harian":   return item.nominal * 30;
+    case "mingguan": return Math.round(item.nominal * 30 / 7);
+    case "bulanan":
+    default:         return item.nominal;
+  }
 }
 
-// ── Total biaya wajib per bulan ────────────────────────────────
-export function computeMonthlyCost() {
-  const monthly = FIXED_COSTS.monthly.reduce((s, x) => s + x.amount, 0);
-  const daily   = FIXED_COSTS.daily.reduce((s, x) => s + x.amount, 0) * 30;
-  const meal    = estimateMealMonthly();
-  return monthly + daily + meal;
-}
-
-// ── Target per scope ───────────────────────────────────────────
-export function computeTargets() {
-  const bulan   = computeMonthlyCost();
-  const hari    = Math.round(bulan / 30);
-  const minggu  = Math.round(bulan / 30 * 7);
-  return { hari, minggu, bulan };
-}
-
-// ── Breakdown biaya untuk display ──────────────────────────────
-export function buildCostBreakdown() {
-  const monthly = FIXED_COSTS.monthly.reduce((s, x) => s + x.amount, 0);
-  const dailyPerHari = FIXED_COSTS.daily.reduce((s, x) => s + x.amount, 0);
-  const dailyMonth = dailyPerHari * 30;
-  const meal = estimateMealMonthly();
-  const total = monthly + dailyMonth + meal;
-
+// ── Compute total + breakdown dari list items ──────────────────
+export function computeFromItems(items) {
+  const total = items.reduce((s, x) => s + toMonthly(x), 0);
+  const itemsWithMonthly = items.map((x) => ({
+    ...x,
+    perBulan: toMonthly(x),
+    share:    total > 0 ? toMonthly(x) / total : 0,
+  }));
   return {
-    monthly: FIXED_COSTS.monthly.map((x) => ({ ...x, share: x.amount / total })),
-    daily:   FIXED_COSTS.daily.map((x)   => ({ ...x, perBulan: x.amount * 30, share: (x.amount * 30) / total })),
-    meal: {
-      regular: FIXED_COSTS.meal.regular,
-      weekend: FIXED_COSTS.meal.weekend,
-      perBulan: meal,
-      share: meal / total,
-    },
+    items:        itemsWithMonthly,
     totalMonthly: total,
     totalDaily:   Math.round(total / 30),
   };
+}
+
+// ── Target per scope ───────────────────────────────────────────
+export function computeTargetsFromTotal(monthly) {
+  const hari   = Math.round(monthly / 30);
+  const minggu = Math.round(monthly / 30 * 7);
+  return { hari, minggu, bulan: monthly };
+}
+
+// ── Load semua dari DB → return { breakdown, targets } ─────────
+export async function loadAnalisisData() {
+  const items     = await readFixedCosts();
+  const breakdown = computeFromItems(items);
+  const targets   = computeTargetsFromTotal(breakdown.totalMonthly);
+  return { breakdown, targets };
 }
 
 // ── Status berdasarkan rasio pemasukan vs biaya ─────────────────
@@ -83,11 +63,10 @@ export function computeStatus(pemasukan, biaya) {
 }
 
 // ── Rekomendasi tambah karyawan ─────────────────────────────────
-// Berdasarkan rata-rata pemasukan terakhir vs cost setelah tambah karyawan.
-export function evaluateAddKaryawan(rataPemasukanHarian, gajiTambahan = 900000) {
+export function evaluateAddKaryawan(rataPemasukanHarian, totalMonthlyBiaya, gajiTambahan = 900000) {
   const tambahanHarian = gajiTambahan / 30;
-  const totalBiayaBaru = computeMonthlyCost() / 30 + tambahanHarian;
-  const marginLama  = rataPemasukanHarian - (computeMonthlyCost() / 30);
+  const totalBiayaBaru = totalMonthlyBiaya / 30 + tambahanHarian;
+  const marginLama  = rataPemasukanHarian - (totalMonthlyBiaya / 30);
   const marginBaru  = rataPemasukanHarian - totalBiayaBaru;
   const layak       = marginBaru > 0;
   const tipis       = marginBaru >= 0 && marginBaru < tambahanHarian * 0.5;

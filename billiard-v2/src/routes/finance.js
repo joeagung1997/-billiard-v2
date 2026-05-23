@@ -21,7 +21,8 @@ import {
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
-import { computeTargets, buildCostBreakdown, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
+import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
+import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
 import {
   financeDashboard,
   financeLoginPage,
@@ -173,8 +174,7 @@ router.get("/", async (req, res) => {
     }
 
     // ── Analisis target operasional ────────────────────────────
-    const targets = computeTargets();
-    const costBreakdown = buildCostBreakdown();
+    const { breakdown: costBreakdown, targets } = await loadAnalisisData();
     // Pemasukan utk 3 scope: hari ini (business day), minggu ini (Sen-Min), bulan ini
     const dow       = new Date(today + "T00:00:00Z").getUTCDay() === 0 ? 6 : new Date(today + "T00:00:00Z").getUTCDay() - 1;
     const mondayD   = new Date(new Date(today + "T00:00:00Z").getTime() - dow * 86400000);
@@ -196,7 +196,7 @@ router.get("/", async (req, res) => {
       bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
       simulasi: {
         rataPemasukan: last30Avg,
-        ...evaluateAddKaryawan(last30Avg, 900000),
+        ...evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000),
       },
     };
 
@@ -308,9 +308,7 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const today     = todayBusinessDayISO();
     const todayD    = new Date(today + "T00:00:00Z");
 
-    // Compute targets & status (sama dgn dashboard)
-    const targets = computeTargets();
-    const costBreakdown = buildCostBreakdown();
+    const { breakdown: costBreakdown, targets } = await loadAnalisisData();
 
     const dow       = todayD.getUTCDay() === 0 ? 6 : todayD.getUTCDay() - 1;
     const mondayD   = new Date(todayD.getTime() - dow * 86400000);
@@ -339,7 +337,7 @@ router.get("/analisis", requireOwner, async (req, res) => {
       bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
       simulasi: {
         rataPemasukan: last30Avg,
-        ...evaluateAddKaryawan(last30Avg, 900000),
+        ...evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000),
       },
     };
 
@@ -348,10 +346,52 @@ router.get("/analisis", requireOwner, async (req, res) => {
       displayName: res.locals.financeDisplay || "",
       analisis,
       trend30,
+      msg:         req.query.msg ?? "",
     }));
   } catch (err) {
     console.error("[FINANCE] analisis error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
+// ── CRUD biaya wajib (owner-only) ─────────────────────────────
+router.post("/analisis/biaya/tambah", requireOwner, async (req, res) => {
+  try {
+    const nama      = (req.body.nama ?? "").trim().slice(0, 80);
+    const frekuensi = ["bulanan", "harian", "mingguan"].includes(req.body.frekuensi) ? req.body.frekuensi : "bulanan";
+    const nominal   = parseInt((req.body.nominal ?? "").replace(/\D/g, ""), 10) || 0;
+    if (!nama || nominal <= 0) return res.redirect("/operasional/analisis?msg=err");
+    await addFixedCost({ nama, frekuensi, nominal });
+    res.redirect("/operasional/analisis?msg=added");
+  } catch (err) {
+    console.error("[FINANCE] tambah biaya error:", err.message);
+    res.redirect("/operasional/analisis?msg=err");
+  }
+});
+
+router.post("/analisis/biaya/edit", requireOwner, async (req, res) => {
+  try {
+    const id        = parseInt(req.body.id, 10);
+    const nama      = (req.body.nama ?? "").trim().slice(0, 80);
+    const frekuensi = ["bulanan", "harian", "mingguan"].includes(req.body.frekuensi) ? req.body.frekuensi : "bulanan";
+    const nominal   = parseInt((req.body.nominal ?? "").replace(/\D/g, ""), 10) || 0;
+    if (!id || !nama || nominal <= 0) return res.redirect("/operasional/analisis?msg=err");
+    await updateFixedCost(id, { nama, frekuensi, nominal });
+    res.redirect("/operasional/analisis?msg=updated");
+  } catch (err) {
+    console.error("[FINANCE] edit biaya error:", err.message);
+    res.redirect("/operasional/analisis?msg=err");
+  }
+});
+
+router.get("/analisis/biaya/hapus", requireOwner, async (req, res) => {
+  try {
+    const id = parseInt(req.query.id, 10);
+    if (id) await deleteFixedCost(id);
+    res.redirect("/operasional/analisis?msg=deleted");
+  } catch (err) {
+    console.error("[FINANCE] hapus biaya error:", err.message);
+    res.redirect("/operasional/analisis?msg=err");
   }
 });
 

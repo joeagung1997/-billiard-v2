@@ -490,3 +490,37 @@ export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, li
     createdAt:   r.created_at  ?? null,
   }));
 };
+
+// ── Biaya wajib (untuk Analisis Target) ──────────────────────
+export const readFixedCosts = async () => {
+  const res = await query(
+    "SELECT id, nama, frekuensi, nominal, urutan FROM fixed_costs ORDER BY urutan ASC, id ASC"
+  );
+  return res.rows.map((r) => ({
+    id:        r.id,
+    nama:      r.nama,
+    frekuensi: r.frekuensi,
+    nominal:   Number(r.nominal),
+    urutan:    r.urutan ?? 0,
+  }));
+};
+
+export const addFixedCost = async ({ nama, frekuensi, nominal }) => {
+  const ur = await query("SELECT COALESCE(MAX(urutan), 0) + 1 AS u FROM fixed_costs");
+  const urutan = ur.rows[0].u || 1;
+  await query(
+    "INSERT INTO fixed_costs (nama, frekuensi, nominal, urutan) VALUES ($1, $2, $3, $4)",
+    [nama, frekuensi, nominal, urutan]
+  );
+};
+
+export const updateFixedCost = async (id, { nama, frekuensi, nominal }) => {
+  await query(
+    "UPDATE fixed_costs SET nama = $1, frekuensi = $2, nominal = $3 WHERE id = $4",
+    [nama, frekuensi, nominal, parseInt(id)]
+  );
+};
+
+export const deleteFixedCost = async (id) => {
+  await query("DELETE FROM fixed_costs WHERE id = $1", [parseInt(id)]);
+};

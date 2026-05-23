@@ -319,5 +319,35 @@ export const runMigrations = async () => {
   await query(`CREATE INDEX IF NOT EXISTS idx_setoran_tanggal  ON setoran (tanggal DESC)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_setoran_karyawan ON setoran (karyawan_username)`);
 
+  // ── Biaya wajib (utk Analisis Target) ────────────────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS fixed_costs (
+      id          SERIAL PRIMARY KEY,
+      nama        TEXT NOT NULL,
+      frekuensi   TEXT NOT NULL DEFAULT 'bulanan',
+      nominal     BIGINT NOT NULL DEFAULT 0,
+      urutan      INTEGER DEFAULT 0,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  const fcCount = await query("SELECT COUNT(*) FROM fixed_costs");
+  if (parseInt(fcCount.rows[0].count) === 0) {
+    const seedFC = [
+      { nama: "WiFi",                 frekuensi: "bulanan", nominal: 455000,  urutan: 1 },
+      { nama: "Gaji 3 orang (total)", frekuensi: "bulanan", nominal: 2700000, urutan: 2 },
+      { nama: "Token listrik",        frekuensi: "bulanan", nominal: 1000000, urutan: 3 },
+      { nama: "Bensin",               frekuensi: "harian",  nominal: 10000,   urutan: 4 },
+      { nama: "Air mineral",          frekuensi: "harian",  nominal: 10000,   urutan: 5 },
+      { nama: "Makan karyawan",       frekuensi: "harian",  nominal: 26000,   urutan: 6 },
+    ];
+    for (const s of seedFC) {
+      await query(
+        `INSERT INTO fixed_costs (nama, frekuensi, nominal, urutan) VALUES ($1,$2,$3,$4)`,
+        [s.nama, s.frekuensi, s.nominal, s.urutan]
+      );
+    }
+    console.log("[DB] Seed default fixed_costs (6 item).");
+  }
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };
