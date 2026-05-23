@@ -1014,14 +1014,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   // Card tabel: extra margin bottom 140px supaya footer/pagination tdk ketutupan FAB
     +   // (FAB di bottom:78px, height ~50px = area FAB ~128px dari bottom)
     +   ".fin-table-card{margin-bottom:140px!important}"
-    +   // Mobile: hide meta sub-text di row tabel — detail via tap row → modal
+    +   // Mobile: row tabel super clean — hanya tanggal, title singkat (1 baris), jumlah & tipe
     +   ".fr-desc-meta{display:none!important}"
-    +   ".fin-row{padding:14px!important;cursor:pointer}"
+    +   ".trx-void-reason{display:none!important}"
+    +   ".fin-row{padding:14px!important;cursor:pointer;position:relative;padding-right:28px!important}"
     +   ".fin-tbl-head{padding:12px 14px!important}"
     +   // Indicator chevron di row mobile (subtle hint tappable)
     +   ".fin-row::after{content:'›';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;font-weight:300;opacity:.5;pointer-events:none}"
-    +   ".fin-row{position:relative;padding-right:28px!important}"
-    +   ".fr-desc-title{font-weight:600!important;line-height:1.35!important}"
+    +   // Title 1 baris saja, ellipsis kalau panjang
+    +   ".fr-desc-title{font-weight:600!important;line-height:1.4!important;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}"
     + "}",
     // ── Chart cards redesign ─────────────────────────────────────
     ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
