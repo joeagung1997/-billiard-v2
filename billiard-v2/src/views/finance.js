@@ -519,10 +519,10 @@ export function financeLoginPage(showErr) {
 export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
   const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
-  const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
-    : msg === "voided"    ? "Transaksi berhasil dibatalkan"
-    : msg === "err"       ? "Gagal menyimpan, coba lagi"
-    : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner"
+  const toastMsg  = msg === "created"   ? "<strong>Transaksi berhasil dicatat!</strong><br><span style='font-size:12px;opacity:.85'>Cek tabel di bawah untuk detail</span>"
+    : msg === "voided"    ? "<strong>Transaksi dibatalkan</strong><br><span style='font-size:12px;opacity:.85'>Saldo sudah diperbarui</span>"
+    : msg === "err"       ? "<strong>Gagal menyimpan</strong><br><span style='font-size:12px;opacity:.85'>Cek isian form lalu coba lagi</span>"
+    : msg === "no_access" ? "<strong>Akses ditolak</strong><br><span style='font-size:12px;opacity:.85'>Fitur ini hanya untuk Owner</span>"
     : "";
   const toastType = (msg === "err" || msg === "no_access") ? "err" : "ok";
   const now = new Date();
@@ -980,11 +980,19 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-cs-val.inc{color:#16a34a}",
     ".fin-cs-val.out{color:#dc2626}",
     ".fin-cs-val.mg{color:var(--accent)}",
-    // ── Toast notifikasi ────────────────────────────────────────
-    ".toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:24px;font-size:13px;font-weight:600;z-index:9998;white-space:nowrap;pointer-events:none;opacity:0;transition:all .25s ease;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15)}",
-    ".toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
-    ".toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
-    ".toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
+    // ── Toast notifikasi (besar, prominent, slide-in dgn bounce) ─
+    ".toast{position:fixed;top:24px;right:24px;left:auto;transform:translateX(120%);min-width:280px;max-width:380px;padding:14px 18px;border-radius:14px;font-size:14px;font-weight:600;z-index:9998;pointer-events:auto;opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;display:flex;align-items:center;gap:11px;box-shadow:0 10px 32px rgba(15,23,42,.18),0 2px 8px rgba(15,23,42,.06);line-height:1.35;border-left:5px solid currentColor}",
+    ".toast.show{opacity:1;transform:translateX(0)}",
+    ".toast.ok{background:#f0fdf4;color:#15803d;border-color:#22c55e;border-left-color:#22c55e}",
+    ".toast.err{background:#fef2f2;color:#b91c1c;border-color:#ef4444;border-left-color:#ef4444}",
+    ".toast .ti{font-size:24px;flex-shrink:0;display:flex;align-items:center}",
+    ".toast .toast-msg{flex:1;color:var(--txt)}",
+    ".toast .toast-close{background:none;border:none;color:var(--txt3);cursor:pointer;padding:2px 4px;font-size:16px;display:flex;align-items:center}",
+    ".toast .toast-close:hover{color:var(--txt)}",
+    "@media(max-width:540px){.toast{top:auto;bottom:80px;left:16px;right:16px;max-width:none;transform:translateY(120%)}.toast.show{transform:translateY(0)}}",
+    // Highlight row transaksi yg baru di-input
+    "@keyframes finRowFlash{0%{background:rgba(34,197,94,.25)!important;box-shadow:inset 4px 0 0 0 #22c55e}50%{background:rgba(34,197,94,.12)!important;box-shadow:inset 4px 0 0 0 #22c55e}100%{background:transparent!important;box-shadow:none}}",
+    ".fin-row.flash-new{animation:finRowFlash 4s ease-out}",
     // ── Dropzone upload bukti foto ───────────────────────────────
     ".fin-dropzone{border:1.5px dashed var(--border2);border-radius:10px;padding:18px 14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2);color:var(--txt3);font-size:12px;user-select:none}",
     ".fin-dropzone:hover{border-color:var(--accent);background:rgba(38,96,164,.06);color:var(--txt2)}",
@@ -2009,9 +2017,29 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "var preview=document.getElementById('dzPreview');if(preview)preview.style.display='none';"
     + "var rmBtn=document.getElementById('wizRmFileBtn');if(rmBtn)rmBtn.style.display='none';"
     + "var dz=document.getElementById('wizDropzone');if(dz)dz.classList.remove('has-file');}"
-    + "function showToast(msg,type){var el=document.getElementById('toast');if(!el)return;el.innerHTML=(type==='ok'?'<i class=\"ti ti-circle-check\" style=\"font-size:15px\"></i>':type==='err'?'<i class=\"ti ti-circle-x\" style=\"font-size:15px\"></i>':'')+' '+msg;el.className='toast '+(type||'ok');void el.offsetWidth;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},3500);}"
+    + "function showToast(msg,type){"
+    +   "var el=document.getElementById('toast');if(!el)return;"
+    +   "var ic=type==='ok'?'ti-circle-check-filled':type==='err'?'ti-alert-circle-filled':'ti-info-circle';"
+    +   "el.innerHTML='<i class=\"ti '+ic+'\"></i>'"
+    +     "+'<span class=\"toast-msg\">'+msg+'</span>'"
+    +     "+'<button type=\"button\" class=\"toast-close\" onclick=\"this.parentElement.classList.remove(\\'show\\')\"><i class=\"ti ti-x\"></i></button>';"
+    +   "el.className='toast '+(type||'ok');"
+    +   "void el.offsetWidth;el.classList.add('show');"
+    +   "clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},5000);"
+    + "}"
     + "function startLoad(){var b=document.getElementById('finPgBar');if(!b)return;b.style.transition='none';b.style.width='0';void b.offsetWidth;b.className='fin-pgbar run';}"
-    + "(function(){var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";if(m)showToast(m,t);})();"
+    + "(function(){"
+    +   "var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";"
+    +   "var rawMsg=" + safeJson(msg) + ";"
+    +   "if(m)showToast(m,t);"
+    +   // Highlight row pertama (terbaru) saat transaksi baru disimpan
+    +   "if(rawMsg==='created'){"
+    +     "setTimeout(function(){"
+    +       "var first=document.querySelector('#trxRows .fin-row');"
+    +       "if(first){first.classList.add('flash-new');first.scrollIntoView({behavior:'smooth',block:'center'});}"
+    +     "},250);"
+    +   "}"
+    + "})();"
     + "</script>"
     + buildFinanceBottomNav(role)
     + "</body></html>";
