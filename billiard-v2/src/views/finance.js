@@ -566,6 +566,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       +   miniCard("Minggu ini", an.minggu)
       +   miniCard("Bulan ini",  an.bulan)
       + "</div>"
+      + "<div class=\"an-note\"><i class=\"ti ti-info-circle\"></i>"
+      +   "<span><strong>Catatan:</strong> ini data biaya rutin yang terlihat — "
+      +   "<strong>belum termasuk pengeluaran darurat</strong> (kerusakan stik, meja, bola, dll).</span></div>"
       + "</div>";
   };
   const analisisHtml = renderAnalisis(analisis);
@@ -1070,6 +1073,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".an-mini-target{font-size:11px;color:var(--txt3);font-weight:500}",
     ".an-mini-prog{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}",
     ".an-mini-prog div{height:100%;border-radius:2px;transition:width .35s ease}",
+    // Disclaimer / catatan
+    ".an-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:10px;font-size:11.5px;color:var(--txt2);line-height:1.5}",
+    ".an-note i{color:#f59e0b;font-size:15px;flex-shrink:0;margin-top:1px}",
+    ".an-note strong{color:var(--txt);font-weight:700}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -2753,6 +2760,10 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".an-sim-cell-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}",
     ".an-sim-cell-val{font-size:14px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
     ".an-sim-rec{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}",
+    // Disclaimer di halaman penuh
+    ".ap-note{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-left:3px solid #f59e0b;border-radius:10px;font-size:12.5px;color:var(--txt2);line-height:1.55}",
+    ".ap-note i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
+    ".ap-note strong{color:var(--txt);font-weight:700}",
     // CRUD biaya
     ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
     ".ap-add-btn:hover{opacity:.85}",
@@ -2833,6 +2844,12 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   scopeCard("Minggu ini", "Target " + rp(an.targets.minggu) + " / minggu", an.minggu)
     +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan)
     + "</div>"
+
+    // Disclaimer
+    + "<div class=\"ap-note\"><i class=\"ti ti-info-circle\"></i>"
+    +   "<span><strong>Catatan:</strong> ini data biaya rutin yang terlihat — "
+    +   "<strong>belum termasuk pengeluaran darurat</strong> seperti kerusakan stik, meja, bola, "
+    +   "perbaikan AC/lampu, atau renovasi minor. Sisakan margin untuk dana cadangan.</span></div>"
 
     // Trend chart 30 hari
     + "<div class=\"ap-card\">"
