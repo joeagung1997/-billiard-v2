@@ -432,15 +432,17 @@ export function financeLoginPage(showErr) {
   ].join("");
 
   const script = [
-    "var _pin='',MAX=6;",
-    "function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}",
+    "var _pin='',MAX=4,LS_KEY='warpat_last_uname';",
+    "function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();if(_pin.length===MAX)go();}",
     "function del(){_pin=_pin.slice(0,-1);upd();}",
     "function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById('d'+i);if(d)d.classList.toggle('filled',i<_pin.length);}}",
     "function go(){",
     "  if(!_pin.length)return;",
     "  var un=document.getElementById('unameField');",
+    "  var uv=un?un.value.trim():'';",
+    "  try{if(uv)localStorage.setItem(LS_KEY,uv);}catch(_){}",
     "  document.getElementById('pi').value=_pin;",
-    "  if(un)document.getElementById('piUname').value=un.value.trim();",
+    "  if(un)document.getElementById('piUname').value=uv;",
     "  document.getElementById('pf').submit();",
     "}",
     "document.addEventListener('keydown',function(e){",
@@ -453,9 +455,13 @@ export function financeLoginPage(showErr) {
     "  else if(e.key==='Backspace')del();",
     "  else if(e.key==='Enter')go();",
     "});",
+    // Prefill username dari localStorage
+    "window.addEventListener('load',function(){",
+    "  try{var s=localStorage.getItem(LS_KEY);if(s){var u=document.getElementById('unameField');if(u)u.value=s;}}catch(_){}",
+    "});",
   ].join("");
 
-  const dots = [0,1,2,3,4,5].map(function(i){ return "<div class=\"dot\" id=\"d" + i + "\"></div>"; }).join("");
+  const dots = [0,1,2,3].map(function(i){ return "<div class=\"dot\" id=\"d" + i + "\"></div>"; }).join("");
 
   return docHead("Keuangan Login")
     + "<style>" + loginCss + "</style>"

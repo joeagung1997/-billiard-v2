@@ -149,8 +149,8 @@ export function adminLoginPage(showError) {
   ].join('');
 
   const script = [
-    'var _pin="",MAX=6;',
-    'function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}',
+    'var _pin="",MAX=4,LS_KEY="warpat_last_uname";',
+    'function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();if(_pin.length===MAX)go();}',
     'function del(){_pin=_pin.slice(0,-1);upd();}',
     'function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById("d"+i);if(d)d.classList.toggle("filled",i<_pin.length);}}',
     'function go(){',
@@ -160,8 +160,10 @@ export function adminLoginPage(showError) {
     '    return;',
     '  }',
     '  if(!_pin.length)return;',
+    '  var uv=un.value.trim();',
+    '  try{localStorage.setItem(LS_KEY,uv);}catch(_){}',
     '  document.getElementById("pi").value=_pin;',
-    '  document.getElementById("pun").value=un.value.trim();',
+    '  document.getElementById("pun").value=uv;',
     '  document.getElementById("pf").submit();',
     '}',
     // Keyboard: jika fokus di username input, biarkan native. Jika Enter, pindah ke PIN / submit.
@@ -175,11 +177,15 @@ export function adminLoginPage(showError) {
     '  else if(e.key==="Backspace")del();',
     '  else if(e.key==="Enter")go();',
     '});',
-    // Auto-focus username on load
-    'window.addEventListener("load",function(){var u=document.getElementById("unameInp");if(u)u.focus();});',
+    // Prefill username dari localStorage, lalu auto-focus
+    'window.addEventListener("load",function(){',
+    '  var u=document.getElementById("unameInp");if(!u)return;',
+    '  try{var s=localStorage.getItem(LS_KEY);if(s)u.value=s;}catch(_){}',
+    '  if(u.value){var p=document.querySelector(".numpad .np-btn");if(p)p.focus();}else{u.focus();}',
+    '});',
   ].join('');
 
-  const dots = [0,1,2,3,4,5].map(function(i) { return '<div class="dot" id="d' + i + '"></div>'; }).join('');
+  const dots = [0,1,2,3].map(function(i) { return '<div class="dot" id="d' + i + '"></div>'; }).join('');
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">'
