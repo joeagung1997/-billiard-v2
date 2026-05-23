@@ -978,8 +978,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // ── Mobile FAB ──────────────────────────────────────────────
     ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;top:auto;left:auto;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:top .35s cubic-bezier(.4,.0,.2,1),left .35s cubic-bezier(.4,.0,.2,1),right .35s cubic-bezier(.4,.0,.2,1),bottom .35s cubic-bezier(.4,.0,.2,1),transform .35s cubic-bezier(.4,.0,.2,1),opacity .15s}",
     ".fin-fab:hover{opacity:.9}",
-    // Saat user scroll ke bottom (pagination terlihat) — FAB pindah ke tengah kanan
-    ".fin-fab.centered{top:50%!important;right:16px!important;left:auto!important;bottom:auto!important;transform:translateY(-50%)!important;box-shadow:0 8px 28px rgba(38,96,164,.5)}",
+    // Saat user scroll ke bottom (pagination terlihat) — FAB pindah ke kanan, ¾ ke bawah
+    ".fin-fab.centered{top:68%!important;right:16px!important;left:auto!important;bottom:auto!important;transform:translateY(-50%)!important;box-shadow:0 8px 28px rgba(38,96,164,.5)}",
     ".fin-fab.centered:hover{transform:translateY(-50%) scale(1.04)!important}",
     ".fin-fab i{font-size:18px}",
     "@media(max-width:768px){.fin-fab{display:flex!important}.topbar-actions .btn-primary{display:none!important}}",
