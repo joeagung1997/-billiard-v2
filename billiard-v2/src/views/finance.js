@@ -2924,12 +2924,40 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-note{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-left:3px solid #f59e0b;border-radius:10px;font-size:12.5px;color:var(--txt2);line-height:1.55}",
     ".ap-note i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
     ".ap-note strong{color:var(--txt);font-weight:700}",
-    // Status threshold table
-    ".ap-status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}",
-    ".ap-status-tbl tbody tr:last-child{border-bottom:none!important}",
-    ".ap-status-tbl tbody tr:hover{background:rgba(168,85,247,.04)}",
-    "@media(max-width:768px){.ap-th-week,.ap-th-month{display:none!important}}",
-    "@media(max-width:540px){.ap-th-desc{display:none!important}}",
+    // ── Status cards (Cara Baca Status) ──────────────────────────
+    ".sts-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px}",
+    "@media(max-width:1200px){.sts-grid{grid-template-columns:repeat(3,1fr)}}",
+    "@media(max-width:768px){.sts-grid{grid-template-columns:repeat(2,1fr)}}",
+    "@media(max-width:480px){.sts-grid{grid-template-columns:1fr}}",
+    ".sts-card{position:relative;border:1.5px solid transparent;border-radius:14px;padding:14px 14px 12px;transition:transform .2s,box-shadow .2s;overflow:hidden;border-color:rgba(0,0,0,.04)}",
+    ".sts-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sts-c)}",
+    ".sts-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(15,23,42,.08)}",
+    ".sts-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}",
+    ".sts-emoji{font-size:24px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.7);border-radius:11px;box-shadow:0 1px 3px rgba(15,23,42,.06)}",
+    ".sts-rasio{font-family:var(--ff-mono);font-size:11px;font-weight:700;color:var(--sts-c);background:rgba(255,255,255,.7);padding:4px 9px;border-radius:11px}",
+    ".sts-label{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;letter-spacing:-.01em}",
+    ".sts-desc{font-size:11px;color:#475569;line-height:1.4;margin-bottom:10px;min-height:31px}",
+    ".sts-ranges{border-top:1px dashed rgba(0,0,0,.08);padding-top:9px}",
+    ".sts-range-primary{margin-bottom:7px}",
+    ".sts-r-lbl{display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}",
+    ".sts-r-lbl i{font-size:11px;color:var(--sts-c)}",
+    ".sts-r-val{font-family:var(--ff-mono);font-size:13.5px;font-weight:700;color:#0f172a;letter-spacing:-.01em}",
+    ".sts-range-sub{display:flex;flex-direction:column;gap:3px;padding-top:5px;border-top:1px dashed rgba(0,0,0,.06)}",
+    ".sts-rs-item{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:10.5px}",
+    ".sts-rs-lbl{color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:9px}",
+    ".sts-rs-val{font-family:var(--ff-mono);font-weight:600;color:#475569;letter-spacing:-.01em}",
+    ".sts-tip{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(168,85,247,.04));border:1px solid rgba(245,158,11,.2);border-radius:10px;font-size:11.5px;color:#475569;line-height:1.55}",
+    ".sts-tip i{color:#f59e0b;font-size:16px;flex-shrink:0;margin-top:1px}",
+    ".sts-tip strong{color:#0f172a;font-weight:700}",
+    // Dark mode tweak
+    "[data-theme='dark'] .sts-card{border-color:rgba(255,255,255,.06)}",
+    "[data-theme='dark'] .sts-label{color:#e2e8f0}",
+    "[data-theme='dark'] .sts-desc{color:#94a3b8}",
+    "[data-theme='dark'] .sts-emoji,[data-theme='dark'] .sts-rasio{background:rgba(15,23,42,.4)}",
+    "[data-theme='dark'] .sts-r-val{color:#e2e8f0}",
+    "[data-theme='dark'] .sts-rs-val{color:#94a3b8}",
+    "[data-theme='dark'] .sts-tip{color:#cbd5e1}",
+    "[data-theme='dark'] .sts-tip strong{color:#e2e8f0}",
     // CRUD biaya
     ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
     ".ap-add-btn:hover{opacity:.85}",
@@ -3017,14 +3045,14 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "<strong>belum termasuk pengeluaran darurat</strong> seperti kerusakan stik, meja, bola, "
     +   "perbaikan AC/lampu, atau renovasi minor. Sisakan margin untuk dana cadangan.</span></div>"
 
-    // ── Cara Baca Status (threshold per status) ─────────────────
+    // ── Cara Baca Status — card grid visual ─────────────────────
     + (function() {
         const STATUS = [
-          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", min: 0,   max: 1,   desc: "Rugi — pemasukan di bawah biaya wajib" },
-          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#9ca3af", min: 1,   max: 1.2, desc: "Impas tipis — sekedar tutup biaya" },
-          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", min: 1.2, max: 1.7, desc: "Cukup biaya + margin kecil" },
-          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", min: 1.7, max: 2.5, desc: "Margin bagus, profit sehat" },
-          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", min: 2.5, max: null,desc: "Margin sangat bagus, surplus tinggi" },
+          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", grad: "linear-gradient(135deg,#fef2f2,#fee2e2)", min: 0,   max: 1,    rasio: "< 1×",       desc: "Rugi — pemasukan di bawah biaya wajib" },
+          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#64748b", grad: "linear-gradient(135deg,#f8fafc,#f1f5f9)", min: 1,   max: 1.2,  rasio: "1× – 1.2×",  desc: "Impas tipis — sekedar tutup biaya" },
+          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", grad: "linear-gradient(135deg,#f0fdf4,#dcfce7)", min: 1.2, max: 1.7,  rasio: "1.2× – 1.7×",desc: "Cukup biaya + margin kecil" },
+          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", grad: "linear-gradient(135deg,#eff6ff,#dbeafe)", min: 1.7, max: 2.5,  rasio: "1.7× – 2.5×",desc: "Margin bagus, profit sehat" },
+          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", grad: "linear-gradient(135deg,#faf5ff,#f3e8ff)", min: 2.5, max: null, rasio: "≥ 2.5×",     desc: "Margin sangat bagus, surplus tinggi" },
         ];
         const fmtRange = (target, min, max) => {
           const lo = Math.round(target * min);
@@ -3033,37 +3061,39 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           const hi = Math.round(target * max);
           return rp(lo) + " – " + rp(hi);
         };
-        const rows = STATUS.map((s) =>
-          "<tr style=\"border-bottom:1px solid var(--border)\">"
-          +   "<td style=\"padding:11px 14px;white-space:nowrap\">"
-          +     "<span class=\"ap-status-badge\" style=\"background:" + s.color + "\">" + s.emoji + " " + s.label + "</span>"
-          +   "</td>"
-          +   "<td class=\"ap-th-desc\" style=\"padding:11px 14px;font-size:12px;color:var(--txt2)\">" + s.desc + "</td>"
-          +   "<td style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
-          +   "<td class=\"ap-th-week\" style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
-          +   "<td class=\"ap-th-month\" style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
-          + "</tr>"
+
+        const cards = STATUS.map((s) =>
+          "<div class=\"sts-card\" style=\"--sts-c:" + s.color + ";background:" + s.grad + "\">"
+          +   "<div class=\"sts-head\">"
+          +     "<div class=\"sts-emoji\">" + s.emoji + "</div>"
+          +     "<div class=\"sts-rasio\">" + s.rasio + "</div>"
+          +   "</div>"
+          +   "<div class=\"sts-label\">" + s.label + "</div>"
+          +   "<div class=\"sts-desc\">" + s.desc + "</div>"
+          +   "<div class=\"sts-ranges\">"
+          +     "<div class=\"sts-range sts-range-primary\">"
+          +       "<div class=\"sts-r-lbl\"><i class=\"ti ti-calendar-event\"></i> Per Hari</div>"
+          +       "<div class=\"sts-r-val\">" + fmtRange(an.targets.hari, s.min, s.max) + "</div>"
+          +     "</div>"
+          +     "<div class=\"sts-range-sub\">"
+          +       "<div class=\"sts-rs-item\"><span class=\"sts-rs-lbl\">Minggu</span><span class=\"sts-rs-val\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</span></div>"
+          +       "<div class=\"sts-rs-item\"><span class=\"sts-rs-lbl\">Bulan</span><span class=\"sts-rs-val\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</span></div>"
+          +     "</div>"
+          +   "</div>"
+          + "</div>"
         ).join("");
 
         return "<div class=\"ap-card\">"
-          + "<div class=\"ap-card-title\"><i class=\"ti ti-info-circle\" style=\"color:#a855f7\"></i>"
+          + "<div class=\"ap-card-title\"><i class=\"ti ti-route\" style=\"color:#a855f7\"></i>"
           +   "Cara Baca Status"
-          +   "<span class=\"ap-card-title-sub\">Rentang pemasukan per status (skala target)</span>"
+          +   "<span class=\"ap-card-title-sub\">5 tingkat performa dari rugi sampai surplus tinggi</span>"
           + "</div>"
-          + "<div style=\"overflow-x:auto\">"
-          + "<table class=\"ap-status-tbl\" style=\"width:100%;border-collapse:collapse\">"
-          + "<thead><tr style=\"background:var(--surface2);border-bottom:1px solid var(--border)\">"
-          +   "<th style=\"padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em\">Status</th>"
-          +   "<th class=\"ap-th-desc\" style=\"padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em\">Arti</th>"
-          +   "<th style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Hari</th>"
-          +   "<th class=\"ap-th-week\" style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Minggu</th>"
-          +   "<th class=\"ap-th-month\" style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Bulan</th>"
-          + "</tr></thead>"
-          + "<tbody>" + rows + "</tbody>"
-          + "</table></div>"
-          + "<div style=\"padding:12px 18px 0;font-size:11.5px;color:var(--txt3);line-height:1.55\">"
-          +   "<i class=\"ti ti-bulb\" style=\"color:#f59e0b;margin-right:4px\"></i>"
-          +   "Rentang dihitung dari rasio pemasukan ÷ biaya wajib (target). Contoh: <strong>Target Tercapai</strong> = pemasukan 1.2× sampai 1.7× target — sudah cukup tutup biaya + ada surplus kecil. <strong>Ramai Sekali</strong> = pemasukan ≥ 2.5× target — momentum bagus utk evaluasi expansi/tambah karyawan."
+          + "<div class=\"sts-grid\">" + cards + "</div>"
+          + "<div class=\"sts-tip\">"
+          +   "<i class=\"ti ti-bulb\"></i>"
+          +   "<span>Rentang dihitung dari rasio <strong>pemasukan ÷ biaya wajib</strong>. "
+          +   "Target Tercapai = pemasukan 1.2×–1.7× target → cukup tutup biaya + surplus kecil. "
+          +   "<strong>Ramai Sekali</strong> = momentum bagus utk evaluasi ekspansi atau tambah karyawan.</span>"
           + "</div>"
           + "</div>";
       })()
