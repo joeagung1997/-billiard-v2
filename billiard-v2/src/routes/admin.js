@@ -76,18 +76,16 @@ router.post("/login", async (req, res) => {
 
   const token = createToken({ username: found.username, role: found.role, displayName: found.displayName });
 
-  // Owner: set cookie _frt otomatis agar tidak perlu login ulang di /operasional
-  // Termasuk username + displayName supaya topbar/sidebar di /operasional juga personalize.
-  if (found.role === "owner") {
-    const frt = jwt.sign(
-      { role: "owner", username: found.username, displayName: found.displayName },
-      CONFIG.JWT_SECRET,
-      { expiresIn: CONFIG.JWT_EXPIRES }
-    );
-    res.setHeader("Set-Cookie",
-      `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/operasional; Max-Age=${24 * 3600}; SameSite=Lax`
-    );
-  }
+  // Auto-set cookie _frt utk semua role (owner & karyawan) — supaya akses
+  // /operasional/* tdk perlu input PIN lagi setelah login di /admin.
+  const frt = jwt.sign(
+    { role: found.role, username: found.username, displayName: found.displayName },
+    CONFIG.JWT_SECRET,
+    { expiresIn: CONFIG.JWT_EXPIRES }
+  );
+  res.setHeader("Set-Cookie",
+    `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/operasional; Max-Age=${24 * 3600}; SameSite=Lax`
+  );
 
   res.redirect(`/admin?tk=${token}`);
 });
