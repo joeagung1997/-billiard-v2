@@ -255,7 +255,7 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
       const tgl   = typeof l.tanggal === "object"
         ? l.tanggal.toISOString().slice(0, 10)
         : String(l.tanggal).slice(0, 10);
-      const tglFmt = new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      const tglFmt = new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
       const waktu  = l.jam ? tglFmt + " " + l.jam : tglFmt;
       const badge  = isIn
         ? "<span class=\"mon-badge mon-badge-in\"><i class=\"ti ti-arrow-up\" style=\"font-size:9px\"></i> Masuk</span>"
@@ -357,7 +357,7 @@ export function monitoringMember({ logs, tglDari, tglSampai, aksi, role }) {
       const meta = aksiMeta[l.aksi] || { label: l.aksi, cls: "mon-badge-siang", icon: "ti-activity" };
       const tsDate = l.ts instanceof Date ? l.ts : new Date(l.ts);
       const waktu  = tsDate.toLocaleString("id-ID", {
-        day: "numeric", month: "short", year: "numeric",
+        weekday: "short", day: "numeric", month: "short", year: "numeric",
         hour: "2-digit", minute: "2-digit",
         timeZone: "Asia/Jakarta",
       });
@@ -438,7 +438,7 @@ export function monitoringSetoran({ setoranList, bulan, username, karyawanList, 
     tableBody = "<tr><td colspan=\"10\" class=\"mon-empty\"><i class=\"ti ti-report-off\"></i><br>Belum ada laporan setoran di bulan ini</td></tr>";
   } else {
     tableBody = setoranList.map((s) => {
-      const tglFmt = new Date(s.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      const tglFmt = new Date(s.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
       const shiftBadge = s.shift === "malam"
         ? "<span class=\"mon-badge mon-badge-malam\"><i class=\"ti ti-moon\" style=\"font-size:9px\"></i> Malam</span>"
         : "<span class=\"mon-badge mon-badge-siang\"><i class=\"ti ti-sun\" style=\"font-size:9px\"></i> Siang</span>";
@@ -628,7 +628,7 @@ export function monitoringSelisih({ setoranList, bulan, username, karyawanList, 
     tableBody = "<tr><td colspan=\"8\" class=\"mon-empty\"><i class=\"ti ti-scale-off\"></i><br>Belum ada data selisih di bulan ini</td></tr>";
   } else {
     tableBody = setoranList.map((s) => {
-      const tglFmt = new Date(s.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      const tglFmt = new Date(s.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
       const shiftBadge = s.shift === "malam"
         ? "<span class=\"mon-badge mon-badge-malam\">Malam</span>"
         : "<span class=\"mon-badge mon-badge-siang\">Siang</span>";
