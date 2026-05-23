@@ -50,6 +50,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   const isMenu = page === "menu";
   const isSdm  = page === "sdm";
   const isMon  = page === "monitoring";
+  const isAna  = page === "analisis";
   const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
   const opsItemCls = "nav-item open";
 
@@ -106,6 +107,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     + "<div class=\"submenu-wrap\">"
     + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
     + subItem("/operasional", "Dashboard Keuangan", isKeu)
+    + (isOwner ? subItem("/operasional/analisis", "Analisis Target", isAna) : "")
     + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
     + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
     + (isOwner ? subItem("/operasional/sdm",      "SDM & Penggajian", isSdm) : "")
@@ -214,6 +216,13 @@ export function buildFinanceBottomNav(role = "owner") {
     + "<div><div class=\"bn-sheet-name\">Dashboard Keuangan</div>"
     + "<div class=\"bn-sheet-sub\">Pemasukan, pengeluaran &amp; saldo</div></div>"
     + "</a>"
+    + (isOwner
+      ? "<a href=\"/operasional/analisis\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\" style=\"background:rgba(168,85,247,.12);color:#a855f7\"><i class=\"ti ti-target\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">Analisis Target</div>"
+        + "<div class=\"bn-sheet-sub\">Target hari/minggu/bulan &amp; simulasi karyawan</div></div>"
+        + "</a>"
+      : "")
     + (isOwner
       ? "<a href=\"/operasional/kategori\" class=\"bn-sheet-item\">"
         + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-tag\"></i></div>"
@@ -525,91 +534,38 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     accountsAll.map((a) => [a.username, a.display_name || a.username])
   );
 
-  // ── Analisis Target HTML ─────────────────────────────────────
+  // ── Analisis Target HTML — versi RINGKAS untuk dashboard ──────
+  // Detail penuh (breakdown + simulator) ada di /operasional/analisis
   const renderAnalisis = (an) => {
     if (!an) return "";
-    const scopeCard = (lbl, sub, data) => {
+    const miniCard = (lbl, data) => {
       const { pemasukan, target, status } = data;
-      const margin = pemasukan - target;
-      const pct    = Math.min(100, Math.round((pemasukan / Math.max(target, 1)) * 100));
-      return "<div class=\"an-card\" style=\"--accent-bar:" + status.color + "\">"
-        + "<div class=\"an-card-hdr\">"
-        +   "<div><div class=\"an-scope\">" + lbl + "</div>"
-        +   "<div class=\"an-sub\">" + sub + "</div></div>"
+      const pct = Math.min(100, Math.round((pemasukan / Math.max(target, 1)) * 100));
+      return "<div class=\"an-mini\" style=\"--accent-bar:" + status.color + "\">"
+        + "<div class=\"an-mini-row\">"
+        +   "<div class=\"an-mini-lbl\">" + lbl + "</div>"
         +   "<div class=\"an-status\" style=\"background:" + status.color + "\">"
         +     status.emoji + " " + status.label + "</div>"
         + "</div>"
-        + "<div class=\"an-amount-row\">"
-        +   "<div class=\"an-amount\">" + rp(pemasukan) + "</div>"
-        +   "<div class=\"an-target\">/ " + rp(target) + "</div>"
-        + "</div>"
-        + "<div class=\"an-progress\"><div class=\"an-progress-fill\" "
-        +   "style=\"width:" + pct + "%;background:" + status.color + "\"></div></div>"
-        + "<div class=\"an-margin " + (margin >= 0 ? "pos" : "neg") + "\">"
-        +   (margin >= 0 ? "▲ Surplus " : "▼ Defisit ") + rp(Math.abs(margin))
-        +   " · " + pct + "% target</div>"
+        + "<div class=\"an-mini-amt\">" + rp(pemasukan) + " <span class=\"an-mini-target\">/ " + rp(target) + "</span></div>"
+        + "<div class=\"an-mini-prog\"><div style=\"width:" + pct + "%;background:" + status.color + "\"></div></div>"
         + "</div>";
     };
-
-    const bd = an.costBreakdown;
-    const breakdownItems = bd.monthly.map((x) =>
-      "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + "</span><span>" + rp(x.amount) + "</span></div>"
-    ).join("") + bd.daily.map((x) =>
-      "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + " (" + rp(x.amount) + "/hr)</span><span>" + rp(x.perBulan) + "</span></div>"
-    ).join("") + "<div class=\"an-bd-item\"><span>Makan (26 reg + 4 weekend)</span><span>" + rp(bd.meal.perBulan) + "</span></div>";
-
-    const sim = an.simulasi;
 
     return "<div class=\"an-section\">"
       + "<div class=\"an-hdr\">"
       +   "<div class=\"an-title\"><div class=\"an-title-ic\"><i class=\"ti ti-target\"></i></div>"
-      +     "Analisis Target Operasional</div>"
-      +   "<div class=\"an-sub\">Berdasarkan biaya wajib " + rp(bd.totalMonthly) + " / bulan</div>"
+      +     "Status Target Operasional</div>"
+      +   (isOwner
+        ? "<a href=\"/operasional/analisis\" class=\"an-detail-link\">"
+          + "Detail Analisis <i class=\"ti ti-arrow-right\" style=\"font-size:13px\"></i></a>"
+        : "<div class=\"an-sub\">Target " + rp(an.targets.hari) + "/hari</div>")
       + "</div>"
-
-      + "<div class=\"an-grid\">"
-      +   scopeCard("Hari ini",   "Target " + rp(an.targets.hari)   + " / hari",   an.hari)
-      +   scopeCard("Minggu ini", "Target " + rp(an.targets.minggu) + " / minggu", an.minggu)
-      +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan)
+      + "<div class=\"an-mini-grid\">"
+      +   miniCard("Hari ini",   an.hari)
+      +   miniCard("Minggu ini", an.minggu)
+      +   miniCard("Bulan ini",  an.bulan)
       + "</div>"
-
-      + "<details class=\"an-breakdown\">"
-      +   "<summary><i class=\"ti ti-list-details\"></i> Breakdown Biaya Wajib"
-      +     "<span style=\"margin-left:8px;font-weight:500;color:var(--txt3);font-size:11px\">"
-      +     "Target harian: " + rp(bd.totalDaily) + "</span>"
-      +   "</summary>"
-      +   "<div class=\"an-bd-list\">" + breakdownItems + "</div>"
-      +   "<div class=\"an-bd-total\"><span>Total per bulan</span><span>" + rp(bd.totalMonthly) + "</span></div>"
-      + "</details>"
-
-      + (isOwner
-        ? "<div class=\"an-sim\">"
-          + "<div class=\"an-sim-hdr\"><i class=\"ti ti-user-plus\"></i> Simulasi: Tambah 1 Karyawan (+Rp 900.000/bln)</div>"
-          + "<div class=\"an-sim-body\">"
-          +   "<div class=\"an-sim-cell\">"
-          +     "<div class=\"an-sim-cell-lbl\">Rata-rata 30 hari terakhir</div>"
-          +     "<div class=\"an-sim-cell-val\">" + rp(sim.rataPemasukan) + " / hari</div>"
-          +   "</div>"
-          +   "<div class=\"an-sim-cell\">"
-          +     "<div class=\"an-sim-cell-lbl\">Margin sekarang</div>"
-          +     "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginLama >= 0 ? "#22c55e" : "#ef4444") + "\">"
-          +       (sim.marginLama >= 0 ? "+" : "") + rp(sim.marginLama) + " / hari</div>"
-          +   "</div>"
-          +   "<div class=\"an-sim-cell\">"
-          +     "<div class=\"an-sim-cell-lbl\">Beban tambahan</div>"
-          +     "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(sim.tambahanHarian) + " / hari</div>"
-          +   "</div>"
-          +   "<div class=\"an-sim-cell\">"
-          +     "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
-          +     "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginBaru >= 0 ? "#22c55e" : "#ef4444") + "\">"
-          +       (sim.marginBaru >= 0 ? "+" : "") + rp(sim.marginBaru) + " / hari</div>"
-          +   "</div>"
-          + "</div>"
-          + "<div class=\"an-sim-rec\" style=\"background:" + sim.color + "20;color:" + sim.color + ";border:1px solid " + sim.color + "40\">"
-          +   sim.emoji + " " + escHtml(sim.rekomendasi)
-          + "</div>"
-          + "</div>"
-        : "")
       + "</div>";
   };
   const analisisHtml = renderAnalisis(analisis);
@@ -1101,6 +1057,19 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".an-sim-cell-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}",
     ".an-sim-cell-val{font-size:13px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
     ".an-sim-rec{margin-top:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}",
+    // Mini version (dashboard ringkas)
+    ".an-detail-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:6px 12px;border-radius:8px;background:rgba(59,130,246,.08);transition:background .15s}",
+    ".an-detail-link:hover{background:rgba(59,130,246,.15)}",
+    ".an-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}",
+    "@media(max-width:768px){.an-mini-grid{grid-template-columns:1fr}}",
+    ".an-mini{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;position:relative;overflow:hidden}",
+    ".an-mini::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent-bar,#22c55e)}",
+    ".an-mini-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px}",
+    ".an-mini-lbl{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}",
+    ".an-mini-amt{font-size:14px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);margin-bottom:6px}",
+    ".an-mini-target{font-size:11px;color:var(--txt3);font-weight:500}",
+    ".an-mini-prog{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}",
+    ".an-mini-prog div{height:100%;border-radius:2px;transition:width .35s ease}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -2637,5 +2606,211 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "</div></div></div>"
     + "<script>" + js + "</script>"
     + buildFinanceBottomNav("owner")
+    + "</body></html>";
+}
+
+// ── /operasional/analisis — halaman detail analisis target ────
+export function financeAnalisisPage({ role = "owner", displayName = "", analisis, trend30 = [] }) {
+  const an = analisis;
+  const bd = an.costBreakdown;
+  const sim = an.simulasi;
+
+  // 3 mini-card status (full version)
+  const scopeCard = (lbl, sub, data) => {
+    const { pemasukan, target, status } = data;
+    const margin = pemasukan - target;
+    const pct    = Math.min(100, Math.round((pemasukan / Math.max(target, 1)) * 100));
+    return "<div class=\"an-card\" style=\"--accent-bar:" + status.color + "\">"
+      + "<div class=\"an-card-hdr\">"
+      +   "<div><div class=\"an-scope\">" + lbl + "</div>"
+      +   "<div class=\"an-sub\">" + sub + "</div></div>"
+      +   "<div class=\"an-status\" style=\"background:" + status.color + "\">"
+      +     status.emoji + " " + status.label + "</div>"
+      + "</div>"
+      + "<div class=\"an-amount-row\">"
+      +   "<div class=\"an-amount\">" + rp(pemasukan) + "</div>"
+      +   "<div class=\"an-target\">/ " + rp(target) + "</div>"
+      + "</div>"
+      + "<div class=\"an-progress\"><div class=\"an-progress-fill\" "
+      +   "style=\"width:" + pct + "%;background:" + status.color + "\"></div></div>"
+      + "<div class=\"an-margin " + (margin >= 0 ? "pos" : "neg") + "\">"
+      +   (margin >= 0 ? "▲ Surplus " : "▼ Defisit ") + rp(Math.abs(margin))
+      +   " · " + pct + "% target</div>"
+      + "</div>";
+  };
+
+  // Trend chart 30 hari — pure CSS bar dengan garis target overlay
+  const maxIn = Math.max(...trend30.map((d) => d.pemasukan), an.targets.hari * 1.2, 1);
+  const targetPct = Math.round((an.targets.hari / maxIn) * 100);
+  const trendBars = trend30.map((d) => {
+    const pct = Math.round((d.pemasukan / maxIn) * 100);
+    const stat = d.pemasukan >= an.targets.hari ? "ok" : d.pemasukan > 0 ? "low" : "zero";
+    const date = new Date(d.tanggal + "T00:00:00");
+    const lbl  = date.getDate() + "/" + (date.getMonth() + 1);
+    const tip  = date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" }) + " — " + rp(d.pemasukan);
+    return "<div class=\"an-trend-col\" title=\"" + escHtml(tip) + "\">"
+      + "<div class=\"an-trend-bar-wrap\">"
+      +   "<div class=\"an-trend-bar an-trend-bar-" + stat + "\" style=\"height:" + pct + "%\"></div>"
+      + "</div>"
+      + "<div class=\"an-trend-lbl\">" + lbl + "</div>"
+      + "</div>";
+  }).join("");
+
+  // Breakdown items
+  const breakdownItems = bd.monthly.map((x) =>
+    "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + "</span><span>" + rp(x.amount) + "</span></div>"
+  ).join("") + bd.daily.map((x) =>
+    "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + " (" + rp(x.amount) + "/hr × 30)</span><span>" + rp(x.perBulan) + "</span></div>"
+  ).join("") + "<div class=\"an-bd-item\"><span>Makan (26 reg @" + rp(bd.meal.regular) + " + 4 weekend @" + rp(bd.meal.weekend) + ")</span><span>" + rp(bd.meal.perBulan) + "</span></div>";
+
+  const pageCss = [
+    ".ap-page{max-width:1100px;margin:0 auto;padding-bottom:60px}",
+    ".ap-hdr{margin-bottom:22px}",
+    ".ap-title{font-size:22px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:10px;margin-bottom:6px}",
+    ".ap-sub{font-size:12px;color:var(--txt3)}",
+    ".ap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}",
+    "@media(max-width:768px){.ap-grid{grid-template-columns:1fr}}",
+    // Reuse .an-* styles already in dashboard CSS, plus tambahan utk trend chart
+    ".an-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}",
+    ".an-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent-bar,#22c55e)}",
+    ".an-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}",
+    ".an-scope{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3)}",
+    ".an-sub{font-size:11px;color:var(--txt3)}",
+    ".an-status{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:700;color:#fff}",
+    ".an-amount-row{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}",
+    ".an-amount{font-size:18px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
+    ".an-target{font-size:11px;color:var(--txt3);font-family:var(--ff-mono)}",
+    ".an-progress{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:6px}",
+    ".an-progress-fill{height:100%;border-radius:3px}",
+    ".an-margin{font-size:11px;color:var(--txt2)}",
+    ".an-margin.pos{color:#22c55e}",
+    ".an-margin.neg{color:#ef4444}",
+    // Trend chart
+    ".ap-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:18px}",
+    ".ap-card-title{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:14px}",
+    ".ap-card-title-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-left:auto;font-family:var(--ff-mono)}",
+    ".an-trend-wrap{position:relative;height:180px;display:flex;align-items:flex-end;gap:3px;padding-top:20px}",
+    ".an-trend-target-line{position:absolute;left:0;right:0;height:1px;border-top:1px dashed #a855f7;pointer-events:none}",
+    ".an-trend-target-lbl{position:absolute;right:0;font-size:10px;color:#a855f7;background:var(--surface);padding:0 6px;transform:translateY(-50%);font-weight:600}",
+    ".an-trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}",
+    ".an-trend-bar-wrap{width:100%;height:140px;display:flex;align-items:flex-end}",
+    ".an-trend-bar{width:100%;border-radius:3px 3px 0 0;transition:opacity .15s}",
+    ".an-trend-bar:hover{opacity:.7}",
+    ".an-trend-bar-ok{background:linear-gradient(180deg,#22c55e,#16a34a)}",
+    ".an-trend-bar-low{background:linear-gradient(180deg,#f59e0b,#d97706)}",
+    ".an-trend-bar-zero{background:var(--surface2);height:2px!important;min-height:2px}",
+    ".an-trend-lbl{font-size:9px;color:var(--txt3);font-family:var(--ff-mono);white-space:nowrap}",
+    "@media(max-width:768px){.an-trend-col:nth-child(3n+1) .an-trend-lbl,.an-trend-col:nth-child(3n+2) .an-trend-lbl{display:none}}",
+    // Breakdown
+    ".an-bd-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}",
+    ".an-bd-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:9px;font-size:12px}",
+    ".an-bd-item span:first-child{color:var(--txt2)}",
+    ".an-bd-item span:last-child{font-weight:700;color:var(--txt);font-family:var(--ff-mono)}",
+    ".an-bd-total{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--txt)}",
+    ".an-bd-total span:last-child{font-family:var(--ff-mono)}",
+    // Simulator (sama dgn dashboard versi)
+    ".an-sim{background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(168,85,247,.04));border:1px solid rgba(59,130,246,.18);border-radius:14px;padding:18px 22px}",
+    ".an-sim-hdr{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:7px;margin-bottom:14px}",
+    ".an-sim-body{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px}",
+    "@media(max-width:540px){.an-sim-body{grid-template-columns:1fr}}",
+    ".an-sim-cell{padding:12px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border)}",
+    ".an-sim-cell-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}",
+    ".an-sim-cell-val{font-size:14px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
+    ".an-sim-rec{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}",
+  ].join("");
+
+  return docHeadV4("Analisis Target")
+    + "<style>" + pageCss + "</style>"
+    + "</head><body>"
+    + "<div class=\"layout\">"
+    + buildFinanceSidebar("", "analisis", role, displayName)
+    + "<div class=\"main-wrap\">"
+
+    // Topbar mobile
+    + "<header class=\"topbar\">"
+    + "<div class=\"topbar-brand\">"
+    + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-target\"></i></div>"
+    + "<div><div class=\"topbar-name\">Analisis Target</div>"
+    + "<div class=\"topbar-label\">Detail biaya &amp; rekomendasi</div></div>"
+    + "</div>"
+    + "<div class=\"topbar-right\">" + buildFinanceTopbarProfile(role, displayName) + "</div>"
+    + "</header>"
+
+    + "<div class=\"page\" style=\"padding-bottom:80px\">"
+    + "<div class=\"ap-page\">"
+
+    // Header
+    + "<div class=\"ap-hdr\">"
+    +   "<div class=\"ap-title\"><i class=\"ti ti-target\" style=\"color:#a855f7\"></i> Analisis Target Operasional</div>"
+    +   "<div class=\"ap-sub\">Total biaya wajib " + rp(bd.totalMonthly) + " / bulan · "
+    +     "target " + rp(bd.totalDaily) + " / hari</div>"
+    + "</div>"
+
+    // 3 scope cards
+    + "<div class=\"ap-grid\">"
+    +   scopeCard("Hari ini",   "Target " + rp(an.targets.hari)   + " / hari",   an.hari)
+    +   scopeCard("Minggu ini", "Target " + rp(an.targets.minggu) + " / minggu", an.minggu)
+    +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan)
+    + "</div>"
+
+    // Trend chart 30 hari
+    + "<div class=\"ap-card\">"
+    +   "<div class=\"ap-card-title\"><i class=\"ti ti-chart-bar\" style=\"color:#3b82f6\"></i>"
+    +     "Trend Pemasukan vs Target — 30 Hari Terakhir"
+    +     "<span class=\"ap-card-title-sub\">Garis ungu = target harian " + rp(an.targets.hari) + "</span>"
+    +   "</div>"
+    +   "<div class=\"an-trend-wrap\">"
+    +     "<div class=\"an-trend-target-line\" style=\"bottom:" + targetPct + "%\">"
+    +       "<div class=\"an-trend-target-lbl\">Target</div></div>"
+    +     trendBars
+    +   "</div>"
+    + "</div>"
+
+    // Breakdown
+    + "<div class=\"ap-card\">"
+    +   "<div class=\"ap-card-title\"><i class=\"ti ti-list-details\" style=\"color:#f59e0b\"></i>"
+    +     "Breakdown Biaya Wajib"
+    +     "<span class=\"ap-card-title-sub\">Per bulan</span></div>"
+    +   "<div class=\"an-bd-list\">" + breakdownItems + "</div>"
+    +   "<div class=\"an-bd-total\"><span>Total per bulan</span><span>" + rp(bd.totalMonthly) + "</span></div>"
+    + "</div>"
+
+    // Simulator
+    + "<div class=\"an-sim\">"
+    +   "<div class=\"an-sim-hdr\"><i class=\"ti ti-user-plus\"></i> Simulasi: Tambah 1 Karyawan (+Rp 900.000/bulan)</div>"
+    +   "<div class=\"an-sim-body\">"
+    +     "<div class=\"an-sim-cell\">"
+    +       "<div class=\"an-sim-cell-lbl\">Rata-rata 30 hari terakhir</div>"
+    +       "<div class=\"an-sim-cell-val\">" + rp(sim.rataPemasukan) + " / hari</div>"
+    +     "</div>"
+    +     "<div class=\"an-sim-cell\">"
+    +       "<div class=\"an-sim-cell-lbl\">Margin sekarang</div>"
+    +       "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginLama >= 0 ? "#22c55e" : "#ef4444") + "\">"
+    +         (sim.marginLama >= 0 ? "+" : "") + rp(sim.marginLama) + " / hari</div>"
+    +     "</div>"
+    +     "<div class=\"an-sim-cell\">"
+    +       "<div class=\"an-sim-cell-lbl\">Beban tambahan karyawan baru</div>"
+    +       "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(sim.tambahanHarian) + " / hari</div>"
+    +     "</div>"
+    +     "<div class=\"an-sim-cell\">"
+    +       "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
+    +       "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginBaru >= 0 ? "#22c55e" : "#ef4444") + "\">"
+    +         (sim.marginBaru >= 0 ? "+" : "") + rp(sim.marginBaru) + " / hari</div>"
+    +     "</div>"
+    +   "</div>"
+    +   "<div class=\"an-sim-rec\" style=\"background:" + sim.color + "20;color:" + sim.color + ";border:1px solid " + sim.color + "40\">"
+    +     sim.emoji + " " + escHtml(sim.rekomendasi)
+    +   "</div>"
+    + "</div>"
+
+    + "</div></div></div>"
+    + buildFinanceBottomNav(role)
+    + "<script>"
+    + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
+    + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin/members';}"
+    + "function financeLogout(){if(!confirm('Keluar dari sesi keuangan?'))return;window.location.href='/operasional/logout';}"
+    + "function toggleTheme(){var d=document.documentElement;var cur=d.getAttribute('data-theme');d.setAttribute('data-theme',cur==='light'?'dark':'light');try{localStorage.setItem('theme',d.getAttribute('data-theme'))}catch(_){}}"
+    + "try{var _t=localStorage.getItem('theme');if(_t)document.documentElement.setAttribute('data-theme',_t);}catch(_){}"
+    + "</script>"
     + "</body></html>";
 }

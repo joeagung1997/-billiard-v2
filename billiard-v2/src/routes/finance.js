@@ -26,6 +26,7 @@ import {
   financeDashboard,
   financeLoginPage,
   financeKategoriPage, financeMenuPage,
+  financeAnalisisPage,
 } from "../views/finance.js";
 
 const router = Router();
@@ -300,6 +301,60 @@ router.post("/void", async (req, res) => {
 });
 
 // ── GET /operasional/kategori — kelola kategori (owner only) ────
+// ── GET /operasional/analisis — halaman detail analisis target (owner-only) ──
+router.get("/analisis", requireOwner, async (req, res) => {
+  try {
+    const transaksi = await readTransaksi();
+    const today     = todayBusinessDayISO();
+    const todayD    = new Date(today + "T00:00:00Z");
+
+    // Compute targets & status (sama dgn dashboard)
+    const targets = computeTargets();
+    const costBreakdown = buildCostBreakdown();
+
+    const dow       = todayD.getUTCDay() === 0 ? 6 : todayD.getUTCDay() - 1;
+    const mondayD   = new Date(todayD.getTime() - dow * 86400000);
+    const mondayStr = mondayD.toISOString().slice(0, 10);
+    const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
+
+    // Trend 30 hari: { tanggal, pemasukan }
+    const trend30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d   = new Date(todayD.getTime() - i * 86400000);
+      const iso = d.toISOString().slice(0, 10);
+      const pem = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === iso).reduce((s, t) => s + (t.jumlah || 0), 0);
+      trend30.push({ tanggal: iso, pemasukan: pem });
+    }
+
+    const last30In  = trend30.reduce((s, d) => s + d.pemasukan, 0);
+    const last30Avg = Math.round(last30In / 30);
+
+    const analisis = {
+      targets,
+      costBreakdown,
+      hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
+      minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
+      bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
+      simulasi: {
+        rataPemasukan: last30Avg,
+        ...evaluateAddKaryawan(last30Avg, 900000),
+      },
+    };
+
+    res.send(financeAnalisisPage({
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      analisis,
+      trend30,
+    }));
+  } catch (err) {
+    console.error("[FINANCE] analisis error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
 router.get("/kategori", requireOwner, async (req, res) => {
   try {
     const [kategori, subKategori] = await Promise.all([readKategori(), readSubKategori()]);
