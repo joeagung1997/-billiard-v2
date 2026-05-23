@@ -519,7 +519,7 @@ function buildAdminCss() {
     '  .pg-wrap { display:none; }',
     '  .topbar-label { display:none; }',
     '  .topbar { padding:8px 12px; }',
-    '  .page { padding:10px; padding-bottom:80px; }',
+    '  .page { padding:10px; padding-bottom:90px; }',
     '  .stats { grid-template-columns:repeat(2,1fr); gap:6px; }',
     '  .stat-card { padding:10px 12px; }',
     '  .stat-num { font-size:22px; }',
@@ -537,8 +537,43 @@ function buildAdminCss() {
     '  .mini-fin-val { font-size:10px; }',
     '  .mini-fin-lbl { font-size:9px; }',
     '  .trend-card { padding:12px; }',
-    '  .dash-topbar { flex-direction:column; gap:10px; }',
-    '  .topbar-actions { width:100%; justify-content:flex-end; }',
+    '  .dash-topbar { flex-direction:column; gap:10px; align-items:stretch !important; }',
+    '  .topbar-actions { width:100%; justify-content:flex-start; flex-wrap:wrap; gap:8px; }',
+    '  .topbar-actions > * { flex:1 1 calc(50% - 4px); min-width:0; }',
+    /* ── Dashboard Owner — admin dashboard chart card mobile ──── */
+    '  .content-grid { grid-template-columns:1fr !important; gap:12px !important; }',
+    '  .bottom-grid { grid-template-columns:1fr !important; gap:12px !important; }',
+    /* cstat-grid: 4 → 2 cols, padding lebih kecil */
+    '  .cstat-grid { grid-template-columns:repeat(2,1fr) !important; }',
+    '  .cstat-item { padding:12px 14px !important; }',
+    '  .cstat-val { font-size:18px !important; }',
+    '  .cstat-lbl { font-size:10.5px !important; }',
+    /* Chart period toggle wrap & full-width */
+    '  .chart-period-toggle { width:100% !important; display:grid !important; grid-template-columns:repeat(4,1fr); gap:3px !important; }',
+    '  .chart-period-btn { font-size:11px !important; padding:8px 4px !important; }',
+    /* Date range row → full width stack */
+    '  .date-range-row { flex-wrap:wrap; width:100%; padding:8px 10px; }',
+    '  .date-range-row .date-inp2 { flex:1 1 calc(50% - 8px); min-width:0; }',
+    '  .date-apply-btn { flex:1 1 100%; justify-content:center; padding:8px !important; }',
+    /* Chart card section title row wrap */
+    '  .card { border-radius:12px; }',
+    /* Heatmap days/cells lebih kompak */
+    '  .hm-cell { font-size:10px !important; }',
+    /* Card header lebih compact */
+    '  .card-header { padding:14px 16px !important; }',
+    '  .card-title { font-size:14px !important; }',
+    /* Mini financial bar */
+    '  .summary-bar { padding:14px 16px !important; gap:8px !important; }',
+    '  .summary-bar > * { min-width:0; }',
+    /* Toolbar period bar (di /admin/members) */
+    '  .toolbar-card { padding:12px !important; }',
+    '}',
+    /* iPhone SE & smaller */
+    '@media (max-width:400px) {',
+    '  .stats { grid-template-columns:repeat(2,1fr); }',
+    '  .cstat-grid { grid-template-columns:1fr !important; }',
+    '  .stat-num { font-size:20px; }',
+    '  .topbar-actions > * { flex:1 1 100%; }',
     '}',
     '@media (min-width:641px) {',
     '  .topbar { display:none; }',
