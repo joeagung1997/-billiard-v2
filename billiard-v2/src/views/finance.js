@@ -17,6 +17,10 @@ export const escHtml = (s) =>
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// Safe JSON serializer untuk embed di <script> — escape `<` agar tidak
+// memutus tag </script> kalau data user mengandung karakter HTML.
+const safeJson = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
+
 function docHead(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
@@ -906,10 +910,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     : "<div class=\"empty-state\" id=\"emptyState\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
 
   const hasDateFilter = !!tDari;
-
-  // Safe JSON serializer untuk embed di <script> — escape `<` agar tidak
-  // memutus tag </script> kalau data user mengandung karakter HTML.
-  const safeJson = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 
   const chartLabelsJson = safeJson(chartLabels);
   const chartInJson     = safeJson(chartIn);
