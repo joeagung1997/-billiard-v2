@@ -864,12 +864,20 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     // ── Thumbnail bukti di baris tabel ──────────────────────────
     ".fr-bukti-thumb{width:28px;height:28px;border-radius:5px;object-fit:cover;cursor:pointer;border:1px solid var(--border);transition:opacity .15s;vertical-align:middle;margin-left:4px}",
     ".fr-bukti-thumb:hover{opacity:.75;box-shadow:0 1px 6px rgba(0,0,0,.12)}",
-    // ── Detail chart tabs ────────────────────────────────────────
-    ".fdc-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;flex-wrap:wrap;gap:10px}",
-    ".fdc-tabs{display:flex;gap:6px;flex-wrap:wrap}",
-    ".fdc-tab{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;color:var(--txt3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap}",
-    ".fdc-tab.active{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4);color:#22c55e}",
-    ".fdc-tab:hover:not(.active){background:var(--surface2);color:var(--txt2)}",
+    // ── Detail chart card redesign ───────────────────────────────
+    ".fdc-top{padding:18px 20px 0}",
+    ".fdc-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}",
+    ".fdc-title{font-size:14px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:9px}",
+    ".fdc-title-icon{width:30px;height:30px;border-radius:9px;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center;color:#22c55e;font-size:16px;flex-shrink:0}",
+    ".fdc-period{font-size:11px;color:var(--txt3);font-family:var(--ff-mono);white-space:nowrap}",
+    ".fdc-seg{display:flex;background:var(--surface2);border-radius:26px;padding:3px;margin:0 20px 12px}",
+    ".fdc-seg-btn{flex:1;padding:7px 8px;border-radius:22px;border:none;background:transparent;color:var(--txt3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}",
+    ".fdc-seg-btn.active{background:var(--surface);color:var(--txt);box-shadow:0 1px 8px rgba(0,0,0,.15);border:1px solid var(--border)}",
+    ".fdc-seg-btn i{font-size:13px}",
+    ".fdc-legend-row{display:flex;align-items:center;padding:0 20px 10px;border-bottom:1px solid var(--border)}",
+    ".fdc-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3);margin-right:14px}",
+    ".fdc-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}",
+    ".fdc-sub-label{margin-left:auto;font-size:10px;color:var(--txt3);font-family:var(--ff-mono)}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1060,19 +1068,33 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     // ── Detail chart: tanggal / hari / jam (owner only) ──────────
     + (isOwner
       ? "<div class=\"fin-chart-card\" style=\"margin-top:16px\">"
-        + "<div class=\"fdc-header\">"
-        + "<div><div class=\"fin-chart-title\">Analisis Transaksi</div>"
-        + "<div class=\"fin-chart-sub\">" + escHtml(bulanLabel) + " · pilih tampilan</div></div>"
-        + "<div class=\"fdc-tabs\">"
-        + "<button class=\"fdc-tab active\" id=\"tabTanggal\" onclick=\"switchDetailChart('tanggal')\"><i class=\"ti ti-calendar\"></i>&nbsp;Tanggal</button>"
-        + "<button class=\"fdc-tab\" id=\"tabHari\" onclick=\"switchDetailChart('hari')\"><i class=\"ti ti-calendar-week\"></i>&nbsp;Hari</button>"
-        + "<button class=\"fdc-tab\" id=\"tabJam\" onclick=\"switchDetailChart('jam')\"><i class=\"ti ti-clock\"></i>&nbsp;Jam</button>"
-        + "</div></div>"
-        + "<div class=\"fin-chart-leg\" style=\"padding:0 18px 6px;gap:14px;display:flex\">"
-        + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#22c55e\"></span>&nbsp;Pemasukan</span>"
-        + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#ef4444\"></span>&nbsp;Pengeluaran</span>"
+
+        // ── Title row ──────────────────────────────────────────
+        + "<div class=\"fdc-top\">"
+        + "<div class=\"fdc-title-row\">"
+        + "<div class=\"fdc-title\"><div class=\"fdc-title-icon\"><i class=\"ti ti-chart-bar\"></i></div>Analisis Transaksi</div>"
+        + "<span class=\"fdc-period\">" + escHtml(bulanLabel) + "</span>"
         + "</div>"
-        + "<div class=\"fin-chart-body\" style=\"height:240px;padding-top:4px\"><canvas id=\"detailChart\"></canvas></div>"
+        + "</div>"
+
+        // ── Segmented control ──────────────────────────────────
+        + "<div class=\"fdc-seg\">"
+        + "<button class=\"fdc-seg-btn active\" id=\"tabTanggal\" onclick=\"switchDetailChart('tanggal')\"><i class=\"ti ti-calendar-event\"></i>Per Tanggal</button>"
+        + "<button class=\"fdc-seg-btn\" id=\"tabHari\" onclick=\"switchDetailChart('hari')\"><i class=\"ti ti-calendar-week\"></i>Per Hari</button>"
+        + "<button class=\"fdc-seg-btn\" id=\"tabJam\" onclick=\"switchDetailChart('jam')\"><i class=\"ti ti-clock\"></i>Per Jam</button>"
+        + "</div>"
+
+        // ── Legend + subtitle label ────────────────────────────
+        + "<div class=\"fdc-legend-row\">"
+        + "<div class=\"fdc-leg-item\"><span class=\"fdc-dot\" style=\"background:#22c55e\"></span>Pemasukan</div>"
+        + "<div class=\"fdc-leg-item\"><span class=\"fdc-dot\" style=\"background:#ef4444\"></span>Pengeluaran</div>"
+        + "<span class=\"fdc-sub-label\" id=\"fdcSubLabel\">Per tanggal dalam bulan</span>"
+        + "</div>"
+
+        // ── Chart ──────────────────────────────────────────────
+        + "<div class=\"fin-chart-body\" style=\"height:250px;padding-top:6px\"><canvas id=\"detailChart\"></canvas></div>"
+
+        // ── Stats footer ───────────────────────────────────────
         + "<div class=\"fin-chart-stats\">"
         + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pemasukan</div><div class=\"fin-cs-val inc\">" + rp(totalIn) + "</div></div>"
         + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pengeluaran</div><div class=\"fin-cs-val out\">" + rp(totalOut) + "</div></div>"
@@ -1646,6 +1668,8 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     + "window.switchDetailChart=function(mode){"
     + "['tanggal','hari','jam'].forEach(function(m){"
     + "var b=document.getElementById('tab'+m.charAt(0).toUpperCase()+m.slice(1));if(b)b.classList.toggle('active',m===mode);});"
+    + "var subMap={tanggal:'Per tanggal dalam bulan',hari:'Per hari dalam seminggu',jam:'Per jam dalam sehari'};"
+    + "var sl=document.getElementById('fdcSubLabel');if(sl)sl.textContent=subMap[mode]||'';"
     + "var d=chartData[mode];"
     + "dc2inst.data.labels=d.labels;"
     + "dc2inst.data.datasets[0].data=d.inp;"
