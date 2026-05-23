@@ -499,7 +499,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], msg = "" }) {
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
     : msg === "voided"    ? "Transaksi berhasil dibatalkan"
@@ -513,6 +513,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const jFilter  = jenisFilter || "";
   const tDari    = tglDari    || "";
   const tSampai  = tglSampai  || "";
+
+  // username → display name (utk tampilkan pencatat di tabel transaksi)
+  const userNameMap = Object.fromEntries(
+    accountsAll.map((a) => [a.username, a.display_name || a.username])
+  );
 
   // Menu items untuk wizard Kopi/Snack — dikelompokkan by kategori
   // Build toppings map by item name (for wizard JS)
@@ -627,9 +632,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const mondayDate = new Date(now); mondayDate.setDate(now.getDate() - dayOfWeek);
   const mondayStr  = mondayDate.toISOString().slice(0, 10);
   const isHariIni   = tDari === todayStr && tSampai === todayStr;
+  const isSingleDay = !!tDari && tDari === tSampai;          // 1 hari saja (apapun)
   const isMingguIni = tDari === mondayStr && tSampai === todayStr;
   const isBulanIni  = !tDari && bFilter === curBulan;
-  const periodeKey  = isHariIni ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
+  // Periode "hari" pakai distribusi slot (Pagi/Siang/Sore/Malam) — termasuk
+  // saat user pilih kemarin/besok via day-picker karyawan.
+  const periodeKey  = isSingleDay ? "hari" : isMingguIni ? "minggu" : isBulanIni ? "bulan" : "custom";
   const periodeLabel = isHariIni
     ? "Hari ini · " + now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
     : isMingguIni ? "Minggu ini"
@@ -657,8 +665,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       if (t.jenis === "pemasukan") chartIn[i]  += t.jumlah;
       else                         chartOut[i] += t.jumlah;
     });
-    const todayFmt = new Date(todayStr + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
-    chartSubtitle = "Hari ini · " + todayFmt;
+    const _dayStr = tDari || todayStr;
+    const _dayFmt = new Date(_dayStr + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
+    chartSubtitle = (_dayStr === todayStr ? "Hari ini · " : "") + _dayFmt;
 
   } else if (periodeKey === "minggu") {
     const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
@@ -797,6 +806,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "")
       + (t.bayar === "cash" ? " · <span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? " · <span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
       + (t.buktiUrl ? " · <a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
+      + (t.dicatatOleh ? "<span class=\"fr-pencatat\" title=\"Dicatat oleh " + escHtml(userNameMap[t.dicatatOleh] || t.dicatatOleh) + "\"><i class=\"ti ti-user-edit\"></i>" + escHtml(userNameMap[t.dicatatOleh] || t.dicatatOleh) + "</span>" : "")
       + "</div>"
       + reasonHt
       + "</div>"
@@ -941,6 +951,19 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fdc-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt3);margin-right:14px}",
     ".fdc-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}",
     ".fdc-sub-label{margin-left:auto;font-size:10px;color:var(--txt3);font-family:var(--ff-mono)}",
+    // ── Karyawan day-picker bar ──────────────────────────────────
+    ".kya-day-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 10px;background:rgba(30,64,175,.05);border:1px solid rgba(30,64,175,.15);border-radius:12px;flex-wrap:wrap}",
+    ".kya-day-bar-lbl{font-size:11px;font-weight:700;color:#1e40af;display:flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.06em;padding:0 6px}",
+    ".kya-day-chip{display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:9px;background:var(--surface);border:1px solid var(--border2);text-decoration:none;transition:all .14s;min-width:88px}",
+    ".kya-day-chip:hover{border-color:#3b82f6;background:rgba(59,130,246,.05)}",
+    ".kya-day-chip.active{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:#2563eb;box-shadow:0 2px 8px rgba(59,130,246,.3)}",
+    ".kya-day-chip.active .kya-day-lbl,.kya-day-chip.active .kya-day-sub{color:#fff}",
+    ".kya-day-lbl{font-size:12px;font-weight:700;color:var(--txt)}",
+    ".kya-day-sub{font-size:10px;color:var(--txt3);margin-top:2px;font-family:var(--ff-mono)}",
+    "@media(max-width:540px){.kya-day-bar-lbl{flex-basis:100%}.kya-day-chip{flex:1;min-width:0}}",
+    // ── Pencatat di tabel transaksi ──────────────────────────────
+    ".fr-pencatat{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--txt3);background:var(--surface2);padding:1px 7px;border-radius:8px;margin-left:4px}",
+    ".fr-pencatat i{font-size:11px}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1080,14 +1103,31 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
         + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
         + "</div>"
-      // Karyawan: info strip periode terkunci
-      : "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;"
-        + "background:rgba(30,64,175,.06);border:1px solid rgba(30,64,175,.15);border-radius:10px;"
-        + "font-size:12px;color:#1e40af\">"
-        + "<i class=\"ti ti-lock\" style=\"font-size:15px;flex-shrink:0\"></i>"
-        + "<span><strong>Tampilan terkunci ke hari ini</strong> &mdash; "
-        + new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-        + "</span></div>")
+      // Karyawan: pilih hari (kemarin / hari ini / besok)
+      : (function() {
+          const _today    = new Date();
+          const _toIso    = (d) => d.toISOString().slice(0, 10);
+          const _yesterIso = _toIso(new Date(_today.getTime() - 86400000));
+          const _todayIso  = _toIso(_today);
+          const _tomIso    = _toIso(new Date(_today.getTime() + 86400000));
+          const _activeDay = tDari || _todayIso;
+          const _dayChip = (iso, lbl, sub) => {
+            const isActive = _activeDay === iso;
+            return "<a href=\"/operasional?tgl_dari=" + iso + "&tgl_sampai=" + iso + "\""
+              + " class=\"kya-day-chip" + (isActive ? " active" : "") + "\""
+              + " title=\"" + sub + "\">"
+              + "<span class=\"kya-day-lbl\">" + lbl + "</span>"
+              + "<span class=\"kya-day-sub\">" + sub + "</span>"
+              + "</a>";
+          };
+          const fmt = (d) => d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+          return "<div class=\"kya-day-bar\">"
+            + "<div class=\"kya-day-bar-lbl\"><i class=\"ti ti-calendar\"></i> Tampilkan</div>"
+            + _dayChip(_yesterIso, "Kemarin",  fmt(new Date(_today.getTime() - 86400000)))
+            + _dayChip(_todayIso,  "Hari ini", fmt(_today))
+            + _dayChip(_tomIso,    "Besok",    fmt(new Date(_today.getTime() + 86400000)))
+            + "</div>";
+        })())
 
     // ── Charts ──────────────────────────────────────────────────
     + "<div class=\"fin-charts-row\">"

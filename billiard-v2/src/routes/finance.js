@@ -139,24 +139,39 @@ router.use(requireFinanceAuth);
 router.get("/", async (req, res) => {
   try {
     const role = res.locals.financeRole;
-    const [transaksi, kategoriList, subKategoriList, menuItems, toppings] = await Promise.all([
+    const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts] = await Promise.all([
       readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
+      readAdminAccounts(),
     ]);
 
-    // Karyawan: dikunci ke hari ini saja
+    // Karyawan: hanya boleh lihat kemarin, hari ini, atau besok (1 hari saja, bukan range)
     const today      = new Date().toISOString().slice(0, 10);
+    const yesterday  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const tomorrow   = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const allowedKy  = [yesterday, today, tomorrow];
     const todayBulan = today.slice(0, 7);
 
-    const bulanFilter = role === "karyawan" ? todayBulan  : (req.query.bulan      ?? "");
-    const jenisFilter = role === "karyawan" ? ""          : (req.query.jenis      ?? "");
-    const tglDari     = role === "karyawan" ? today       : (req.query.tgl_dari   ?? "");
-    const tglSampai   = role === "karyawan" ? today       : (req.query.tgl_sampai ?? "");
+    let tglDari, tglSampai, bulanFilter, jenisFilter;
+    if (role === "karyawan") {
+      const reqDay = (req.query.tgl_dari ?? req.query.day ?? "").slice(0, 10);
+      const pickDay = allowedKy.includes(reqDay) ? reqDay : today;
+      tglDari     = pickDay;
+      tglSampai   = pickDay;
+      bulanFilter = pickDay.slice(0, 7);
+      jenisFilter = "";
+    } else {
+      bulanFilter = req.query.bulan      ?? "";
+      jenisFilter = req.query.jenis      ?? "";
+      tglDari     = req.query.tgl_dari   ?? "";
+      tglSampai   = req.query.tgl_sampai ?? "";
+    }
 
     res.send(financeDashboard({
       transaksi, token: "", role,
       displayName: res.locals.financeDisplay || "",
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
+      accountsAll: accounts,
       msg: req.query.msg || "",
     }));
   } catch (err) {
