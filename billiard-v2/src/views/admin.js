@@ -994,7 +994,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=36">'
+    + '<link rel="stylesheet" href="/admin.css?v=37">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1412,7 +1412,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=36">'
+    + '<link rel="stylesheet" href="/admin.css?v=37">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1499,10 +1499,10 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '</div>'
     + '<div id="tbody"></div>'
     + '<div id="tbl-empty" class="empty-state" style="display:none"><i class="ti ti-users"></i>Tidak ada member yang cocok</div>'
-    + '<div class="tbl-pg" id="member-pg" style="display:none"></div>'
     + '</div>'
 
     + '<div id="mobile-list" style="margin-top:8px"></div>'
+    + '<div class="tbl-pg" id="member-pg" style="display:none;margin-top:10px;border-radius:14px"></div>'
 
     + '</div>'
     + '</div>'

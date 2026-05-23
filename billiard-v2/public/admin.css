@@ -976,9 +976,13 @@ td          { padding:10px 16px; vertical-align:middle; }
   .dash-topbar { flex-direction:column; gap:12px; }
   .topbar-actions { width:100%; }
 
-  /* Hide new grid table on mobile — mobile-list cards take over */
+  /* Hide new grid table on mobile — mobile-list cards take over.
+     Pagination .tbl-pg di luar .table-card (sibling) tetap visible. */
   .table-card  { display:none !important; }
-  .tbl-pg      { display:none !important; }
+  /* Mobile pagination: lebih compact, border full (krn sekarang berdiri sendiri) */
+  .tbl-pg      { padding:12px 14px; border-top:none; border:1px solid var(--border); border-radius:14px; }
+  .tbl-pg-info { font-size:11px; }
+  .tbl-pg-btn  { width:34px; height:34px; }
 
   /* Finance table — show scrollable, not hidden (no card fallback) */
   .finance-table-wrap .table-card { display:block !important; overflow-x:auto; }
