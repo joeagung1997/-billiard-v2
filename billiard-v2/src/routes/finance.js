@@ -206,10 +206,16 @@ router.get("/", async (req, res) => {
       },
     };
 
+    // Shift: lookup fresh dari DB by username supaya tdk ke-stale di cookie lama
+    // Kalau cookie blm punya field shift atau owner ubah shift via SDM > Akun,
+    // perubahan langsung terbaca tanpa user perlu logout/login.
+    const me = accounts.find((a) => a.username.toLowerCase() === (res.locals.financeUser || "").toLowerCase());
+    const effectiveShift = me?.shift || res.locals.financeShift || "siang";
+
     res.send(financeDashboard({
       transaksi, token: "", role,
       displayName: res.locals.financeDisplay || "",
-      shift:       res.locals.financeShift   || "siang",
+      shift:       effectiveShift,
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
       accountsAll: accounts,
