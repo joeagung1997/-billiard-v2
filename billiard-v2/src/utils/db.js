@@ -447,6 +447,26 @@ export const appendSetoran = async (s) => {
   );
 };
 
+// ── Monitoring: Aktivitas Member (dari tabel logs) ────────────
+export const readMemberActivity = async ({ tglDari, tglSampai, aksi, kode, limit = 500 } = {}) => {
+  let sql = "SELECT ts, kode, nama, aksi, detail FROM logs WHERE 1=1";
+  const params = [];
+  if (tglDari)   { params.push(tglDari);   sql += ` AND (ts AT TIME ZONE 'Asia/Jakarta')::DATE >= $${params.length}::DATE`; }
+  if (tglSampai) { params.push(tglSampai); sql += ` AND (ts AT TIME ZONE 'Asia/Jakarta')::DATE <= $${params.length}::DATE`; }
+  if (aksi)      { params.push(aksi);      sql += ` AND aksi = $${params.length}`; }
+  if (kode)      { params.push(kode);      sql += ` AND kode = $${params.length}`; }
+  params.push(limit);
+  sql += ` ORDER BY ts DESC LIMIT $${params.length}`;
+  const res = await query(sql, params);
+  return res.rows.map((r) => ({
+    ts:     r.ts,
+    kode:   r.kode   ?? "",
+    nama:   r.nama   ?? "",
+    aksi:   r.aksi   ?? "",
+    detail: r.detail ?? "",
+  }));
+};
+
 export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, limit = 300 } = {}) => {
   let sql = "SELECT * FROM transaksi WHERE voided_at IS NULL";
   const params = [];

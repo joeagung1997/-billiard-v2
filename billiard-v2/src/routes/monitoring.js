@@ -7,11 +7,13 @@ import {
   readTransaksiLog,
   readSetoranList,
   appendSetoran,
+  readMemberActivity,
 } from "../utils/db.js";
 import {
   monitoringAktivitas,
   monitoringSetoran,
   monitoringSelisih,
+  monitoringMember,
 } from "../views/monitoring.js";
 import { requireFinanceAuth, requireOwner } from "./finance.js";
 
@@ -115,6 +117,30 @@ router.post("/monitoring/setoran", async (req, res) => {
   } catch (err) {
     console.error("[MONITORING] POST setoran error:", err.message);
     res.redirect("/operasional/monitoring/setoran?msg=err");
+  }
+});
+
+// ── Aktivitas Member ───────────────────────────────────────────
+router.get("/monitoring/member", async (req, res) => {
+  try {
+    const now       = new Date();
+    const today     = now.toISOString().slice(0, 10);
+    const tglDari   = (req.query.dari   ?? today).slice(0, 10);
+    const tglSampai = (req.query.sampai ?? today).slice(0, 10);
+    const aksi      = req.query.aksi ?? "";
+
+    const logs = await readMemberActivity({
+      tglDari,
+      tglSampai,
+      aksi: aksi || undefined,
+    });
+    res.send(monitoringMember({
+      logs, tglDari, tglSampai, aksi,
+      role: res.locals.financeRole,
+    }));
+  } catch (err) {
+    console.error("[MONITORING] member error:", err.message);
+    res.status(500).send("Error memuat halaman aktivitas member.");
   }
 });
 

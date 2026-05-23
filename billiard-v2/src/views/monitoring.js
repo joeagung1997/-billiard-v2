@@ -86,6 +86,7 @@ const MON_CSS = [
 function monPage(title, role, activeTab, bodyHtml, extraScript) {
   const tabs = [
     { id: "aktivitas", label: "Aktivitas Transaksi", href: "/operasional/monitoring/aktivitas", icon: "ti-list" },
+    { id: "member",    label: "Aktivitas Member",    href: "/operasional/monitoring/member",    icon: "ti-users" },
     { id: "setoran",   label: "Setoran Shift",       href: "/operasional/monitoring/setoran",   icon: "ti-report-money" },
     { id: "selisih",   label: "Selisih Kas",         href: "/operasional/monitoring/selisih",   icon: "ti-scale" },
   ];
@@ -148,25 +149,10 @@ function buildQuery(params) {
   return qs ? "?" + qs : "";
 }
 
-// ── 1. Aktivitas Transaksi ────────────────────────────────────
-export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis, karyawanList, accountsAll = [], role }) {
-  // Map username → display name (mencakup owner juga, biar transaksi owner tetap rapih)
-  const nameMap = Object.fromEntries(
-    accountsAll.map((a) => [a.username, a.display_name || a.username])
-  );
-  // Summary stats
-  const totalIn  = logs.filter((l) => l.jenis === "pemasukan").reduce((s, l) => s + l.jumlah, 0);
-  const totalOut = logs.filter((l) => l.jenis === "pengeluaran").reduce((s, l) => s + l.jumlah, 0);
-  const uniqueRecorders = new Set(logs.map((l) => l.dicatatOleh).filter(Boolean));
-
-  const summaryHtml = "<div class=\"mon-sum-row\">"
-    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Transaksi</div><div class=\"mon-sum-val acc\">" + logs.length + "</div></div>"
-    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Pemasukan</div><div class=\"mon-sum-val inc\">" + rp(totalIn) + "</div></div>"
-    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Pengeluaran</div><div class=\"mon-sum-val out\">" + rp(totalOut) + "</div></div>"
-    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Pencatat Aktif</div><div class=\"mon-sum-val\">" + uniqueRecorders.size + " orang</div></div>"
-    + "</div>";
-
-  // Quick-filter presets (Senin = awal minggu, ala ID)
+// ── Helper: quick-filter chips utk date range ──────────────────
+// Form harus punya id `formId`, dgn inputs [name=dari] dan [name=sampai].
+// Inputs harus on-change call markCustom() supaya chip Custom highlight.
+function buildDateChips({ tglDari, tglSampai, formId }) {
   const _now       = new Date();
   const today      = _now.toISOString().slice(0, 10);
   const yesterday  = new Date(_now.getTime() - 86400000).toISOString().slice(0, 10);
@@ -192,6 +178,39 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + "<button type=\"button\" id=\"chipCustom\" class=\"mon-chip" + (activeChip === "custom" ? " active" : "") + "\""
     + " onclick=\"applyCustom()\">Custom</button>"
     + "</div>";
+
+  const script = "function qf(d,s){var f=document.getElementById('" + formId + "');"
+    + "f.querySelector('[name=dari]').value=d;"
+    + "f.querySelector('[name=sampai]').value=s;"
+    + "f.submit();}"
+    + "function applyCustom(){document.getElementById('" + formId + "').submit();}"
+    + "function markCustom(){"
+    + "var chips=document.querySelectorAll('.mon-chip');"
+    + "for(var i=0;i<chips.length;i++)chips[i].classList.remove('active');"
+    + "document.getElementById('chipCustom').classList.add('active');}";
+
+  return { chipsHtml, script };
+}
+
+// ── 1. Aktivitas Transaksi ────────────────────────────────────
+export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis, karyawanList, accountsAll = [], role }) {
+  // Map username → display name (mencakup owner juga, biar transaksi owner tetap rapih)
+  const nameMap = Object.fromEntries(
+    accountsAll.map((a) => [a.username, a.display_name || a.username])
+  );
+  // Summary stats
+  const totalIn  = logs.filter((l) => l.jenis === "pemasukan").reduce((s, l) => s + l.jumlah, 0);
+  const totalOut = logs.filter((l) => l.jenis === "pengeluaran").reduce((s, l) => s + l.jumlah, 0);
+  const uniqueRecorders = new Set(logs.map((l) => l.dicatatOleh).filter(Boolean));
+
+  const summaryHtml = "<div class=\"mon-sum-row\">"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Transaksi</div><div class=\"mon-sum-val acc\">" + logs.length + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Pemasukan</div><div class=\"mon-sum-val inc\">" + rp(totalIn) + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Pengeluaran</div><div class=\"mon-sum-val out\">" + rp(totalOut) + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Pencatat Aktif</div><div class=\"mon-sum-val\">" + uniqueRecorders.size + " orang</div></div>"
+    + "</div>";
+
+  const { chipsHtml, script: chipsScript } = buildDateChips({ tglDari, tglSampai, formId: "actFilterForm" });
 
   // Filter bar
   const karyawanOpts = karyawanList.map((k) =>
@@ -267,16 +286,100 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + "</table></div></div>";
 
   const body = summaryHtml + filterHtml + tableHtml;
-  const script = "function qf(d,s){var f=document.getElementById('actFilterForm');"
-    + "f.querySelector('[name=dari]').value=d;"
-    + "f.querySelector('[name=sampai]').value=s;"
-    + "f.submit();}"
-    + "function applyCustom(){document.getElementById('actFilterForm').submit();}"
-    + "function markCustom(){"
-    + "var chips=document.querySelectorAll('.mon-chip');"
-    + "for(var i=0;i<chips.length;i++)chips[i].classList.remove('active');"
-    + "document.getElementById('chipCustom').classList.add('active');}";
-  return monPage("Monitoring Aktivitas", role, "aktivitas", body, script);
+  return monPage("Monitoring Aktivitas", role, "aktivitas", body, chipsScript);
+}
+
+// ── 1b. Aktivitas Member (dari tabel logs) ────────────────────
+export function monitoringMember({ logs, tglDari, tglSampai, aksi, role }) {
+  // Aksi list & label friendly
+  const aksiMeta = {
+    SCAN:           { label: "Kunjungan",       cls: "mon-badge-in",     icon: "ti-qrcode" },
+    SCAN_RESET:     { label: "Scan + Reset",    cls: "mon-badge-lebih",  icon: "ti-refresh" },
+    DAFTAR_MEMBER:  { label: "Daftar Baru",     cls: "mon-badge-malam",  icon: "ti-user-plus" },
+    EDIT_MEMBER:    { label: "Edit Data",       cls: "mon-badge-siang",  icon: "ti-edit" },
+    DELETE_MEMBER:  { label: "Hapus Member",    cls: "mon-badge-out",    icon: "ti-trash" },
+    HAPUS:          { label: "Hapus Member",    cls: "mon-badge-out",    icon: "ti-trash" },
+    BONUS_KLAIM:    { label: "Klaim Bonus",     cls: "mon-badge-ok",     icon: "ti-gift" },
+    BONUS_EARNED:   { label: "Bonus Earned",    cls: "mon-badge-in",     icon: "ti-award" },
+    BONUS_EXPIRED:  { label: "Bonus Expired",   cls: "mon-badge-out",    icon: "ti-clock-x" },
+    RESET_QR:       { label: "Reset QR",        cls: "mon-badge-lebih",  icon: "ti-qrcode" },
+  };
+
+  // Summary
+  const countBy = (act) => logs.filter((l) => l.aksi === act).length;
+  const scanCount   = countBy("SCAN") + countBy("SCAN_RESET");
+  const daftarCount = countBy("DAFTAR_MEMBER");
+  const klaimCount  = countBy("BONUS_KLAIM");
+
+  const summaryHtml = "<div class=\"mon-sum-row\">"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Total Aktivitas</div><div class=\"mon-sum-val acc\">" + logs.length + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Kunjungan / Scan</div><div class=\"mon-sum-val inc\">" + scanCount + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Member Baru</div><div class=\"mon-sum-val\">" + daftarCount + "</div></div>"
+    + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Klaim Bonus</div><div class=\"mon-sum-val warn\">" + klaimCount + "</div></div>"
+    + "</div>";
+
+  const { chipsHtml, script: chipsScript } = buildDateChips({ tglDari, tglSampai, formId: "memFilterForm" });
+
+  // Dropdown aksi
+  const aksiOpts = Object.entries(aksiMeta)
+    .filter(([k]) => k !== "HAPUS") // HAPUS = duplicate DELETE_MEMBER (legacy), hide dr filter
+    .map(([k, v]) =>
+      "<option value=\"" + escHtml(k) + "\"" + (aksi === k ? " selected" : "") + ">" + escHtml(v.label) + "</option>"
+    ).join("");
+
+  const filterHtml = "<form method=\"get\" action=\"/operasional/monitoring/member\" class=\"mon-filter\" id=\"memFilterForm\">"
+    + chipsHtml
+    + "<label>Dari</label>"
+    + "<input type=\"date\" name=\"dari\" id=\"fDari\" value=\"" + escHtml(tglDari) + "\" style=\"width:130px\" onchange=\"markCustom()\">"
+    + "<label>Sampai</label>"
+    + "<input type=\"date\" name=\"sampai\" id=\"fSampai\" value=\"" + escHtml(tglSampai) + "\" style=\"width:130px\" onchange=\"markCustom()\">"
+    + "<label>Aksi</label>"
+    + "<select name=\"aksi\">"
+    + "<option value=\"\">Semua</option>"
+    + aksiOpts
+    + "</select>"
+    + "<button type=\"submit\" class=\"mon-filter-btn\"><i class=\"ti ti-search\"></i> Filter</button>"
+    + "</form>";
+
+  // Tabel
+  let tableBody = "";
+  if (logs.length === 0) {
+    tableBody = "<tr><td colspan=\"5\" class=\"mon-empty\"><i class=\"ti ti-users-off\"></i><br>Belum ada aktivitas member di periode ini</td></tr>";
+  } else {
+    tableBody = logs.map((l) => {
+      const meta = aksiMeta[l.aksi] || { label: l.aksi, cls: "mon-badge-siang", icon: "ti-activity" };
+      const tsDate = l.ts instanceof Date ? l.ts : new Date(l.ts);
+      const waktu  = tsDate.toLocaleString("id-ID", {
+        day: "numeric", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: "Asia/Jakarta",
+      });
+      const badge = "<span class=\"mon-badge " + meta.cls + "\">"
+        + "<i class=\"ti " + meta.icon + "\" style=\"font-size:9px\"></i> " + escHtml(meta.label) + "</span>";
+      const memberHtml = l.kode
+        ? "<span style=\"font-weight:600;color:var(--txt)\">" + escHtml(l.nama || "—") + "</span>"
+          + "<span style=\"font-size:10px;color:var(--txt3);margin-left:6px;font-family:monospace\">" + escHtml(l.kode) + "</span>"
+        : "<span style=\"color:var(--txt3)\">—</span>";
+      return "<tr>"
+        + "<td style=\"white-space:nowrap;color:var(--txt3);font-size:11px\">" + escHtml(waktu) + "</td>"
+        + "<td>" + badge + "</td>"
+        + "<td>" + memberHtml + "</td>"
+        + "<td class=\"mon-hide-mobile\" style=\"color:var(--txt2);font-size:12px\">" + escHtml(l.detail || "—") + "</td>"
+        + "</tr>";
+    }).join("");
+  }
+
+  const tableHtml = "<div class=\"mon-card\"><div style=\"overflow-x:auto\">"
+    + "<table class=\"mon-table\">"
+    + "<thead><tr>"
+    + "<th>Waktu</th><th>Aksi</th><th>Member</th>"
+    + "<th class=\"mon-hide-mobile\">Detail</th>"
+    + "</tr></thead>"
+    + "<tbody>" + tableBody + "</tbody>"
+    + "</table></div></div>";
+
+  const body = summaryHtml + filterHtml + tableHtml;
+  return monPage("Aktivitas Member", role, "member", body, chipsScript);
 }
 
 // ── 2. Setoran Shift ──────────────────────────────────────────
