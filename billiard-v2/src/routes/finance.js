@@ -77,7 +77,9 @@ function getFinanceRole(req) {
 function requireFinanceAuth(req, res, next) {
   const user = getFinanceUser(req);
   if (!user?.role) {
-    return res.redirect("/operasional/login?r=" + encodeURIComponent(req.originalUrl));
+    // Flow utama login via /admin (username+PIN) — kalau cookie _frt expired,
+    // arahkan ke /admin (akan auto-set cookie kembali setelah login).
+    return res.redirect("/admin");
   }
   res.locals.financeRole    = user.role;
   res.locals.financeUser    = user.username;
@@ -134,12 +136,12 @@ router.post("/login", async (req, res) => {
   res.redirect(redir || "/operasional");
 });
 
-router.get("/logout", (req, res) => {
-  const role = getFinanceRole(req); // baca sebelum cookie dihapus
+router.get("/logout", (_req, res) => {
   clearRoleCookie(res);
-  // Owner kembali ke /admin (login admin sudah auto-set _frt),
-  // karyawan kembali ke halaman login operasional.
-  res.redirect(role === "owner" ? "/admin" : "/operasional/login");
+  // Semua role kembali ke /admin — flow login utama via /admin (username+PIN),
+  // baik owner maupun karyawan. /operasional/login tetap accessible kalau
+  // user manual buka URL-nya, tapi default tujuan logout = /admin.
+  res.redirect("/admin");
 });
 
 // ── Terapkan auth ke SEMUA route di bawah ini ─────────────────────
