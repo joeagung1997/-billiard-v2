@@ -2924,40 +2924,28 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-note{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-left:3px solid #f59e0b;border-radius:10px;font-size:12.5px;color:var(--txt2);line-height:1.55}",
     ".ap-note i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
     ".ap-note strong{color:var(--txt);font-weight:700}",
-    // ── Status cards (Cara Baca Status) ──────────────────────────
-    ".sts-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px}",
-    "@media(max-width:1200px){.sts-grid{grid-template-columns:repeat(3,1fr)}}",
-    "@media(max-width:768px){.sts-grid{grid-template-columns:repeat(2,1fr)}}",
-    "@media(max-width:480px){.sts-grid{grid-template-columns:1fr}}",
-    ".sts-card{position:relative;border:1.5px solid transparent;border-radius:14px;padding:14px 14px 12px;transition:transform .2s,box-shadow .2s;overflow:hidden;border-color:rgba(0,0,0,.04)}",
-    ".sts-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sts-c)}",
-    ".sts-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(15,23,42,.08)}",
-    ".sts-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}",
-    ".sts-emoji{font-size:24px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.7);border-radius:11px;box-shadow:0 1px 3px rgba(15,23,42,.06)}",
-    ".sts-rasio{font-family:var(--ff-mono);font-size:11px;font-weight:700;color:var(--sts-c);background:rgba(255,255,255,.7);padding:4px 9px;border-radius:11px}",
-    ".sts-label{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;letter-spacing:-.01em}",
-    ".sts-desc{font-size:11px;color:#475569;line-height:1.4;margin-bottom:10px;min-height:31px}",
-    ".sts-ranges{border-top:1px dashed rgba(0,0,0,.08);padding-top:9px}",
-    ".sts-range-primary{margin-bottom:7px}",
-    ".sts-r-lbl{display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}",
-    ".sts-r-lbl i{font-size:11px;color:var(--sts-c)}",
-    ".sts-r-val{font-family:var(--ff-mono);font-size:13.5px;font-weight:700;color:#0f172a;letter-spacing:-.01em}",
-    ".sts-range-sub{display:flex;flex-direction:column;gap:3px;padding-top:5px;border-top:1px dashed rgba(0,0,0,.06)}",
-    ".sts-rs-item{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:10.5px}",
-    ".sts-rs-lbl{color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:9px}",
-    ".sts-rs-val{font-family:var(--ff-mono);font-weight:600;color:#475569;letter-spacing:-.01em}",
-    ".sts-tip{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(168,85,247,.04));border:1px solid rgba(245,158,11,.2);border-radius:10px;font-size:11.5px;color:#475569;line-height:1.55}",
-    ".sts-tip i{color:#f59e0b;font-size:16px;flex-shrink:0;margin-top:1px}",
-    ".sts-tip strong{color:#0f172a;font-weight:700}",
-    // Dark mode tweak
-    "[data-theme='dark'] .sts-card{border-color:rgba(255,255,255,.06)}",
-    "[data-theme='dark'] .sts-label{color:#e2e8f0}",
-    "[data-theme='dark'] .sts-desc{color:#94a3b8}",
-    "[data-theme='dark'] .sts-emoji,[data-theme='dark'] .sts-rasio{background:rgba(15,23,42,.4)}",
-    "[data-theme='dark'] .sts-r-val{color:#e2e8f0}",
-    "[data-theme='dark'] .sts-rs-val{color:#94a3b8}",
-    "[data-theme='dark'] .sts-tip{color:#cbd5e1}",
-    "[data-theme='dark'] .sts-tip strong{color:#e2e8f0}",
+    // ── Status threshold tabel polish ────────────────────────────
+    ".stt-wrap{overflow-x:auto;margin-top:6px;border-radius:10px;border:1px solid var(--border)}",
+    ".stt-table{width:100%;border-collapse:collapse;background:var(--surface)}",
+    ".stt-th{padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}",
+    ".stt-th-num{text-align:right}",
+    ".stt-row{border-bottom:1px solid var(--border);transition:background .12s}",
+    ".stt-row:last-child{border-bottom:none}",
+    ".stt-row:hover{background:rgba(168,85,247,.03)}",
+    ".stt-row td{padding:14px 16px;vertical-align:middle}",
+    ".stt-cell-status{position:relative;white-space:nowrap;border-left:3px solid var(--stt-c)}",
+    ".stt-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:14px;font-weight:700;font-size:12px;line-height:1}",
+    ".stt-emoji{font-size:14px;line-height:1}",
+    ".stt-label{letter-spacing:-.01em}",
+    ".stt-rasio{font-family:var(--ff-mono);font-size:10.5px;color:var(--txt3);margin-top:5px;font-weight:600;letter-spacing:0}",
+    ".stt-cell-desc{font-size:12.5px;color:var(--txt2);line-height:1.45}",
+    ".stt-cell-num{font-family:var(--ff-mono);font-size:12.5px;font-weight:600;color:var(--txt2);white-space:nowrap;text-align:right;letter-spacing:-.01em}",
+    ".stt-cell-primary{color:var(--txt);font-weight:700;font-size:13px}",
+    ".stt-tip{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(168,85,247,.04));border:1px solid rgba(245,158,11,.2);border-radius:10px;font-size:12px;color:var(--txt2);line-height:1.55}",
+    ".stt-tip i{color:#f59e0b;font-size:16px;flex-shrink:0;margin-top:1px}",
+    ".stt-tip strong{color:var(--txt);font-weight:700}",
+    "@media(max-width:768px){.stt-hide-md{display:none!important}.stt-row td{padding:12px 12px}.stt-th{padding:10px 12px}}",
+    "@media(max-width:540px){.stt-hide-sm{display:none!important}}",
     // CRUD biaya
     ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
     ".ap-add-btn:hover{opacity:.85}",
@@ -3045,14 +3033,14 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "<strong>belum termasuk pengeluaran darurat</strong> seperti kerusakan stik, meja, bola, "
     +   "perbaikan AC/lampu, atau renovasi minor. Sisakan margin untuk dana cadangan.</span></div>"
 
-    // ── Cara Baca Status — card grid visual ─────────────────────
+    // ── Cara Baca Status — tabel polish ─────────────────────────
     + (function() {
         const STATUS = [
-          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", grad: "linear-gradient(135deg,#fef2f2,#fee2e2)", min: 0,   max: 1,    rasio: "< 1×",       desc: "Rugi — pemasukan di bawah biaya wajib" },
-          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#64748b", grad: "linear-gradient(135deg,#f8fafc,#f1f5f9)", min: 1,   max: 1.2,  rasio: "1× – 1.2×",  desc: "Impas tipis — sekedar tutup biaya" },
-          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", grad: "linear-gradient(135deg,#f0fdf4,#dcfce7)", min: 1.2, max: 1.7,  rasio: "1.2× – 1.7×",desc: "Cukup biaya + margin kecil" },
-          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", grad: "linear-gradient(135deg,#eff6ff,#dbeafe)", min: 1.7, max: 2.5,  rasio: "1.7× – 2.5×",desc: "Margin bagus, profit sehat" },
-          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", grad: "linear-gradient(135deg,#faf5ff,#f3e8ff)", min: 2.5, max: null, rasio: "≥ 2.5×",     desc: "Margin sangat bagus, surplus tinggi" },
+          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", bg: "rgba(239,68,68,.08)",  min: 0,   max: 1,    rasio: "< 1×",        desc: "Rugi — pemasukan di bawah biaya wajib" },
+          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#64748b", bg: "rgba(100,116,139,.10)",min: 1,   max: 1.2,  rasio: "1× – 1.2×",   desc: "Impas tipis — sekedar tutup biaya" },
+          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", bg: "rgba(34,197,94,.08)",  min: 1.2, max: 1.7,  rasio: "1.2× – 1.7×", desc: "Cukup biaya + margin kecil" },
+          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", bg: "rgba(59,130,246,.08)", min: 1.7, max: 2.5,  rasio: "1.7× – 2.5×", desc: "Margin bagus, profit sehat" },
+          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", bg: "rgba(168,85,247,.08)", min: 2.5, max: null, rasio: "≥ 2.5×",      desc: "Margin sangat bagus, surplus tinggi" },
         ];
         const fmtRange = (target, min, max) => {
           const lo = Math.round(target * min);
@@ -3062,38 +3050,43 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           return rp(lo) + " – " + rp(hi);
         };
 
-        const cards = STATUS.map((s) =>
-          "<div class=\"sts-card\" style=\"--sts-c:" + s.color + ";background:" + s.grad + "\">"
-          +   "<div class=\"sts-head\">"
-          +     "<div class=\"sts-emoji\">" + s.emoji + "</div>"
-          +     "<div class=\"sts-rasio\">" + s.rasio + "</div>"
-          +   "</div>"
-          +   "<div class=\"sts-label\">" + s.label + "</div>"
-          +   "<div class=\"sts-desc\">" + s.desc + "</div>"
-          +   "<div class=\"sts-ranges\">"
-          +     "<div class=\"sts-range sts-range-primary\">"
-          +       "<div class=\"sts-r-lbl\"><i class=\"ti ti-calendar-event\"></i> Per Hari</div>"
-          +       "<div class=\"sts-r-val\">" + fmtRange(an.targets.hari, s.min, s.max) + "</div>"
+        const rows = STATUS.map((s) =>
+          "<tr class=\"stt-row\" style=\"--stt-c:" + s.color + "\">"
+          +   "<td class=\"stt-cell-status\">"
+          +     "<div class=\"stt-badge\" style=\"background:" + s.bg + ";color:" + s.color + "\">"
+          +       "<span class=\"stt-emoji\">" + s.emoji + "</span>"
+          +       "<span class=\"stt-label\">" + s.label + "</span>"
           +     "</div>"
-          +     "<div class=\"sts-range-sub\">"
-          +       "<div class=\"sts-rs-item\"><span class=\"sts-rs-lbl\">Minggu</span><span class=\"sts-rs-val\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</span></div>"
-          +       "<div class=\"sts-rs-item\"><span class=\"sts-rs-lbl\">Bulan</span><span class=\"sts-rs-val\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</span></div>"
-          +     "</div>"
-          +   "</div>"
-          + "</div>"
+          +     "<div class=\"stt-rasio\">" + s.rasio + " target</div>"
+          +   "</td>"
+          +   "<td class=\"stt-cell-desc\">" + s.desc + "</td>"
+          +   "<td class=\"stt-cell-num stt-cell-primary\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
+          +   "<td class=\"stt-cell-num stt-hide-md\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
+          +   "<td class=\"stt-cell-num stt-hide-md\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
+          + "</tr>"
         ).join("");
 
         return "<div class=\"ap-card\">"
           + "<div class=\"ap-card-title\"><i class=\"ti ti-route\" style=\"color:#a855f7\"></i>"
           +   "Cara Baca Status"
-          +   "<span class=\"ap-card-title-sub\">5 tingkat performa dari rugi sampai surplus tinggi</span>"
+          +   "<span class=\"ap-card-title-sub\">Rentang pemasukan per status — skala target</span>"
           + "</div>"
-          + "<div class=\"sts-grid\">" + cards + "</div>"
-          + "<div class=\"sts-tip\">"
+          + "<div class=\"stt-wrap\">"
+          + "<table class=\"stt-table\">"
+          + "<thead><tr>"
+          +   "<th class=\"stt-th\">Status</th>"
+          +   "<th class=\"stt-th stt-hide-sm\">Arti</th>"
+          +   "<th class=\"stt-th stt-th-num\">Per Hari</th>"
+          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per Minggu</th>"
+          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per Bulan</th>"
+          + "</tr></thead>"
+          + "<tbody>" + rows + "</tbody>"
+          + "</table></div>"
+          + "<div class=\"stt-tip\">"
           +   "<i class=\"ti ti-bulb\"></i>"
           +   "<span>Rentang dihitung dari rasio <strong>pemasukan ÷ biaya wajib</strong>. "
-          +   "Target Tercapai = pemasukan 1.2×–1.7× target → cukup tutup biaya + surplus kecil. "
-          +   "<strong>Ramai Sekali</strong> = momentum bagus utk evaluasi ekspansi atau tambah karyawan.</span>"
+          +   "<strong>Target Tercapai</strong> = pemasukan 1.2×–1.7× target → cukup tutup biaya + surplus kecil. "
+          +   "<strong>Ramai Sekali</strong> = momentum bagus utk evaluasi ekspansi / tambah karyawan.</span>"
           + "</div>"
           + "</div>";
       })()
