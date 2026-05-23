@@ -2816,22 +2816,21 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
       + "</div>";
   };
 
-  // Trend chart 30 hari — pure CSS bar dengan garis target overlay
-  const maxIn = Math.max(...trend30.map((d) => d.pemasukan), an.targets.hari * 1.2, 1);
-  const targetPct = Math.round((an.targets.hari / maxIn) * 100);
-  const trendBars = trend30.map((d) => {
-    const pct = Math.round((d.pemasukan / maxIn) * 100);
-    const stat = d.pemasukan >= an.targets.hari ? "ok" : d.pemasukan > 0 ? "low" : "zero";
+  // Trend chart 30 hari — data utk Chart.js (mixed bar + target line)
+  const trendLabels  = trend30.map((d) => {
     const date = new Date(d.tanggal + "T00:00:00");
-    const lbl  = date.getDate() + "/" + (date.getMonth() + 1);
-    const tip  = date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" }) + " — " + rp(d.pemasukan);
-    return "<div class=\"an-trend-col\" title=\"" + escHtml(tip) + "\">"
-      + "<div class=\"an-trend-bar-wrap\">"
-      +   "<div class=\"an-trend-bar an-trend-bar-" + stat + "\" style=\"height:" + pct + "%\"></div>"
-      + "</div>"
-      + "<div class=\"an-trend-lbl\">" + lbl + "</div>"
-      + "</div>";
-  }).join("");
+    return date.getDate() + "/" + (date.getMonth() + 1);
+  });
+  const trendValues  = trend30.map((d) => d.pemasukan);
+  const trendFulls   = trend30.map((d) => {
+    const date = new Date(d.tanggal + "T00:00:00");
+    return date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  });
+  const trendColors  = trend30.map((d) => d.pemasukan >= an.targets.hari ? "#22c55e" : d.pemasukan > 0 ? "#f59e0b" : "#e2e8f0");
+  // Summary stats utk legend
+  const trendDaysOk    = trend30.filter((d) => d.pemasukan >= an.targets.hari).length;
+  const trendDaysLow   = trend30.filter((d) => d.pemasukan > 0 && d.pemasukan < an.targets.hari).length;
+  const trendDaysZero  = trend30.filter((d) => d.pemasukan === 0).length;
 
   // ── Breakdown rows (CRUD) ──
   const frekLabel = (f) =>
@@ -2892,18 +2891,15 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:18px}",
     ".ap-card-title{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:14px}",
     ".ap-card-title-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-left:auto;font-family:var(--ff-mono)}",
-    ".an-trend-wrap{position:relative;height:180px;display:flex;align-items:flex-end;gap:3px;padding-top:20px}",
-    ".an-trend-target-line{position:absolute;left:0;right:0;height:1px;border-top:1px dashed #a855f7;pointer-events:none}",
-    ".an-trend-target-lbl{position:absolute;right:0;font-size:10px;color:#a855f7;background:var(--surface);padding:0 6px;transform:translateY(-50%);font-weight:600}",
-    ".an-trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}",
-    ".an-trend-bar-wrap{width:100%;height:140px;display:flex;align-items:flex-end}",
-    ".an-trend-bar{width:100%;border-radius:3px 3px 0 0;transition:opacity .15s}",
-    ".an-trend-bar:hover{opacity:.7}",
-    ".an-trend-bar-ok{background:linear-gradient(180deg,#22c55e,#16a34a)}",
-    ".an-trend-bar-low{background:linear-gradient(180deg,#f59e0b,#d97706)}",
-    ".an-trend-bar-zero{background:var(--surface2);height:2px!important;min-height:2px}",
-    ".an-trend-lbl{font-size:9px;color:var(--txt3);font-family:var(--ff-mono);white-space:nowrap}",
-    "@media(max-width:768px){.an-trend-col:nth-child(3n+1) .an-trend-lbl,.an-trend-col:nth-child(3n+2) .an-trend-lbl{display:none}}",
+    // Trend chart wrap (Chart.js)
+    ".trend-chart-wrap{position:relative;height:240px;width:100%;margin-top:8px}",
+    "@media(max-width:540px){.trend-chart-wrap{height:200px}}",
+    // Legend summary di atas chart
+    ".trend-summary{display:flex;flex-wrap:wrap;gap:6px 16px;padding:12px 14px;background:var(--surface2);border-radius:10px;margin-top:10px;font-size:11.5px;color:var(--txt2)}",
+    ".trend-stat{display:inline-flex;align-items:center;gap:6px;line-height:1.4}",
+    ".trend-stat strong{color:var(--txt);font-weight:700;font-family:var(--ff-mono)}",
+    ".trend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;display:inline-block}",
+    ".trend-dot-target{width:14px;height:0;border-top:2px dashed #a855f7;border-radius:0;align-self:center}",
     // Breakdown
     ".an-bd-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}",
     ".an-bd-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:9px;font-size:12px}",
@@ -3106,17 +3102,23 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           + "</div>";
       })()
 
-    // Trend chart 30 hari
+    // Trend chart 30 hari — Chart.js (interactive, dgn target line)
     + "<div class=\"ap-card\">"
     +   "<div class=\"ap-card-title\"><i class=\"ti ti-chart-bar\" style=\"color:#3b82f6\"></i>"
     +     "Trend Pemasukan vs Target — 30 Hari Terakhir"
-    +     "<span class=\"ap-card-title-sub\">Garis ungu = target harian " + rp(an.targets.hari) + "</span>"
+    +     "<span class=\"ap-card-title-sub\">Hover bar utk detail harian</span>"
     +   "</div>"
-    +   "<div class=\"an-trend-wrap\">"
-    +     "<div class=\"an-trend-target-line\" style=\"bottom:" + targetPct + "%\">"
-    +       "<div class=\"an-trend-target-lbl\">Target</div></div>"
-    +     trendBars
+    +   "<div class=\"trend-summary\">"
+    +     "<div class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:#22c55e\"></span>"
+    +       "<strong>" + trendDaysOk + "</strong> hari memenuhi target</div>"
+    +     "<div class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:#f59e0b\"></span>"
+    +       "<strong>" + trendDaysLow + "</strong> hari di bawah target</div>"
+    +     "<div class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:#e2e8f0\"></span>"
+    +       "<strong>" + trendDaysZero + "</strong> hari tanpa transaksi</div>"
+    +     "<div class=\"trend-stat\"><span class=\"trend-dot trend-dot-target\"></span>"
+    +       "Target <strong>" + rp(an.targets.hari) + "</strong> / hari</div>"
     +   "</div>"
+    +   "<div class=\"trend-chart-wrap\"><canvas id=\"trendChartCanvas\"></canvas></div>"
     + "</div>"
 
     // Biaya Wajib (CRUD)
@@ -3226,8 +3228,42 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "bmSetFrek(d.frek);"
     +   "document.getElementById('biayaModal').classList.add('open');}"
     + "function closeBiayaModal(){document.getElementById('biayaModal').classList.remove('open');}"
-    // Auto-hide toast
     + "setTimeout(function(){var t=document.getElementById('apToast');if(t)setTimeout(function(){t.classList.remove('show');},3000);},100);"
+    + "</script>"
+    // Chart.js + init trend bar chart
+    + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"></script>"
+    + "<script>"
+    + "(function(){"
+    +   "var el=document.getElementById('trendChartCanvas');if(!el||!window.Chart)return;"
+    +   "var labels=" + safeJson(trendLabels) + ";"
+    +   "var vals=" + safeJson(trendValues) + ";"
+    +   "var fulls=" + safeJson(trendFulls) + ";"
+    +   "var colors=" + safeJson(trendColors) + ";"
+    +   "var target=" + an.targets.hari + ";"
+    +   "var rpFmt=function(v){return 'Rp '+Number(v||0).toLocaleString('id-ID');};"
+    +   "var yTick=function(v){return v>=1e6?(v/1e6).toFixed(1)+'jt':v>=1000?Math.round(v/1000)+'rb':v;};"
+    +   "new Chart(el,{"
+    +     "type:'bar',"
+    +     "data:{labels:labels,datasets:["
+    +       "{type:'bar',label:'Pemasukan',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false,borderWidth:0,maxBarThickness:24,order:2},"
+    +       "{type:'line',label:'Target',data:labels.map(function(){return target;}),borderColor:'#a855f7',borderWidth:2,borderDash:[6,4],pointRadius:0,pointHoverRadius:0,fill:false,tension:0,order:1}"
+    +     "]},"
+    +     "options:{responsive:true,maintainAspectRatio:false,"
+    +       "interaction:{intersect:false,mode:'index'},"
+    +       "plugins:{"
+    +         "legend:{display:false},"
+    +         "tooltip:{backgroundColor:'rgba(15,23,42,.94)',titleColor:'#e2e8f0',bodyColor:'#cbd5e1',padding:12,cornerRadius:10,displayColors:false,"
+    +           "callbacks:{title:function(ctx){return fulls[ctx[0].dataIndex];},"
+    +             "label:function(ctx){if(ctx.dataset.label==='Target')return '  Target: '+rpFmt(target);"
+    +               "var v=ctx.raw||0;var pct=target>0?Math.round(v/target*100):0;"
+    +               "return ['  Pemasukan: '+rpFmt(v),'  ('+pct+'% dari target)'];}}}"
+    +       "},"
+    +       "scales:{"
+    +         "x:{grid:{display:false},ticks:{font:{family:'DM Mono',size:10},color:'#94a3b8',maxRotation:0,autoSkip:true,autoSkipPadding:10}},"
+    +         "y:{beginAtZero:true,grid:{color:'rgba(148,163,184,.12)',drawBorder:false},ticks:{font:{family:'DM Mono',size:10},color:'#94a3b8',padding:8,callback:function(v){return yTick(v);}}}"
+    +       "}}"
+    +   "});"
+    + "})();"
     + "</script>"
     + "</body></html>";
 }
