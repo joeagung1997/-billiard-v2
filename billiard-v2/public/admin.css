@@ -1552,3 +1552,61 @@ td          { padding:10px 16px; vertical-align:middle; }
 .fin-btn-rm-row:hover { background:#fcebeb; }
 .fin-btn-add-item  { display:flex; align-items:center; gap:6px; padding:8px 12px; border:1.5px dashed #d4ddd2; border-radius:9px; background:transparent; font-size:12px; color:#7a8c78; cursor:pointer; transition:all .15s; width:100%; font-family:inherit; }
 .fin-btn-add-item:hover { border-color:#2d6624; color:#2d6624; }
+
+/* ── Finance Wizard Modal — Responsive Mobile ─────────────────── */
+@media (max-width:640px) {
+  .fin-wiz-modal { width:calc(100% - 16px) !important; max-width:none !important; max-height:94vh; border-radius:16px; }
+  .fin-wiz-inner { padding:18px 16px 20px; }
+  .fin-wiz-hdr { margin-bottom:18px; gap:8px; }
+  .fin-wiz-icon { width:34px; height:34px; font-size:16px; }
+  .fin-wiz-title { font-size:15px; }
+  .fin-wiz-step-lbl { font-size:10.5px; }
+  .fin-wiz-lbl { font-size:10px; margin-bottom:7px; letter-spacing:.12em; }
+  .fmg { margin-bottom:14px; }
+  /* Inputs touch-friendly + font 16px supaya iOS tdk zoom on focus */
+  .finp, .fsel { padding:13px 12px; font-size:16px; min-height:48px; }
+  .fin-pfx-lbl { padding:13px 11px; font-size:13px; }
+  .fin-pfx-inp { padding:13px 11px; font-size:16px; min-height:48px; }
+  /* Toggle 2-col tetap 2 kolom (compact) */
+  .fin-tog-2 { gap:7px; }
+  /* Toggle 3-col jadi 3 col tapi smaller — atau wrap */
+  .fin-tog-3 { gap:7px; grid-template-columns:1fr 1fr 1fr; }
+  .fin-tog-btn { padding:13px 6px; font-size:12px; gap:6px; min-height:62px; }
+  .fin-tog-btn i { font-size:19px; }
+  /* Form 2-col jadi 1-col */
+  .frow { grid-template-columns:1fr; gap:10px; }
+  /* Footer navigation — sticky di bottom, full-width buttons */
+  .fin-wiz-footer { position:sticky; bottom:0; background:var(--surface); margin:14px -16px -20px; padding:14px 16px; border-top:1px solid #f0f3ef; gap:10px; }
+  .fin-btn-back, .fin-btn-next { padding:13px 18px; font-size:14px; min-height:48px; flex:0 0 auto; }
+  .fin-btn-next { flex:1; justify-content:center; }
+  /* Menu items (kopi/snack) — kurangi width qty supaya cukup */
+  .fin-menu-row { grid-template-columns:1fr 56px 38px; gap:5px; }
+  .fin-qty-inp { padding:12px 4px; font-size:14px; min-height:46px; }
+  .fin-btn-rm-row { width:38px; height:46px; }
+  /* Dropzone bukti foto */
+  .fin-dropzone { padding:22px 14px; }
+  .fin-dz-icon { font-size:32px; }
+  .fin-dz-lbl { font-size:13px; }
+  /* Summary box di step 3 */
+  .fin-summary-box { padding:14px 14px; }
+  .fin-sb-row { font-size:12.5px; }
+  .fin-sb-val { font-size:13px; max-width:55%; }
+  /* Info chip */
+  .fin-info-chip { padding:11px 13px; font-size:12.5px; }
+  /* Datetime input — pakai full width */
+  input[type="datetime-local"].fin-pfx-inp { width:100% !important; }
+  /* FAB lebih besar di mobile sempit */
+  .fin-fab { padding:14px 20px; font-size:14px; min-height:50px; bottom:78px; right:14px; }
+  .fin-fab i { font-size:19px; }
+}
+
+/* iPhone SE & small (≤380px) — extra compact */
+@media (max-width:380px) {
+  .fin-wiz-inner { padding:16px 13px 18px; }
+  .fin-tog-3 { grid-template-columns:1fr 1fr; } /* 3 jadi 2-col + wrap */
+  .fin-tog-3 > :nth-child(3) { grid-column:1/-1; }
+  .fin-tog-btn { padding:12px 6px; font-size:11.5px; min-height:58px; }
+  .fin-tog-btn i { font-size:18px; }
+  .fin-menu-row { grid-template-columns:1fr 52px 36px; }
+  .fin-wiz-footer { margin:12px -13px -18px; padding:12px 13px; }
+}
