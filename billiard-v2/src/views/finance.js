@@ -976,11 +976,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-bayar-val.qris{color:var(--accent)}",
     ".fin-bayar-sub{font-size:11px;color:var(--txt3);margin-top:3px}",
     // ── Mobile FAB ──────────────────────────────────────────────
-    ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:right .3s cubic-bezier(.4,.0,.2,1),transform .3s cubic-bezier(.4,.0,.2,1),opacity .15s}",
+    ".fin-fab{display:none;position:fixed;bottom:74px;right:16px;top:auto;left:auto;z-index:98;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--ff);box-shadow:0 4px 18px rgba(38,96,164,.38);cursor:pointer;transition:top .35s cubic-bezier(.4,.0,.2,1),left .35s cubic-bezier(.4,.0,.2,1),right .35s cubic-bezier(.4,.0,.2,1),bottom .35s cubic-bezier(.4,.0,.2,1),transform .35s cubic-bezier(.4,.0,.2,1),opacity .15s}",
     ".fin-fab:hover{opacity:.9}",
-    // Saat user scroll ke bottom (pagination terlihat) — FAB geser ke center
-    ".fin-fab.centered{right:50%!important;transform:translateX(50%)!important}",
-    ".fin-fab.centered:hover{transform:translateX(50%) translateY(-1px)!important}",
+    // Saat user scroll ke bottom (pagination terlihat) — FAB pindah ke tengah-tengah viewport
+    ".fin-fab.centered{top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;box-shadow:0 8px 28px rgba(38,96,164,.5)}",
+    ".fin-fab.centered:hover{transform:translate(-50%,-50%) scale(1.04)!important}",
     ".fin-fab i{font-size:18px}",
     "@media(max-width:768px){.fin-fab{display:flex!important}.topbar-actions .btn-primary{display:none!important}}",
     // ── Search input polish ─────────────────────────────────────
