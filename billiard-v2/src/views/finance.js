@@ -81,20 +81,20 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     // ── Nav scroll ─────────────────────────────────
     + "<div class=\"nav-scroll\">"
 
-    // GROUP: UTAMA (hanya tampil untuk owner)
+    // GROUP: UTAMA (Dashboard + Kelola Member — semua role bisa lihat)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Utama</div>"
     + (isOwner
-      ? "<div class=\"nav-group\">"
-        + "<div class=\"nav-group-label\">Utama</div>"
-        + "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
+      ? "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
         + "<div class=\"nav-item-icon\"><i class=\"ti ti-layout-dashboard\"></i></div>"
         + "<span class=\"nav-item-text\">Dashboard</span>"
         + "</a>"
-        + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
-        + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
-        + "<span class=\"nav-item-text\">Kelola Member</span>"
-        + "</a>"
-        + "</div>"
       : "")
+    + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
+    + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
+    + "<span class=\"nav-item-text\">Kelola Member</span>"
+    + "</a>"
+    + "</div>"
 
     // GROUP: OPERASIONAL
     + "<div class=\"nav-group\">"
@@ -185,13 +185,9 @@ export function buildFinanceBottomNav(role = "owner") {
       : "<a href=\"/operasional/logout\" class=\"bn-item\" onclick=\"event.preventDefault();financeLogout()\">"
         + "<span class=\"bn-icon\"><i class=\"ti ti-logout\"></i></span>Keluar"
         + "</a>")
-    + (isOwner
-      ? "<a href=\"#\" class=\"bn-item\" onclick=\"goMembers();return false\">"
-        + "<span class=\"bn-icon\"><i class=\"ti ti-users\"></i></span>Member"
-        + "</a>"
-      : "<a href=\"/scan\" class=\"bn-item\">"
-        + "<span class=\"bn-icon\"><i class=\"ti ti-qrcode\"></i></span>Scan"
-        + "</a>")
+    + "<a href=\"#\" class=\"bn-item\" onclick=\"goMembers();return false\">"
+    + "<span class=\"bn-icon\"><i class=\"ti ti-users\"></i></span>Member"
+    + "</a>"
     + "<button type=\"button\" class=\"bn-item active\" onclick=\"openBnSheet()\">"
     + "<span class=\"bn-icon\"><i class=\"ti ti-briefcase\"></i></span>Operasional"
     + "</button>"
