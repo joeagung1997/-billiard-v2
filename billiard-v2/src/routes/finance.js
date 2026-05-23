@@ -20,6 +20,7 @@ import {
   readAdminAccounts,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
+import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
 import {
   financeDashboard,
   financeLoginPage,
@@ -144,10 +145,13 @@ router.get("/", async (req, res) => {
       readAdminAccounts(),
     ]);
 
-    // Karyawan: hanya boleh lihat kemarin, hari ini, atau besok (1 hari saja, bukan range)
-    const today      = new Date().toISOString().slice(0, 10);
-    const yesterday  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const tomorrow   = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    // Karyawan: hanya boleh lihat kemarin, hari ini, atau besok (1 hari saja, bukan range).
+    // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
+    // tutup tengah malam tetap dianggap "hari ini" sampai pagi.
+    const today      = todayBusinessDayISO();
+    const todayD     = new Date(today + "T00:00:00Z");
+    const yesterday  = new Date(todayD.getTime() - 86400000).toISOString().slice(0, 10);
+    const tomorrow   = new Date(todayD.getTime() + 86400000).toISOString().slice(0, 10);
     const allowedKy  = [yesterday, today, tomorrow];
     const todayBulan = today.slice(0, 7);
 
@@ -221,10 +225,14 @@ router.post("/tambah", async (req, res) => {
   // Simpan bukti foto jika ada
   const buktiUrl = saveBuktiFoto((req.body.bukti_b64 ?? "").trim());
 
+  // Apply business day cutoff: jam < CUTOFF (default 06:00) → catat ke shift
+  // hari sebelumnya, biar transaksi dini hari tdk pisah dari closing shift.
+  const tanggalBiz = applyBusinessDay(tanggal.slice(0, 10), (jam ?? "").slice(0, 5));
+
   try {
     await appendTransaksi({
       id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
-      tanggal:     tanggal.slice(0, 10),
+      tanggal:     tanggalBiz,
       jam:         (jam ?? "").slice(0, 5),
       jenis,
       waktu:       ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",

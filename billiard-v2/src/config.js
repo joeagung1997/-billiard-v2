@@ -23,6 +23,11 @@ export const CONFIG = Object.freeze({
   // Role-based PIN untuk /operasional: owner (akses penuh) vs karyawan (catat + lihat hari ini)
   OWNER_PIN:    process.env.OWNER_PIN    ?? process.env.FINANCE_PIN ?? "2024",
   KARYAWAN_PIN: process.env.KARYAWAN_PIN ?? "1111",
+  // Business day cutoff: jam (00:00 - cutoff:00) dianggap masih shift hari
+  // sebelumnya. Contoh: cutoff=6 → transaksi jam 01:30 tgl 24 Mei → catat ke
+  // tgl 23 Mei (shift tgl 23 yg belum tutup). Owner buka 09:00-02:00, jadi
+  // 6 = aman utk shift terlambat sampai pagi.
+  BUSINESS_DAY_CUTOFF_HOUR: parseInt(process.env.BUSINESS_DAY_CUTOFF_HOUR ?? "6", 10),
   KODE_PREFIX: process.env.KODE_PREFIX          ?? "JMB",
   JWT_SECRET:  process.env.JWT_SECRET           ?? "billiard-warpat-secret-2026",
   JWT_EXPIRES: process.env.JWT_EXPIRES          ?? "24h",

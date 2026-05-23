@@ -5,6 +5,32 @@ import { CONFIG } from "../config.js";
 
 const ID_TZ = "Asia/Jakarta";
 
+// ── Business day helper ──────────────────────────────────────
+// Operasional buka 09:00 — biasanya tutup dini hari (00:00–02:00, kadang lebih).
+// Transaksi yg dilakukan sebelum jam cutoff dianggap masih shift hari sebelumnya.
+// Helper di bawah convert calendar date+time → business day (YYYY-MM-DD).
+
+// Apply business day ke string tanggal+jam (mis. input dari datetime-local).
+// Tanggal: "YYYY-MM-DD", jam: "HH:MM". Pure string ops — tdk pakai timezone server.
+export const applyBusinessDay = (tanggal, jam, cutoffHour = CONFIG.BUSINESS_DAY_CUTOFF_HOUR) => {
+  if (!tanggal) return tanggal;
+  const hour = parseInt((jam || "").split(":")[0], 10) || 0;
+  if (hour >= cutoffHour) return tanggal;
+  // Decrement 1 hari via UTC parse (hindari DST/timezone drift)
+  const d = new Date(tanggal + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
+// Return business day saat ini (WIB) sebagai "YYYY-MM-DD"
+export const todayBusinessDayISO = (cutoffHour = CONFIG.BUSINESS_DAY_CUTOFF_HOUR) => {
+  // "sv-SE" locale = ISO format "YYYY-MM-DD HH:MM:SS"
+  const wibStr = new Date().toLocaleString("sv-SE", { timeZone: ID_TZ });
+  const tgl    = wibStr.slice(0, 10);
+  const jam    = wibStr.slice(11, 16);
+  return applyBusinessDay(tgl, jam, cutoffHour);
+};
+
 export const formatTanggal = (date) =>
   new Date(date).toLocaleString("id-ID", {
     weekday: "long", day: "numeric", month: "long",
