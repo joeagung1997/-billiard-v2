@@ -616,14 +616,16 @@ function buildSidebar(token, activePage, user = {}) {
     + '<div class="submenu" id="sub-ops">'
     + '<a href="/operasional" class="submenu-item" onclick="' + tkOnclick + '">'
     + '<div class="sub-dot"></div>Dashboard Keuangan</a>'
-    + '<a href="/operasional/kategori" class="submenu-item" onclick="' + tkOnclick + '">'
-    + '<div class="sub-dot"></div>Kelola Kategori</a>'
-    + '<a href="/operasional/menu" class="submenu-item" onclick="' + tkOnclick + '">'
-    + '<div class="sub-dot"></div>Kelola Menu</a>'
-    + '<a href="/operasional/sdm" class="submenu-item" onclick="' + tkOnclick + '">'
-    + '<div class="sub-dot"></div>SDM &amp; Penggajian</a>'
-    + '<a href="/operasional/monitoring/aktivitas" class="submenu-item" onclick="' + tkOnclick + '">'
-    + '<div class="sub-dot"></div>Monitoring Karyawan</a>'
+    + (isOwner
+      ? '<a href="/operasional/kategori" class="submenu-item" onclick="' + tkOnclick + '">'
+        + '<div class="sub-dot"></div>Kelola Kategori</a>'
+        + '<a href="/operasional/menu" class="submenu-item" onclick="' + tkOnclick + '">'
+        + '<div class="sub-dot"></div>Kelola Menu</a>'
+        + '<a href="/operasional/sdm" class="submenu-item" onclick="' + tkOnclick + '">'
+        + '<div class="sub-dot"></div>SDM &amp; Penggajian</a>'
+        + '<a href="/operasional/monitoring/aktivitas" class="submenu-item" onclick="' + tkOnclick + '">'
+        + '<div class="sub-dot"></div>Monitoring Karyawan</a>'
+      : '')
     + '</div>'
     + '</div>'
     + '</div>'
@@ -670,11 +672,12 @@ function buildSidebar(token, activePage, user = {}) {
 }
 
 // ── buildBottomNav — shared bottom nav HTML (revamp v2) ─────────────────────
-function buildBottomNav(token, activePage) {
+function buildBottomNav(token, activePage, user = {}) {
   const dashActive    = activePage === 'dashboard' ? ' active' : '';
   const membersActive = activePage === 'members'   ? ' active' : '';
   const opsActive     = activePage === 'operasional' ? ' active' : '';
   const tkOnclick     = 'try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}';
+  const isOwner       = user.role === 'owner';
 
   return '<nav class="bottom-nav">'
     + '<a href="/admin?tk=' + token + '" class="bn-item' + dashActive + '">'
@@ -705,26 +708,28 @@ function buildBottomNav(token, activePage) {
     + '<div><div class="bn-sheet-name">Dashboard Keuangan</div>'
     + '<div class="bn-sheet-sub">Pemasukan, pengeluaran &amp; saldo</div></div>'
     + '</a>'
-    + '<a href="/operasional/kategori" class="bn-sheet-item">'
-    + '<div class="bn-sheet-icon"><i class="ti ti-tag"></i></div>'
-    + '<div><div class="bn-sheet-name">Kelola Kategori</div>'
-    + '<div class="bn-sheet-sub">Atur kategori pemasukan &amp; pengeluaran</div></div>'
-    + '</a>'
-    + '<a href="/operasional/menu" class="bn-sheet-item">'
-    + '<div class="bn-sheet-icon"><i class="ti ti-coffee"></i></div>'
-    + '<div><div class="bn-sheet-name">Kelola Menu</div>'
-    + '<div class="bn-sheet-sub">Kopi, snack, rokok &amp; topping</div></div>'
-    + '</a>'
-    + '<a href="/operasional/sdm" class="bn-sheet-item">'
-    + '<div class="bn-sheet-icon"><i class="ti ti-users"></i></div>'
-    + '<div><div class="bn-sheet-name">SDM &amp; Penggajian</div>'
-    + '<div class="bn-sheet-sub">Karyawan, gaji, kasbon &amp; THR</div></div>'
-    + '</a>'
-    + '<a href="/operasional/monitoring/aktivitas" class="bn-sheet-item">'
-    + '<div class="bn-sheet-icon"><i class="ti ti-chart-bar"></i></div>'
-    + '<div><div class="bn-sheet-name">Monitoring Karyawan</div>'
-    + '<div class="bn-sheet-sub">Aktivitas, setoran shift &amp; selisih kas</div></div>'
-    + '</a>'
+    + (isOwner
+      ? '<a href="/operasional/kategori" class="bn-sheet-item">'
+        + '<div class="bn-sheet-icon"><i class="ti ti-tag"></i></div>'
+        + '<div><div class="bn-sheet-name">Kelola Kategori</div>'
+        + '<div class="bn-sheet-sub">Atur kategori pemasukan &amp; pengeluaran</div></div>'
+        + '</a>'
+        + '<a href="/operasional/menu" class="bn-sheet-item">'
+        + '<div class="bn-sheet-icon"><i class="ti ti-coffee"></i></div>'
+        + '<div><div class="bn-sheet-name">Kelola Menu</div>'
+        + '<div class="bn-sheet-sub">Kopi, snack, rokok &amp; topping</div></div>'
+        + '</a>'
+        + '<a href="/operasional/sdm" class="bn-sheet-item">'
+        + '<div class="bn-sheet-icon"><i class="ti ti-users"></i></div>'
+        + '<div><div class="bn-sheet-name">SDM &amp; Penggajian</div>'
+        + '<div class="bn-sheet-sub">Karyawan, gaji, kasbon &amp; THR</div></div>'
+        + '</a>'
+        + '<a href="/operasional/monitoring/aktivitas" class="bn-sheet-item">'
+        + '<div class="bn-sheet-icon"><i class="ti ti-chart-bar"></i></div>'
+        + '<div><div class="bn-sheet-name">Monitoring Karyawan</div>'
+        + '<div class="bn-sheet-sub">Aktivitas, setoran shift &amp; selisih kas</div></div>'
+        + '</a>'
+      : '')
     + '</div>'
 
     + '<script>'
@@ -1193,7 +1198,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '</div>'
     + '</div>'
 
-    + buildBottomNav(token, 'dashboard')
+    + buildBottomNav(token, 'dashboard', user)
     + buildModal()
 
     + '<div class="toast" id="toast">✓ Disalin!</div>'
@@ -1490,7 +1495,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '</div>'
     + '</div>'
 
-    + buildBottomNav(token, 'members')
+    + buildBottomNav(token, 'members', user)
     + buildModal()
 
     // ── Member detail modal (full profile pop-up) ──────────────

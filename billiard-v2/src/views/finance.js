@@ -108,7 +108,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     + subItem("/operasional", "Dashboard Keuangan", isKeu)
     + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
     + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
-    + subItem("/operasional/sdm",      "SDM & Penggajian", isSdm)
+    + (isOwner ? subItem("/operasional/sdm",      "SDM & Penggajian", isSdm) : "")
     + (isOwner ? subItem("/operasional/monitoring/aktivitas", "Monitoring Karyawan", isMon) : "")
     + "</div>"
     + "</div>"
@@ -230,11 +230,13 @@ export function buildFinanceBottomNav(role = "owner") {
         + "<div class=\"bn-sheet-sub\">Kopi, snack, rokok &amp; topping</div></div>"
         + "</a>"
       : "")
-    + "<a href=\"/operasional/sdm\" class=\"bn-sheet-item\">"
-    + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-users\"></i></div>"
-    + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
-    + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
-    + "</a>"
+    + (isOwner
+      ? "<a href=\"/operasional/sdm\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-users\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
+        + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
+        + "</a>"
+      : "")
     + (isOwner
       ? "<a href=\"/operasional/monitoring/aktivitas\" class=\"bn-sheet-item\">"
         + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-chart-bar\"></i></div>"
