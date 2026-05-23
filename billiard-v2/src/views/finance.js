@@ -519,10 +519,10 @@ export function financeLoginPage(showErr) {
 export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
   const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
-  const toastMsg  = msg === "created"   ? "<strong>Transaksi berhasil dicatat!</strong><br><span style='font-size:12px;opacity:.85'>Cek tabel di bawah untuk detail</span>"
-    : msg === "voided"    ? "<strong>Transaksi dibatalkan</strong><br><span style='font-size:12px;opacity:.85'>Saldo sudah diperbarui</span>"
-    : msg === "err"       ? "<strong>Gagal menyimpan</strong><br><span style='font-size:12px;opacity:.85'>Cek isian form lalu coba lagi</span>"
-    : msg === "no_access" ? "<strong>Akses ditolak</strong><br><span style='font-size:12px;opacity:.85'>Fitur ini hanya untuk Owner</span>"
+  const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
+    : msg === "voided"    ? "Transaksi dibatalkan. Saldo sudah diperbarui."
+    : msg === "err"       ? "Gagal menyimpan. Cek isian form lalu coba lagi."
+    : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner."
     : "";
   const toastType = (msg === "err" || msg === "no_access") ? "err" : "ok";
   const now = new Date();
@@ -2018,9 +2018,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "function showToast(msg,type){"
     +   "var el=document.getElementById('toast');if(!el)return;"
     +   "var ic=type==='ok'?'ti-circle-check-filled':type==='err'?'ti-alert-circle-filled':'ti-info-circle';"
-    +   "el.innerHTML='<i class=\"ti '+ic+'\"></i>'"
-    +     "+'<span class=\"toast-msg\">'+msg+'</span>'"
-    +     "+'<button type=\"button\" class=\"toast-close\" onclick=\"this.parentElement.classList.remove(\\'show\\')\"><i class=\"ti ti-x\"></i></button>';"
+    +   "var icEl=document.createElement('i');icEl.className='ti '+ic;"
+    +   "var spanEl=document.createElement('span');spanEl.className='toast-msg';spanEl.textContent=msg;"
+    +   "el.innerHTML='';el.appendChild(icEl);el.appendChild(spanEl);"
     +   "el.className='toast '+(type||'ok');"
     +   "void el.offsetWidth;el.classList.add('show');"
     +   "clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},5000);"
