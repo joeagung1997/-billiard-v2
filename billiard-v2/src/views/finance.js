@@ -856,7 +856,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     return "<div class=\"" + rowCls + "\">"
       + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
-      + "<div class=\"fr-desc-title\">" + escHtml(t.keterangan || "—") + "</div>"
+      + "<div class=\"fr-desc-title\">"
+      +   (t.keterangan
+        ? escHtml(t.keterangan)
+        : t.kategori
+        ? "<span style=\"font-style:italic;color:var(--txt3);font-weight:500\">(" + escHtml(t.kategori) + ")</span>"
+        : "—")
+      + "</div>"
       + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "")
       + (t.bayar === "cash" ? " · <span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? " · <span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
       + (t.buktiUrl ? " · <a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
