@@ -175,7 +175,7 @@ router.post("/sdm/karyawan/:id/edit", async (req, res) => {
   if (!id || !nama || gajiPokok <= 0) return res.redirect(`/operasional/sdm/karyawan/${id}/edit?err=1`);
   try {
     await updateKaryawan(id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
-    res.redirect("/operasional/sdm");
+    res.redirect("/operasional/sdm?msg=edit_ok");
   } catch (err) {
     console.error("[SDM] update karyawan error:", err.message);
     res.redirect(`/operasional/sdm/karyawan/${id}/edit?err=1`);
@@ -185,12 +185,13 @@ router.post("/sdm/karyawan/:id/edit", async (req, res) => {
 // ── GET /operasional/sdm/karyawan/:id/nonaktif ───────────────
 router.get("/sdm/karyawan/:id/nonaktif", async (req, res) => {
   const id = parseInt(req.params.id) || 0;
+  let ok = false;
   if (id) {
-    try { await nonaktifkanKaryawan(id); } catch (err) {
+    try { await nonaktifkanKaryawan(id); ok = true; } catch (err) {
       console.error("[SDM] nonaktif error:", err.message);
     }
   }
-  res.redirect("/operasional/sdm");
+  res.redirect("/operasional/sdm?msg=" + (ok ? "nonaktif_ok" : "err"));
 });
 
 // ── POST /operasional/sdm/transaksi ──────────────────────────
@@ -211,13 +212,14 @@ router.post("/sdm/transaksi", async (req, res) => {
     : _ketRaw;
 
   const TIPE_VALID = ["gaji", "kasbon", "kembali_kasbon", "thr", "bonus", "makan_harian"];
+  const withMsg = (m) => redirect + (redirect.includes("?") ? "&" : "?") + "msg=" + m;
   if (!karyawanId || !TIPE_VALID.includes(tipe) || jumlah <= 0) {
-    return res.redirect(redirect);
+    return res.redirect(withMsg("err_trx"));
   }
 
   try {
     const k = await getKaryawanById(karyawanId);
-    if (!k) return res.redirect(redirect);
+    if (!k) return res.redirect(withMsg("err_trx"));
 
     const trxId = Date.now() + "-sdm-" + Math.random().toString(36).slice(2, 6);
     await appendSdmTransaksi({
@@ -244,10 +246,15 @@ router.post("/sdm/transaksi", async (req, res) => {
       createdAt:   new Date().toISOString(),
     });
 
-    res.redirect(redirect);
+    // Msg spesifik per tipe (cocok dgn map di view sdmDashboard)
+    const tipeMsg = {
+      gaji: "trx_gaji", kasbon: "trx_kasbon", kembali_kasbon: "trx_kembali",
+      thr: "trx_thr", bonus: "trx_bonus", makan_harian: "trx_makan",
+    };
+    res.redirect(withMsg(tipeMsg[tipe] || "trx_ok"));
   } catch (err) {
     console.error("[SDM] transaksi error:", err.message);
-    res.redirect(redirect);
+    res.redirect(withMsg("err_trx"));
   }
 });
 
@@ -255,12 +262,14 @@ router.post("/sdm/transaksi", async (req, res) => {
 router.get("/sdm/transaksi/hapus", async (req, res) => {
   const id       = req.query.id ?? "";
   const redirect = req.query.redirect || "/operasional/sdm";
+  const withMsg  = (m) => redirect + (redirect.includes("?") ? "&" : "?") + "msg=" + m;
+  let ok = false;
   if (id) {
-    try { await deleteSdmTransaksi(id); } catch (err) {
+    try { await deleteSdmTransaksi(id); ok = true; } catch (err) {
       console.error("[SDM] hapus transaksi error:", err.message);
     }
   }
-  res.redirect(redirect);
+  res.redirect(withMsg(ok ? "trx_hapus_ok" : "err_hapus"));
 });
 
 // ── GET /operasional/sdm/akun — kelola username & PIN admin ──
@@ -308,7 +317,7 @@ router.get("/sdm/:id", async (req, res) => {
     if (!k) return res.redirect("/operasional/sdm");
     const bulan = req.query.bulan || bulanSekarang();
     const trx   = await readSdmTransaksiByKaryawan(id);
-    res.send(sdmDetailPage(k, trx, bulan));
+    res.send(sdmDetailPage(k, trx, bulan, req.query.msg || ""));
   } catch (err) {
     console.error("[SDM] detail error:", err.message);
     res.status(500).send("Kesalahan server.");

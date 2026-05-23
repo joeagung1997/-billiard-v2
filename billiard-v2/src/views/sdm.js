@@ -324,12 +324,8 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
     + "</div></div>"
 
-    // Toast
-    + (msg === "tambah_ok"
-        ? "<div style=\"background:#d4edda;color:#1a6b2a;border:1px solid #b8dacc;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-check\"></i> Karyawan berhasil ditambahkan.</div>"
-        : msg === "err_tambah"
-        ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\"><i class=\"ti ti-alert-circle\"></i> Nama dan gaji pokok wajib diisi.</div>"
-        : "")
+    // Toast — sukses & gagal
+    + renderSdmToast(msg)
 
     + summaryStrip
     + "<div class=\"sdm-cards-grid\">" + cards + "</div>"
@@ -424,8 +420,38 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + "</body></html>";
 }
 
+// ── Toast helper (sukses/gagal) — dipakai sdmDashboard & sdmDetailPage
+function renderSdmToast(msg) {
+  const MSG = {
+    tambah_ok:      { kind: "ok",  text: "Karyawan berhasil ditambahkan." },
+    edit_ok:        { kind: "ok",  text: "Data karyawan berhasil disimpan." },
+    nonaktif_ok:    { kind: "ok",  text: "Karyawan berhasil dinonaktifkan." },
+    trx_gaji:       { kind: "ok",  text: "Pembayaran gaji berhasil dicatat." },
+    trx_kasbon:     { kind: "ok",  text: "Kasbon berhasil dicatat." },
+    trx_kembali:    { kind: "ok",  text: "Pengembalian kasbon berhasil dicatat." },
+    trx_thr:        { kind: "ok",  text: "THR berhasil dicatat." },
+    trx_bonus:      { kind: "ok",  text: "Bonus berhasil dicatat." },
+    trx_makan:      { kind: "ok",  text: "Jatah makan berhasil dicatat." },
+    trx_ok:         { kind: "ok",  text: "Transaksi berhasil dicatat." },
+    trx_hapus_ok:   { kind: "ok",  text: "Transaksi berhasil dihapus." },
+    err_tambah:     { kind: "err", text: "Gagal — nama dan gaji pokok wajib diisi." },
+    err_edit:       { kind: "err", text: "Gagal menyimpan data karyawan." },
+    err_trx:        { kind: "err", text: "Gagal mencatat transaksi — cek isian." },
+    err_hapus:      { kind: "err", text: "Gagal menghapus transaksi." },
+    err:            { kind: "err", text: "Terjadi kesalahan, coba lagi." },
+  };
+  const m = MSG[msg];
+  if (!m) return "";
+  const css = m.kind === "ok"
+    ? "background:#d4edda;color:#1a6b2a;border:1px solid #b8dacc"
+    : "background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25)";
+  const ic  = m.kind === "ok" ? "ti-check" : "ti-alert-circle";
+  return "<div style=\"" + css + ";border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px\">"
+    + "<i class=\"ti " + ic + "\"></i> " + escHtml(m.text) + "</div>";
+}
+
 // ── Detail karyawan ───────────────────────────────────────────
-export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
+export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
   const trxBulan = allTrx.filter((t) => t.bulan === bulan);
   const r        = hitungRingkasan(karyawan, trxBulan);
 
@@ -515,6 +541,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "") {
     + "<div><div class=\"topbar-name\">" + escHtml(karyawan.nama) + "</div><div class=\"topbar-label\">Detail Karyawan</div></div>"
     + "</div></header>"
     + "<div class=\"page\"><div class=\"sdm-page\" style=\"max-width:760px\">"
+
+    + renderSdmToast(msg)
 
     // ── Hero card karyawan ──────────────────────────────────────
     + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:16px\">"
