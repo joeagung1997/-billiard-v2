@@ -2924,6 +2924,12 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-note{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-left:3px solid #f59e0b;border-radius:10px;font-size:12.5px;color:var(--txt2);line-height:1.55}",
     ".ap-note i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
     ".ap-note strong{color:var(--txt);font-weight:700}",
+    // Status threshold table
+    ".ap-status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}",
+    ".ap-status-tbl tbody tr:last-child{border-bottom:none!important}",
+    ".ap-status-tbl tbody tr:hover{background:rgba(168,85,247,.04)}",
+    "@media(max-width:768px){.ap-th-week,.ap-th-month{display:none!important}}",
+    "@media(max-width:540px){.ap-th-desc{display:none!important}}",
     // CRUD biaya
     ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
     ".ap-add-btn:hover{opacity:.85}",
@@ -3010,6 +3016,57 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "<span><strong>Catatan:</strong> ini data biaya rutin yang terlihat — "
     +   "<strong>belum termasuk pengeluaran darurat</strong> seperti kerusakan stik, meja, bola, "
     +   "perbaikan AC/lampu, atau renovasi minor. Sisakan margin untuk dana cadangan.</span></div>"
+
+    // ── Cara Baca Status (threshold per status) ─────────────────
+    + (function() {
+        const STATUS = [
+          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", min: 0,   max: 1,   desc: "Rugi — pemasukan di bawah biaya wajib" },
+          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#9ca3af", min: 1,   max: 1.2, desc: "Impas tipis — sekedar tutup biaya" },
+          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", min: 1.2, max: 1.7, desc: "Cukup biaya + margin kecil" },
+          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", min: 1.7, max: 2.5, desc: "Margin bagus, profit sehat" },
+          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", min: 2.5, max: null,desc: "Margin sangat bagus, surplus tinggi" },
+        ];
+        const fmtRange = (target, min, max) => {
+          const lo = Math.round(target * min);
+          if (max === null) return "≥ " + rp(lo);
+          if (min === 0)    return "< " + rp(Math.round(target * max));
+          const hi = Math.round(target * max);
+          return rp(lo) + " – " + rp(hi);
+        };
+        const rows = STATUS.map((s) =>
+          "<tr style=\"border-bottom:1px solid var(--border)\">"
+          +   "<td style=\"padding:11px 14px;white-space:nowrap\">"
+          +     "<span class=\"ap-status-badge\" style=\"background:" + s.color + "\">" + s.emoji + " " + s.label + "</span>"
+          +   "</td>"
+          +   "<td class=\"ap-th-desc\" style=\"padding:11px 14px;font-size:12px;color:var(--txt2)\">" + s.desc + "</td>"
+          +   "<td style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
+          +   "<td class=\"ap-th-week\" style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
+          +   "<td class=\"ap-th-month\" style=\"padding:11px 14px;font-family:var(--ff-mono);font-size:11.5px;font-weight:600;color:var(--txt);white-space:nowrap;text-align:right\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
+          + "</tr>"
+        ).join("");
+
+        return "<div class=\"ap-card\">"
+          + "<div class=\"ap-card-title\"><i class=\"ti ti-info-circle\" style=\"color:#a855f7\"></i>"
+          +   "Cara Baca Status"
+          +   "<span class=\"ap-card-title-sub\">Rentang pemasukan per status (skala target)</span>"
+          + "</div>"
+          + "<div style=\"overflow-x:auto\">"
+          + "<table class=\"ap-status-tbl\" style=\"width:100%;border-collapse:collapse\">"
+          + "<thead><tr style=\"background:var(--surface2);border-bottom:1px solid var(--border)\">"
+          +   "<th style=\"padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em\">Status</th>"
+          +   "<th class=\"ap-th-desc\" style=\"padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em\">Arti</th>"
+          +   "<th style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Hari</th>"
+          +   "<th class=\"ap-th-week\" style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Minggu</th>"
+          +   "<th class=\"ap-th-month\" style=\"padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap\">Per Bulan</th>"
+          + "</tr></thead>"
+          + "<tbody>" + rows + "</tbody>"
+          + "</table></div>"
+          + "<div style=\"padding:12px 18px 0;font-size:11.5px;color:var(--txt3);line-height:1.55\">"
+          +   "<i class=\"ti ti-bulb\" style=\"color:#f59e0b;margin-right:4px\"></i>"
+          +   "Rentang dihitung dari rasio pemasukan ÷ biaya wajib (target). Contoh: <strong>Target Tercapai</strong> = pemasukan 1.2× sampai 1.7× target — sudah cukup tutup biaya + ada surplus kecil. <strong>Ramai Sekali</strong> = pemasukan ≥ 2.5× target — momentum bagus utk evaluasi expansi/tambah karyawan."
+          + "</div>"
+          + "</div>";
+      })()
 
     // Trend chart 30 hari
     + "<div class=\"ap-card\">"
