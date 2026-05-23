@@ -21,6 +21,7 @@ import {
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
+import { computeTargets, buildCostBreakdown, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
 import {
   financeDashboard,
   financeLoginPage,
@@ -170,12 +171,41 @@ router.get("/", async (req, res) => {
       tglSampai   = req.query.tgl_sampai ?? "";
     }
 
+    // ── Analisis target operasional ────────────────────────────
+    const targets = computeTargets();
+    const costBreakdown = buildCostBreakdown();
+    // Pemasukan utk 3 scope: hari ini (business day), minggu ini (Sen-Min), bulan ini
+    const dow       = new Date(today + "T00:00:00Z").getUTCDay() === 0 ? 6 : new Date(today + "T00:00:00Z").getUTCDay() - 1;
+    const mondayD   = new Date(new Date(today + "T00:00:00Z").getTime() - dow * 86400000);
+    const mondayStr = mondayD.toISOString().slice(0, 10);
+    const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
+
+    // Rekomendasi tambah karyawan: rata-rata 30 hari terakhir
+    const last30Start = new Date(new Date(today + "T00:00:00Z").getTime() - 29 * 86400000).toISOString().slice(0, 10);
+    const last30In    = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= last30Start && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const last30Avg   = Math.round(last30In / 30);
+
+    const analisis = {
+      targets,
+      costBreakdown,
+      hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
+      minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
+      bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
+      simulasi: {
+        rataPemasukan: last30Avg,
+        ...evaluateAddKaryawan(last30Avg, 900000),
+      },
+    };
+
     res.send(financeDashboard({
       transaksi, token: "", role,
       displayName: res.locals.financeDisplay || "",
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
       accountsAll: accounts,
+      analisis,
       msg: req.query.msg || "",
     }));
   } catch (err) {

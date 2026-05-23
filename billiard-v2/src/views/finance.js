@@ -505,7 +505,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
     : msg === "voided"    ? "Transaksi berhasil dibatalkan"
@@ -524,6 +524,95 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const userNameMap = Object.fromEntries(
     accountsAll.map((a) => [a.username, a.display_name || a.username])
   );
+
+  // ── Analisis Target HTML ─────────────────────────────────────
+  const renderAnalisis = (an) => {
+    if (!an) return "";
+    const scopeCard = (lbl, sub, data) => {
+      const { pemasukan, target, status } = data;
+      const margin = pemasukan - target;
+      const pct    = Math.min(100, Math.round((pemasukan / Math.max(target, 1)) * 100));
+      return "<div class=\"an-card\" style=\"--accent-bar:" + status.color + "\">"
+        + "<div class=\"an-card-hdr\">"
+        +   "<div><div class=\"an-scope\">" + lbl + "</div>"
+        +   "<div class=\"an-sub\">" + sub + "</div></div>"
+        +   "<div class=\"an-status\" style=\"background:" + status.color + "\">"
+        +     status.emoji + " " + status.label + "</div>"
+        + "</div>"
+        + "<div class=\"an-amount-row\">"
+        +   "<div class=\"an-amount\">" + rp(pemasukan) + "</div>"
+        +   "<div class=\"an-target\">/ " + rp(target) + "</div>"
+        + "</div>"
+        + "<div class=\"an-progress\"><div class=\"an-progress-fill\" "
+        +   "style=\"width:" + pct + "%;background:" + status.color + "\"></div></div>"
+        + "<div class=\"an-margin " + (margin >= 0 ? "pos" : "neg") + "\">"
+        +   (margin >= 0 ? "▲ Surplus " : "▼ Defisit ") + rp(Math.abs(margin))
+        +   " · " + pct + "% target</div>"
+        + "</div>";
+    };
+
+    const bd = an.costBreakdown;
+    const breakdownItems = bd.monthly.map((x) =>
+      "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + "</span><span>" + rp(x.amount) + "</span></div>"
+    ).join("") + bd.daily.map((x) =>
+      "<div class=\"an-bd-item\"><span>" + escHtml(x.name) + " (" + rp(x.amount) + "/hr)</span><span>" + rp(x.perBulan) + "</span></div>"
+    ).join("") + "<div class=\"an-bd-item\"><span>Makan (26 reg + 4 weekend)</span><span>" + rp(bd.meal.perBulan) + "</span></div>";
+
+    const sim = an.simulasi;
+
+    return "<div class=\"an-section\">"
+      + "<div class=\"an-hdr\">"
+      +   "<div class=\"an-title\"><div class=\"an-title-ic\"><i class=\"ti ti-target\"></i></div>"
+      +     "Analisis Target Operasional</div>"
+      +   "<div class=\"an-sub\">Berdasarkan biaya wajib " + rp(bd.totalMonthly) + " / bulan</div>"
+      + "</div>"
+
+      + "<div class=\"an-grid\">"
+      +   scopeCard("Hari ini",   "Target " + rp(an.targets.hari)   + " / hari",   an.hari)
+      +   scopeCard("Minggu ini", "Target " + rp(an.targets.minggu) + " / minggu", an.minggu)
+      +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan)
+      + "</div>"
+
+      + "<details class=\"an-breakdown\">"
+      +   "<summary><i class=\"ti ti-list-details\"></i> Breakdown Biaya Wajib"
+      +     "<span style=\"margin-left:8px;font-weight:500;color:var(--txt3);font-size:11px\">"
+      +     "Target harian: " + rp(bd.totalDaily) + "</span>"
+      +   "</summary>"
+      +   "<div class=\"an-bd-list\">" + breakdownItems + "</div>"
+      +   "<div class=\"an-bd-total\"><span>Total per bulan</span><span>" + rp(bd.totalMonthly) + "</span></div>"
+      + "</details>"
+
+      + (isOwner
+        ? "<div class=\"an-sim\">"
+          + "<div class=\"an-sim-hdr\"><i class=\"ti ti-user-plus\"></i> Simulasi: Tambah 1 Karyawan (+Rp 900.000/bln)</div>"
+          + "<div class=\"an-sim-body\">"
+          +   "<div class=\"an-sim-cell\">"
+          +     "<div class=\"an-sim-cell-lbl\">Rata-rata 30 hari terakhir</div>"
+          +     "<div class=\"an-sim-cell-val\">" + rp(sim.rataPemasukan) + " / hari</div>"
+          +   "</div>"
+          +   "<div class=\"an-sim-cell\">"
+          +     "<div class=\"an-sim-cell-lbl\">Margin sekarang</div>"
+          +     "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginLama >= 0 ? "#22c55e" : "#ef4444") + "\">"
+          +       (sim.marginLama >= 0 ? "+" : "") + rp(sim.marginLama) + " / hari</div>"
+          +   "</div>"
+          +   "<div class=\"an-sim-cell\">"
+          +     "<div class=\"an-sim-cell-lbl\">Beban tambahan</div>"
+          +     "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(sim.tambahanHarian) + " / hari</div>"
+          +   "</div>"
+          +   "<div class=\"an-sim-cell\">"
+          +     "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
+          +     "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginBaru >= 0 ? "#22c55e" : "#ef4444") + "\">"
+          +       (sim.marginBaru >= 0 ? "+" : "") + rp(sim.marginBaru) + " / hari</div>"
+          +   "</div>"
+          + "</div>"
+          + "<div class=\"an-sim-rec\" style=\"background:" + sim.color + "20;color:" + sim.color + ";border:1px solid " + sim.color + "40\">"
+          +   sim.emoji + " " + escHtml(sim.rekomendasi)
+          + "</div>"
+          + "</div>"
+        : "")
+      + "</div>";
+  };
+  const analisisHtml = renderAnalisis(analisis);
 
   // Menu items untuk wizard Kopi/Snack — dikelompokkan by kategori
   // Build toppings map by item name (for wizard JS)
@@ -970,6 +1059,48 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // ── Pencatat di tabel transaksi ──────────────────────────────
     ".fr-pencatat{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--txt3);background:var(--surface2);padding:1px 7px;border-radius:8px;margin-left:4px}",
     ".fr-pencatat i{font-size:11px}",
+    // ── Analisis Target section ──────────────────────────────────
+    ".an-section{margin-bottom:20px}",
+    ".an-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}",
+    ".an-title{font-size:14px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:9px}",
+    ".an-title-ic{width:30px;height:30px;border-radius:9px;background:rgba(168,85,247,.12);color:#a855f7;display:flex;align-items:center;justify-content:center;font-size:16px}",
+    ".an-sub{font-size:11px;color:var(--txt3);font-family:var(--ff-mono)}",
+    ".an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}",
+    "@media(max-width:768px){.an-grid{grid-template-columns:1fr}}",
+    ".an-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}",
+    ".an-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent-bar,#22c55e)}",
+    ".an-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}",
+    ".an-scope{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3)}",
+    ".an-status{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:700;color:#fff}",
+    ".an-amount-row{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}",
+    ".an-amount{font-size:18px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
+    ".an-target{font-size:11px;color:var(--txt3);font-family:var(--ff-mono)}",
+    ".an-progress{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:6px}",
+    ".an-progress-fill{height:100%;border-radius:3px;transition:width .35s ease}",
+    ".an-margin{font-size:11px;color:var(--txt2);display:flex;align-items:center;gap:5px}",
+    ".an-margin.pos{color:#22c55e}",
+    ".an-margin.neg{color:#ef4444}",
+    // Breakdown collapsible
+    ".an-breakdown{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:12px}",
+    ".an-breakdown summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;list-style:none;user-select:none}",
+    ".an-breakdown summary::-webkit-details-marker{display:none}",
+    ".an-breakdown summary::after{content:'\\25BE';margin-left:auto;color:var(--txt3);transition:transform .2s}",
+    ".an-breakdown[open] summary::after{transform:rotate(180deg)}",
+    ".an-bd-list{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}",
+    ".an-bd-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:11.5px}",
+    ".an-bd-item span:first-child{color:var(--txt2)}",
+    ".an-bd-item span:last-child{font-weight:600;color:var(--txt);font-family:var(--ff-mono)}",
+    ".an-bd-total{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--txt)}",
+    ".an-bd-total span:last-child{font-family:var(--ff-mono)}",
+    // Simulator
+    ".an-sim{background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(168,85,247,.04));border:1px solid rgba(59,130,246,.18);border-radius:14px;padding:14px 18px}",
+    ".an-sim-hdr{font-size:12px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;margin-bottom:10px}",
+    ".an-sim-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px}",
+    "@media(max-width:540px){.an-sim-body{grid-template-columns:1fr}}",
+    ".an-sim-cell{padding:8px 12px;background:var(--surface);border-radius:9px;border:1px solid var(--border)}",
+    ".an-sim-cell-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}",
+    ".an-sim-cell-val{font-size:13px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
+    ".an-sim-rec{margin-top:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1134,6 +1265,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
             + _dayChip(_tomIso,    "Besok",    fmt(new Date(_today.getTime() + 86400000)))
             + "</div>";
         })())
+
+    // ── Analisis Target Operasional ─────────────────────────────
+    + analisisHtml
 
     // ── Charts ──────────────────────────────────────────────────
     + "<div class=\"fin-charts-row\">"
