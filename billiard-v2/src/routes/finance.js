@@ -22,7 +22,7 @@ import {
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
-import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
+import { addFixedCost, updateFixedCost, deleteFixedCost, deleteAllTransaksi } from "../utils/db.js";
 import {
   financeDashboard,
   financeLoginPage,
@@ -324,6 +324,22 @@ router.post("/void", async (req, res) => {
 });
 
 // ── GET /operasional/kategori — kelola kategori (owner only) ────
+// ── POST /operasional/transaksi/hapus-semua (owner-only, destructive) ──
+router.post("/transaksi/hapus-semua", requireOwner, async (req, res) => {
+  const konfirmasi = (req.body.konfirmasi ?? "").trim();
+  if (konfirmasi !== "HAPUS-SEMUA-TRANSAKSI") {
+    return res.redirect("/operasional/analisis?msg=err_konfirmasi");
+  }
+  try {
+    const deleted = await deleteAllTransaksi();
+    console.log("[FINANCE] All transaksi deleted:", deleted, "rows · by", res.locals.financeUser || "(unknown)");
+    res.redirect("/operasional/analisis?msg=hapus_semua_ok&n=" + deleted);
+  } catch (err) {
+    console.error("[FINANCE] delete all transaksi error:", err.message);
+    res.redirect("/operasional/analisis?msg=err");
+  }
+});
+
 // ── GET /operasional/analisis — halaman detail analisis target (owner-only) ──
 router.get("/analisis", requireOwner, async (req, res) => {
   try {

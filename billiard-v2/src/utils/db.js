@@ -212,6 +212,12 @@ export const appendTransaksi = async (item) => {
   );
 };
 
+// ── HAPUS SEMUA transaksi (destructive — owner-only, dgn konfirmasi) ──
+export const deleteAllTransaksi = async () => {
+  const res = await query("DELETE FROM transaksi");
+  return res.rowCount || 0;
+};
+
 export const deleteTransaksi = async (id) => {
   await query("DELETE FROM transaksi WHERE id = $1", [id]);
 };

@@ -2971,11 +2971,13 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
   const sim = an.simulasi;
 
   const toastMsg  = msg === "added"   ? "Biaya berhasil ditambah"
-    : msg === "updated" ? "Biaya berhasil diupdate"
-    : msg === "deleted" ? "Biaya berhasil dihapus"
-    : msg === "err"     ? "Gagal: pastikan nama & nominal terisi"
+    : msg === "updated"          ? "Biaya berhasil diupdate"
+    : msg === "deleted"          ? "Biaya berhasil dihapus"
+    : msg === "hapus_semua_ok"   ? "Semua transaksi berhasil dihapus"
+    : msg === "err_konfirmasi"   ? "Konfirmasi salah — ketik PERSIS 'HAPUS-SEMUA-TRANSAKSI'"
+    : msg === "err"              ? "Gagal: pastikan nama & nominal terisi"
     : "";
-  const toastType = msg === "err" ? "err" : "ok";
+  const toastType = (msg === "err" || msg === "err_konfirmasi") ? "err" : "ok";
   const toastHtml = toastMsg
     ? "<div class=\"ap-toast " + toastType + " show\" id=\"apToast\">" + escHtml(toastMsg) + "</div>"
     : "";
@@ -3184,10 +3186,22 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-submit{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);margin-top:6px;display:inline-flex;align-items:center;justify-content:center;gap:6px}",
     ".ap-submit:hover{opacity:.9}",
     // Toast
-    ".ap-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;white-space:nowrap;pointer-events:none;opacity:0;transition:all .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.15)}",
+    ".ap-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);padding:11px 22px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;white-space:normal;max-width:400px;text-align:center;pointer-events:none;opacity:0;transition:all .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.15)}",
     ".ap-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
     ".ap-toast.ok{background:#dcfce7;color:#16a34a;border:1px solid rgba(34,197,94,.3)}",
     ".ap-toast.err{background:#fee2e2;color:#dc2626;border:1px solid rgba(239,68,68,.3)}",
+    // Danger Zone
+    ".ap-danger{margin-top:24px;background:linear-gradient(135deg,rgba(239,68,68,.06),rgba(239,68,68,.02));border:1.5px solid rgba(239,68,68,.25);border-radius:14px;padding:18px 22px}",
+    ".ap-danger-hdr{font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px;margin-bottom:14px}",
+    ".ap-danger-hdr i{font-size:16px}",
+    ".ap-danger-body{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}",
+    ".ap-danger-info{flex:1;min-width:240px}",
+    ".ap-danger-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px}",
+    ".ap-danger-desc{font-size:12px;color:var(--txt2);line-height:1.55}",
+    ".ap-danger-desc strong{color:#dc2626;font-weight:700}",
+    ".ap-danger-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:7px;padding:11px 18px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);box-shadow:0 2px 8px rgba(220,38,38,.25);transition:all .15s}",
+    ".ap-danger-btn:hover{background:#b91c1c;box-shadow:0 4px 12px rgba(220,38,38,.4)}",
+    "@media(max-width:540px){.ap-danger-body{flex-direction:column}.ap-danger-btn{width:100%;justify-content:center}}",
   ].join("");
 
   return docHeadV4("Analisis Target")
@@ -3349,6 +3363,23 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "</div>"
     + "</div>"
 
+    // ── Danger Zone (hapus semua transaksi) ─────────────────────
+    + "<div class=\"ap-danger\">"
+    +   "<div class=\"ap-danger-hdr\"><i class=\"ti ti-alert-octagon\"></i> Danger Zone</div>"
+    +   "<div class=\"ap-danger-body\">"
+    +     "<div class=\"ap-danger-info\">"
+    +       "<div class=\"ap-danger-title\">Hapus Semua Data Transaksi</div>"
+    +       "<div class=\"ap-danger-desc\">Menghapus seluruh transaksi pemasukan & pengeluaran dari database secara <strong>permanen</strong>. Setelah dihapus, data tidak dapat dipulihkan. Disarankan backup dulu via Railway DB sebelum hapus.</div>"
+    +     "</div>"
+    +     "<form method=\"post\" action=\"/operasional/transaksi/hapus-semua\" onsubmit=\"return confirmHapusSemua(this)\">"
+    +       "<input type=\"hidden\" name=\"konfirmasi\" id=\"hapusKonfirmasi\">"
+    +       "<button type=\"submit\" class=\"ap-danger-btn\">"
+    +         "<i class=\"ti ti-trash\"></i> Hapus Semua Transaksi"
+    +       "</button>"
+    +     "</form>"
+    +   "</div>"
+    + "</div>"
+
     + "</div></div></div>"
 
     // ── Modal Tambah/Edit Biaya ──
@@ -3416,7 +3447,18 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "bmSetFrek(d.frek);"
     +   "document.getElementById('biayaModal').classList.add('open');}"
     + "function closeBiayaModal(){document.getElementById('biayaModal').classList.remove('open');}"
-    + "setTimeout(function(){var t=document.getElementById('apToast');if(t)setTimeout(function(){t.classList.remove('show');},3000);},100);"
+    // Konfirmasi hapus semua transaksi — double confirm + prompt input
+    + "function confirmHapusSemua(form){"
+    +   "if(!confirm('PERINGATAN: Ini akan menghapus SEMUA data transaksi (pemasukan + pengeluaran) secara PERMANEN. Lanjutkan?'))return false;"
+    +   "var inp=prompt('Untuk konfirmasi, ketik PERSIS:\\n\\nHAPUS-SEMUA-TRANSAKSI');"
+    +   "if(!inp||inp.trim()!=='HAPUS-SEMUA-TRANSAKSI'){"
+    +     "alert('Konfirmasi salah. Penghapusan dibatalkan.');"
+    +     "return false;"
+    +   "}"
+    +   "form.querySelector('#hapusKonfirmasi').value=inp.trim();"
+    +   "return true;"
+    + "}"
+    + "setTimeout(function(){var t=document.getElementById('apToast');if(t)setTimeout(function(){t.classList.remove('show');},3500);},100);"
     + "</script>"
     // Chart.js + init trend bar chart
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"></script>"
