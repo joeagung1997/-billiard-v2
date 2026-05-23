@@ -189,8 +189,8 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + chip("yesterday", "Kemarin",    yesterday,  yesterday)
     + chip("week",      "Minggu ini", weekStart,  today)
     + chip("month",     "Bulan ini",  monthStart, today)
-    + "<button type=\"button\" class=\"mon-chip" + (activeChip === "custom" ? " active" : "") + "\""
-    + " onclick=\"document.getElementById('fDari').focus()\">Custom</button>"
+    + "<button type=\"button\" id=\"chipCustom\" class=\"mon-chip" + (activeChip === "custom" ? " active" : "") + "\""
+    + " onclick=\"applyCustom()\">Custom</button>"
     + "</div>";
 
   // Filter bar
@@ -202,9 +202,9 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
   const filterHtml = "<form method=\"get\" action=\"/operasional/monitoring/aktivitas\" class=\"mon-filter\" id=\"actFilterForm\">"
     + chipsHtml
     + "<label>Dari</label>"
-    + "<input type=\"date\" name=\"dari\" id=\"fDari\" value=\"" + escHtml(tglDari) + "\" style=\"width:130px\">"
+    + "<input type=\"date\" name=\"dari\" id=\"fDari\" value=\"" + escHtml(tglDari) + "\" style=\"width:130px\" onchange=\"markCustom()\">"
     + "<label>Sampai</label>"
-    + "<input type=\"date\" name=\"sampai\" value=\"" + escHtml(tglSampai) + "\" style=\"width:130px\">"
+    + "<input type=\"date\" name=\"sampai\" id=\"fSampai\" value=\"" + escHtml(tglSampai) + "\" style=\"width:130px\" onchange=\"markCustom()\">"
     + "<label>Karyawan</label>"
     + "<select name=\"user\">"
     + "<option value=\"\">Semua</option>"
@@ -270,7 +270,12 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
   const script = "function qf(d,s){var f=document.getElementById('actFilterForm');"
     + "f.querySelector('[name=dari]').value=d;"
     + "f.querySelector('[name=sampai]').value=s;"
-    + "f.submit();}";
+    + "f.submit();}"
+    + "function applyCustom(){document.getElementById('actFilterForm').submit();}"
+    + "function markCustom(){"
+    + "var chips=document.querySelectorAll('.mon-chip');"
+    + "for(var i=0;i<chips.length;i++)chips[i].classList.remove('active');"
+    + "document.getElementById('chipCustom').classList.add('active');}";
   return monPage("Monitoring Aktivitas", role, "aktivitas", body, script);
 }
 
