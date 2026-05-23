@@ -660,6 +660,30 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     chartSubtitle = bulanLabel + " · per minggu";
   }
 
+  // ── Detail chart: per tanggal / hari / jam (owner only) ───────
+  const daysInBulan = new Date(parseInt(bFilter.split("-")[0], 10), parseInt(bFilter.split("-")[1], 10), 0).getDate();
+  const byDateLabels = Array.from({ length: daysInBulan }, (_, i) => String(i + 1));
+  const byDateInp  = new Array(daysInBulan).fill(0);
+  const byDateOut  = new Array(daysInBulan).fill(0);
+  const byDayInp   = [0, 0, 0, 0, 0, 0, 0]; // Mon=0 … Sun=6
+  const byDayOut   = [0, 0, 0, 0, 0, 0, 0];
+  const byHourInp  = new Array(24).fill(0);
+  const byHourOut  = new Array(24).fill(0);
+  activeFiltered.forEach(function(t) {
+    const dayNum = parseInt((t.tanggal || "").split("-")[2], 10);
+    if (dayNum >= 1 && dayNum <= daysInBulan) {
+      if (t.jenis === "pemasukan") byDateInp[dayNum - 1] += t.jumlah;
+      else                         byDateOut[dayNum - 1] += t.jumlah;
+    }
+    const d   = new Date(t.tanggal + "T00:00:00");
+    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    if (t.jenis === "pemasukan") byDayInp[dow] += t.jumlah;
+    else                         byDayOut[dow] += t.jumlah;
+    const h = parseInt((t.jam || "00:00").split(":")[0], 10) || 0;
+    if (t.jenis === "pemasukan") byHourInp[h] += t.jumlah;
+    else                         byHourOut[h] += t.jumlah;
+  });
+
   // ── Category breakdown for donut chart ───────────────────────
   const catMap = {};
   activeSortedTbl.filter((t) => t.jenis === "pemasukan").forEach(function(t) {
@@ -738,6 +762,13 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
   const donutValsJson   = safeJson(donutVals);
   const donutLabelsJson = safeJson(donutLabels);
   const donutColorsJson = safeJson(donutColors);
+  const byDateLabelsJson = safeJson(byDateLabels);
+  const byDateInpJson    = safeJson(byDateInp);
+  const byDateOutJson    = safeJson(byDateOut);
+  const byDayInpJson     = safeJson(byDayInp);
+  const byDayOutJson     = safeJson(byDayOut);
+  const byHourInpJson    = safeJson(byHourInp);
+  const byHourOutJson    = safeJson(byHourOut);
 
   const dashExtraCss = [
     // ── Stat card upgrades ───────────────────────────────────────
@@ -833,6 +864,12 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     // ── Thumbnail bukti di baris tabel ──────────────────────────
     ".fr-bukti-thumb{width:28px;height:28px;border-radius:5px;object-fit:cover;cursor:pointer;border:1px solid var(--border);transition:opacity .15s;vertical-align:middle;margin-left:4px}",
     ".fr-bukti-thumb:hover{opacity:.75;box-shadow:0 1px 6px rgba(0,0,0,.12)}",
+    // ── Detail chart tabs ────────────────────────────────────────
+    ".fdc-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;flex-wrap:wrap;gap:10px}",
+    ".fdc-tabs{display:flex;gap:6px;flex-wrap:wrap}",
+    ".fdc-tab{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;color:var(--txt3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap}",
+    ".fdc-tab.active{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4);color:#22c55e}",
+    ".fdc-tab:hover:not(.active){background:var(--surface2);color:var(--txt2)}",
   ].join("");
 
   return docHeadV4("Keuangan")
@@ -1019,6 +1056,30 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     + "</div>"
 
     + "</div>"
+
+    // ── Detail chart: tanggal / hari / jam (owner only) ──────────
+    + (isOwner
+      ? "<div class=\"fin-chart-card\" style=\"margin-top:16px\">"
+        + "<div class=\"fdc-header\">"
+        + "<div><div class=\"fin-chart-title\">Analisis Transaksi</div>"
+        + "<div class=\"fin-chart-sub\">" + escHtml(bulanLabel) + " · pilih tampilan</div></div>"
+        + "<div class=\"fdc-tabs\">"
+        + "<button class=\"fdc-tab active\" id=\"tabTanggal\" onclick=\"switchDetailChart('tanggal')\"><i class=\"ti ti-calendar\"></i>&nbsp;Tanggal</button>"
+        + "<button class=\"fdc-tab\" id=\"tabHari\" onclick=\"switchDetailChart('hari')\"><i class=\"ti ti-calendar-week\"></i>&nbsp;Hari</button>"
+        + "<button class=\"fdc-tab\" id=\"tabJam\" onclick=\"switchDetailChart('jam')\"><i class=\"ti ti-clock\"></i>&nbsp;Jam</button>"
+        + "</div></div>"
+        + "<div class=\"fin-chart-leg\" style=\"padding:0 18px 6px;gap:14px;display:flex\">"
+        + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#22c55e\"></span>&nbsp;Pemasukan</span>"
+        + "<span><span style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:#ef4444\"></span>&nbsp;Pengeluaran</span>"
+        + "</div>"
+        + "<div class=\"fin-chart-body\" style=\"height:240px;padding-top:4px\"><canvas id=\"detailChart\"></canvas></div>"
+        + "<div class=\"fin-chart-stats\">"
+        + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pemasukan</div><div class=\"fin-cs-val inc\">" + rp(totalIn) + "</div></div>"
+        + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pengeluaran</div><div class=\"fin-cs-val out\">" + rp(totalOut) + "</div></div>"
+        + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Saldo</div><div class=\"fin-cs-val mg\">" + (saldo >= 0 ? "+" : "−") + rp(Math.abs(saldo)) + "</div></div>"
+        + "</div>"
+        + "</div>"
+      : "")
 
     // ── Transaction table ───────────────────────────────────────
     + "<div class=\"fin-table-card\">"
@@ -1558,6 +1619,39 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     + "options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},"
     + "tooltip:{backgroundColor:'rgba(15,23,42,.88)',titleColor:'#e2e8f0',bodyColor:'#94a3b8',padding:10,cornerRadius:8,"
     + "callbacks:{label:function(ctx){return ' '+ctx.label+': Rp '+Number(ctx.raw||0).toLocaleString('id-ID');}}}}}}); "
+    + "})();"
+    // ── Detail chart: tanggal / hari / jam ──────────────────────
+    + "(function(){"
+    + "var dc2=document.getElementById('detailChart');if(!dc2)return;"
+    + "var dc2ctx=dc2.getContext('2d');"
+    + "var inG=dc2ctx.createLinearGradient(0,0,0,220);inG.addColorStop(0,'rgba(34,197,94,.9)');inG.addColorStop(1,'rgba(34,197,94,.35)');"
+    + "var outG=dc2ctx.createLinearGradient(0,0,0,220);outG.addColorStop(0,'rgba(239,68,68,.85)');outG.addColorStop(1,'rgba(239,68,68,.3)');"
+    + "var datasets=["
+    + "{label:'Pemasukan',data:" + byDateInpJson + ",backgroundColor:inG,borderRadius:5,borderSkipped:false,borderWidth:0},"
+    + "{label:'Pengeluaran',data:" + byDateOutJson + ",backgroundColor:outG,borderRadius:5,borderSkipped:false,borderWidth:0}"
+    + "];"
+    + "var tickOpts={font:{size:10},color:'#94a3b8',maxTicksLimit:16};"
+    + "var dc2inst=new Chart(dc2,{type:'bar',data:{labels:" + byDateLabelsJson + ",datasets:datasets},"
+    + "options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},"
+    + "plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(15,23,42,.88)',titleColor:'#e2e8f0',bodyColor:'#94a3b8',padding:10,cornerRadius:8,"
+    + "callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': Rp '+Number(ctx.raw||0).toLocaleString('id-ID');}}}},"
+    + "scales:{x:{grid:{display:false},border:{display:false},ticks:tickOpts},"
+    + "y:{beginAtZero:true,grid:{color:'rgba(148,163,184,.15)'},border:{display:false},"
+    + "ticks:{font:{size:10},color:'#94a3b8',callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'jt':v>=1000?(v/1000).toFixed(0)+'rb':v;}}}}}});"
+    + "var chartData={"
+    + "tanggal:{labels:" + byDateLabelsJson + ",inp:" + byDateInpJson + ",out:" + byDateOutJson + "},"
+    + "hari:{labels:['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],inp:" + byDayInpJson + ",out:" + byDayOutJson + "},"
+    + "jam:{labels:['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'],inp:" + byHourInpJson + ",out:" + byHourOutJson + "}"
+    + "};"
+    + "window.switchDetailChart=function(mode){"
+    + "['tanggal','hari','jam'].forEach(function(m){"
+    + "var b=document.getElementById('tab'+m.charAt(0).toUpperCase()+m.slice(1));if(b)b.classList.toggle('active',m===mode);});"
+    + "var d=chartData[mode];"
+    + "dc2inst.data.labels=d.labels;"
+    + "dc2inst.data.datasets[0].data=d.inp;"
+    + "dc2inst.data.datasets[1].data=d.out;"
+    + "dc2inst.options.scales.x.ticks.maxTicksLimit=mode==='tanggal'?16:mode==='jam'?12:7;"
+    + "dc2inst.update();};"
     + "})();"
     + "function fmtSaldoKas(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';}"
     + "function saveSaldoKas(){var v=(document.getElementById('finSaldoKas')||{}).value||'';var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');try{localStorage.setItem('fin_saldo_kas',JSON.stringify({v:v,d:today}));}catch(e){}}"
