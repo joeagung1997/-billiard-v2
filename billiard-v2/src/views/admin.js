@@ -5,6 +5,7 @@
 
 import { CONFIG } from "../config.js";
 import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam } from "../utils/format.js";
+import { initials } from "./finance.js";
 
 // ── WA SVG icon (string biasa, bukan template literal) ────────
 const WA_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">'
@@ -539,12 +540,40 @@ function buildAdminCss() {
   ].join('');
 }
 
+// ── Topbar profile pill (mobile) — sama style dgn finance topbar ───────────
+function buildAdminTopbarProfile(user = {}) {
+  const isOwner = user.role === 'owner';
+  const fallback = isOwner ? 'Owner' : 'Admin';
+  const name = (user.displayName || '').trim() || fallback;
+  const ini  = initials(user.displayName) || (isOwner ? 'OW' : 'AD');
+  const bg   = isOwner ? 'rgba(45,102,36,.18)' : 'rgba(30,64,175,.15)';
+  const fg   = isOwner ? '#22c55e' : '#60a5fa';
+  const roleLbl = isOwner ? 'Owner' : 'Karyawan';
+
+  return '<div class="topbar-profile" title="' + name + ' · ' + roleLbl + '">'
+    + '<div class="tb-avatar" style="background:' + bg + ';color:' + fg + '">' + ini + '</div>'
+    + '<div class="tb-prof-info">'
+    +   '<div class="tb-prof-name">' + name + '</div>'
+    +   '<div class="tb-prof-role">' + roleLbl + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
 // ── buildSidebar — shared sidebar HTML (revamp v2) ──────────────────────────
-function buildSidebar(token, activePage) {
+function buildSidebar(token, activePage, user = {}) {
   const dashCls    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
   const membersCls = 'nav-item' + (activePage === 'members'   ? ' active' : '');
   // Persist token onclick (untuk navigate ke /operasional yg gak butuh tk param)
   const tkOnclick  = 'try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}';
+
+  // Profile — pakai displayName user yg login, fallback ke role label
+  const isOwner       = user.role === 'owner';
+  const fallbackName  = isOwner ? 'Owner' : 'Admin';
+  const profileName   = (user.displayName || '').trim() || fallbackName;
+  const profileRole   = isOwner ? 'Owner' : 'Karyawan';
+  const profileAvatar = initials(user.displayName) || (isOwner ? 'OW' : 'AD');
+  const avatarBg      = isOwner ? 'rgba(45,102,36,.18)' : 'rgba(30,64,175,.15)';
+  const avatarFg      = isOwner ? '#22c55e' : '#60a5fa';
 
   return '<aside class="sidebar">'
     // ── Logo ───────────────────────────────────────
@@ -615,10 +644,10 @@ function buildSidebar(token, activePage) {
     // ── Profile ────────────────────────────────────
     + '<div class="sidebar-bottom">'
     + '<div class="profile-card">'
-    + '<div class="profile-avatar">AD</div>'
+    + '<div class="profile-avatar" style="background:' + avatarBg + ';color:' + avatarFg + '">' + profileAvatar + '</div>'
     + '<div class="profile-info">'
-    + '<div class="profile-name">Admin</div>'
-    + '<div class="profile-role">Administrator</div>'
+    + '<div class="profile-name">' + profileName + '</div>'
+    + '<div class="profile-role">' + profileRole + '</div>'
     + '</div>'
     + '<div class="profile-actions">'
     + '<button class="profile-btn danger" title="Logout" onclick="adminLogout()"><i class="ti ti-logout"></i></button>'
@@ -725,7 +754,7 @@ function buildModal() {
     + '</div></div></div>';
 }
 
-export function adminDashboard({ db, log, transaksi = [], token, req }) {
+export function adminDashboard({ db, log, transaksi = [], token, req, user = {} }) {
   const { members } = db;
 
   const nowWib   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
@@ -947,11 +976,11 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=35">'
+    + '<link rel="stylesheet" href="/admin.css?v=36">'
     + '</head><body>'
 
     + '<div class="layout">'
-    + buildSidebar(token, 'dashboard')
+    + buildSidebar(token, 'dashboard', user)
 
     + '<div class="main-wrap">'
 
@@ -961,10 +990,10 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
     + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
     + '<i class="ti ti-circle-number-8"></i></div>'
     + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="topbar-label">Admin Dashboard</div></div>'
+    + '<div class="topbar-label">' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
-    + '<span style="font-size:11px;color:var(--txt3)">' + now + '</span>'
+    + buildAdminTopbarProfile(user)
     + '</div></header>'
 
     + '<div class="page">'
@@ -1288,7 +1317,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req }) {
 
 // ── Kelola Member page ────────────────────────────────────────
 
-export function memberPage({ db, log = [], token, req }) {
+export function memberPage({ db, log = [], token, req, user = {} }) {
   const { members } = db;
   const hostBase = req.protocol + '://' + req.get('host');
 
@@ -1365,11 +1394,11 @@ export function memberPage({ db, log = [], token, req }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=35">'
+    + '<link rel="stylesheet" href="/admin.css?v=36">'
     + '</head><body>'
 
     + '<div class="layout">'
-    + buildSidebar(token, 'members')
+    + buildSidebar(token, 'members', user)
 
     + '<div class="main-wrap">'
 
@@ -1378,10 +1407,10 @@ export function memberPage({ db, log = [], token, req }) {
     + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
     + '<i class="ti ti-circle-number-8"></i></div>'
     + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
-    + '<div class="topbar-label">Kelola Member</div></div>'
+    + '<div class="topbar-label">Kelola Member · ' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
-    + '<span style="font-size:11px;color:var(--txt3)">' + now + '</span>'
+    + buildAdminTopbarProfile(user)
     + '</div></header>'
 
     + '<div class="page">'

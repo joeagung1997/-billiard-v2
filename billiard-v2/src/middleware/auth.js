@@ -12,9 +12,10 @@ export const requireAdmin = (req, res, next) => {
     return res.redirect("/admin");
   }
 
-  res.locals.tk        = tk;
-  res.locals.adminUser = user.username;
-  res.locals.adminRole = user.role;
+  res.locals.tk           = tk;
+  res.locals.adminUser    = user.username;
+  res.locals.adminRole    = user.role;
+  res.locals.adminDisplay = user.displayName || "";
   next();
 };
 

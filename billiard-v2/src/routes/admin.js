@@ -38,7 +38,7 @@ router.get("/", async (req, res) => {
     const log       = await readLog();
     const transaksi = await readTransaksi();
 
-    res.send(adminDashboard({ db, log, transaksi, token: tk, req }));
+    res.send(adminDashboard({ db, log, transaksi, token: tk, req, user }));
   } catch (err) {
     console.error("[ADMIN] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
       const row = accounts.find(
         (u) => u.username.toLowerCase() === username && u.pin === pin
       );
-      if (row) found = { username: row.username, role: row.role };
+      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username };
     }
   } catch (err) {
     console.error("[ADMIN] DB accounts lookup failed, fallback ke CONFIG:", err.message);
@@ -69,16 +69,21 @@ router.post("/login", async (req, res) => {
     const fromConfig = CONFIG.ADMIN_USERS.find(
       (u) => u.username.toLowerCase() === username && u.pin === pin
     );
-    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role };
+    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username };
   }
 
   if (!found) return res.redirect("/admin?err=1");
 
-  const token = createToken({ username: found.username, role: found.role });
+  const token = createToken({ username: found.username, role: found.role, displayName: found.displayName });
 
   // Owner: set cookie _frt otomatis agar tidak perlu login ulang di /operasional
+  // Termasuk username + displayName supaya topbar/sidebar di /operasional juga personalize.
   if (found.role === "owner") {
-    const frt = jwt.sign({ role: "owner" }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+    const frt = jwt.sign(
+      { role: "owner", username: found.username, displayName: found.displayName },
+      CONFIG.JWT_SECRET,
+      { expiresIn: CONFIG.JWT_EXPIRES }
+    );
     res.setHeader("Set-Cookie",
       `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/operasional; Max-Age=${24 * 3600}; SameSite=Lax`
     );
@@ -94,7 +99,12 @@ router.get("/members", requireAdmin, async (req, res) => {
     const db    = await readDB();
     const log   = await readLog();
     const token = res.locals.tk;
-    res.send(memberPage({ db, log, token, req }));
+    const user  = {
+      username:    res.locals.adminUser,
+      role:        res.locals.adminRole,
+      displayName: res.locals.adminDisplay,
+    };
+    res.send(memberPage({ db, log, token, req, user }));
   } catch (err) {
     console.error("[ADMIN] members error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
