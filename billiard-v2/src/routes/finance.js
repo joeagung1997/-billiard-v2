@@ -154,6 +154,7 @@ router.get("/", async (req, res) => {
 
     res.send(financeDashboard({
       transaksi, token: "", role,
+      displayName: res.locals.financeDisplay || "",
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
       msg: req.query.msg || "",

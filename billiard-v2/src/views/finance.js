@@ -32,10 +32,18 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=16\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=17\">";
 }
 
-export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
+// Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
+export function initials(name) {
+  if (!name) return "";
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", displayName = "") {
   const isOwner = role === "owner";
   const isKeu  = page === "keuangan";
   const isKat  = page === "kategori";
@@ -49,10 +57,11 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
     "<a href=\"" + href + "\" class=\"submenu-item" + (active ? " active" : "") + "\">"
     + "<div class=\"sub-dot\"></div>" + label + "</a>";
 
-  // Label & avatar berdasarkan role
-  const profileName   = isOwner ? "Owner" : "Karyawan";
+  // Label & avatar — pakai displayName jika ada, fallback ke role label
+  const fallbackName  = isOwner ? "Owner" : "Karyawan";
+  const profileName   = (displayName || "").trim() || fallbackName;
   const profileRole   = isOwner ? "Akses Penuh" : "Akses Terbatas";
-  const profileAvatar = isOwner ? "OW" : "KR";
+  const profileAvatar = initials(displayName) || (isOwner ? "OW" : "KR");
   const roleBadgeColor = isOwner ? "#2d6624" : "#1e40af";
   const roleBadgeBg    = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
 
@@ -144,6 +153,25 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
     + "window.location.href='/operasional/logout';}"
     + "function adminLogout(){financeLogout();}"
     + "</script>";
+}
+
+// ── Pill profile utk topbar (mobile & desktop topbar) ────────────
+export function buildFinanceTopbarProfile(role = "owner", displayName = "") {
+  const isOwner = role === "owner";
+  const fallback = isOwner ? "Owner" : "Karyawan";
+  const name = (displayName || "").trim() || fallback;
+  const ini  = initials(displayName) || (isOwner ? "OW" : "KR");
+  const bg   = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
+  const col  = isOwner ? "#2d6624" : "#1e40af";
+  const roleLbl = isOwner ? "Owner" : "Karyawan";
+
+  return "<div class=\"topbar-profile\" title=\"" + escHtml(name) + " · " + roleLbl + "\">"
+    + "<div class=\"tb-avatar\" style=\"background:" + bg + ";color:" + col + "\">" + escHtml(ini) + "</div>"
+    + "<div class=\"tb-prof-info\">"
+    +   "<div class=\"tb-prof-name\">" + escHtml(name) + "</div>"
+    +   "<div class=\"tb-prof-role\">" + roleLbl + "</div>"
+    + "</div>"
+    + "</div>";
 }
 
 // ── Bottom nav untuk halaman /operasional/* (mobile) ─────────────
@@ -473,7 +501,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], msg = "" }) {
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
     : msg === "voided"    ? "Transaksi berhasil dibatalkan"
@@ -922,7 +950,7 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "keuangan", role)
+    + buildFinanceSidebar(token, "keuangan", role, displayName)
     + "<div class=\"main-wrap\">"
 
     // Mobile topbar
@@ -930,9 +958,9 @@ export function financeDashboard({ transaksi, token, role = "owner", bulanFilter
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-circle-number-8\"></i></div>"
     + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
-    + "<div class=\"topbar-label\">Keuangan</div></div>"
+    + "<div class=\"topbar-label\">Keuangan · " + bulanLabel + "</div></div>"
     + "</div>"
-    + "<div class=\"topbar-right\"><span style=\"font-size:11px;color:var(--txt3)\">" + bulanLabel + "</span></div>"
+    + "<div class=\"topbar-right\">" + buildFinanceTopbarProfile(role, displayName) + "</div>"
     + "</header>"
 
     + "<div class=\"page\">"

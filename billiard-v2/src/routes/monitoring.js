@@ -50,7 +50,8 @@ router.get("/monitoring/aktivitas", async (req, res) => {
       logs, tglDari, tglSampai, username, jenis,
       karyawanList,
       accountsAll: accounts,
-      role: res.locals.financeRole,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
     }));
   } catch (err) {
     console.error("[MONITORING] aktivitas error:", err.message);
@@ -136,7 +137,8 @@ router.get("/monitoring/member", async (req, res) => {
     });
     res.send(monitoringMember({
       logs, tglDari, tglSampai, aksi,
-      role: res.locals.financeRole,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
     }));
   } catch (err) {
     console.error("[MONITORING] member error:", err.message);
@@ -159,7 +161,8 @@ router.get("/monitoring/selisih", async (req, res) => {
     res.send(monitoringSelisih({
       setoranList, bulan, username,
       karyawanList,
-      role: res.locals.financeRole,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
     }));
   } catch (err) {
     console.error("[MONITORING] selisih error:", err.message);

@@ -1,7 +1,7 @@
 // src/views/monitoring.js
 // ── HTML views untuk Monitoring Karyawan ─────────────────────
 
-import { docHeadV4, buildFinanceSidebar, buildFinanceBottomNav, escHtml } from "./finance.js";
+import { docHeadV4, buildFinanceSidebar, buildFinanceBottomNav, buildFinanceTopbarProfile, escHtml } from "./finance.js";
 
 // ── Format Rupiah ─────────────────────────────────────────────
 const rp = (n) => {
@@ -90,7 +90,7 @@ const MON_CSS = [
 ].join("");
 
 // ── Shared page shell ─────────────────────────────────────────
-function monPage(title, role, activeTab, bodyHtml, extraScript) {
+function monPage(title, role, activeTab, bodyHtml, extraScript, displayName = "") {
   const tabs = [
     { id: "aktivitas", label: "Aktivitas Transaksi", href: "/operasional/monitoring/aktivitas", icon: "ti-list" },
     { id: "member",    label: "Aktivitas Member",    href: "/operasional/monitoring/member",    icon: "ti-users" },
@@ -107,7 +107,7 @@ function monPage(title, role, activeTab, bodyHtml, extraScript) {
     + "<style>" + MON_CSS + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
-    + buildFinanceSidebar("", "monitoring", role)
+    + buildFinanceSidebar("", "monitoring", role, displayName)
     + "<div class=\"main-wrap\">"
 
     // Topbar mobile
@@ -117,6 +117,7 @@ function monPage(title, role, activeTab, bodyHtml, extraScript) {
     + "<div><div class=\"topbar-name\">Monitoring Karyawan</div><div class=\"topbar-label\">Pantau aktivitas &amp; setoran</div></div>"
     + "</div>"
     + "<div class=\"topbar-right\">"
+    + buildFinanceTopbarProfile(role, displayName)
     + "<button class=\"theme-btn\" onclick=\"toggleTheme()\" title=\"Ganti tema\"><i class=\"ti ti-sun\"></i></button>"
     + "</div>"
     + "</div>"
@@ -200,7 +201,7 @@ function buildDateChips({ tglDari, tglSampai, formId }) {
 }
 
 // ── 1. Aktivitas Transaksi ────────────────────────────────────
-export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis, karyawanList, accountsAll = [], role }) {
+export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis, karyawanList, accountsAll = [], role, displayName = "" }) {
   // Map username → display name (mencakup owner juga, biar transaksi owner tetap rapih)
   const nameMap = Object.fromEntries(
     accountsAll.map((a) => [a.username, a.display_name || a.username])
@@ -293,11 +294,11 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + "</table></div></div>";
 
   const body = summaryHtml + filterHtml + tableHtml;
-  return monPage("Monitoring Aktivitas", role, "aktivitas", body, chipsScript);
+  return monPage("Monitoring Aktivitas", role, "aktivitas", body, chipsScript, displayName);
 }
 
 // ── 1b. Aktivitas Member (dari tabel logs) ────────────────────
-export function monitoringMember({ logs, tglDari, tglSampai, aksi, role }) {
+export function monitoringMember({ logs, tglDari, tglSampai, aksi, role, displayName = "" }) {
   // Aksi list & label friendly
   const aksiMeta = {
     SCAN:           { label: "Kunjungan",       cls: "mon-badge-in",     icon: "ti-qrcode" },
@@ -386,7 +387,7 @@ export function monitoringMember({ logs, tglDari, tglSampai, aksi, role }) {
     + "</table></div></div>";
 
   const body = summaryHtml + filterHtml + tableHtml;
-  return monPage("Aktivitas Member", role, "member", body, chipsScript);
+  return monPage("Aktivitas Member", role, "member", body, chipsScript, displayName);
 }
 
 // ── 2. Setoran Shift ──────────────────────────────────────────
@@ -580,11 +581,11 @@ export function monitoringSetoran({ setoranList, bulan, username, karyawanList, 
     + (msg === "ok" || msg === "err" ? "" : "");
 
   const body = summaryHtml + filterHtml + actionBarHtml + tableHtml + modalHtml + toastHtml;
-  return monPage("Setoran Shift", role, "setoran", body, script);
+  return monPage("Setoran Shift", role, "setoran", body, script, financeDisplay);
 }
 
 // ── 3. Selisih Kas ────────────────────────────────────────────
-export function monitoringSelisih({ setoranList, bulan, username, karyawanList, role }) {
+export function monitoringSelisih({ setoranList, bulan, username, karyawanList, role, displayName = "" }) {
   // Stats
   const sesuai = setoranList.filter((s) => s.selisih === 0).length;
   const kurang = setoranList.filter((s) => s.selisih < 0);
@@ -679,5 +680,5 @@ export function monitoringSelisih({ setoranList, bulan, username, karyawanList, 
     + "</table></div></div>";
 
   const body = summaryHtml + filterHtml + tableHtml;
-  return monPage("Selisih Kas", role, "selisih", body, "");
+  return monPage("Selisih Kas", role, "selisih", body, "", displayName);
 }
