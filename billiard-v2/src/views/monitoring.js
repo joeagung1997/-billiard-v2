@@ -28,10 +28,14 @@ const MON_CSS = [
   ".mon-filter input,.mon-filter select{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--txt);font-family:var(--ff);outline:none}",
   ".mon-filter input:focus,.mon-filter select:focus{border-color:var(--accent)}",
   ".mon-filter-btn{padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ff);white-space:nowrap}",
-  ".mon-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}",
-  ".mon-tab{padding:10px 18px;font-size:12px;font-weight:600;color:var(--txt3);text-decoration:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}",
-  ".mon-tab.active{color:#3b82f6;border-bottom-color:#3b82f6}",
-  ".mon-tab:hover:not(.active){color:var(--txt2)}",
+  ".mon-tabs-wrap{margin-bottom:20px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+  ".mon-tabs-wrap::-webkit-scrollbar{display:none}",
+  ".mon-tabs{display:inline-flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:5px;width:fit-content}",
+  ".mon-tab{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:12px;font-weight:600;color:var(--txt3);text-decoration:none;border-radius:10px;transition:all .18s ease;white-space:nowrap;position:relative}",
+  ".mon-tab i{font-size:15px;line-height:1}",
+  ".mon-tab.active{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.35),0 0 0 1px rgba(255,255,255,.06) inset}",
+  ".mon-tab:hover:not(.active){background:var(--surface);color:var(--txt)}",
+  "@media(max-width:640px){.mon-tab{padding:9px 12px;font-size:11.5px;gap:5px}.mon-tab i{font-size:14px}}",
   ".mon-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}",
   ".mon-table{width:100%;border-collapse:collapse}",
   ".mon-table th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}",
@@ -93,7 +97,7 @@ function monPage(title, role, activeTab, bodyHtml, extraScript) {
 
   const tabsHtml = tabs.map((t) =>
     "<a href=\"" + t.href + "\" class=\"mon-tab" + (t.id === activeTab ? " active" : "") + "\">"
-    + "<i class=\"ti " + t.icon + "\" style=\"margin-right:5px\"></i>" + t.label + "</a>"
+    + "<i class=\"ti " + t.icon + "\"></i><span>" + t.label + "</span></a>"
   ).join("");
 
   return docHeadV4("Monitoring Karyawan")
@@ -122,8 +126,8 @@ function monPage(title, role, activeTab, bodyHtml, extraScript) {
     + "<div class=\"mon-title\"><div class=\"mon-title-icon\"><i class=\"ti ti-chart-bar\"></i></div>Monitoring Karyawan</div>"
     + "</div>"
 
-    // Tabs
-    + "<div class=\"mon-tabs\">" + tabsHtml + "</div>"
+    // Tabs (pill segmented control)
+    + "<div class=\"mon-tabs-wrap\"><div class=\"mon-tabs\">" + tabsHtml + "</div></div>"
 
     + bodyHtml
 
