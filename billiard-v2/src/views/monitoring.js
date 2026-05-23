@@ -21,6 +21,10 @@ const MON_CSS = [
   ".mon-title-icon{width:32px;height:32px;border-radius:10px;background:rgba(59,130,246,.12);color:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}",
   ".mon-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:18px}",
   ".mon-filter label{font-size:11px;font-weight:600;color:var(--txt3);white-space:nowrap}",
+  ".mon-chips{display:flex;gap:6px;flex-wrap:wrap;flex-basis:100%;width:100%;margin-bottom:4px}",
+  ".mon-chip{padding:6px 13px;background:var(--surface2);border:1px solid var(--border2);border-radius:18px;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:var(--ff);transition:all .12s;white-space:nowrap}",
+  ".mon-chip:hover{background:var(--surface);color:var(--txt)}",
+  ".mon-chip.active{background:#3b82f6;border-color:#3b82f6;color:#fff}",
   ".mon-filter input,.mon-filter select{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--txt);font-family:var(--ff);outline:none}",
   ".mon-filter input:focus,.mon-filter select:focus{border-color:var(--accent)}",
   ".mon-filter-btn{padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ff);white-space:nowrap}",
@@ -162,15 +166,43 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + "<div class=\"mon-sum-card\"><div class=\"mon-sum-lbl\">Pencatat Aktif</div><div class=\"mon-sum-val\">" + uniqueRecorders.size + " orang</div></div>"
     + "</div>";
 
+  // Quick-filter presets (Senin = awal minggu, ala ID)
+  const _now       = new Date();
+  const today      = _now.toISOString().slice(0, 10);
+  const yesterday  = new Date(_now.getTime() - 86400000).toISOString().slice(0, 10);
+  const _dow       = (_now.getUTCDay() + 6) % 7; // 0 = Senin
+  const weekStart  = new Date(_now.getTime() - _dow * 86400000).toISOString().slice(0, 10);
+  const monthStart = today.slice(0, 7) + "-01";
+
+  let activeChip = "custom";
+  if      (tglDari === today      && tglSampai === today)      activeChip = "today";
+  else if (tglDari === yesterday  && tglSampai === yesterday)  activeChip = "yesterday";
+  else if (tglDari === weekStart  && tglSampai === today)      activeChip = "week";
+  else if (tglDari === monthStart && tglSampai === today)      activeChip = "month";
+
+  const chip = (id, lbl, d, s) =>
+    "<button type=\"button\" class=\"mon-chip" + (activeChip === id ? " active" : "") + "\""
+    + " onclick=\"qf('" + d + "','" + s + "')\">" + lbl + "</button>";
+
+  const chipsHtml = "<div class=\"mon-chips\">"
+    + chip("today",     "Hari ini",   today,      today)
+    + chip("yesterday", "Kemarin",    yesterday,  yesterday)
+    + chip("week",      "Minggu ini", weekStart,  today)
+    + chip("month",     "Bulan ini",  monthStart, today)
+    + "<button type=\"button\" class=\"mon-chip" + (activeChip === "custom" ? " active" : "") + "\""
+    + " onclick=\"document.getElementById('fDari').focus()\">Custom</button>"
+    + "</div>";
+
   // Filter bar
   const karyawanOpts = karyawanList.map((k) =>
     "<option value=\"" + escHtml(k.username) + "\"" + (username === k.username ? " selected" : "") + ">"
     + escHtml(k.display_name || k.username) + "</option>"
   ).join("");
 
-  const filterHtml = "<form method=\"get\" action=\"/operasional/monitoring/aktivitas\" class=\"mon-filter\">"
+  const filterHtml = "<form method=\"get\" action=\"/operasional/monitoring/aktivitas\" class=\"mon-filter\" id=\"actFilterForm\">"
+    + chipsHtml
     + "<label>Dari</label>"
-    + "<input type=\"date\" name=\"dari\" value=\"" + escHtml(tglDari) + "\" style=\"width:130px\">"
+    + "<input type=\"date\" name=\"dari\" id=\"fDari\" value=\"" + escHtml(tglDari) + "\" style=\"width:130px\">"
     + "<label>Sampai</label>"
     + "<input type=\"date\" name=\"sampai\" value=\"" + escHtml(tglSampai) + "\" style=\"width:130px\">"
     + "<label>Karyawan</label>"
@@ -235,7 +267,11 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
     + "</table></div></div>";
 
   const body = summaryHtml + filterHtml + tableHtml;
-  return monPage("Monitoring Aktivitas", role, "aktivitas", body, "");
+  const script = "function qf(d,s){var f=document.getElementById('actFilterForm');"
+    + "f.querySelector('[name=dari]').value=d;"
+    + "f.querySelector('[name=sampai]').value=s;"
+    + "f.submit();}";
+  return monPage("Monitoring Aktivitas", role, "aktivitas", body, script);
 }
 
 // ── 2. Setoran Shift ──────────────────────────────────────────
