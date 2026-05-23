@@ -1280,6 +1280,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div id=\"wizOther\" class=\"fin-dynamic\">"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Kategori</label>"
     + "<select class=\"fsel\" id=\"wizKatSel\" onchange=\"wizOnKatChange(this)\">"
+    + "<option value=\"\" disabled selected hidden>— Pilih kategori —</option>"
     + "<optgroup label=\"Pemasukan\" id=\"wizGrpIn\">" + modalGrpIn + "</optgroup>"
     + "<optgroup label=\"Pengeluaran\" id=\"wizGrpOut\">" + modalGrpOut + "</optgroup>"
     + "</select></div>"
