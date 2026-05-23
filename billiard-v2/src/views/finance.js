@@ -3141,8 +3141,18 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".stt-tip strong{color:var(--txt);font-weight:700}",
     // Responsive
     "@media(max-width:880px){.stt-hide-md{display:none!important}}",
-    "@media(max-width:640px){.stt-hide-sm{display:none!important}.stt-row td{padding:14px 12px}.stt-th{padding:11px 12px}.stt-th-status{padding-left:14px}.stt-c-status{padding-left:14px!important}.stt-th-num,.stt-c-num{padding-right:14px!important;font-size:12px}.stt-icon{width:38px;height:38px;font-size:18px}.stt-name{font-size:13px}.stt-c-primary{font-size:12.5px}}",
-    "@media(max-width:400px){.stt-icon{width:32px;height:32px;font-size:15px;border-radius:9px}.stt-status-wrap{gap:8px}.stt-name{font-size:12.5px}.stt-rasio{font-size:9.5px}}",
+    "@media(max-width:640px){.stt-hide-sm{display:none!important}}",
+    /* Mobile stack cards (≤640px): tabel hide, cards show */
+    ".stt-mobile-stack{display:none}",
+    "@media(max-width:640px){.stt-wrap{display:none!important}.stt-mobile-stack{display:flex!important;flex-direction:column;gap:10px;margin-top:10px}}",
+    ".stt-mcard{border:1px solid var(--border);border-left:4px solid var(--stt-c);border-radius:11px;padding:13px 14px;background:var(--surface)}",
+    ".stt-mcard-hdr{display:flex;align-items:center;gap:11px;margin-bottom:8px}",
+    ".stt-mcard-titles{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}",
+    ".stt-mcard-desc{font-size:12px;color:var(--txt2);line-height:1.45;margin-bottom:10px;padding-bottom:9px;border-bottom:1px dashed var(--border)}",
+    ".stt-mcard-vals{display:flex;flex-direction:column;gap:5px}",
+    ".stt-mcard-val{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:11.5px}",
+    ".stt-mcard-vlbl{color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px;flex-shrink:0}",
+    ".stt-mcard-vnum{font-family:var(--ff-mono);font-weight:700;color:var(--txt);font-size:12px;text-align:right;overflow-wrap:anywhere}",
     /* ── Halaman Analisis Target — responsive mobile ─────────── */
     "@media(max-width:640px){",
     "  .ap-page{padding-bottom:40px;width:100%;box-sizing:border-box;max-width:100%}",
@@ -3158,12 +3168,6 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     "  .ap-note i{font-size:15px}",
     "  .ap-note span{min-width:0;overflow-wrap:break-word;word-break:normal;flex:1}",
     "  .stt-tip{padding:11px 13px;font-size:11.5px;line-height:1.5;margin-top:12px;overflow-wrap:break-word}",
-    "  .stt-wrap{border-radius:10px;margin-top:10px;overflow-x:hidden}",
-    "  .stt-table{table-layout:fixed}",
-    "  .stt-c-status{min-width:0}",
-    "  .stt-status-wrap{min-width:0}",
-    "  .stt-status-text{min-width:0;overflow:hidden}",
-    "  .stt-name,.stt-rasio{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "  /* 3 scope card */",
     "  .an-card{padding:12px 14px!important;border-radius:11px}",
     "  .an-card-hdr{margin-bottom:8px;gap:8px;flex-wrap:wrap}",
@@ -3309,11 +3313,31 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           + "</tr>"
         ).join("");
 
+        // Mobile card-stack version (≤640px)
+        const mobileCards = STATUS.map((s) =>
+          "<div class=\"stt-mcard\" style=\"--stt-c:" + s.color + ";--stt-bg:" + s.bg + "\">"
+          +   "<div class=\"stt-mcard-hdr\">"
+          +     "<div class=\"stt-icon\" style=\"background:" + s.bg + ";color:" + s.color + "\">" + s.emoji + "</div>"
+          +     "<div class=\"stt-mcard-titles\">"
+          +       "<div class=\"stt-name\" style=\"color:" + s.color + "\">" + s.label + "</div>"
+          +       "<div class=\"stt-rasio\">" + s.rasio + " target</div>"
+          +     "</div>"
+          +   "</div>"
+          +   "<div class=\"stt-mcard-desc\">" + s.desc + "</div>"
+          +   "<div class=\"stt-mcard-vals\">"
+          +     "<div class=\"stt-mcard-val\"><span class=\"stt-mcard-vlbl\">Per Hari</span><span class=\"stt-mcard-vnum\">" + fmtRange(an.targets.hari, s.min, s.max) + "</span></div>"
+          +     "<div class=\"stt-mcard-val\"><span class=\"stt-mcard-vlbl\">Per Minggu</span><span class=\"stt-mcard-vnum\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</span></div>"
+          +     "<div class=\"stt-mcard-val\"><span class=\"stt-mcard-vlbl\">Per Bulan</span><span class=\"stt-mcard-vnum\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</span></div>"
+          +   "</div>"
+          + "</div>"
+        ).join("");
+
         return "<div class=\"ap-card stt-card\">"
           + "<div class=\"ap-card-title\"><i class=\"ti ti-route\" style=\"color:#a855f7\"></i>"
           +   "Cara Baca Status"
           +   "<span class=\"ap-card-title-sub\">Rentang pemasukan per status — skala target</span>"
           + "</div>"
+          + "<div class=\"stt-mobile-stack\">" + mobileCards + "</div>"
           + "<div class=\"stt-wrap\">"
           + "<table class=\"stt-table\">"
           + "<thead><tr>"
