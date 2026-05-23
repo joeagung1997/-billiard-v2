@@ -1013,6 +1013,38 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-tbl-head{padding:12px 14px!important}"
     +   ".fin-row::after{content:'›';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;font-weight:300;opacity:.5;pointer-events:none}"
     +   ".fr-desc-title{font-weight:600!important;line-height:1.4!important;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}"
+    +   // Force fit viewport — semua card di dashboard
+    +   "body,html{overflow-x:hidden;max-width:100%}"
+    +   ".page,.page>*,.fin-stat-card,.fin-kas-card,.fin-bayar-card,.fin-table-card,.fin-chart-card{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}"
+    +   ".dash-topbar{flex-wrap:wrap;gap:10px}"
+    +   ".dash-topbar>*{min-width:0;max-width:100%}"
+    +   ".page-title{font-size:18px!important;flex-wrap:wrap}"
+    +   ".page-sub{font-size:11.5px}"
+    +   ".topbar-actions{flex-wrap:wrap;gap:8px}"
+    +   ".topbar-actions>*{flex:1 1 calc(50% - 4px);justify-content:center}"
+    +   // Saldo kas card lebih compact
+    +   ".fin-kas-card{padding:12px 14px!important;gap:10px!important}"
+    +   ".fin-kas-lbl{font-size:13px}"
+    +   ".fin-kas-sub{font-size:10.5px}"
+    +   // Cash / QRIS row pertahankan 2 col tapi padding compact
+    +   ".fin-bayar-card{grid-template-columns:1fr 1fr!important;gap:0!important}"
+    +   ".fin-bayar-item{padding:14px 14px!important}"
+    +   ".fin-bayar-lbl{font-size:10.5px}"
+    +   ".fin-bayar-val{font-size:18px!important;word-break:break-all}"
+    +   ".fin-bayar-sub{font-size:10px;line-height:1.4}"
+    +   // Stat cards (Pemasukan/Pengeluaran/Saldo/Trx)
+    +   ".fin-stat-card{padding:14px 16px!important;border-radius:12px!important}"
+    +   ".fin-stat-val{font-size:20px!important;word-break:break-all;line-height:1.2}"
+    +   ".fin-stat-lbl{font-size:10.5px}"
+    +   ".fin-stat-foot{font-size:10.5px;flex-wrap:wrap;gap:3px}"
+    +   ".fin-stat-icon{width:32px!important;height:32px!important;font-size:15px!important}"
+    +   // Chart card
+    +   ".fin-chart-hdr{padding:12px 14px 6px;gap:8px}"
+    +   ".fin-chart-body{padding:4px 12px 14px;height:220px}"
+    +   ".fin-chart-stats{grid-template-columns:repeat(3,1fr)}"
+    +   ".fin-cs-item{padding:9px 8px}"
+    +   ".fin-cs-val{font-size:12px;word-break:break-all}"
+    +   ".fin-cs-lbl{font-size:9px}"
     + "}",
     // ── Chart cards redesign ─────────────────────────────────────
     ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
