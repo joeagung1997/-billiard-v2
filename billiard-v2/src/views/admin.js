@@ -543,12 +543,12 @@ function buildAdminCss() {
 // ── Topbar profile pill (mobile) — sama style dgn finance topbar ───────────
 function buildAdminTopbarProfile(user = {}) {
   const isOwner = user.role === 'owner';
-  const fallback = isOwner ? 'Owner' : 'Admin';
+  const fallback = isOwner ? 'Owner' : 'Partner';
   const name = (user.displayName || '').trim() || fallback;
-  const ini  = initials(user.displayName) || (isOwner ? 'OW' : 'AD');
+  const ini  = initials(user.displayName) || (isOwner ? 'OW' : 'PR');
   const bg   = isOwner ? 'rgba(45,102,36,.18)' : 'rgba(30,64,175,.15)';
   const fg   = isOwner ? '#22c55e' : '#60a5fa';
-  const roleLbl = isOwner ? 'Owner' : 'Karyawan';
+  const roleLbl = isOwner ? 'Owner' : 'Partner';
 
   return '<div class="topbar-profile" title="' + name + ' · ' + roleLbl + '">'
     + '<div class="tb-avatar" style="background:' + bg + ';color:' + fg + '">' + ini + '</div>'
@@ -568,10 +568,10 @@ function buildSidebar(token, activePage, user = {}) {
 
   // Profile — pakai displayName user yg login, fallback ke role label
   const isOwner       = user.role === 'owner';
-  const fallbackName  = isOwner ? 'Owner' : 'Admin';
+  const fallbackName  = isOwner ? 'Owner' : 'Partner';
   const profileName   = (user.displayName || '').trim() || fallbackName;
-  const profileRole   = isOwner ? 'Owner' : 'Karyawan';
-  const profileAvatar = initials(user.displayName) || (isOwner ? 'OW' : 'AD');
+  const profileRole   = isOwner ? 'Owner' : 'Partner';
+  const profileAvatar = initials(user.displayName) || (isOwner ? 'OW' : 'PR');
   const avatarBg      = isOwner ? 'rgba(45,102,36,.18)' : 'rgba(30,64,175,.15)';
   const avatarFg      = isOwner ? '#22c55e' : '#60a5fa';
 

@@ -58,10 +58,10 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     + "<div class=\"sub-dot\"></div>" + label + "</a>";
 
   // Label & avatar — pakai displayName jika ada, fallback ke role label
-  const fallbackName  = isOwner ? "Owner" : "Karyawan";
+  const fallbackName  = isOwner ? "Owner" : "Partner";
   const profileName   = (displayName || "").trim() || fallbackName;
   const profileRole   = isOwner ? "Akses Penuh" : "Akses Terbatas";
-  const profileAvatar = initials(displayName) || (isOwner ? "OW" : "KR");
+  const profileAvatar = initials(displayName) || (isOwner ? "OW" : "PR");
   const roleBadgeColor = isOwner ? "#2d6624" : "#1e40af";
   const roleBadgeBg    = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
 
@@ -158,12 +158,12 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
 // ── Pill profile utk topbar (mobile & desktop topbar) ────────────
 export function buildFinanceTopbarProfile(role = "owner", displayName = "") {
   const isOwner = role === "owner";
-  const fallback = isOwner ? "Owner" : "Karyawan";
+  const fallback = isOwner ? "Owner" : "Partner";
   const name = (displayName || "").trim() || fallback;
-  const ini  = initials(displayName) || (isOwner ? "OW" : "KR");
+  const ini  = initials(displayName) || (isOwner ? "OW" : "PR");
   const bg   = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
   const col  = isOwner ? "#2d6624" : "#1e40af";
-  const roleLbl = isOwner ? "Owner" : "Karyawan";
+  const roleLbl = isOwner ? "Owner" : "Partner";
 
   return "<div class=\"topbar-profile\" title=\"" + escHtml(name) + " · " + roleLbl + "\">"
     + "<div class=\"tb-avatar\" style=\"background:" + bg + ";color:" + col + "\">" + escHtml(ini) + "</div>"
@@ -208,7 +208,7 @@ export function buildFinanceBottomNav(role = "owner") {
     + "<span style=\"margin-left:8px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;"
     + "background:" + (isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)") + ";"
     + "color:" + (isOwner ? "#2d6624" : "#1e40af") + "\">"
-    + (isOwner ? "Owner" : "Karyawan") + "</span></div>"
+    + (isOwner ? "Owner" : "Partner") + "</span></div>"
     + "<a href=\"/operasional\" class=\"bn-sheet-item\">"
     + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-wallet\"></i></div>"
     + "<div><div class=\"bn-sheet-name\">Dashboard Keuangan</div>"
@@ -971,7 +971,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<span style=\"margin-left:10px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;"
     + "background:" + (isOwner ? "rgba(45,102,36,.1)" : "rgba(30,64,175,.1)") + ";"
     + "color:" + (isOwner ? "#2d6624" : "#1e40af") + ";vertical-align:middle\">"
-    + (isOwner ? "Owner" : "Karyawan") + "</span></div>"
+    + (isOwner ? "Owner" : "Partner") + "</span></div>"
     + "<div class=\"page-sub\">"
     + (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu")
     + "</div></div>"

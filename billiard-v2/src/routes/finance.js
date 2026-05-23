@@ -112,7 +112,7 @@ router.post("/login", async (req, res) => {
   } else {
     // Username kosong → fallback PIN-only (backward compat URL lama).
     if (pin === CONFIG.OWNER_PIN)         { role = "owner";    displayName = "Owner"; }
-    else if (pin === CONFIG.KARYAWAN_PIN) { role = "karyawan"; displayName = "Karyawan"; }
+    else if (pin === CONFIG.KARYAWAN_PIN) { role = "karyawan"; displayName = "Partner"; }
   }
 
   if (!role) {
