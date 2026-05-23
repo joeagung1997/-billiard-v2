@@ -156,14 +156,13 @@ router.get("/", async (req, res) => {
       readAdminAccounts(), readKaryawan(true),
     ]);
 
-    // Karyawan: hanya boleh lihat kemarin, hari ini, atau besok (1 hari saja, bukan range).
+    // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
     // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
     // tutup tengah malam tetap dianggap "hari ini" sampai pagi.
     const today      = todayBusinessDayISO();
     const todayD     = new Date(today + "T00:00:00Z");
     const yesterday  = new Date(todayD.getTime() - 86400000).toISOString().slice(0, 10);
-    const tomorrow   = new Date(todayD.getTime() + 86400000).toISOString().slice(0, 10);
-    const allowedKy  = [yesterday, today, tomorrow];
+    const allowedKy  = [yesterday, today];
     const todayBulan = today.slice(0, 7);
 
     let tglDari, tglSampai, bulanFilter, jenisFilter;

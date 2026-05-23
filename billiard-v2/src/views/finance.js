@@ -1233,13 +1233,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
         + (hasDateFilter ? "<button class=\"btn-outline\" onclick=\"clearTgl()\" style=\"padding:6px 10px;font-size:12px\">✕</button>" : "")
         + "</div>"
-      // Karyawan: pilih hari (kemarin / hari ini / besok)
+      // Karyawan: pilih hari (kemarin / hari ini)
       : (function() {
           const _today    = new Date();
           const _toIso    = (d) => d.toISOString().slice(0, 10);
           const _yesterIso = _toIso(new Date(_today.getTime() - 86400000));
           const _todayIso  = _toIso(_today);
-          const _tomIso    = _toIso(new Date(_today.getTime() + 86400000));
           const _activeDay = tDari || _todayIso;
           const _dayChip = (iso, lbl, sub) => {
             const isActive = _activeDay === iso;
@@ -1255,7 +1254,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
             + "<div class=\"kya-day-bar-lbl\"><i class=\"ti ti-calendar\"></i> Tampilkan</div>"
             + _dayChip(_yesterIso, "Kemarin",  fmt(new Date(_today.getTime() - 86400000)))
             + _dayChip(_todayIso,  "Hari ini", fmt(_today))
-            + _dayChip(_tomIso,    "Besok",    fmt(new Date(_today.getTime() + 86400000)))
             + "</div>";
         })())
 
