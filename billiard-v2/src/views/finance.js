@@ -2924,28 +2924,41 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".ap-note{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-left:3px solid #f59e0b;border-radius:10px;font-size:12.5px;color:var(--txt2);line-height:1.55}",
     ".ap-note i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
     ".ap-note strong{color:var(--txt);font-weight:700}",
-    // ── Status threshold tabel polish ────────────────────────────
-    ".stt-wrap{overflow-x:auto;margin-top:6px;border-radius:10px;border:1px solid var(--border)}",
-    ".stt-table{width:100%;border-collapse:collapse;background:var(--surface)}",
-    ".stt-th{padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}",
-    ".stt-th-num{text-align:right}",
-    ".stt-row{border-bottom:1px solid var(--border);transition:background .12s}",
-    ".stt-row:last-child{border-bottom:none}",
-    ".stt-row:hover{background:rgba(168,85,247,.03)}",
-    ".stt-row td{padding:14px 16px;vertical-align:middle}",
-    ".stt-cell-status{position:relative;white-space:nowrap;border-left:3px solid var(--stt-c)}",
-    ".stt-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:14px;font-weight:700;font-size:12px;line-height:1}",
-    ".stt-emoji{font-size:14px;line-height:1}",
-    ".stt-label{letter-spacing:-.01em}",
-    ".stt-rasio{font-family:var(--ff-mono);font-size:10.5px;color:var(--txt3);margin-top:5px;font-weight:600;letter-spacing:0}",
-    ".stt-cell-desc{font-size:12.5px;color:var(--txt2);line-height:1.45}",
-    ".stt-cell-num{font-family:var(--ff-mono);font-size:12.5px;font-weight:600;color:var(--txt2);white-space:nowrap;text-align:right;letter-spacing:-.01em}",
-    ".stt-cell-primary{color:var(--txt);font-weight:700;font-size:13px}",
-    ".stt-tip{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(168,85,247,.04));border:1px solid rgba(245,158,11,.2);border-radius:10px;font-size:12px;color:var(--txt2);line-height:1.55}",
-    ".stt-tip i{color:#f59e0b;font-size:16px;flex-shrink:0;margin-top:1px}",
+    // ── Status threshold tabel — clean & polished ────────────────
+    ".stt-card{padding:22px 24px 20px}",
+    ".stt-wrap{margin-top:14px;border-radius:12px;border:1px solid var(--border);overflow-x:auto;background:var(--surface)}",
+    ".stt-table{width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}",
+    // Header
+    ".stt-th{padding:13px 20px;text-align:left;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.12em;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}",
+    ".stt-th-status{padding-left:24px}",
+    ".stt-th-num{text-align:right;padding-right:24px}",
+    // Body row
+    ".stt-row{transition:background .14s ease}",
+    ".stt-row:not(:last-child) td{border-bottom:1px solid var(--border)}",
+    ".stt-row:hover{background:var(--stt-bg,rgba(168,85,247,.04))}",
+    ".stt-row td{padding:16px 20px;vertical-align:middle}",
+    // Status column (icon + name + rasio)
+    ".stt-c-status{padding-left:24px!important;position:relative}",
+    ".stt-c-status::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:0 2px 2px 0;background:var(--stt-c);opacity:.85}",
+    ".stt-status-wrap{display:flex;align-items:center;gap:12px}",
+    ".stt-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;line-height:1;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}",
+    ".stt-status-text{display:flex;flex-direction:column;gap:3px;min-width:0}",
+    ".stt-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.2}",
+    ".stt-rasio{font-family:var(--ff-mono);font-size:10.5px;font-weight:600;color:var(--txt3);letter-spacing:0;line-height:1.2}",
+    // Description
+    ".stt-c-desc{font-size:12.5px;color:var(--txt2);line-height:1.5;max-width:340px}",
+    // Number columns
+    ".stt-c-num{font-family:var(--ff-mono);font-size:12.5px;font-weight:500;color:var(--txt2);white-space:nowrap;text-align:right;letter-spacing:-.01em;padding-right:24px!important}",
+    ".stt-c-primary{color:var(--txt);font-weight:700;font-size:13.5px}",
+    ".stt-dash{display:inline-block;margin:0 6px;color:var(--txt3);font-weight:400}",
+    // Tip box
+    ".stt-tip{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 16px;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(168,85,247,.04));border:1px solid rgba(245,158,11,.2);border-radius:11px;font-size:12px;color:var(--txt2);line-height:1.6}",
+    ".stt-tip i{color:#f59e0b;font-size:17px;flex-shrink:0;margin-top:1px}",
     ".stt-tip strong{color:var(--txt);font-weight:700}",
-    "@media(max-width:768px){.stt-hide-md{display:none!important}.stt-row td{padding:12px 12px}.stt-th{padding:10px 12px}}",
-    "@media(max-width:540px){.stt-hide-sm{display:none!important}}",
+    // Responsive
+    "@media(max-width:880px){.stt-hide-md{display:none!important}}",
+    "@media(max-width:640px){.stt-hide-sm{display:none!important}.stt-row td{padding:14px 14px}.stt-th{padding:11px 14px}.stt-th-status{padding-left:18px}.stt-c-status{padding-left:18px!important}.stt-th-num,.stt-c-num{padding-right:18px!important}.stt-icon{width:38px;height:38px;font-size:18px}.stt-name{font-size:13px}}",
+    "@media(max-width:400px){.stt-icon{width:34px;height:34px;font-size:16px;border-radius:9px}.stt-status-wrap{gap:9px}}",
     // CRUD biaya
     ".ap-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:opacity .15s}",
     ".ap-add-btn:hover{opacity:.85}",
@@ -3033,40 +3046,42 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "<strong>belum termasuk pengeluaran darurat</strong> seperti kerusakan stik, meja, bola, "
     +   "perbaikan AC/lampu, atau renovasi minor. Sisakan margin untuk dana cadangan.</span></div>"
 
-    // ── Cara Baca Status — tabel polish ─────────────────────────
+    // ── Cara Baca Status — tabel clean & polished ───────────────
     + (function() {
         const STATUS = [
-          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", bg: "rgba(239,68,68,.08)",  min: 0,   max: 1,    rasio: "< 1×",        desc: "Rugi — pemasukan di bawah biaya wajib" },
-          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#64748b", bg: "rgba(100,116,139,.10)",min: 1,   max: 1.2,  rasio: "1× – 1.2×",   desc: "Impas tipis — sekedar tutup biaya" },
-          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", bg: "rgba(34,197,94,.08)",  min: 1.2, max: 1.7,  rasio: "1.2× – 1.7×", desc: "Cukup biaya + margin kecil" },
-          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", bg: "rgba(59,130,246,.08)", min: 1.7, max: 2.5,  rasio: "1.7× – 2.5×", desc: "Margin bagus, profit sehat" },
-          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", bg: "rgba(168,85,247,.08)", min: 2.5, max: null, rasio: "≥ 2.5×",      desc: "Margin sangat bagus, surplus tinggi" },
+          { key: "minus",  emoji: "📉", label: "Minus",           color: "#ef4444", bg: "rgba(239,68,68,.10)",  min: 0,   max: 1,    rasio: "< 1×",        desc: "Rugi — pemasukan di bawah biaya wajib" },
+          { key: "sepi",   emoji: "😴", label: "Sepi",            color: "#64748b", bg: "rgba(100,116,139,.12)",min: 1,   max: 1.2,  rasio: "1× – 1.2×",   desc: "Impas tipis — sekedar tutup biaya" },
+          { key: "target", emoji: "✅", label: "Target Tercapai", color: "#22c55e", bg: "rgba(34,197,94,.10)",  min: 1.2, max: 1.7,  rasio: "1.2× – 1.7×", desc: "Cukup biaya + margin kecil" },
+          { key: "ramai",  emoji: "🔥", label: "Ramai",           color: "#3b82f6", bg: "rgba(59,130,246,.10)", min: 1.7, max: 2.5,  rasio: "1.7× – 2.5×", desc: "Margin bagus, profit sehat" },
+          { key: "wow",    emoji: "🚀", label: "Ramai Sekali",    color: "#a855f7", bg: "rgba(168,85,247,.10)", min: 2.5, max: null, rasio: "≥ 2.5×",      desc: "Margin sangat bagus, surplus tinggi" },
         ];
         const fmtRange = (target, min, max) => {
           const lo = Math.round(target * min);
-          if (max === null) return "≥ " + rp(lo);
-          if (min === 0)    return "< " + rp(Math.round(target * max));
+          if (max === null) return "≥&nbsp;" + rp(lo);
+          if (min === 0)    return "<&nbsp;" + rp(Math.round(target * max));
           const hi = Math.round(target * max);
-          return rp(lo) + " – " + rp(hi);
+          return rp(lo) + "<span class=\"stt-dash\">–</span>" + rp(hi);
         };
 
         const rows = STATUS.map((s) =>
-          "<tr class=\"stt-row\" style=\"--stt-c:" + s.color + "\">"
-          +   "<td class=\"stt-cell-status\">"
-          +     "<div class=\"stt-badge\" style=\"background:" + s.bg + ";color:" + s.color + "\">"
-          +       "<span class=\"stt-emoji\">" + s.emoji + "</span>"
-          +       "<span class=\"stt-label\">" + s.label + "</span>"
+          "<tr class=\"stt-row\" style=\"--stt-c:" + s.color + ";--stt-bg:" + s.bg + "\">"
+          +   "<td class=\"stt-c-status\">"
+          +     "<div class=\"stt-status-wrap\">"
+          +       "<div class=\"stt-icon\" style=\"background:" + s.bg + ";color:" + s.color + "\">" + s.emoji + "</div>"
+          +       "<div class=\"stt-status-text\">"
+          +         "<div class=\"stt-name\" style=\"color:" + s.color + "\">" + s.label + "</div>"
+          +         "<div class=\"stt-rasio\">" + s.rasio + " target</div>"
+          +       "</div>"
           +     "</div>"
-          +     "<div class=\"stt-rasio\">" + s.rasio + " target</div>"
           +   "</td>"
-          +   "<td class=\"stt-cell-desc\">" + s.desc + "</td>"
-          +   "<td class=\"stt-cell-num stt-cell-primary\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
-          +   "<td class=\"stt-cell-num stt-hide-md\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
-          +   "<td class=\"stt-cell-num stt-hide-md\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
+          +   "<td class=\"stt-c-desc\">" + s.desc + "</td>"
+          +   "<td class=\"stt-c-num stt-c-primary\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
+          +   "<td class=\"stt-c-num stt-hide-md\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
+          +   "<td class=\"stt-c-num stt-hide-md\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
           + "</tr>"
         ).join("");
 
-        return "<div class=\"ap-card\">"
+        return "<div class=\"ap-card stt-card\">"
           + "<div class=\"ap-card-title\"><i class=\"ti ti-route\" style=\"color:#a855f7\"></i>"
           +   "Cara Baca Status"
           +   "<span class=\"ap-card-title-sub\">Rentang pemasukan per status — skala target</span>"
@@ -3074,11 +3089,11 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           + "<div class=\"stt-wrap\">"
           + "<table class=\"stt-table\">"
           + "<thead><tr>"
-          +   "<th class=\"stt-th\">Status</th>"
+          +   "<th class=\"stt-th stt-th-status\">Status</th>"
           +   "<th class=\"stt-th stt-hide-sm\">Arti</th>"
-          +   "<th class=\"stt-th stt-th-num\">Per Hari</th>"
-          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per Minggu</th>"
-          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per Bulan</th>"
+          +   "<th class=\"stt-th stt-th-num\">Per&nbsp;Hari</th>"
+          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per&nbsp;Minggu</th>"
+          +   "<th class=\"stt-th stt-th-num stt-hide-md\">Per&nbsp;Bulan</th>"
           + "</tr></thead>"
           + "<tbody>" + rows + "</tbody>"
           + "</table></div>"
