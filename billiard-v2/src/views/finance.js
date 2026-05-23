@@ -516,7 +516,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], karyawanAll = [], analisis = null, msg = "" }) {
   const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
@@ -535,6 +535,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   // username → display name (utk tampilkan pencatat di tabel transaksi)
   const userNameMap = Object.fromEntries(
     accountsAll.map((a) => [a.username, a.display_name || a.username])
+  );
+  // username → shift (lookup karyawanList by nama matching display_name)
+  const userShiftMap = Object.fromEntries(
+    accountsAll.map((a) => {
+      const dn = (a.display_name || "").trim().toLowerCase();
+      const k  = karyawanAll.find((x) => (x.nama || "").trim().toLowerCase() === dn);
+      return [a.username, k?.shift || a.shift || "siang"];
+    })
   );
 
   // ── Analisis Target HTML — versi RINGKAS untuk dashboard ──────
@@ -856,7 +864,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
         + " onclick=\"openVoidModal(this)\">"
         + "<i class=\"ti ti-ban\"></i></button>";
-    return "<div class=\"" + rowCls + "\">"
+    return "<div class=\"" + rowCls + "\" data-tanggal=\"" + escHtml(t.tanggal || "") + "\">"
       + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">"
@@ -869,7 +877,18 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       + "<div class=\"fr-desc-meta\">#" + escHtml(String(t.id).slice(-6)) + (t.jam ? " · " + escHtml(t.jam) : "")
       + (t.bayar === "cash" ? " · <span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? " · <span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
       + (t.buktiUrl ? " · <a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
-      + (t.dicatatOleh ? "<span class=\"fr-pencatat\" title=\"Dicatat oleh " + escHtml(userNameMap[t.dicatatOleh] || t.dicatatOleh) + "\"><i class=\"ti ti-user-edit\"></i>" + escHtml(userNameMap[t.dicatatOleh] || t.dicatatOleh) + "</span>" : "")
+      + (t.dicatatOleh
+        ? (function() {
+            const dispNm = userNameMap[t.dicatatOleh] || t.dicatatOleh;
+            const usrShift = userShiftMap[t.dicatatOleh] || "siang";
+            const shiftIc  = usrShift === "malam" ? "ti-moon" : "ti-sun";
+            const shiftCls = usrShift === "malam" ? "fr-shift-malam" : "fr-shift-siang";
+            return "<span class=\"fr-pencatat\" title=\"Dicatat oleh " + escHtml(dispNm) + " · Shift " + (usrShift === "malam" ? "Malam" : "Siang") + "\">"
+              + "<i class=\"ti ti-user-edit\"></i>" + escHtml(dispNm)
+              + "<span class=\"" + shiftCls + "\"><i class=\"ti " + shiftIc + "\"></i></span>"
+              + "</span>";
+          })()
+        : "")
       + "</div>"
       + reasonHt
       + "</div>"
@@ -964,6 +983,20 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // ── Search input polish ─────────────────────────────────────
     ".fin-search-wrap{border-radius:9px!important;background:#f8faf7}",
     ".fin-search-inp{background:transparent!important}",
+    // ── Filter chips + pagination di tabel transaksi ────────────
+    ".fin-tbl-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}",
+    ".fin-tbl-chip{padding:6px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:18px;font-size:11.5px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:var(--ff);white-space:nowrap;transition:all .15s}",
+    ".fin-tbl-chip:hover{background:var(--surface);color:var(--txt)}",
+    ".fin-tbl-chip.active{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:#2563eb;color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.25)}",
+    ".fin-tbl-date{padding:5px 8px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;font-size:11px;color:var(--txt);font-family:var(--ff);outline:none}",
+    ".fin-tbl-date:focus{border-color:var(--accent)}",
+    ".fin-pagination{display:flex;align-items:center;gap:4px;margin-left:auto}",
+    ".fin-pg-btn{min-width:28px;height:28px;padding:0 8px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;font-size:11.5px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;justify-content:center}",
+    ".fin-pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}",
+    ".fin-pg-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}",
+    ".fin-pg-btn:disabled{opacity:.4;cursor:not-allowed}",
+    ".fin-pg-info{font-size:11px;color:var(--txt3);padding:0 8px;font-family:var(--ff-mono)}",
+    "@media(max-width:640px){.fin-tbl-chips{width:100%;margin-left:0;margin-top:8px}.fin-pagination{margin:8px auto 0}}",
     // ── Chart cards redesign ─────────────────────────────────────
     ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
     ".fin-chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 8px;gap:12px;flex-wrap:wrap}",
@@ -1033,8 +1066,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".kya-day-sub{font-size:10px;color:var(--txt3);margin-top:2px;font-family:var(--ff-mono)}",
     "@media(max-width:540px){.kya-day-bar-lbl{flex-basis:100%}.kya-day-chip{flex:1;min-width:0}}",
     // ── Pencatat di tabel transaksi ──────────────────────────────
-    ".fr-pencatat{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--txt3);background:var(--surface2);padding:1px 7px;border-radius:8px;margin-left:4px}",
-    ".fr-pencatat i{font-size:11px}",
+    ".fr-pencatat{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--txt3);background:var(--surface2);padding:1px 4px 1px 7px;border-radius:8px;margin-left:4px}",
+    ".fr-pencatat > i{font-size:11px}",
+    ".fr-shift-siang,.fr-shift-malam{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;margin-left:2px}",
+    ".fr-shift-siang{background:rgba(245,158,11,.18);color:#d97706}",
+    ".fr-shift-malam{background:rgba(99,102,241,.18);color:#6366f1}",
+    ".fr-shift-siang i,.fr-shift-malam i{font-size:10px}",
     // ── Analisis Target section ──────────────────────────────────
     ".an-section{margin-bottom:20px}",
     ".an-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}",
@@ -1342,7 +1379,20 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-tbl-toolbar\">"
     + "<div class=\"fin-search-wrap\">"
     + "<i class=\"ti ti-search\"></i>"
-    + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"searchTrx()\">"
+    + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"renderTbl()\">"
+    + "</div>"
+    + "<div class=\"fin-tbl-chips\">"
+    +   "<button type=\"button\" class=\"fin-tbl-chip active\" data-tbl-filter=\"today\" onclick=\"setTblFilter('today')\">Hari ini</button>"
+    +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"yesterday\" onclick=\"setTblFilter('yesterday')\">Kemarin</button>"
+    +   (isOwner
+      ? "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"custom\" onclick=\"toggleTblCustom()\">Custom</button>"
+        + "<div id=\"tblCustomRange\" style=\"display:none;align-items:center;gap:5px\">"
+        +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"
+        +   "<span style=\"color:var(--txt3);font-size:11px\">—</span>"
+        +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblSampai\" onchange=\"setTblFilter('custom')\">"
+        + "</div>"
+      : "")
+    +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"all\" onclick=\"setTblFilter('all')\">Semua</button>"
     + "</div>"
     + "</div>"
     + "<div class=\"fin-tbl-head\">"
@@ -1355,12 +1405,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + rows
     + "<div class=\"fin-tbl-footer\">"
     + "<div class=\"fin-tf-left\">"
-    + "<span>" + sortedTbl.length + " transaksi"
+    + "<span id=\"tblCount\">" + sortedTbl.length + " transaksi"
     + (voidedCount > 0 ? " <span style=\"color:#a32d2d\">(" + voidedCount + " dibatalkan)</span>" : "")
     + "</span>"
     + "<span style=\"color:#e2e8e0\">|</span>"
-    + "<span>Saldo: <span class=\"fin-tf-saldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
+    + "<span>Saldo: <span class=\"fin-tf-saldo\" id=\"tblSaldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
     + "</div>"
+    + "<div class=\"fin-pagination\" id=\"tblPagi\"></div>"
     + "</div>"
     + "</div>"
 
@@ -1619,12 +1670,69 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "if(match)shown++;});"
     + "var empty=document.querySelector('.empty-state');"
     + "if(empty)empty.style.display=shown===0&&rows.length?'flex':(rows.length?'none':'flex');}"
-    + "function searchTrx(){"
-    + "var q=document.getElementById('trxSearch').value.toLowerCase();"
-    + "var rows=document.querySelectorAll('#trxRows .fin-row');"
-    + "rows.forEach(function(r){"
-    + "var txt=r.textContent.toLowerCase();"
-    + "r.style.display=txt.indexOf(q)>=0?'':'none';});}"
+    // ── Tabel transaksi: filter chip + search + pagination ─────
+    + "var tblState={filter:'today',page:1,perPage:10};"
+    + "function _today(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
+    +   "return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}"
+    + "function _yesterday(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
+    +   "d.setDate(d.getDate()-1);"
+    +   "return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}"
+    + "function setTblFilter(f){tblState.filter=f;tblState.page=1;"
+    +   "document.querySelectorAll('.fin-tbl-chip').forEach(function(b){"
+    +     "b.classList.toggle('active',b.getAttribute('data-tbl-filter')===f);});"
+    +   "var cust=document.getElementById('tblCustomRange');"
+    +   "if(cust)cust.style.display=f==='custom'?'inline-flex':'none';"
+    +   "renderTbl();}"
+    + "function toggleTblCustom(){"
+    +   "var cust=document.getElementById('tblCustomRange');if(!cust)return;"
+    +   "var open=cust.style.display!=='none';"
+    +   "if(open){setTblFilter('today');}else{"
+    +     // Pre-fill range default = today
+    +     "var td=_today();var d=document.getElementById('tblDari');var s=document.getElementById('tblSampai');"
+    +     "if(d&&!d.value)d.value=td;if(s&&!s.value)s.value=td;"
+    +     "setTblFilter('custom');}}"
+    + "function renderTbl(){"
+    +   "var q=(document.getElementById('trxSearch')||{}).value;q=(q||'').toLowerCase();"
+    +   "var f=tblState.filter;"
+    +   "var dari='',sampai='';"
+    +   "if(f==='today'){dari=sampai=_today();}"
+    +   "else if(f==='yesterday'){dari=sampai=_yesterday();}"
+    +   "else if(f==='custom'){"
+    +     "dari=(document.getElementById('tblDari')||{}).value||'';"
+    +     "sampai=(document.getElementById('tblSampai')||{}).value||'';}"
+    +   // 'all' → no date filter
+    +   "var rows=document.querySelectorAll('#trxRows .fin-row');"
+    +   "var visible=[];"
+    +   "rows.forEach(function(r){"
+    +     "var tgl=r.getAttribute('data-tanggal')||'';"
+    +     "var txt=r.textContent.toLowerCase();"
+    +     "var matchSearch=!q||txt.indexOf(q)>=0;"
+    +     "var matchDate=true;"
+    +     "if(dari&&tgl<dari)matchDate=false;"
+    +     "if(sampai&&tgl>sampai)matchDate=false;"
+    +     "if(matchSearch&&matchDate)visible.push(r);"
+    +     "r.style.display='none';});"
+    +   "var total=visible.length;var pp=tblState.perPage;"
+    +   "var maxPg=Math.max(1,Math.ceil(total/pp));"
+    +   "if(tblState.page>maxPg)tblState.page=maxPg;"
+    +   "var start=(tblState.page-1)*pp;var end=start+pp;"
+    +   "for(var i=start;i<end&&i<total;i++)visible[i].style.display='';"
+    +   // Update count
+    +   "var cEl=document.getElementById('tblCount');"
+    +   "if(cEl){var shown=Math.min(end,total)-start;"
+    +     "cEl.innerHTML=(total===0?'Tidak ada':shown+' dari '+total)+' transaksi';}"
+    +   // Update empty state
+    +   "var emp=document.querySelector('.empty-state');"
+    +   "if(emp&&rows.length>0)emp.style.display=total===0?'flex':'none';"
+    +   // Render pagination
+    +   "var pgEl=document.getElementById('tblPagi');if(!pgEl)return;"
+    +   "if(total<=pp){pgEl.innerHTML='';return;}"
+    +   "var html='<button class=\"fin-pg-btn\" type=\"button\" onclick=\"goTblPage(tblState.page-1)\"' + (tblState.page<=1?' disabled':'') + '>‹</button>';"
+    +   "html+='<span class=\"fin-pg-info\">Hal '+tblState.page+' / '+maxPg+'</span>';"
+    +   "html+='<button class=\"fin-pg-btn\" type=\"button\" onclick=\"goTblPage(tblState.page+1)\"' + (tblState.page>=maxPg?' disabled':'') + '>›</button>';"
+    +   "pgEl.innerHTML=html;}"
+    + "function goTblPage(n){tblState.page=Math.max(1,n);renderTbl();}"
+    + "window.addEventListener('DOMContentLoaded',function(){renderTbl();});"
     + "function openTrxModal(){"
     + "document.getElementById('trxOverlay').classList.add('open');wizRemoveFile();wizGoTo(1);"
     + "var dtEl=document.getElementById('wizDatetime');"

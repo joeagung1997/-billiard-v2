@@ -227,7 +227,8 @@ router.get("/", async (req, res) => {
       shift:       effectiveShift,
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
-      accountsAll: accounts,
+      accountsAll:  accounts,
+      karyawanAll:  karyawanList,
       analisis,
       msg: req.query.msg || "",
     }));
