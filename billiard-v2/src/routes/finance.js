@@ -17,7 +17,7 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
-  readAdminAccounts,
+  readAdminAccounts, readKaryawan,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
@@ -151,9 +151,9 @@ router.use(requireFinanceAuth);
 router.get("/", async (req, res) => {
   try {
     const role = res.locals.financeRole;
-    const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts] = await Promise.all([
+    const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList] = await Promise.all([
       readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
-      readAdminAccounts(),
+      readAdminAccounts(), readKaryawan(true),
     ]);
 
     // Karyawan: hanya boleh lihat kemarin, hari ini, atau besok (1 hari saja, bukan range).
@@ -208,11 +208,19 @@ router.get("/", async (req, res) => {
       },
     };
 
-    // Shift: lookup fresh dari DB by username supaya tdk ke-stale di cookie lama
-    // Kalau cookie blm punya field shift atau owner ubah shift via SDM > Akun,
-    // perubahan langsung terbaca tanpa user perlu logout/login.
+    // Shift: priority lookup
+    // 1. Tabel `karyawan` (SDM Manajemen) by nama matching displayName — single
+    //    source of truth utk shift karyawan operasional
+    // 2. admin_accounts.shift fallback (lookup by username) — utk user yg blm
+    //    terdaftar di SDM Manajemen
+    // 3. Cookie shift (terakhir)
+    // 4. Default 'siang'
+    const myDisplay  = (res.locals.financeDisplay || "").trim().toLowerCase();
+    const myKaryawan = myDisplay
+      ? karyawanList.find((k) => (k.nama || "").trim().toLowerCase() === myDisplay)
+      : null;
     const me = accounts.find((a) => a.username.toLowerCase() === (res.locals.financeUser || "").toLowerCase());
-    const effectiveShift = me?.shift || res.locals.financeShift || "siang";
+    const effectiveShift = myKaryawan?.shift || me?.shift || res.locals.financeShift || "siang";
 
     res.send(financeDashboard({
       transaksi, token: "", role,
