@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
       const row = accounts.find(
         (u) => u.username.toLowerCase() === username && u.pin === pin
       );
-      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username };
+      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username, shift: row.shift || "siang" };
     }
   } catch (err) {
     console.error("[ADMIN] DB accounts lookup failed, fallback ke CONFIG:", err.message);
@@ -69,7 +69,7 @@ router.post("/login", async (req, res) => {
     const fromConfig = CONFIG.ADMIN_USERS.find(
       (u) => u.username.toLowerCase() === username && u.pin === pin
     );
-    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username };
+    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username, shift: "siang" };
   }
 
   if (!found) return res.redirect("/admin?err=1");
@@ -79,7 +79,7 @@ router.post("/login", async (req, res) => {
   // Auto-set cookie _frt utk semua role (owner & karyawan) — supaya akses
   // /operasional/* tdk perlu input PIN lagi setelah login di /admin.
   const frt = jwt.sign(
-    { role: found.role, username: found.username, displayName: found.displayName },
+    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );

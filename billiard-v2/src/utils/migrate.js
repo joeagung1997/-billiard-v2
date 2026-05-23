@@ -273,9 +273,12 @@ export const runMigrations = async () => {
       username     TEXT UNIQUE NOT NULL,
       pin          TEXT NOT NULL,
       role         TEXT NOT NULL DEFAULT 'karyawan',
-      display_name TEXT NOT NULL DEFAULT ''
+      display_name TEXT NOT NULL DEFAULT '',
+      shift        TEXT NOT NULL DEFAULT 'siang'
     )
   `);
+  // Backfill kolom shift utk tabel admin_accounts existing
+  await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS shift TEXT NOT NULL DEFAULT 'siang'`);
   // Seed akun awal dari config — hanya jika tabel masih kosong
   const akunCount = await query("SELECT COUNT(*) FROM admin_accounts");
   if (parseInt(akunCount.rows[0].count) === 0) {

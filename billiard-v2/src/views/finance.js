@@ -514,7 +514,8 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", displayName = "", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], analisis = null, msg = "" }) {
+  const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat"
     : msg === "voided"    ? "Transaksi berhasil dibatalkan"
@@ -1390,8 +1391,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div></div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Sesi Waktu</label>"
     + "<div class=\"fin-tog-2\">"
-    + "<button type=\"button\" class=\"fin-tog-btn sel-siang\" id=\"wiz-siang\" onclick=\"wizSetWaktu('siang')\"><i class=\"ti ti-sun\"></i>Siang</button>"
-    + "<button type=\"button\" class=\"fin-tog-btn\" id=\"wiz-malam\" onclick=\"wizSetWaktu('malam')\"><i class=\"ti ti-moon\"></i>Malam</button>"
+    + "<button type=\"button\" class=\"fin-tog-btn" + (defaultShift === "siang" ? " sel-siang" : "") + "\" id=\"wiz-siang\" onclick=\"wizSetWaktu('siang')\"><i class=\"ti ti-sun\"></i>Siang</button>"
+    + "<button type=\"button\" class=\"fin-tog-btn" + (defaultShift === "malam" ? " sel-malam" : "") + "\" id=\"wiz-malam\" onclick=\"wizSetWaktu('malam')\"><i class=\"ti ti-moon\"></i>Malam</button>"
     + "</div></div>"
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Tanggal &amp; Jam</label>"
     + "<div class=\"fin-inp-pfx\"><span class=\"fin-pfx-lbl\"><i class=\"ti ti-calendar\" style=\"font-size:14px\"></i></span>"
@@ -1630,7 +1631,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "document.getElementById('voidOverlay').classList.add('open');"
     + "setTimeout(function(){document.getElementById('voidReason').focus();},150);}"
     + "function closeVoidModal(){document.getElementById('voidOverlay').classList.remove('open');}"
-    + "var wizS={step:1,tipe:'income',act:'billiard',waktu:'siang',bayar:'cash'};"
+    + "var wizS={step:1,tipe:'income',act:'billiard',waktu:'" + defaultShift + "',bayar:'cash'};"
     + "function wizSetTipe(t){wizS.tipe=t;"
     + "document.getElementById('wiz-income').className='fin-tog-btn'+(t==='income'?' sel-income':'');"
     + "document.getElementById('wiz-expense').className='fin-tog-btn'+(t==='expense'?' sel-expense':'');"

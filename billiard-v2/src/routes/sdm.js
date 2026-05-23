@@ -280,6 +280,7 @@ router.post("/sdm/akun/:id", async (req, res) => {
   const id       = parseInt(req.params.id) || 0;
   const username = (req.body.username ?? "").trim().toLowerCase();
   const pin      = (req.body.pin      ?? "").trim();
+  const shift    = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
 
   if (!id)                        return res.redirect("/operasional/sdm/akun?err=invalid");
   if (!username || username.length < 3)
@@ -289,7 +290,7 @@ router.post("/sdm/akun/:id", async (req, res) => {
   if (!pin || !/^\d{4,}$/.test(pin))
                                   return res.redirect("/operasional/sdm/akun?err=pin");
   try {
-    await updateAdminAccount(id, username, pin);
+    await updateAdminAccount(id, username, pin, shift);
     res.redirect("/operasional/sdm/akun?msg=ok");
   } catch (err) {
     console.error("[SDM] update akun error:", err.message);

@@ -760,6 +760,15 @@ export function sdmAkunPage(accounts = [], msg = "", err = "") {
       + "<div><label class=\"sdm-lbl\">PIN (angka)</label>"
       + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"pin\" value=\"" + escHtml(a.pin) + "\" required minlength=\"4\" pattern=\"[0-9]+\" placeholder=\"min 4 digit\" autocomplete=\"off\"></div>"
       + "</div>"
+      + (a.role === "karyawan"
+        ? "<div style=\"margin-bottom:12px\"><label class=\"sdm-lbl\">Shift Default</label>"
+          + "<select class=\"sdm-inp\" name=\"shift\">"
+          +   "<option value=\"siang\"" + ((a.shift || "siang") === "siang" ? " selected" : "") + ">☀️ Siang</option>"
+          +   "<option value=\"malam\"" + (a.shift === "malam" ? " selected" : "") + ">🌙 Malam</option>"
+          + "</select>"
+          + "<div style=\"font-size:10.5px;color:var(--txt3);margin-top:4px\">Modal Catat Transaksi → Sesi Waktu auto-pilih ini.</div>"
+        + "</div>"
+        : "<input type=\"hidden\" name=\"shift\" value=\"siang\">")
       + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"width:100%;justify-content:center;padding:9px\"><i class=\"ti ti-device-floppy\"></i> Simpan</button>"
       + "</form></div>";
   }).join("");

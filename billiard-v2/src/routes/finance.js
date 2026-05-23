@@ -41,8 +41,8 @@ function getCookie(req, name) {
   return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
 }
 
-function setRoleCookie(res, role, username = "", displayName = "") {
-  const token = jwt.sign({ role, username, displayName }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+function setRoleCookie(res, role, username = "", displayName = "", shift = "siang") {
+  const token = jwt.sign({ role, username, displayName, shift }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
   res.setHeader("Set-Cookie",
     `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/operasional; Max-Age=${maxAge}; SameSite=Lax`
@@ -65,6 +65,7 @@ function getFinanceUser(req) {
       role:        decoded.role        || null,
       username:    decoded.username    || "",
       displayName: decoded.displayName || "",
+      shift:       decoded.shift       || "siang",
     };
   } catch { return null; }
 }
@@ -81,6 +82,7 @@ function requireFinanceAuth(req, res, next) {
   res.locals.financeRole    = user.role;
   res.locals.financeUser    = user.username;
   res.locals.financeDisplay = user.displayName;
+  res.locals.financeShift   = user.shift;
   next();
 }
 
@@ -104,14 +106,18 @@ router.post("/login", async (req, res) => {
   const username = (req.body.username ?? "").trim().toLowerCase();
   const redir    = (req.query.r       ?? "").slice(0, 300);
 
-  let role = null, displayName = "";
+  let role = null, displayName = "", shift = "siang";
 
   if (username) {
     // Username diisi → wajib match akun di admin_accounts. Tidak fallback ke PIN-only.
     try {
       const accounts = await readAdminAccounts();
       const row = accounts.find((u) => u.username.toLowerCase() === username && u.pin === pin);
-      if (row) { role = row.role; displayName = row.display_name || row.username; }
+      if (row) {
+        role = row.role;
+        displayName = row.display_name || row.username;
+        shift = row.shift || "siang";
+      }
     } catch (err) { console.error("[FINANCE] accounts lookup:", err.message); }
   } else {
     // Username kosong → fallback PIN-only (backward compat URL lama).
@@ -124,7 +130,7 @@ router.post("/login", async (req, res) => {
     return res.redirect(back);
   }
 
-  setRoleCookie(res, role, username, displayName);
+  setRoleCookie(res, role, username, displayName, shift);
   res.redirect(redir || "/operasional");
 });
 
@@ -203,6 +209,7 @@ router.get("/", async (req, res) => {
     res.send(financeDashboard({
       transaksi, token: "", role,
       displayName: res.locals.financeDisplay || "",
+      shift:       res.locals.financeShift   || "siang",
       bulanFilter, jenisFilter, tglDari, tglSampai,
       kategoriList, subKategoriList, menuItems, toppings,
       accountsAll: accounts,

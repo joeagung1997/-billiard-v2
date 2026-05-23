@@ -398,11 +398,18 @@ export const readAdminAccounts = async () => {
   return res.rows;
 };
 
-export const updateAdminAccount = async (id, username, pin) => {
-  await query(
-    "UPDATE admin_accounts SET username=$1, pin=$2 WHERE id=$3",
-    [username.toLowerCase(), pin, parseInt(id)]
-  );
+export const updateAdminAccount = async (id, username, pin, shift = null) => {
+  if (shift !== null) {
+    await query(
+      "UPDATE admin_accounts SET username=$1, pin=$2, shift=$3 WHERE id=$4",
+      [username.toLowerCase(), pin, shift, parseInt(id)]
+    );
+  } else {
+    await query(
+      "UPDATE admin_accounts SET username=$1, pin=$2 WHERE id=$3",
+      [username.toLowerCase(), pin, parseInt(id)]
+    );
+  }
 };
 
 // ── Monitoring: Setoran (shift closing report) ────────────────
