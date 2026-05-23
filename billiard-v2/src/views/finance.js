@@ -3145,17 +3145,25 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     "@media(max-width:400px){.stt-icon{width:32px;height:32px;font-size:15px;border-radius:9px}.stt-status-wrap{gap:8px}.stt-name{font-size:12.5px}.stt-rasio{font-size:9.5px}}",
     /* ── Halaman Analisis Target — responsive mobile ─────────── */
     "@media(max-width:640px){",
-    "  .ap-page{padding-bottom:40px}",
+    "  .ap-page{padding-bottom:40px;width:100%;box-sizing:border-box;max-width:100%}",
+    "  .ap-page *{box-sizing:border-box;max-width:100%}",
     "  .ap-hdr{margin-bottom:16px}",
     "  .ap-title{font-size:18px!important;gap:8px!important}",
-    "  .ap-sub{font-size:11px}",
+    "  .ap-sub{font-size:11px;overflow-wrap:break-word}",
     "  .ap-grid{gap:10px;margin-bottom:14px}",
-    "  .ap-card{padding:14px 14px!important;margin-bottom:12px;border-radius:12px}",
+    "  .ap-card{padding:14px 14px!important;margin-bottom:12px;border-radius:12px;overflow:hidden}",
     "  .ap-card-title{font-size:13px;flex-wrap:wrap;gap:6px;margin-bottom:12px}",
-    "  .ap-card-title-sub{font-size:10.5px;width:100%;margin-left:0;margin-top:2px}",
+    "  .ap-card-title-sub{font-size:10.5px;width:100%;margin-left:0;margin-top:2px;font-family:var(--ff)!important}",
     "  .ap-note{padding:11px 13px;font-size:12px;line-height:1.5;margin-bottom:14px}",
     "  .ap-note i{font-size:15px}",
-    "  .stt-tip{padding:11px 13px;font-size:11.5px;line-height:1.5;margin-top:12px}",
+    "  .ap-note span{min-width:0;overflow-wrap:break-word;word-break:normal;flex:1}",
+    "  .stt-tip{padding:11px 13px;font-size:11.5px;line-height:1.5;margin-top:12px;overflow-wrap:break-word}",
+    "  .stt-wrap{border-radius:10px;margin-top:10px;overflow-x:hidden}",
+    "  .stt-table{table-layout:fixed}",
+    "  .stt-c-status{min-width:0}",
+    "  .stt-status-wrap{min-width:0}",
+    "  .stt-status-text{min-width:0;overflow:hidden}",
+    "  .stt-name,.stt-rasio{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "  /* 3 scope card */",
     "  .an-card{padding:12px 14px!important;border-radius:11px}",
     "  .an-card-hdr{margin-bottom:8px;gap:8px;flex-wrap:wrap}",
@@ -3294,7 +3302,7 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           +       "</div>"
           +     "</div>"
           +   "</td>"
-          +   "<td class=\"stt-c-desc\">" + s.desc + "</td>"
+          +   "<td class=\"stt-c-desc stt-hide-sm\">" + s.desc + "</td>"
           +   "<td class=\"stt-c-num stt-c-primary\">" + fmtRange(an.targets.hari, s.min, s.max) + "</td>"
           +   "<td class=\"stt-c-num stt-hide-md\">" + fmtRange(an.targets.minggu, s.min, s.max) + "</td>"
           +   "<td class=\"stt-c-num stt-hide-md\">" + fmtRange(an.targets.bulan, s.min, s.max) + "</td>"
