@@ -1024,6 +1024,31 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-cs-val.inc{color:#16a34a}",
     ".fin-cs-val.out{color:#dc2626}",
     ".fin-cs-val.mg{color:var(--accent)}",
+    // ── Menu Item Picker (custom bottom-sheet) ─────────────────
+    ".mip-wrap{position:relative;width:100%}",
+    ".mip-sel{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}",
+    ".mip-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);font-family:var(--ff);font-size:13px;color:var(--txt3);cursor:pointer;text-align:left;min-height:38px;transition:border-color .15s}",
+    ".mip-btn:hover{border-color:var(--accent)}",
+    ".mip-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".mip-text-filled{color:var(--txt);font-weight:500}",
+    ".mip-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}",
+    "@keyframes mipFadeIn{from{opacity:0}to{opacity:1}}",
+    ".mip-overlay.open{display:flex}",
+    ".mip-sheet{width:100%;max-width:520px;background:var(--surface);border-radius:18px 18px 0 0;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1)}",
+    "@keyframes mipSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}",
+    "@media(min-width:641px){.mip-overlay{align-items:center;padding:16px}.mip-sheet{border-radius:14px;max-height:75vh}}",
+    ".mip-sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)}",
+    ".mip-sheet-title{font-size:15px;font-weight:700;color:var(--txt)}",
+    ".mip-close{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:20px;padding:4px 6px;display:flex;align-items:center}",
+    ".mip-search-wrap{position:relative;padding:12px 16px 8px;background:var(--surface)}",
+    ".mip-search-wrap i{position:absolute;left:26px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px}",
+    ".mip-search{width:100%;padding:11px 12px 11px 38px;border:1px solid var(--border2);border-radius:10px;font-size:14px;color:var(--txt);outline:none;background:var(--surface2);font-family:var(--ff)}",
+    ".mip-search:focus{border-color:var(--accent);background:var(--surface)}",
+    ".mip-list{flex:1;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch}",
+    ".mip-group-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;padding:14px 8px 6px}",
+    ".mip-item{display:block;width:100%;text-align:left;padding:12px 14px;background:transparent;border:none;border-radius:9px;font-family:var(--ff);font-size:13.5px;color:var(--txt);cursor:pointer;transition:background .12s;line-height:1.4}",
+    ".mip-item:hover{background:var(--surface2)}",
+    ".mip-item.active{background:rgba(59,130,246,.12);color:#3b82f6;font-weight:600}",
     // ── Toast notifikasi (compact, slide-in dari kanan atas) ────
     ".toast{position:fixed!important;top:20px!important;right:20px!important;left:auto!important;bottom:auto!important;width:auto!important;max-width:340px!important;min-width:0!important;height:auto!important;max-height:none!important;padding:12px 16px!important;border-radius:12px!important;font-size:13px!important;font-weight:600!important;z-index:9998!important;opacity:0;transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .2s ease;display:inline-flex!important;align-items:center;gap:9px;box-shadow:0 6px 20px rgba(15,23,42,.15);line-height:1.4;border:1px solid;border-left:4px solid currentColor;white-space:normal!important;pointer-events:none}",
     ".toast.show{opacity:1;transform:translateX(0);pointer-events:auto}",
@@ -1497,7 +1522,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Item Pesanan</label>"
     + "<div class=\"fin-menu-items\" id=\"wizMenuItems\">"
     + "<div class=\"fin-menu-row\">"
-    + "<select class=\"fsel\" onchange=\"wizItemChange(this)\"><option value=\"\">Pilih item...</option>" + menuOptsHtml + "</select>"
+    + "<div class=\"mip-wrap\">"
+    +   "<select class=\"fsel mip-sel\" onchange=\"wizItemChange(this)\"><option value=\"\">Pilih item...</option>" + menuOptsHtml + "</select>"
+    +   "<button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this)\">"
+    +     "<span class=\"mip-text\">Pilih item...</span>"
+    +     "<i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i>"
+    +   "</button>"
+    + "</div>"
     + "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">"
     + "<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>"
     + "<div class=\"wiz-extras\" style=\"grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px\">"
@@ -1629,6 +1660,21 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "</form>"
     + "</div>"
+    + "</div>"
+
+    // ── Bottom-sheet picker untuk menu item (mobile-friendly) ───
+    + "<div class=\"mip-overlay\" id=\"mipOv\" onclick=\"if(event.target===this)closeItemPicker()\">"
+    +   "<div class=\"mip-sheet\">"
+    +     "<div class=\"mip-sheet-hdr\">"
+    +       "<div class=\"mip-sheet-title\">Pilih Item</div>"
+    +       "<button type=\"button\" class=\"mip-close\" onclick=\"closeItemPicker()\"><i class=\"ti ti-x\"></i></button>"
+    +     "</div>"
+    +     "<div class=\"mip-search-wrap\">"
+    +       "<i class=\"ti ti-search\"></i>"
+    +       "<input type=\"text\" id=\"mipSearch\" class=\"mip-search\" placeholder=\"Cari item...\" oninput=\"filterItemPicker()\" autocomplete=\"off\">"
+    +     "</div>"
+    +     "<div class=\"mip-list\" id=\"mipList\"></div>"
+    +   "</div>"
     + "</div>"
 
     + "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js\"><\/script>"
@@ -1800,9 +1846,70 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + '<div class="wiz-tops" style="display:none;flex-direction:column;gap:4px"></div>'
         + '</div>'
       ) + ";"
+    // ── Menu Item Picker (custom bottom-sheet, replace native select) ─
+    + "var _mipSel=null;"
+    + "function openItemPicker(btn){"
+    +   "var wrap=btn.parentElement;var sel=wrap.querySelector('select');if(!sel)return;"
+    +   "_mipSel=sel;"
+    +   "var list=document.getElementById('mipList');if(!list)return;"
+    +   "list.innerHTML='';"
+    +   "var currentVal=sel.value;"
+    +   "var groups={};var groupOrder=[];"
+    +   "for(var i=1;i<sel.options.length;i++){"
+    +     "var o=sel.options[i];if(!o.value)continue;"
+    +     "var kat=(o.dataset.kategori||'lainnya').toLowerCase();"
+    +     "if(!groups[kat]){groups[kat]=[];groupOrder.push(kat);}"
+    +     "groups[kat].push(o);"
+    +   "}"
+    +   "var html='';"
+    +   "var katLabel={minuman:'Minuman',snack:'Snack',rokok:'Rokok',lainnya:'Lainnya'};"
+    +   "groupOrder.forEach(function(kat){"
+    +     "html+='<div class=\"mip-group-lbl\">'+(katLabel[kat]||kat)+'</div>';"
+    +     "groups[kat].forEach(function(o){"
+    +       "var sel2=o.value===currentVal?' active':'';"
+    +       "html+='<button type=\"button\" class=\"mip-item'+sel2+'\" data-v=\"'+o.value.replace(/\"/g,'&quot;')+'\" data-l=\"'+o.text.replace(/\"/g,'&quot;')+'\" onclick=\"pickItem(this)\">'+o.text+'</button>';"
+    +     "});"
+    +   "});"
+    +   "list.innerHTML=html;"
+    +   "document.getElementById('mipOv').classList.add('open');"
+    +   "setTimeout(function(){var s=document.getElementById('mipSearch');if(s){s.value='';s.focus();}},150);"
+    + "}"
+    + "function pickItem(itBtn){"
+    +   "if(!_mipSel)return;"
+    +   "var v=itBtn.getAttribute('data-v');var l=itBtn.getAttribute('data-l');"
+    +   "_mipSel.value=v;"
+    +   "var wrap=_mipSel.parentElement;var disp=wrap.querySelector('.mip-text');"
+    +   "if(disp)disp.textContent=l;"
+    +   "if(disp&&v)disp.classList.add('mip-text-filled');"
+    +   "_mipSel.dispatchEvent(new Event('change',{bubbles:true}));"
+    +   "closeItemPicker();"
+    + "}"
+    + "function closeItemPicker(){document.getElementById('mipOv').classList.remove('open');_mipSel=null;}"
+    + "function filterItemPicker(){"
+    +   "var q=(document.getElementById('mipSearch').value||'').toLowerCase();"
+    +   "var items=document.querySelectorAll('#mipList .mip-item');"
+    +   "items.forEach(function(it){"
+    +     "var match=!q||it.textContent.toLowerCase().indexOf(q)>=0;"
+    +     "it.style.display=match?'':'none';"
+    +   "});"
+    +   // Hide group labels yg semua item-nya filtered out
+    +   "var labels=document.querySelectorAll('#mipList .mip-group-lbl');"
+    +   "labels.forEach(function(lbl){"
+    +     "var nxt=lbl.nextElementSibling;var hasVis=false;"
+    +     "while(nxt&&!nxt.classList.contains('mip-group-lbl')){"
+    +       "if(nxt.style.display!=='none'){hasVis=true;break;}"
+    +       "nxt=nxt.nextElementSibling;"
+    +     "}"
+    +     "lbl.style.display=hasVis?'':'none';"
+    +   "});"
+    + "}"
     + "function wizAddItem(){"
     + "var c=document.getElementById('wizMenuItems'),r=document.createElement('div');r.className='fin-menu-row';"
-    + "r.innerHTML='<select class=\"fsel\" onchange=\"wizItemChange(this)\">'+WIZ_MENU_OPTS+'</select>'"
+    + "r.innerHTML='<div class=\"mip-wrap\"><select class=\"fsel mip-sel\" onchange=\"wizItemChange(this)\">'+WIZ_MENU_OPTS+'</select>'"
+    + "+'<button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this)\">'"
+    + "+'<span class=\"mip-text\">Pilih item...</span>'"
+    + "+'<i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i>'"
+    + "+'</button></div>'"
     + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">'"
     + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>'"
     + "+WIZ_EXTRAS_HTML;"
