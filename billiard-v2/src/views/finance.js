@@ -849,7 +849,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     : "<div class=\"empty-donut-leg\"><i class=\"ti ti-chart-donut\"></i>Belum ada data</div>";
 
   // ── Transaction rows ────────────────────────────────────────
-  const makeRow = function(t) {
+  const makeRow = function(t, idx) {
     const isIn    = t.jenis === "pemasukan";
     const isVoid  = !!t.voidedAt;
     const tglDisp = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", {
@@ -868,7 +868,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
         + " onclick=\"openVoidModal(this)\">"
         + "<i class=\"ti ti-ban\"></i></button>";
-    return "<div class=\"" + rowCls + "\" data-tanggal=\"" + escHtml(t.tanggal || "") + "\">"
+    return "<div class=\"" + rowCls + "\" data-tanggal=\"" + escHtml(t.tanggal || "") + "\" data-idx=\"" + idx + "\" onclick=\"if(event.target.closest('.icon-btn,.fr-bukti-thumb,a,button'))return;openTrxDetail(" + idx + ")\">"
       + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">"
@@ -1014,9 +1014,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   // Card tabel: extra margin bottom 140px supaya footer/pagination tdk ketutupan FAB
     +   // (FAB di bottom:78px, height ~50px = area FAB ~128px dari bottom)
     +   ".fin-table-card{margin-bottom:140px!important}"
-    +   // Meta sub-text di row tabel: lebih rapi
-    +   ".fr-desc-meta{display:flex;flex-wrap:wrap;gap:4px 8px;line-height:1.6;font-size:10.5px}"
-    +   ".fin-row,.fin-tbl-head{padding:12px 14px!important}"
+    +   // Mobile: hide meta sub-text di row tabel — detail via tap row → modal
+    +   ".fr-desc-meta{display:none!important}"
+    +   ".fin-row{padding:14px!important;cursor:pointer}"
+    +   ".fin-tbl-head{padding:12px 14px!important}"
+    +   // Indicator chevron di row mobile (subtle hint tappable)
+    +   ".fin-row::after{content:'›';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;font-weight:300;opacity:.5;pointer-events:none}"
+    +   ".fin-row{position:relative;padding-right:28px!important}"
+    +   ".fr-desc-title{font-weight:600!important;line-height:1.35!important}"
     + "}",
     // ── Chart cards redesign ─────────────────────────────────────
     ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
@@ -1059,6 +1064,18 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".mip-item{display:block;width:100%;text-align:left;padding:12px 14px;background:transparent;border:none;border-radius:9px;font-family:var(--ff);font-size:13.5px;color:var(--txt);cursor:pointer;transition:background .12s;line-height:1.4}",
     ".mip-item:hover{background:var(--surface2)}",
     ".mip-item.active{background:rgba(59,130,246,.12);color:#3b82f6;font-weight:600}",
+    // Detail transaksi modal
+    ".trx-detail-sheet{max-width:480px}",
+    ".trx-dt-body{flex:1;overflow-y:auto;padding:8px 18px 12px}",
+    ".trx-dt-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px dashed var(--border)}",
+    ".trx-dt-row:last-child{border-bottom:none}",
+    ".trx-dt-l{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;min-width:90px;padding-top:2px}",
+    ".trx-dt-v{font-size:13.5px;color:var(--txt);text-align:right;flex:1;word-break:break-word;line-height:1.5}",
+    ".trx-dt-footer{padding:14px 18px 18px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap}",
+    ".trx-dt-btn-void{flex:1;min-width:140px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;background:#fee2e2;color:#b91c1c;border:1px solid rgba(239,68,68,.3);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff)}",
+    ".trx-dt-btn-void:hover{background:#fecaca}",
+    ".trx-dt-btn-close{flex:1;min-width:100px;padding:11px 16px;background:var(--surface2);color:var(--txt);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff)}",
+    ".trx-dt-btn-close:hover{background:var(--surface)}",
     // ── Toast notifikasi (compact, slide-in dari kanan atas) ────
     ".toast{position:fixed!important;top:20px!important;right:20px!important;left:auto!important;bottom:auto!important;width:auto!important;max-width:340px!important;min-width:0!important;height:auto!important;max-height:none!important;padding:12px 16px!important;border-radius:12px!important;font-size:13px!important;font-weight:600!important;z-index:9998!important;opacity:0;transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .2s ease;display:inline-flex!important;align-items:center;gap:9px;box-shadow:0 6px 20px rgba(15,23,42,.15);line-height:1.4;border:1px solid;border-left:4px solid currentColor;white-space:normal!important;pointer-events:none}",
     ".toast.show{opacity:1;transform:translateX(0);pointer-events:auto}",
@@ -1672,6 +1689,18 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "</div>"
 
+    // ── Modal Detail Transaksi (mobile-friendly, tap row utk buka) ───
+    + "<div class=\"mip-overlay\" id=\"trxDetailOv\" onclick=\"if(event.target===this)closeTrxDetail()\">"
+    +   "<div class=\"mip-sheet trx-detail-sheet\">"
+    +     "<div class=\"mip-sheet-hdr\">"
+    +       "<div class=\"mip-sheet-title\" id=\"trxDtTitle\">Detail Transaksi</div>"
+    +       "<button type=\"button\" class=\"mip-close\" onclick=\"closeTrxDetail()\"><i class=\"ti ti-x\"></i></button>"
+    +     "</div>"
+    +     "<div class=\"trx-dt-body\" id=\"trxDtBody\"></div>"
+    +     "<div class=\"trx-dt-footer\" id=\"trxDtFooter\"></div>"
+    +   "</div>"
+    + "</div>"
+
     // ── Bottom-sheet picker untuk menu item (mobile-friendly) ───
     + "<div class=\"mip-overlay\" id=\"mipOv\" onclick=\"if(event.target===this)closeItemPicker()\">"
     +   "<div class=\"mip-sheet\">"
@@ -1691,6 +1720,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<script>"
     + "const WIZ_MENU_OPTS=" + safeJson("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
     + "const WIZ_TOPPINGS=" + safeJson(toppingsByName) + ";"
+    + "const TRX_DATA=" + safeJson(sortedTbl) + ";"
+    + "const USER_NAME_MAP=" + safeJson(userNameMap) + ";"
+    + "const USER_SHIFT_MAP=" + safeJson(userShiftMap) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "function financeLogout(){if(!confirm('Keluar dari sesi keuangan?'))return;window.location.href='/operasional/logout';}"
@@ -1867,6 +1899,42 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + '<div class="wiz-tops" style="display:none;flex-direction:column;gap:4px"></div>'
         + '</div>'
       ) + ";"
+    // ── Detail Transaksi Modal (tap row di mobile → buka detail full) ─
+    + "function _rpFmt(n){var a=Math.abs(Math.round(Number(n)||0));var s=String(a);var p=[];for(var i=s.length;i>0;i-=3)p.unshift(s.slice(Math.max(0,i-3),i));return (Number(n)<0?'-':'')+'Rp '+p.join('.');}"
+    + "function openTrxDetail(idx){"
+    +   "var t=TRX_DATA[idx];if(!t)return;"
+    +   "var isIn=t.jenis==='pemasukan';var isVoid=!!t.voidedAt;"
+    +   "var tglFmt=new Date(t.tanggal+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});"
+    +   "var pencatatNm=t.dicatatOleh?(USER_NAME_MAP[t.dicatatOleh]||t.dicatatOleh):'—';"
+    +   "var pencatatShift=t.dicatatOleh?(USER_SHIFT_MAP[t.dicatatOleh]||'siang'):'';"
+    +   "var shiftIc=pencatatShift==='malam'?'🌙 Malam':pencatatShift==='siang'?'☀️ Siang':'';"
+    +   "var bayarLbl=t.bayar==='cash'?'💵 Cash':t.bayar==='qris'?'⚡ QRIS':'—';"
+    +   "var rows=[];"
+    +   "rows.push({l:'Tanggal',v:tglFmt+(t.jam?' · '+t.jam:'')});"
+    +   "rows.push({l:'Tipe',v:'<span class=\"t-badge '+(isIn?'in':'out')+'\">'+(isIn?'↑ Masuk':'↓ Keluar')+'</span>'});"
+    +   "rows.push({l:'Kategori',v:t.kategori||'—'});"
+    +   "if(t.subKategori)rows.push({l:'Sub Kategori',v:t.subKategori});"
+    +   "rows.push({l:'Keterangan',v:t.keterangan||'<em style=\"color:var(--txt3)\">(tanpa keterangan)</em>'});"
+    +   "rows.push({l:'Jumlah',v:'<span style=\"font-size:18px;font-weight:700;font-family:var(--ff-mono);color:'+(isIn?'#22c55e':'#ef4444')+'\">'+(isIn?'+':'-')+_rpFmt(t.jumlah)+'</span>'});"
+    +   "rows.push({l:'Metode',v:bayarLbl});"
+    +   "if(pencatatNm!=='—')rows.push({l:'Dicatat oleh',v:pencatatNm+(shiftIc?' <span style=\"font-size:11px;color:var(--txt3);margin-left:4px\">'+shiftIc+'</span>':'')});"
+    +   "rows.push({l:'ID',v:'<span style=\"font-family:var(--ff-mono);font-size:11px;color:var(--txt3)\">#'+String(t.id).slice(-8)+'</span>'});"
+    +   "if(t.buktiUrl)rows.push({l:'Bukti Foto',v:'<a href=\"'+t.buktiUrl+'\" target=\"_blank\"><img src=\"'+t.buktiUrl+'\" style=\"max-width:160px;max-height:160px;border-radius:8px;border:1px solid var(--border);cursor:pointer\"></a>'});"
+    +   "if(isVoid)rows.push({l:'Status',v:'<span class=\"trx-void-badge\">VOID</span> <span style=\"font-size:12px;color:var(--txt3);margin-left:6px\">'+(t.voidReason||'—')+'</span>'});"
+    +   "var body=rows.map(function(r){return '<div class=\"trx-dt-row\"><div class=\"trx-dt-l\">'+r.l+'</div><div class=\"trx-dt-v\">'+r.v+'</div></div>';}).join('');"
+    +   "document.getElementById('trxDtBody').innerHTML=body;"
+    +   "var footer='';"
+    +   "if(!isVoid){"
+    +     "var desc=(t.keterangan||t.kategori||'(tanpa keterangan)').replace(/'/g,'&apos;').replace(/\"/g,'&quot;');"
+    +     "var amount=(isIn?'+':'-')+_rpFmt(t.jumlah);"
+    +     "footer='<button type=\"button\" class=\"trx-dt-btn-void\" onclick=\"closeTrxDetail();var b={dataset:{id:\\''+t.id+'\\',desc:\\''+desc+'\\',amount:\\''+amount+'\\'}};openVoidModal(b);\">"
+    +       "<i class=\"ti ti-ban\"></i> Batalkan Transaksi</button>';"
+    +   "}"
+    +   "footer+='<button type=\"button\" class=\"trx-dt-btn-close\" onclick=\"closeTrxDetail()\">Tutup</button>';"
+    +   "document.getElementById('trxDtFooter').innerHTML=footer;"
+    +   "document.getElementById('trxDetailOv').classList.add('open');"
+    + "}"
+    + "function closeTrxDetail(){document.getElementById('trxDetailOv').classList.remove('open');}"
     // ── Menu Item Picker (custom bottom-sheet, replace native select) ─
     + "var _mipSel=null;"
     + "function openItemPicker(btn){"
