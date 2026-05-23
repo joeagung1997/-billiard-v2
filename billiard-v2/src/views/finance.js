@@ -1003,7 +1003,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-search-inp{font-size:16px!important;padding:10px 12px 10px 36px!important}"
     +   ".fin-tbl-chips{width:100%;margin-left:0;margin-top:0;justify-content:flex-start}"
     +   ".fin-tbl-chip{padding:7px 14px;font-size:12px}"
-    +   ".fin-pagination{margin:8px auto 0;width:100%;justify-content:center}"
+    +   // Footer: stack vertikal, pagination di baris baru kiri (jauh dari FAB pojok kanan)
+    +   ".fin-tbl-footer{flex-direction:column!important;align-items:flex-start!important;gap:10px;padding:14px!important;padding-bottom:18px!important}"
+    +   ".fin-tf-left{width:100%}"
+    +   ".fin-pagination{margin:0!important;width:100%;justify-content:flex-start!important;flex-wrap:wrap;gap:5px}"
+    +   ".fin-pg-btn{min-width:32px;height:32px}"
     +   // Meta sub-text di row tabel: lebih rapi
     +   ".fr-desc-meta{display:flex;flex-wrap:wrap;gap:4px 8px;line-height:1.6;font-size:10.5px}"
     +   ".fin-row,.fin-tbl-head{padding:12px 14px!important}"
