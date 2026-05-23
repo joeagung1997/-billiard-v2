@@ -53,6 +53,7 @@ const rowToTransaksi = (row) => ({
   voidReason:   row.void_reason  ?? "",
   bayar:        row.bayar        ?? "",
   buktiUrl:     row.bukti_url    ?? "",
+  dicatatOleh:  row.dicatat_oleh ?? "",
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -196,8 +197,8 @@ export const readTransaksi = async () => {
 
 export const appendTransaksi = async (item) => {
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
@@ -206,6 +207,7 @@ export const appendTransaksi = async (item) => {
       item.jumlah, item.createdAt ?? new Date().toISOString(),
       item.bayar ?? "",
       item.buktiUrl ?? "",
+      item.dicatatOleh ?? "",
     ]
   );
 };
@@ -401,4 +403,70 @@ export const updateAdminAccount = async (id, username, pin) => {
     "UPDATE admin_accounts SET username=$1, pin=$2 WHERE id=$3",
     [username.toLowerCase(), pin, parseInt(id)]
   );
+};
+
+// ── Monitoring: Setoran (shift closing report) ────────────────
+
+export const readSetoranList = async ({ bulan, username } = {}) => {
+  let sql = "SELECT * FROM setoran WHERE 1=1";
+  const params = [];
+  if (bulan)    { params.push(bulan + "%"); sql += ` AND tanggal::TEXT LIKE $${params.length}`; }
+  if (username) { params.push(username);    sql += ` AND karyawan_username = $${params.length}`; }
+  sql += " ORDER BY tanggal DESC, created_at DESC LIMIT 200";
+  const res = await query(sql, params);
+  return res.rows.map((r) => ({
+    id:               r.id,
+    tanggal:          r.tanggal instanceof Date ? r.tanggal.toISOString().slice(0, 10) : String(r.tanggal).slice(0, 10),
+    shift:            r.shift            ?? "siang",
+    karyawanNama:     r.karyawan_nama    ?? "",
+    karyawanUsername: r.karyawan_username ?? "",
+    jamBuka:          r.jam_buka         ?? "",
+    jamTutup:         r.jam_tutup        ?? "",
+    modalAwal:        Number(r.modal_awal    ?? 0),
+    pemasukan:        Number(r.pemasukan     ?? 0),
+    pengeluaran:      Number(r.pengeluaran   ?? 0),
+    uangSetor:        Number(r.uang_setor    ?? 0),
+    selisih:          Number(r.selisih       ?? 0),
+    keterangan:       r.keterangan       ?? "",
+    createdAt:        r.created_at       ?? null,
+  }));
+};
+
+export const appendSetoran = async (s) => {
+  await query(
+    `INSERT INTO setoran (id, tanggal, shift, karyawan_nama, karyawan_username, jam_buka, jam_tutup, modal_awal, pemasukan, pengeluaran, uang_setor, selisih, keterangan)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    [
+      s.id, s.tanggal, s.shift,
+      s.karyawanNama, s.karyawanUsername,
+      s.jamBuka    ?? "", s.jamTutup   ?? "",
+      s.modalAwal  ?? 0,  s.pemasukan  ?? 0,  s.pengeluaran ?? 0,
+      s.uangSetor  ?? 0,  s.selisih    ?? 0,
+      s.keterangan ?? "",
+    ]
+  );
+};
+
+export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, limit = 300 } = {}) => {
+  let sql = "SELECT * FROM transaksi WHERE voided_at IS NULL";
+  const params = [];
+  if (tglDari)   { params.push(tglDari);   sql += ` AND tanggal >= $${params.length}`; }
+  if (tglSampai) { params.push(tglSampai); sql += ` AND tanggal <= $${params.length}`; }
+  if (username)  { params.push(username);  sql += ` AND dicatat_oleh = $${params.length}`; }
+  if (jenis)     { params.push(jenis);     sql += ` AND jenis = $${params.length}`; }
+  params.push(limit);
+  sql += ` ORDER BY tanggal DESC, jam DESC, created_at DESC LIMIT $${params.length}`;
+  const res = await query(sql, params);
+  return res.rows.map((r) => ({
+    id:          r.id,
+    tanggal:     r.tanggal,
+    jam:         r.jam         ?? "",
+    jenis:       r.jenis,
+    kategori:    r.kategori    ?? "",
+    keterangan:  r.keterangan  ?? "",
+    jumlah:      Number(r.jumlah),
+    bayar:       r.bayar       ?? "",
+    dicatatOleh: r.dicatat_oleh ?? "",
+    createdAt:   r.created_at  ?? null,
+  }));
 };

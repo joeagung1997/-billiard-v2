@@ -293,5 +293,31 @@ export const runMigrations = async () => {
     }
   }
 
+  // ── Monitoring Karyawan ───────────────────────────────────────
+  // Track who recorded each transaction
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS dicatat_oleh TEXT DEFAULT ''`);
+
+  // Shift closing / setoran report
+  await query(`
+    CREATE TABLE IF NOT EXISTS setoran (
+      id                TEXT PRIMARY KEY,
+      tanggal           DATE NOT NULL,
+      shift             TEXT NOT NULL DEFAULT 'siang',
+      karyawan_nama     TEXT NOT NULL DEFAULT '',
+      karyawan_username TEXT DEFAULT '',
+      jam_buka          TEXT DEFAULT '',
+      jam_tutup         TEXT DEFAULT '',
+      modal_awal        BIGINT DEFAULT 0,
+      pemasukan         BIGINT DEFAULT 0,
+      pengeluaran       BIGINT DEFAULT 0,
+      uang_setor        BIGINT DEFAULT 0,
+      selisih           BIGINT DEFAULT 0,
+      keterangan        TEXT DEFAULT '',
+      created_at        TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_setoran_tanggal  ON setoran (tanggal DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_setoran_karyawan ON setoran (karyawan_username)`);
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };

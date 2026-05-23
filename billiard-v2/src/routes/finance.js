@@ -17,6 +17,7 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
+  readAdminAccounts,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import {
@@ -36,8 +37,8 @@ function getCookie(req, name) {
   return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
 }
 
-function setRoleCookie(res, role) {
-  const token = jwt.sign({ role }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+function setRoleCookie(res, role, username = "", displayName = "") {
+  const token = jwt.sign({ role, username, displayName }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
   res.setHeader("Set-Cookie",
     `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/operasional; Max-Age=${maxAge}; SameSite=Lax`
@@ -51,23 +52,31 @@ function clearRoleCookie(res) {
 }
 
 // ── Auth helpers ──────────────────────────────────────────────────
-function getFinanceRole(req) {
+function getFinanceUser(req) {
   const raw = getCookie(req, COOKIE_NAME);
   if (!raw) return null;
   try {
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
-    return decoded.role || null;
-  } catch {
-    return null;
-  }
+    return {
+      role:        decoded.role        || null,
+      username:    decoded.username    || "",
+      displayName: decoded.displayName || "",
+    };
+  } catch { return null; }
+}
+
+function getFinanceRole(req) {
+  return getFinanceUser(req)?.role ?? null;
 }
 
 function requireFinanceAuth(req, res, next) {
-  const role = getFinanceRole(req);
-  if (!role) {
+  const user = getFinanceUser(req);
+  if (!user?.role) {
     return res.redirect("/operasional/login?r=" + encodeURIComponent(req.originalUrl));
   }
-  res.locals.financeRole = role;
+  res.locals.financeRole    = user.role;
+  res.locals.financeUser    = user.username;
+  res.locals.financeDisplay = user.displayName;
   next();
 }
 
@@ -86,20 +95,32 @@ router.get("/login", (req, res) => {
   res.send(financeLoginPage(!!req.query.err));
 });
 
-router.post("/login", (req, res) => {
-  const pin   = (req.body.pin ?? "").trim();
-  const redir = (req.query.r  ?? "").slice(0, 300);
+router.post("/login", async (req, res) => {
+  const pin      = (req.body.pin      ?? "").trim();
+  const username = (req.body.username ?? "").trim().toLowerCase();
+  const redir    = (req.query.r       ?? "").slice(0, 300);
 
-  let role = null;
-  if (pin === CONFIG.OWNER_PIN)    role = "owner";
-  else if (pin === CONFIG.KARYAWAN_PIN) role = "karyawan";
+  let role = null, displayName = "";
+
+  if (username) {
+    // Username diisi → wajib match akun di admin_accounts. Tidak fallback ke PIN-only.
+    try {
+      const accounts = await readAdminAccounts();
+      const row = accounts.find((u) => u.username.toLowerCase() === username && u.pin === pin);
+      if (row) { role = row.role; displayName = row.display_name || row.username; }
+    } catch (err) { console.error("[FINANCE] accounts lookup:", err.message); }
+  } else {
+    // Username kosong → fallback PIN-only (backward compat URL lama).
+    if (pin === CONFIG.OWNER_PIN)         { role = "owner";    displayName = "Owner"; }
+    else if (pin === CONFIG.KARYAWAN_PIN) { role = "karyawan"; displayName = "Karyawan"; }
+  }
 
   if (!role) {
     const back = "/operasional/login?err=1" + (redir ? "&r=" + encodeURIComponent(redir) : "");
     return res.redirect(back);
   }
 
-  setRoleCookie(res, role);
+  setRoleCookie(res, role, username, displayName);
   res.redirect(redir || "/operasional");
 });
 
@@ -186,18 +207,19 @@ router.post("/tambah", async (req, res) => {
 
   try {
     await appendTransaksi({
-      id:         Date.now() + "-" + Math.random().toString(36).slice(2, 7),
-      tanggal:    tanggal.slice(0, 10),
-      jam:        (jam ?? "").slice(0, 5),
+      id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      tanggal:     tanggal.slice(0, 10),
+      jam:         (jam ?? "").slice(0, 5),
       jenis,
-      waktu:      ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
-      kategori:   (kategori ?? "").trim(),
+      waktu:       ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
+      kategori:    (kategori ?? "").trim(),
       subKategori,
-      keterangan: (keterangan ?? "").trim().slice(0, 200),
-      jumlah:     jumlahNum,
-      createdAt:  new Date().toISOString(),
+      keterangan:  (keterangan ?? "").trim().slice(0, 200),
+      jumlah:      jumlahNum,
+      createdAt:   new Date().toISOString(),
       bayar,
       buktiUrl,
+      dicatatOleh: res.locals.financeUser || "",
     });
     res.redirect("/operasional?msg=created");
   } catch (err) {
@@ -386,4 +408,5 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
   res.redirect("/operasional/menu");
 });
 
+export { requireFinanceAuth, requireOwner };
 export default router;

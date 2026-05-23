@@ -41,6 +41,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
   const isKat  = page === "kategori";
   const isMenu = page === "menu";
   const isSdm  = page === "sdm";
+  const isMon  = page === "monitoring";
   const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
   const opsItemCls = "nav-item open";
 
@@ -99,6 +100,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner") {
     + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
     + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
     + subItem("/operasional/sdm",      "SDM & Penggajian", isSdm)
+    + (isOwner ? subItem("/operasional/monitoring/aktivitas", "Monitoring Karyawan", isMon) : "")
     + "</div>"
     + "</div>"
     + "</div>"
@@ -205,6 +207,13 @@ export function buildFinanceBottomNav(role = "owner") {
     + "<div><div class=\"bn-sheet-name\">SDM &amp; Penggajian</div>"
     + "<div class=\"bn-sheet-sub\">Karyawan, gaji, kasbon &amp; THR</div></div>"
     + "</a>"
+    + (isOwner
+      ? "<a href=\"/operasional/monitoring/aktivitas\" class=\"bn-sheet-item\">"
+        + "<div class=\"bn-sheet-icon\"><i class=\"ti ti-chart-bar\"></i></div>"
+        + "<div><div class=\"bn-sheet-name\">Monitoring Karyawan</div>"
+        + "<div class=\"bn-sheet-sub\">Aktivitas, setoran shift &amp; selisih kas</div></div>"
+        + "</a>"
+      : "")
     + "</div>"
 
     + "<script>"
@@ -388,6 +397,12 @@ export function financeLoginPage(showErr) {
     ".go-btn:hover { background:linear-gradient(135deg,#22c55e,#16a34a); }",
     ".login-footer { margin-top:22px; font-size:11px; color:#253040; }",
     "#pinInput { display:none; }",
+    ".uname-wrap { margin-bottom:18px; text-align:left; }",
+    ".uname-lbl { display:block; font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#4a5e78; margin-bottom:7px; }",
+    ".uname-inp { width:100%; padding:10px 13px; background:#0a1422; border:1.5px solid #1e3a5f; border-radius:11px; font-size:13px; color:#e8edf5; outline:none; font-family:inherit; transition:border-color .15s; }",
+    ".uname-inp:focus { border-color:#22c55e; }",
+    ".uname-inp::placeholder { color:#253a58; font-size:12px; }",
+    ".pin-section-lbl { font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#4a5e78; margin-bottom:14px; display:block; }",
   ].join("");
 
   const script = [
@@ -395,8 +410,23 @@ export function financeLoginPage(showErr) {
     "function press(n){if(_pin.length>=MAX)return;_pin+=n;upd();}",
     "function del(){_pin=_pin.slice(0,-1);upd();}",
     "function upd(){for(var i=0;i<MAX;i++){var d=document.getElementById('d'+i);if(d)d.classList.toggle('filled',i<_pin.length);}}",
-    "function go(){if(!_pin.length)return;document.getElementById('pi').value=_pin;document.getElementById('pf').submit();}",
-    "document.addEventListener('keydown',function(e){if(e.key>='0'&&e.key<='9')press(e.key);else if(e.key==='Backspace')del();else if(e.key==='Enter')go();});",
+    "function go(){",
+    "  if(!_pin.length)return;",
+    "  var un=document.getElementById('unameField');",
+    "  document.getElementById('pi').value=_pin;",
+    "  if(un)document.getElementById('piUname').value=un.value.trim();",
+    "  document.getElementById('pf').submit();",
+    "}",
+    "document.addEventListener('keydown',function(e){",
+    "  var un=document.getElementById('unameField');",
+    "  if(document.activeElement===un){",
+    "    if(e.key==='Enter'){e.preventDefault();if(!_pin.length){}else{go();}}",
+    "    return;",
+    "  }",
+    "  if(e.key>='0'&&e.key<='9')press(e.key);",
+    "  else if(e.key==='Backspace')del();",
+    "  else if(e.key==='Enter')go();",
+    "});",
   ].join("");
 
   const dots = [0,1,2,3,4,5].map(function(i){ return "<div class=\"dot\" id=\"d" + i + "\"></div>"; }).join("");
@@ -409,8 +439,14 @@ export function financeLoginPage(showErr) {
     +   "<div class=\"icon-box\">💰</div>"
     +   "<div class=\"arena-lbl\">" + CONFIG.NAMA_ARENA + "</div>"
     +   "<h1>Laporan Keuangan</h1>"
-    +   "<p class=\"sub\">Masukkan PIN untuk akses</p>"
+    +   "<p class=\"sub\">Masukkan username &amp; PIN untuk akses</p>"
     +   errHtml
+    +   "<div class=\"uname-wrap\">"
+    +     "<label class=\"uname-lbl\" for=\"unameField\">Username</label>"
+    +     "<input type=\"text\" id=\"unameField\" class=\"uname-inp\" placeholder=\"Username (opsional untuk PIN lama)\""
+    +     " autocomplete=\"username\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\">"
+    +   "</div>"
+    +   "<span class=\"pin-section-lbl\">PIN</span>"
     +   "<div class=\"pin-dots\">" + dots + "</div>"
     +   "<div class=\"numpad\">"
     +     "<button class=\"np-btn\" onclick=\"press('1')\">1</button>"
@@ -428,6 +464,7 @@ export function financeLoginPage(showErr) {
     +   "</div>"
     +   "<form id=\"pf\" action=\"/operasional/login\" method=\"post\">"
     +     "<input type=\"hidden\" name=\"pin\" id=\"pi\">"
+    +     "<input type=\"hidden\" name=\"username\" id=\"piUname\">"
     +   "</form>"
     +   "<div class=\"login-footer\">Gunakan keyboard atau tap angka di atas</div>"
     + "</div>"
