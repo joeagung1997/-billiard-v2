@@ -634,7 +634,7 @@ function buildSidebar(token, activePage) {
     + 'function adminLogout(){'
     + 'if(!confirm("Keluar dari sesi admin?"))return;'
     + 'try{localStorage.removeItem("warpat_atk")}catch(_){};'
-    + 'window.location.href="/";}'
+    + 'window.location.href="/admin";}'
     + '</script>';
 }
 
