@@ -700,10 +700,6 @@ function buildBottomNav(token, activePage, user = {}) {
     + '<a href="/scan" class="bn-item">'
     + '<span class="bn-icon"><i class="ti ti-qrcode"></i></span>Scan'
     + '</a>'
-    + '<a href="/admin/reset?tk=' + token + '" class="bn-item danger"'
-    + ' onclick="return confirm(\'Reset scan harian semua member?\')">'
-    + '<span class="bn-icon"><i class="ti ti-refresh"></i></span>Reset'
-    + '</a>'
     + '</nav>'
 
     // ── Bottom sheet sub-menu Operasional ──────────────────────
