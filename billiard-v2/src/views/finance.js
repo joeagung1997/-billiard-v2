@@ -43,7 +43,7 @@ export function initials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", displayName = "") {
+export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", displayName = "", shift = "siang") {
   const isOwner = role === "owner";
   const isKeu  = page === "keuangan";
   const isKat  = page === "kategori";
@@ -51,6 +51,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   const isSdm  = page === "sdm";
   const isMon  = page === "monitoring";
   const isAna  = page === "analisis";
+  const isMalam = shift === "malam";
   const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
   const opsItemCls = "nav-item open";
 
@@ -61,7 +62,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   // Label & avatar — pakai displayName jika ada, fallback ke role label
   const fallbackName  = isOwner ? "Owner" : "Partner";
   const profileName   = (displayName || "").trim() || fallbackName;
-  const profileRole   = isOwner ? "Akses Penuh" : "Akses Terbatas";
+  // Untuk karyawan, role label = "Shift Siang/Malam" (lebih informatif drpd 'Akses Terbatas')
+  const profileRole   = isOwner ? "Akses Penuh" : ("Shift " + (isMalam ? "Malam 🌙" : "Siang ☀️"));
   const profileAvatar = initials(displayName) || (isOwner ? "OW" : "PR");
   const roleBadgeColor = isOwner ? "#2d6624" : "#1e40af";
   const roleBadgeBg    = isOwner ? "rgba(45,102,36,.12)" : "rgba(30,64,175,.12)";
@@ -1091,7 +1093,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "keuangan", role, displayName)
+    + buildFinanceSidebar(token, "keuangan", role, displayName, defaultShift)
     + "<div class=\"main-wrap\">"
 
     // Mobile topbar
