@@ -264,6 +264,11 @@ export function buildFinanceBottomNav(role = "owner") {
     + "function closeBnSheet(){"
     + "document.getElementById('bnSheet').classList.remove('open');"
     + "document.getElementById('bnSheetOv').classList.remove('open');}"
+    // Fallback handlers — kalau page-level script tdk define, ini yg dipakai
+    // (ex. /operasional/kategori, /menu, /monitoring/* tdk define goMembers)
+    + "if(typeof goAdmin!=='function'){window.goAdmin=function(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';};}"
+    + "if(typeof goMembers!=='function'){window.goMembers=function(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin/members';};}"
+    + "if(typeof financeLogout!=='function'){window.financeLogout=function(){if(!confirm('Keluar dari sesi keuangan?'))return;window.location.href='/operasional/logout';};}"
     + "</script>";
 }
 
