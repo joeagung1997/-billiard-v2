@@ -1008,6 +1008,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-tf-left{width:100%}"
     +   ".fin-pagination{margin:0!important;width:100%;justify-content:flex-start!important;flex-wrap:wrap;gap:5px}"
     +   ".fin-pg-btn{min-width:32px;height:32px}"
+    +   // Card tabel: extra margin bottom 140px supaya footer/pagination tdk ketutupan FAB
+    +   // (FAB di bottom:78px, height ~50px = area FAB ~128px dari bottom)
+    +   ".fin-table-card{margin-bottom:140px!important}"
     +   // Meta sub-text di row tabel: lebih rapi
     +   ".fr-desc-meta{display:flex;flex-wrap:wrap;gap:4px 8px;line-height:1.6;font-size:10.5px}"
     +   ".fin-row,.fin-tbl-head{padding:12px 14px!important}"
