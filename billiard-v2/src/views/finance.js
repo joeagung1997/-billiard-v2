@@ -570,7 +570,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       +   (isOwner
         ? "<a href=\"/operasional/analisis\" class=\"an-detail-link\">"
           + "Detail Analisis <i class=\"ti ti-arrow-right\" style=\"font-size:13px\"></i></a>"
-        : "<div class=\"an-sub\">Target " + rp(an.targets.hari) + "/hari</div>")
+        : "<div class=\"an-target-badge\"><i class=\"ti ti-target\"></i> Target <strong>" + rp(an.targets.hari) + "</strong> / hari</div>")
       + "</div>"
       + "<div class=\"an-mini-grid\">"
       +   miniCard("Hari ini",   an.hari)
@@ -964,9 +964,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-kas-note{font-size:11px;color:var(--txt3);margin-top:2px}",
     ".fin-kas-right{display:flex;align-items:center;gap:6px}",
     ".fin-kas-pfx{font-size:14px;font-weight:700;color:var(--txt2)}",
-    ".fin-kas-inp{width:150px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:9px;font-size:16px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface2);text-align:right}",
-    ".fin-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12)}",
-    ".fin-kas-inp::placeholder{font-weight:400;font-size:13px;color:var(--txt3)}",
+    ".fin-kas-inp{width:170px;padding:8px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:16px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface2);text-align:right}",
+    ".fin-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12);background:var(--surface)}",
+    ".fin-kas-inp::placeholder{font-weight:600;font-size:15px;color:var(--txt3);opacity:.55;letter-spacing:0}",
     ".fin-bayar-card{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:14px;background:var(--surface)}",
     ".fin-bayar-item{padding:14px 18px}",
     ".fin-bayar-item+.fin-bayar-item{border-left:1px solid var(--border)}",
@@ -1127,6 +1127,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".an-mini-target{font-size:11px;color:var(--txt3);font-weight:500}",
     ".an-mini-prog{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}",
     ".an-mini-prog div{height:100%;border-radius:2px;transition:width .35s ease}",
+    // Target badge utk karyawan di header status target
+    ".an-target-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(99,102,241,.12));border:1px solid rgba(168,85,247,.3);border-radius:20px;font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap}",
+    ".an-target-badge i{color:#a855f7;font-size:14px}",
+    ".an-target-badge strong{color:#a855f7;font-weight:800;font-family:var(--ff-mono);letter-spacing:.02em}",
     // Disclaimer / catatan
     ".an-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:10px;font-size:11.5px;color:var(--txt2);line-height:1.5}",
     ".an-note i{color:#f59e0b;font-size:15px;flex-shrink:0;margin-top:1px}",
@@ -1181,7 +1185,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "<div class=\"fin-kas-right\">"
     + "<span class=\"fin-kas-pfx\">Rp</span>"
-    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"Belum diisi\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
+    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"0\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
     + "</div>"
     + "</div>"
 
@@ -1687,7 +1691,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var cust=document.getElementById('tblCustomRange');if(!cust)return;"
     +   "var open=cust.style.display!=='none';"
     +   "if(open){setTblFilter('today');}else{"
-    +     // Pre-fill range default = today
     +     "var td=_today();var d=document.getElementById('tblDari');var s=document.getElementById('tblSampai');"
     +     "if(d&&!d.value)d.value=td;if(s&&!s.value)s.value=td;"
     +     "setTblFilter('custom');}}"
@@ -1700,7 +1703,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "else if(f==='custom'){"
     +     "dari=(document.getElementById('tblDari')||{}).value||'';"
     +     "sampai=(document.getElementById('tblSampai')||{}).value||'';}"
-    +   // 'all' → no date filter
     +   "var rows=document.querySelectorAll('#trxRows .fin-row');"
     +   "var visible=[];"
     +   "rows.forEach(function(r){"
@@ -1717,14 +1719,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "if(tblState.page>maxPg)tblState.page=maxPg;"
     +   "var start=(tblState.page-1)*pp;var end=start+pp;"
     +   "for(var i=start;i<end&&i<total;i++)visible[i].style.display='';"
-    +   // Update count
     +   "var cEl=document.getElementById('tblCount');"
     +   "if(cEl){var shown=Math.min(end,total)-start;"
     +     "cEl.innerHTML=(total===0?'Tidak ada':shown+' dari '+total)+' transaksi';}"
-    +   // Update empty state
     +   "var emp=document.querySelector('.empty-state');"
     +   "if(emp&&rows.length>0)emp.style.display=total===0?'flex':'none';"
-    +   // Render pagination
     +   "var pgEl=document.getElementById('tblPagi');if(!pgEl)return;"
     +   "if(total<=pp){pgEl.innerHTML='';return;}"
     +   "var html='<button class=\"fin-pg-btn\" type=\"button\" onclick=\"goTblPage(tblState.page-1)\"' + (tblState.page<=1?' disabled':'') + '>‹</button>';"
@@ -2138,7 +2137,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var m=" + safeJson(toastMsg) + ";var t=" + safeJson(toastType) + ";"
     +   "var rawMsg=" + safeJson(msg) + ";"
     +   "if(m)showToast(m,t);"
-    +   // Highlight row pertama (terbaru) saat transaksi baru disimpan
     +   "if(rawMsg==='created'){"
     +     "setTimeout(function(){"
     +       "var first=document.querySelector('#trxRows .fin-row');"
