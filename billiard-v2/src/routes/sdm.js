@@ -13,8 +13,19 @@ import {
 import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage } from "../views/sdm.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
-const SDM_PIN    = process.env.SDM_PIN    || "2222";
-const SDM_SECRET = process.env.SDM_SECRET || "warpat-sdm-key-v1";
+// Fail-loud kalau env var ga di-set (sebelumnya hardcoded '2222' & 'warpat-sdm-key-v1'
+// terexpos di public repo → siapa pun bisa fake SDM token & bypass PIN).
+function requireSdmEnv(name) {
+  const v = process.env[name];
+  if (!v || v.trim() === "") {
+    throw new Error(
+      `[SDM] Missing required env var: ${name}. Set di Railway/Vercel dashboard sebelum deploy.`
+    );
+  }
+  return v;
+}
+const SDM_PIN    = requireSdmEnv("SDM_PIN");
+const SDM_SECRET = requireSdmEnv("SDM_SECRET");
 const SDM_COOKIE = "sdm_v";
 const SDM_TTL_MS = 8 * 60 * 60 * 1000; // 8 jam
 

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+
+# Runtime / data
+*.log
+billiard-v2/log.json
+billiard-v2/public/uploads/receipts/*
+!billiard-v2/public/uploads/receipts/.gitkeep
+# Catatan: billiard-v2/db.json sengaja TIDAK di-ignore — file stub `{ "members": [] }`
+# yg ke-track sbg seed. Data asli sekarang di PostgreSQL (via utils/postgres.js).
+
+# Build artifacts
+dist/
+build/
+.next/
+.cache/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local dev tools
+.claude/worktrees/
+.claude/projects/
+
+# Archives (cegah accidental upload kayak billiard-v2.zip)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
