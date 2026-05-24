@@ -155,36 +155,249 @@ function renderWishlistTab(items) {
   `;
 }
 
-// ── Anggaran tab (preview) ──────────────────────────────────
-function renderAnggaranTab() {
+// ── Anggaran tab (FUNCTIONAL — Goal CRUD + manual deposit) ──
+const GOAL_STATUS_LABELS = {
+  active:    { lbl: "Aktif",     bg: "rgba(45,102,36,.12)",  color: "#2d6624" },
+  paused:    { lbl: "Pause",     bg: "rgba(245,158,11,.12)", color: "#d97706" },
+  completed: { lbl: "Tercapai",  bg: "rgba(34,197,94,.15)",  color: "#16a34a" },
+};
+
+const SOURCE_LABELS = {
+  laba:        "Laba Bersih",
+  pemasukan:   "Total Pemasukan",
+  billiard:    "Pemasukan Billiard",
+  warkop:      "Pemasukan Warkop",
+  nominal:     "Nominal Fixed",
+};
+
+function renderAnggaranTab(goals, items) {
+  const active   = goals.filter((g) => g.status === "active");
+  const paused   = goals.filter((g) => g.status === "paused");
+  const done     = goals.filter((g) => g.status === "completed");
+
+  const totalTarget    = goals.reduce((s, g) => s + g.targetAmount, 0);
+  const totalCollected = goals.reduce((s, g) => s + g.currentAmount, 0);
+  const overallPct = totalTarget > 0 ? Math.round((totalCollected / totalTarget) * 100) : 0;
+
+  const renderGoalCard = (g) => {
+    const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0;
+    const remaining = Math.max(0, g.targetAmount - g.currentAmount);
+    const isDone = g.status === "completed" || pct >= 100;
+    const stat = GOAL_STATUS_LABELS[g.status] || GOAL_STATUS_LABELS.active;
+    const linkedItem = g.linkedItemId ? items.find((it) => it.id === g.linkedItemId) : null;
+
+    return `
+      <div class="plan-goal-card ${isDone ? 'plan-goal-done' : ''}">
+        <div class="plan-goal-card-hdr">
+          <div class="plan-goal-card-title">
+            <span class="plan-goal-emoji">${isDone ? '🏆' : '🎯'}</span>
+            <span>${escHtml(g.nama)}</span>
+            <span class="plan-tag" style="background:${stat.bg};color:${stat.color}">${stat.lbl}</span>
+          </div>
+          <div class="plan-goal-card-actions">
+            <button type="button" class="plan-btn-icon" title="Edit" onclick="openGoalModal('${escHtml(g.id)}')"><i class="ti ti-edit"></i></button>
+            <button type="button" class="plan-btn-icon danger" title="Hapus" onclick="deleteGoal('${escHtml(g.id)}')"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+        <div class="plan-goal-card-amounts">
+          <div class="plan-goal-current">${rp(g.currentAmount)}</div>
+          <div class="plan-goal-target">/ ${rp(g.targetAmount)}</div>
+          <div class="plan-goal-pct">${pct}%</div>
+        </div>
+        <div class="plan-goal-bar"><div class="plan-goal-bar-fill" style="width:${pct}%"></div></div>
+        <div class="plan-goal-meta-grid">
+          ${g.autoPercent > 0 ? `<div class="plan-goal-meta-item"><i class="ti ti-percentage"></i> Auto ${g.autoPercent}% dari ${SOURCE_LABELS[g.source] || g.source}</div>` : ''}
+          ${g.targetDate ? `<div class="plan-goal-meta-item"><i class="ti ti-calendar"></i> Target ${escHtml(g.targetDate)}</div>` : ''}
+          ${linkedItem ? `<div class="plan-goal-meta-item"><i class="ti ti-link"></i> ${escHtml(linkedItem.nama)}</div>` : ''}
+          ${remaining > 0 && !isDone ? `<div class="plan-goal-meta-item"><i class="ti ti-coin"></i> Sisa ${rp(remaining)}</div>` : ''}
+        </div>
+        ${isDone ? '' : `
+        <div class="plan-goal-card-footer">
+          <button type="button" class="plan-goal-deposit-btn" onclick="openDepositModal('${escHtml(g.id)}')">
+            <i class="ti ti-cash-banknote"></i> Setor Dana
+          </button>
+        </div>`}
+      </div>
+    `;
+  };
+
+  if (goals.length === 0) {
+    return `
+      <div class="plan-tab-content">
+        <div class="plan-empty-hero">
+          <div class="plan-empty-illust">
+            <div class="plan-empty-icon-bg"></div>
+            <i class="ti ti-piggy-bank plan-empty-icon"></i>
+            <span class="plan-empty-sparkle plan-empty-sparkle-1">🎯</span>
+            <span class="plan-empty-sparkle plan-empty-sparkle-2">💰</span>
+            <span class="plan-empty-sparkle plan-empty-sparkle-3">🏆</span>
+          </div>
+          <div class="plan-empty-title">Belum ada goal tabungan</div>
+          <div class="plan-empty-sub">Buat goal pertama untuk menabung target ekspansi atau upgrade bisnis.<br>Pasang persentase auto-sisihkan dari laba — biar konsisten!</div>
+          <button type="button" class="btn-primary plan-empty-cta" onclick="openGoalModal('')">
+            <i class="ti ti-target"></i> Buat Goal Pertama
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="plan-tab-content">
-      <div class="plan-soon-card">
-        <div class="plan-soon-hdr">
-          <div class="plan-soon-ic"><i class="ti ti-piggy-bank"></i></div>
-          <div>
-            <div class="plan-soon-title">Anggaran & Tabungan Goal</div>
-            <div class="plan-soon-sub">Alokasi otomatis dari laba harian — segera hadir</div>
-          </div>
-          <span class="plan-soon-badge">Segera</span>
+      <!-- Overview card -->
+      <div class="plan-goals-overview">
+        <div class="plan-goals-ov-stat">
+          <span class="plan-goals-ov-lbl">Total Goal</span>
+          <b>${goals.length} <small>(${active.length} aktif)</small></b>
         </div>
-        <div class="plan-soon-preview">
-          <div class="plan-goal-preview">
-            <div class="plan-goal-title">🎯 Contoh: Tambah Meja Billiard ke-4</div>
-            <div class="plan-goal-amounts">Rp 3.200.000 / Rp 12.000.000 <span>(27%)</span></div>
-            <div class="plan-goal-bar"><div class="plan-goal-bar-fill" style="width:27%"></div></div>
-            <div class="plan-goal-meta">
-              <span>⚙️ Auto-sisihkan 15% dari laba harian</span>
-              <span>📅 Estimasi: Sep 2026</span>
+        <div class="plan-goals-ov-stat">
+          <span class="plan-goals-ov-lbl">Sudah Terkumpul</span>
+          <b class="in">${rp(totalCollected)}</b>
+        </div>
+        <div class="plan-goals-ov-stat">
+          <span class="plan-goals-ov-lbl">Total Target</span>
+          <b>${rp(totalTarget)}</b>
+        </div>
+        <div class="plan-goals-ov-stat">
+          <span class="plan-goals-ov-lbl">Progress Overall</span>
+          <b class="net">${overallPct}%</b>
+        </div>
+      </div>
+
+      <div class="plan-goals-toolbar">
+        <h3 class="plan-section-title">🎯 Goal Aktif (${active.length})</h3>
+        <button type="button" class="btn-primary plan-toolbar-btn" onclick="openGoalModal('')">
+          <i class="ti ti-plus"></i> Buat Goal Baru
+        </button>
+      </div>
+
+      ${active.length > 0
+        ? `<div class="plan-goals-grid">${active.map(renderGoalCard).join('')}</div>`
+        : `<div class="plan-empty" style="padding:30px 20px"><i class="ti ti-flag"></i><div class="plan-empty-title" style="font-size:14px">Belum ada goal aktif</div></div>`}
+
+      ${paused.length > 0 ? `
+        <h3 class="plan-section-title" style="margin-top:24px">⏸️ Pause (${paused.length})</h3>
+        <div class="plan-goals-grid">${paused.map(renderGoalCard).join('')}</div>
+      ` : ''}
+
+      ${done.length > 0 ? `
+        <h3 class="plan-section-title" style="margin-top:24px">🏆 Tercapai (${done.length})</h3>
+        <div class="plan-goals-grid">${done.map(renderGoalCard).join('')}</div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// Goal modal HTML — diappend ke body, dipakai utk add/edit
+function renderGoalModal(items) {
+  const itemOpts = items
+    .filter((it) => it.status !== "cancelled" && it.status !== "done")
+    .map((it) => `<option value="${escHtml(it.id)}">${escHtml(it.nama)}</option>`)
+    .join("");
+  return `
+    <div class="overlay" id="goalModalOv" onclick="if(event.target===this)closeGoalModal()">
+      <div class="over-modal plan-modal">
+        <div class="plan-modal-hdr">
+          <div>
+            <h3 class="plan-modal-title" id="goalModalTitle">Buat Goal Baru</h3>
+            <p class="plan-modal-sub">Target tabungan untuk upgrade / ekspansi bisnis</p>
+          </div>
+          <button type="button" class="plan-modal-close" onclick="closeGoalModal()"><i class="ti ti-x"></i></button>
+        </div>
+        <form id="goalForm" class="plan-modal-form" onsubmit="submitGoalForm(event)">
+          <input type="hidden" id="goalFId" name="id">
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Nama Goal <span class="req">*</span></label>
+            <input type="text" id="goalFNama" name="nama" class="plan-form-inp" required maxlength="200" placeholder="contoh: Tambah meja billiard ke-4">
+          </div>
+          <div class="plan-form-grid">
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Target Tabungan (Rp) <span class="req">*</span></label>
+              <input type="text" inputmode="numeric" id="goalFTarget" name="target_amount" class="plan-form-inp" required placeholder="0" oninput="planFmtNum(this)">
+            </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Auto-Sisihkan (%)</label>
+              <input type="number" id="goalFAuto" name="auto_percent" class="plan-form-inp" min="0" max="100" placeholder="0" value="0">
             </div>
           </div>
-          <div class="plan-soon-features">
-            <div class="plan-soon-feat"><i class="ti ti-target"></i> Multi-goal: nabung beberapa item paralel</div>
-            <div class="plan-soon-feat"><i class="ti ti-percentage"></i> Sumber dana: % laba / % billiard / nominal fix</div>
-            <div class="plan-soon-feat"><i class="ti ti-lock"></i> Lock fund — terpisah dari saldo bebas</div>
-            <div class="plan-soon-feat"><i class="ti ti-bell"></i> Reminder progress bulanan</div>
+          <div class="plan-form-grid">
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Sumber Dana</label>
+              <select id="goalFSource" name="source" class="plan-form-inp">
+                <option value="laba">💰 Laba Bersih</option>
+                <option value="pemasukan">📈 Total Pemasukan</option>
+                <option value="billiard">🎱 Pemasukan Billiard</option>
+                <option value="warkop">☕ Pemasukan Warkop</option>
+                <option value="nominal">📌 Nominal Fixed</option>
+              </select>
+            </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Status</label>
+              <select id="goalFStatus" name="status" class="plan-form-inp">
+                <option value="active">✅ Aktif</option>
+                <option value="paused">⏸️ Pause</option>
+                <option value="completed">🏆 Tercapai</option>
+              </select>
+            </div>
           </div>
+          <div class="plan-form-grid">
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Target Tanggal <span class="opt">opsional</span></label>
+              <input type="date" id="goalFDate" name="target_date" class="plan-form-inp">
+            </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Link ke Wishlist <span class="opt">opsional</span></label>
+              <select id="goalFLinked" name="linked_item_id" class="plan-form-inp">
+                <option value="">— Tidak link —</option>
+                ${itemOpts}
+              </select>
+            </div>
+          </div>
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Catatan <span class="opt">opsional</span></label>
+            <textarea id="goalFCatatan" name="catatan" class="plan-form-inp" rows="2" maxlength="500"></textarea>
+          </div>
+          <div class="plan-form-actions">
+            <button type="button" class="btn-outline" onclick="closeGoalModal()">Batal</button>
+            <button type="submit" class="btn-primary"><i class="ti ti-device-floppy"></i> Simpan Goal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Deposit modal -->
+    <div class="overlay" id="depositModalOv" onclick="if(event.target===this)closeDepositModal()">
+      <div class="over-modal plan-modal" style="max-width:440px">
+        <div class="plan-modal-hdr">
+          <div>
+            <h3 class="plan-modal-title">💰 Setor Dana ke Goal</h3>
+            <p class="plan-modal-sub" id="depositGoalName">—</p>
+          </div>
+          <button type="button" class="plan-modal-close" onclick="closeDepositModal()"><i class="ti ti-x"></i></button>
         </div>
+        <form id="depositForm" class="plan-modal-form" onsubmit="submitDepositForm(event)">
+          <input type="hidden" id="depositFId" name="id">
+          <div class="plan-deposit-info" id="depositInfo">
+            <div class="plan-deposit-row"><span>Terkumpul</span><b id="depositCurrent">Rp 0</b></div>
+            <div class="plan-deposit-row"><span>Target</span><b id="depositTarget">Rp 0</b></div>
+            <div class="plan-deposit-row"><span>Sisa</span><b id="depositRemain" class="out">Rp 0</b></div>
+          </div>
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Jumlah Setor (Rp) <span class="req">*</span></label>
+            <input type="text" inputmode="numeric" id="depositFAmount" name="amount" class="plan-form-inp" required placeholder="0" oninput="planFmtNum(this)">
+          </div>
+          <div class="plan-deposit-quick">
+            <span class="plan-deposit-quick-lbl">Cepat:</span>
+            <button type="button" onclick="setDepositAmount(100000)">+Rp 100k</button>
+            <button type="button" onclick="setDepositAmount(500000)">+Rp 500k</button>
+            <button type="button" onclick="setDepositAmount(1000000)">+Rp 1jt</button>
+            <button type="button" onclick="setDepositAmount('sisa')">Lunasi Sisa</button>
+          </div>
+          <div class="plan-form-actions">
+            <button type="button" class="btn-outline" onclick="closeDepositModal()">Batal</button>
+            <button type="submit" class="btn-primary"><i class="ti ti-cash-banknote"></i> Setor</button>
+          </div>
+        </form>
       </div>
     </div>
   `;
@@ -295,51 +508,70 @@ function renderTimelineTab(items) {
   `;
 }
 
-// ── Simulasi tab (preview) ──────────────────────────────────
-function renderSimulasiTab() {
+// ── Simulasi tab (FUNCTIONAL — interactive ROI calculator) ──
+function renderSimulasiTab(items) {
+  // Wishlist items dgn estimasi & roi untuk auto-fill
+  const itemOpts = items
+    .filter((it) => it.estimasi > 0 && it.status !== "cancelled" && it.status !== "done")
+    .map((it) => `<option value="${escHtml(it.id)}" data-estimasi="${it.estimasi}" data-roi="${it.roiEstimate || 0}" data-nama="${escHtml(it.nama)}">${escHtml(it.nama)} — ${rp(it.estimasi)}</option>`)
+    .join("");
+
   return `
     <div class="plan-tab-content">
-      <div class="plan-soon-card">
-        <div class="plan-soon-hdr">
-          <div class="plan-soon-ic"><i class="ti ti-calculator"></i></div>
-          <div>
-            <div class="plan-soon-title">Simulasi Dampak (ROI Calculator)</div>
-            <div class="plan-soon-sub">Hitung BEP, ROI, dan skenario sebelum eksekusi. Segera hadir.</div>
+      <div class="plan-sim-wrap">
+        <!-- Input panel -->
+        <div class="plan-sim-input-card">
+          <div class="plan-sim-card-hdr">
+            <div class="plan-sim-card-ic"><i class="ti ti-calculator"></i></div>
+            <div>
+              <h3 class="plan-sim-card-title">🔮 ROI / Break-Even Calculator</h3>
+              <p class="plan-sim-card-sub">Input data investasi & lihat 3 skenario hasil otomatis</p>
+            </div>
           </div>
-          <span class="plan-soon-badge">Segera</span>
+          <form class="plan-sim-form" onsubmit="event.preventDefault();calcSimulasi()">
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Nama Investasi</label>
+              <input type="text" id="simNama" class="plan-form-inp" placeholder="contoh: Tambah meja billiard ke-4">
+            </div>
+            ${itemOpts ? `
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Auto-fill dari Wishlist <span class="opt">opsional</span></label>
+              <select id="simFromItem" class="plan-form-inp" onchange="autoFillFromItem()">
+                <option value="">— Pilih item utk auto-fill —</option>
+                ${itemOpts}
+              </select>
+            </div>
+            ` : ''}
+            <div class="plan-form-grid">
+              <div class="plan-form-row">
+                <label class="plan-form-lbl">Modal Awal (Rp) <span class="req">*</span></label>
+                <input type="text" inputmode="numeric" id="simModal" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this);calcSimulasi()">
+              </div>
+              <div class="plan-form-row">
+                <label class="plan-form-lbl">Pendapatan / Bulan (Rp) <span class="req">*</span></label>
+                <input type="text" inputmode="numeric" id="simRevenue" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this);calcSimulasi()">
+              </div>
+            </div>
+            <div class="plan-form-grid">
+              <div class="plan-form-row">
+                <label class="plan-form-lbl">Biaya Rutin / Bulan (Rp)</label>
+                <input type="text" inputmode="numeric" id="simCost" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this);calcSimulasi()">
+              </div>
+              <div class="plan-form-row">
+                <label class="plan-form-lbl">Pajak / Fee (%) <span class="opt">opsional</span></label>
+                <input type="number" id="simTax" class="plan-form-inp" min="0" max="100" placeholder="0" value="0" oninput="calcSimulasi()">
+              </div>
+            </div>
+            <button type="button" class="plan-sim-reset" onclick="resetSimulasi()"><i class="ti ti-refresh"></i> Reset</button>
+          </form>
         </div>
-        <div class="plan-soon-preview">
-          <div class="plan-sim-preview">
-            <div class="plan-sim-title">🔮 Contoh: Tambah Meja Billiard ke-4</div>
-            <div class="plan-sim-row">
-              <div class="plan-sim-col">
-                <div class="plan-sim-lbl">💸 Investasi</div>
-                <div class="plan-sim-val out">Rp 12.500.000</div>
-              </div>
-              <div class="plan-sim-col">
-                <div class="plan-sim-lbl">📈 Pendapatan/Bulan</div>
-                <div class="plan-sim-val in">Rp 4.500.000</div>
-              </div>
-              <div class="plan-sim-col">
-                <div class="plan-sim-lbl">⏱️ Break-Even</div>
-                <div class="plan-sim-val net">~3 bulan</div>
-              </div>
-              <div class="plan-sim-col">
-                <div class="plan-sim-lbl">🎯 ROI Tahun 1</div>
-                <div class="plan-sim-val net">303%</div>
-              </div>
-            </div>
-            <div class="plan-sim-scenarios">
-              <span class="plan-sim-scen good">🟢 Best (8jam/hari): BEP 2.2 bln</span>
-              <span class="plan-sim-scen mid">🟡 Normal (6jam): BEP 3 bln</span>
-              <span class="plan-sim-scen bad">🔴 Worst (3jam): BEP 6 bln</span>
-            </div>
-            <div class="plan-sim-rec">💡 Rekomendasi: Layak. ROI tinggi, BEP cepat.</div>
-          </div>
-          <div class="plan-soon-features">
-            <div class="plan-soon-feat"><i class="ti ti-chart-line"></i> Best/Normal/Worst scenario</div>
-            <div class="plan-soon-feat"><i class="ti ti-coin"></i> Hitung Net = Pendapatan − Biaya rutin</div>
-            <div class="plan-soon-feat"><i class="ti ti-bulb"></i> Auto-rekomendasi berdasarkan ROI</div>
+
+        <!-- Result panel -->
+        <div class="plan-sim-result-card" id="simResultCard">
+          <div class="plan-sim-empty">
+            <i class="ti ti-chart-arcs"></i>
+            <div class="plan-sim-empty-title">Hasil simulasi muncul di sini</div>
+            <div class="plan-sim-empty-sub">Isi <b>Modal Awal</b> &amp; <b>Pendapatan/Bulan</b> minimal untuk lihat hasil.</div>
           </div>
         </div>
       </div>
@@ -433,12 +665,13 @@ function renderItemModal() {
 }
 
 // ── Main page ───────────────────────────────────────────────
-export function planningPage({ items = [], token = "", role = "owner", displayName = "" } = {}) {
+export function planningPage({ items = [], goals = [], token = "", role = "owner", displayName = "" } = {}) {
   const isOwner = role === "owner";
   const itemsJson = JSON.stringify(items).replace(/</g, "\\u003c");
+  const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=57\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=58\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -483,26 +716,28 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
     // Tabs nav
     + "<div class=\"plan-tabs-nav\">"
     + "<button type=\"button\" class=\"plan-tab-btn active\" data-tab=\"wishlist\" onclick=\"switchPlanTab('wishlist')\"><i class=\"ti ti-clipboard-list\"></i> Wishlist <span class=\"plan-tab-count\">" + items.length + "</span></button>"
-    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"anggaran\" onclick=\"switchPlanTab('anggaran')\"><i class=\"ti ti-piggy-bank\"></i> Anggaran <span class=\"plan-soon-pill\">Segera</span></button>"
+    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"anggaran\" onclick=\"switchPlanTab('anggaran')\"><i class=\"ti ti-piggy-bank\"></i> Anggaran" + (goals.length > 0 ? " <span class=\"plan-tab-count\">" + goals.length + "</span>" : "") + "</button>"
     + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"timeline\" onclick=\"switchPlanTab('timeline')\"><i class=\"ti ti-timeline-event\"></i> Timeline" + (items.filter((it) => it.targetDate && it.status !== "cancelled").length > 0 ? " <span class=\"plan-tab-count\">" + items.filter((it) => it.targetDate && it.status !== "cancelled").length + "</span>" : "") + "</button>"
-    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"simulasi\" onclick=\"switchPlanTab('simulasi')\"><i class=\"ti ti-calculator\"></i> Simulasi <span class=\"plan-soon-pill\">Segera</span></button>"
+    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"simulasi\" onclick=\"switchPlanTab('simulasi')\"><i class=\"ti ti-calculator\"></i> Simulasi</button>"
     + "</div>"
 
     // Tab contents
     + "<div class=\"plan-tab-wrap\" data-tab-content=\"wishlist\">" + renderWishlistTab(items) + "</div>"
-    + "<div class=\"plan-tab-wrap\" data-tab-content=\"anggaran\" style=\"display:none\">" + renderAnggaranTab() + "</div>"
+    + "<div class=\"plan-tab-wrap\" data-tab-content=\"anggaran\" style=\"display:none\">" + renderAnggaranTab(goals, items) + "</div>"
     + "<div class=\"plan-tab-wrap\" data-tab-content=\"timeline\" style=\"display:none\">" + renderTimelineTab(items) + "</div>"
-    + "<div class=\"plan-tab-wrap\" data-tab-content=\"simulasi\" style=\"display:none\">" + renderSimulasiTab() + "</div>"
+    + "<div class=\"plan-tab-wrap\" data-tab-content=\"simulasi\" style=\"display:none\">" + renderSimulasiTab(items) + "</div>"
 
     + "</div>" // .page
     + "</div>" // .main-wrap
     + "</div>" // .layout
 
-    // Modal
+    // Modals
     + renderItemModal()
+    + renderGoalModal(items)
 
     + "<script>"
     + "const PLAN_ITEMS=" + itemsJson + ";"
+    + "const PLAN_GOALS=" + goalsJson + ";"
     + "function switchPlanTab(t){"
     +   "document.querySelectorAll('.plan-tab-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-tab')===t);});"
     +   "document.querySelectorAll('.plan-tab-wrap').forEach(function(d){d.style.display=d.getAttribute('data-tab-content')===t?'':'none';});"
@@ -567,6 +802,146 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
     +   "fetch('/operasional/planning/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)})"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal hapus');});"
     + "}"
+
+    // ── Goal modal: add / edit ────────────────────────────
+    + "function openGoalModal(id){"
+    +   "var ov=document.getElementById('goalModalOv');"
+    +   "document.getElementById('goalForm').reset();"
+    +   "document.getElementById('goalFId').value='';"
+    +   "document.getElementById('goalModalTitle').textContent='Buat Goal Baru';"
+    +   "document.getElementById('goalFAuto').value='0';"
+    +   "if(id){"
+    +     "var g=PLAN_GOALS.find(function(x){return x.id===id;});"
+    +     "if(g){"
+    +       "document.getElementById('goalModalTitle').textContent='Edit Goal';"
+    +       "document.getElementById('goalFId').value=g.id;"
+    +       "document.getElementById('goalFNama').value=g.nama||'';"
+    +       "document.getElementById('goalFTarget').value=g.targetAmount?_planRpFmt(g.targetAmount):'';"
+    +       "document.getElementById('goalFAuto').value=g.autoPercent||0;"
+    +       "document.getElementById('goalFSource').value=g.source||'laba';"
+    +       "document.getElementById('goalFStatus').value=g.status||'active';"
+    +       "document.getElementById('goalFDate').value=g.targetDate||'';"
+    +       "document.getElementById('goalFLinked').value=g.linkedItemId||'';"
+    +       "document.getElementById('goalFCatatan').value=g.catatan||'';"
+    +     "}"
+    +   "}"
+    +   "ov.classList.add('open');"
+    +   "setTimeout(function(){document.getElementById('goalFNama').focus();},150);"
+    + "}"
+    + "function closeGoalModal(){document.getElementById('goalModalOv').classList.remove('open');}"
+    + "function submitGoalForm(e){"
+    +   "e.preventDefault();"
+    +   "var fd=new FormData(document.getElementById('goalForm'));"
+    +   "var data={id:fd.get('id'),nama:fd.get('nama'),"
+    +     "target_amount:(fd.get('target_amount')||'').replace(/\\./g,''),"
+    +     "auto_percent:fd.get('auto_percent'),source:fd.get('source'),"
+    +     "status:fd.get('status'),target_date:fd.get('target_date'),"
+    +     "linked_item_id:fd.get('linked_item_id'),catatan:fd.get('catatan')};"
+    +   "var url=data.id?'/operasional/planning/goal/edit':'/operasional/planning/goal/add';"
+    +   "fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)})"
+    +     ".then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})"
+    +     ".then(function(res){if(res.ok)location.reload();else alert('Gagal: '+(res.data.error||'unknown'));});"
+    + "}"
+    + "function deleteGoal(id){"
+    +   "if(!confirm('Hapus goal ini permanen?'))return;"
+    +   "fetch('/operasional/planning/goal/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal hapus');});"
+    + "}"
+
+    // ── Deposit modal ────────────────────────────────────
+    + "var _currentDepositGoal=null;"
+    + "function openDepositModal(id){"
+    +   "var g=PLAN_GOALS.find(function(x){return x.id===id;});if(!g)return;"
+    +   "_currentDepositGoal=g;"
+    +   "document.getElementById('depositFId').value=g.id;"
+    +   "document.getElementById('depositFAmount').value='';"
+    +   "document.getElementById('depositGoalName').textContent='Goal: '+g.nama;"
+    +   "document.getElementById('depositCurrent').textContent=_rpDisp(g.currentAmount);"
+    +   "document.getElementById('depositTarget').textContent=_rpDisp(g.targetAmount);"
+    +   "document.getElementById('depositRemain').textContent=_rpDisp(Math.max(0,g.targetAmount-g.currentAmount));"
+    +   "document.getElementById('depositModalOv').classList.add('open');"
+    +   "setTimeout(function(){document.getElementById('depositFAmount').focus();},150);"
+    + "}"
+    + "function closeDepositModal(){document.getElementById('depositModalOv').classList.remove('open');_currentDepositGoal=null;}"
+    + "function _rpDisp(n){return 'Rp '+_planRpFmt(n||0);}"
+    + "function setDepositAmount(v){"
+    +   "var inp=document.getElementById('depositFAmount');"
+    +   "if(v==='sisa'&&_currentDepositGoal){"
+    +     "var rem=Math.max(0,_currentDepositGoal.targetAmount-_currentDepositGoal.currentAmount);"
+    +     "inp.value=rem?_planRpFmt(rem):'';"
+    +   "}else{inp.value=_planRpFmt(v);}"
+    + "}"
+    + "function submitDepositForm(e){"
+    +   "e.preventDefault();"
+    +   "var id=document.getElementById('depositFId').value;"
+    +   "var amount=(document.getElementById('depositFAmount').value||'').replace(/\\./g,'');"
+    +   "if(!amount||parseInt(amount)<=0){alert('Jumlah setor harus > 0');return;}"
+    +   "fetch('/operasional/planning/goal/deposit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({id:id,amount:amount})})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal setor');});"
+    + "}"
+
+    // ── Simulasi ROI calculator ───────────────────────────
+    + "function autoFillFromItem(){"
+    +   "var sel=document.getElementById('simFromItem');var opt=sel.options[sel.selectedIndex];"
+    +   "if(!opt||!opt.value)return;"
+    +   "document.getElementById('simNama').value=opt.dataset.nama||'';"
+    +   "document.getElementById('simModal').value=opt.dataset.estimasi>0?_planRpFmt(opt.dataset.estimasi):'';"
+    +   "document.getElementById('simRevenue').value=opt.dataset.roi>0?_planRpFmt(opt.dataset.roi):'';"
+    +   "calcSimulasi();"
+    + "}"
+    + "function resetSimulasi(){"
+    +   "['simNama','simModal','simRevenue','simCost'].forEach(function(id){document.getElementById(id).value='';});"
+    +   "document.getElementById('simTax').value='0';"
+    +   "var s=document.getElementById('simFromItem');if(s)s.value='';"
+    +   "calcSimulasi();"
+    + "}"
+    + "function calcSimulasi(){"
+    +   "var modal=parseInt((document.getElementById('simModal').value||'').replace(/\\./g,''))||0;"
+    +   "var revenue=parseInt((document.getElementById('simRevenue').value||'').replace(/\\./g,''))||0;"
+    +   "var cost=parseInt((document.getElementById('simCost').value||'').replace(/\\./g,''))||0;"
+    +   "var tax=parseFloat(document.getElementById('simTax').value)||0;"
+    +   "var resCard=document.getElementById('simResultCard');"
+    +   "if(modal<=0||revenue<=0){"
+    +     "resCard.innerHTML='<div class=\"plan-sim-empty\"><i class=\"ti ti-chart-arcs\"></i><div class=\"plan-sim-empty-title\">Hasil simulasi muncul di sini</div><div class=\"plan-sim-empty-sub\">Isi <b>Modal Awal</b> &amp; <b>Pendapatan/Bulan</b> minimal untuk lihat hasil.</div></div>';"
+    +     "return;"
+    +   "}"
+    +   "var scenarios=[{key:'best',label:'🟢 Best Case',sub:'120% dari estimasi',mult:1.2,colorCls:'good'},"
+    +     "{key:'normal',label:'🟡 Normal',sub:'Sesuai estimasi',mult:1.0,colorCls:'mid'},"
+    +     "{key:'worst',label:'🔴 Worst Case',sub:'50% dari estimasi',mult:0.5,colorCls:'bad'}];"
+    +   "var html='<div class=\"plan-sim-result-hdr\"><h3>📊 Hasil Simulasi</h3>"
+    +     "<div class=\"plan-sim-result-sub\">Modal '+_rpDisp(modal)+' &middot; Net/bln estimasi '+_rpDisp((revenue-cost)-((revenue-cost)*tax/100))+'</div></div>';"
+    +   "html+='<div class=\"plan-sim-cards\">';"
+    +   "var normalBep=0,normalRoi=0;"
+    +   "scenarios.forEach(function(s){"
+    +     "var rev=Math.round(revenue*s.mult);"
+    +     "var grossNet=rev-cost;"
+    +     "var taxAmt=grossNet>0?Math.round(grossNet*tax/100):0;"
+    +     "var net=grossNet-taxAmt;"
+    +     "var bep=net>0?(modal/net):0;"
+    +     "var bepStr=net>0?(bep<12?bep.toFixed(1)+' bln':(bep/12).toFixed(1)+' thn'):'~';"
+    +     "var roi=net>0?((net*12-modal)/modal*100):(net*12-modal)/modal*100;"
+    +     "var roiStr=isFinite(roi)?roi.toFixed(0)+'%':'~';"
+    +     "if(s.key==='normal'){normalBep=bep;normalRoi=roi;}"
+    +     "html+='<div class=\"plan-sim-scen-card '+s.colorCls+'\">"
+    +       "<div class=\"plan-sim-scen-hdr\">'+s.label+'<small>'+s.sub+'</small></div>"
+    +       "<div class=\"plan-sim-scen-row\"><span>Pendapatan</span><b>'+_rpDisp(rev)+'</b></div>"
+    +       "<div class=\"plan-sim-scen-row\"><span>Net/bln</span><b class=\"'+(net>=0?'in':'out')+'\">'+_rpDisp(net)+'</b></div>"
+    +       "<div class=\"plan-sim-scen-divider\"></div>"
+    +       "<div class=\"plan-sim-scen-big\"><span>Break-Even</span><b>'+bepStr+'</b></div>"
+    +       "<div class=\"plan-sim-scen-big\"><span>ROI Tahun 1</span><b class=\"'+(roi>=0?'in':'out')+'\">'+roiStr+'</b></div>"
+    +     "</div>';"
+    +   "});"
+    +   "html+='</div>';"
+    +   // Auto-recommendation
+    +   "var rec='';var recCls='neutral';"
+    +   "if(normalBep===0){rec='⚠️ Rugi — Pendapatan ga cukup nutupin biaya rutin. Reconsider.';recCls='bad';}"
+    +   "else if(normalBep<=6&&normalRoi>=100){rec='✅ Sangat Layak — BEP cepat ('+normalBep.toFixed(1)+' bln) dan ROI tahun 1 tinggi ('+normalRoi.toFixed(0)+'%). Rekomendasi: <b>EKSEKUSI</b>.';recCls='good';}"
+    +   "else if(normalBep<=12){rec='👍 Layak — BEP '+normalBep.toFixed(1)+' bln, ROI tahun 1 '+normalRoi.toFixed(0)+'%. Perhitungkan worst case sebelum eksekusi.';recCls='mid';}"
+    +   "else{rec='⚠️ Hati-hati — BEP lama ('+normalBep.toFixed(1)+' bln). Cari opportunity dgn ROI lebih cepat atau review modal.';recCls='bad';}"
+    +   "html+='<div class=\"plan-sim-rec plan-sim-rec-'+recCls+'\">💡 <b>Rekomendasi:</b> '+rec+'</div>';"
+    +   "resCard.innerHTML=html;"
+    + "}"
+
     + "</script>"
 
     + "</body></html>";

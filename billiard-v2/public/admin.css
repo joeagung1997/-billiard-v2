@@ -2440,46 +2440,164 @@ textarea.plan-form-inp { resize:vertical; font-family:var(--ff); }
   .plan-soon-preview { padding:18px; }
 }
 
-/* Goal preview */
-.plan-goal-preview { padding:18px; background:var(--surface2); border-radius:10px;
-  border:1px solid var(--border); }
-.plan-goal-title { font-size:14px; font-weight:700; color:var(--txt); margin-bottom:8px; }
-.plan-goal-amounts { font-size:18px; font-weight:800; color:var(--txt); font-family:var(--ff-mono); margin-bottom:10px; }
-.plan-goal-amounts span { font-size:12px; color:var(--accent); font-weight:700; }
-.plan-goal-bar { height:8px; background:rgba(0,0,0,0.05); border-radius:4px; overflow:hidden; margin-bottom:10px; }
-.plan-goal-bar-fill { height:100%; background:linear-gradient(90deg,#3a7d2c,#22c55e); border-radius:4px; transition:width .3s; }
-.plan-goal-meta { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
-  font-size:11.5px; color:var(--txt3); }
+/* ── Anggaran: Goal cards & overview ────────────────────── */
+.plan-section-title { font-size:15px; font-weight:700; color:var(--txt); margin:0 0 14px;
+  display:flex; align-items:center; gap:8px; }
+.plan-goals-overview { display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
+  padding:18px 20px; background:linear-gradient(135deg,rgba(45,102,36,.06),rgba(34,197,94,.04));
+  border:1px solid var(--border); border-radius:14px; margin-bottom:20px; }
+.plan-goals-ov-stat { display:flex; flex-direction:column; gap:6px; }
+.plan-goals-ov-lbl { font-size:10.5px; color:var(--txt3); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; }
+.plan-goals-ov-stat b { font-size:18px; font-weight:800; color:var(--txt);
+  font-family:var(--ff-mono); }
+.plan-goals-ov-stat b.in  { color:#16a34a; }
+.plan-goals-ov-stat b.net { color:#2563eb; }
+.plan-goals-ov-stat b small { font-size:11px; color:var(--txt3); font-weight:500;
+  font-family:var(--ff-base); margin-left:4px; }
 
-/* Gantt preview */
-.plan-gantt-preview { padding:16px; background:var(--surface2); border-radius:10px;
-  border:1px solid var(--border); overflow-x:auto; }
-.plan-gantt-hdr, .plan-gantt-row { display:grid;
-  grid-template-columns:130px repeat(6, 1fr); gap:6px; min-width:520px;
-  font-size:11px; color:var(--txt3); padding:6px 0; }
-.plan-gantt-hdr { font-weight:700; border-bottom:1px dashed var(--border); margin-bottom:6px; }
-.plan-gantt-lbl { font-size:12px; color:var(--txt); font-weight:600; align-self:center; }
-.plan-gantt-row { align-items:center; }
-.plan-gantt-bar { height:14px; border-radius:4px; opacity:.85; }
+.plan-goals-toolbar { display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.plan-goals-toolbar .plan-section-title { margin:0; }
+.plan-toolbar-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+  font-size:12.5px; font-weight:600; border-radius:8px; cursor:pointer; }
 
-/* Simulasi preview */
-.plan-sim-preview { padding:18px; background:var(--surface2); border-radius:10px; border:1px solid var(--border); }
-.plan-sim-title { font-size:14px; font-weight:700; color:var(--txt); margin-bottom:14px; }
-.plan-sim-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
-.plan-sim-col { display:flex; flex-direction:column; gap:4px; padding:10px 12px;
-  background:var(--surface); border-radius:8px; }
-.plan-sim-lbl { font-size:10.5px; color:var(--txt3); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
-.plan-sim-val { font-size:15px; font-weight:800; font-family:var(--ff-mono); }
-.plan-sim-val.in { color:#16a34a; }
-.plan-sim-val.out { color:#dc2626; }
-.plan-sim-val.net { color:#2563eb; }
-.plan-sim-scenarios { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.plan-sim-scen { font-size:11px; padding:5px 10px; border-radius:6px; font-weight:600; }
-.plan-sim-scen.good { background:rgba(34,197,94,.12); color:#16a34a; }
-.plan-sim-scen.mid  { background:rgba(245,158,11,.12); color:#d97706; }
-.plan-sim-scen.bad  { background:rgba(239,68,68,.12); color:#dc2626; }
-.plan-sim-rec { padding:10px 14px; background:rgba(34,197,94,.08); border-left:3px solid #22c55e;
-  border-radius:6px; font-size:12.5px; color:#16a34a; font-weight:600; }
+.plan-goals-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:14px; margin-bottom:18px; }
+.plan-goal-card { padding:18px 20px; background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; display:flex; flex-direction:column; gap:12px;
+  transition:box-shadow .2s, transform .2s; }
+.plan-goal-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.06); transform:translateY(-1px); }
+.plan-goal-done { background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));
+  border-color:rgba(34,197,94,.3); }
+.plan-goal-card-hdr { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.plan-goal-card-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font-size:14.5px; font-weight:700; color:var(--txt); flex:1; min-width:0; }
+.plan-goal-emoji { font-size:18px; }
+.plan-goal-card-actions { display:flex; gap:4px; flex-shrink:0; }
+.plan-goal-card-amounts { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+.plan-goal-current { font-size:22px; font-weight:800; color:var(--txt);
+  font-family:var(--ff-mono); }
+.plan-goal-target { font-size:13px; color:var(--txt3); font-family:var(--ff-mono); }
+.plan-goal-pct { margin-left:auto; padding:3px 10px; background:rgba(45,102,36,.12);
+  color:#2d6624; font-size:12px; font-weight:800; border-radius:6px;
+  font-family:var(--ff-mono); }
+.plan-goal-done .plan-goal-pct { background:rgba(34,197,94,.18); color:#16a34a; }
+.plan-goal-bar { height:10px; background:rgba(0,0,0,.05); border-radius:6px; overflow:hidden; }
+.plan-goal-bar-fill { height:100%; background:linear-gradient(90deg,#3a7d2c,#22c55e);
+  border-radius:6px; transition:width .4s ease; }
+.plan-goal-done .plan-goal-bar-fill { background:linear-gradient(90deg,#16a34a,#4ade80); }
+.plan-goal-meta-grid { display:flex; flex-wrap:wrap; gap:6px 14px; }
+.plan-goal-meta-item { display:inline-flex; align-items:center; gap:5px;
+  font-size:11.5px; color:var(--txt2); }
+.plan-goal-meta-item i { font-size:14px; color:var(--txt3); }
+.plan-goal-card-footer { margin-top:auto; padding-top:4px; }
+.plan-goal-deposit-btn { width:100%; display:inline-flex; align-items:center;
+  justify-content:center; gap:6px; padding:9px 14px; background:rgba(45,102,36,.08);
+  color:#2d6624; border:1px solid rgba(45,102,36,.2); border-radius:8px;
+  font-size:12.5px; font-weight:600; cursor:pointer; transition:background .15s; }
+.plan-goal-deposit-btn:hover { background:rgba(45,102,36,.15); }
+.plan-goal-deposit-btn i { font-size:14px; }
+
+/* Deposit modal info row */
+.plan-deposit-info { display:flex; flex-direction:column; gap:6px; padding:12px 14px;
+  background:var(--surface2); border-radius:9px; margin-bottom:14px; }
+.plan-deposit-row { display:flex; justify-content:space-between; align-items:center;
+  font-size:12.5px; color:var(--txt2); }
+.plan-deposit-row b { font-size:13px; font-weight:700; color:var(--txt);
+  font-family:var(--ff-mono); }
+.plan-deposit-row b.out { color:#dc2626; }
+.plan-deposit-quick { display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+  margin:-4px 0 12px; }
+.plan-deposit-quick-lbl { font-size:11.5px; color:var(--txt3); font-weight:600;
+  margin-right:4px; }
+.plan-deposit-quick button { font-size:11px; padding:5px 10px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:14px; color:var(--txt2); cursor:pointer;
+  font-family:inherit; font-weight:600; transition:background .15s, border-color .15s; }
+.plan-deposit-quick button:hover { background:rgba(45,102,36,.08); border-color:#3a7d2c;
+  color:#2d6624; }
+
+/* ── Simulasi: 2-col input + result ─────────────────────── */
+.plan-sim-wrap { display:grid; grid-template-columns:1fr 1.2fr; gap:16px; align-items:stretch; }
+.plan-sim-input-card, .plan-sim-result-card { padding:20px 22px; background:var(--surface);
+  border:1px solid var(--border); border-radius:14px; display:flex; flex-direction:column; }
+.plan-sim-card-hdr { display:flex; align-items:flex-start; gap:12px; padding-bottom:14px;
+  margin-bottom:14px; border-bottom:1px dashed var(--border); }
+.plan-sim-card-ic { width:38px; height:38px; flex-shrink:0; border-radius:9px;
+  background:linear-gradient(135deg,#3a7d2c,#22c55e); color:#fff; display:flex;
+  align-items:center; justify-content:center; font-size:18px; }
+.plan-sim-card-title { font-size:15px; font-weight:700; color:var(--txt); margin:0 0 3px; }
+.plan-sim-card-sub { font-size:12px; color:var(--txt3); margin:0; line-height:1.5; }
+.plan-sim-form { display:flex; flex-direction:column; gap:12px; }
+.plan-sim-reset { align-self:flex-start; display:inline-flex; align-items:center; gap:5px;
+  padding:6px 12px; background:transparent; border:1px solid var(--border2);
+  border-radius:7px; font-size:11.5px; color:var(--txt2); cursor:pointer;
+  font-family:inherit; margin-top:4px; transition:background .15s; }
+.plan-sim-reset:hover { background:var(--surface2); color:var(--txt); }
+.plan-sim-reset i { font-size:14px; }
+
+.plan-sim-empty { flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:8px; padding:40px 20px; text-align:center; color:var(--txt3); }
+.plan-sim-empty i { font-size:42px; color:var(--txt3); opacity:.6; }
+.plan-sim-empty-title { font-size:14px; font-weight:700; color:var(--txt2); }
+.plan-sim-empty-sub { font-size:12px; color:var(--txt3); line-height:1.6; max-width:280px; }
+.plan-sim-empty-sub b { color:var(--txt2); }
+
+.plan-sim-result-hdr { margin-bottom:14px; }
+.plan-sim-result-hdr h3 { font-size:15px; font-weight:700; color:var(--txt); margin:0 0 4px; }
+.plan-sim-result-sub { font-size:12px; color:var(--txt3); font-family:var(--ff-mono); }
+.plan-sim-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  margin-bottom:14px; }
+.plan-sim-scen-card { padding:14px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; display:flex; flex-direction:column; gap:8px; }
+.plan-sim-scen-card.good { background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));
+  border-color:rgba(34,197,94,.3); }
+.plan-sim-scen-card.mid  { background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.02));
+  border-color:rgba(245,158,11,.3); }
+.plan-sim-scen-card.bad  { background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(239,68,68,.02));
+  border-color:rgba(239,68,68,.3); }
+.plan-sim-scen-hdr { display:flex; flex-direction:column; gap:2px; font-size:12.5px;
+  font-weight:700; color:var(--txt); }
+.plan-sim-scen-hdr small { font-size:10.5px; color:var(--txt3); font-weight:500; }
+.plan-sim-scen-row { display:flex; justify-content:space-between; align-items:center;
+  font-size:11.5px; color:var(--txt2); }
+.plan-sim-scen-row b { font-size:12px; font-weight:700; font-family:var(--ff-mono);
+  color:var(--txt); }
+.plan-sim-scen-row b.in  { color:#16a34a; }
+.plan-sim-scen-row b.out { color:#dc2626; }
+.plan-sim-scen-divider { height:1px; background:var(--border); margin:2px 0; }
+.plan-sim-scen-big { display:flex; justify-content:space-between; align-items:center;
+  font-size:11.5px; color:var(--txt2); }
+.plan-sim-scen-big b { font-size:14px; font-weight:800; font-family:var(--ff-mono);
+  color:var(--txt); }
+.plan-sim-scen-big b.in  { color:#16a34a; }
+.plan-sim-scen-big b.out { color:#dc2626; }
+
+.plan-sim-rec { margin-top:auto; padding:12px 14px; border-radius:9px; font-size:12.5px;
+  font-weight:500; line-height:1.6; }
+.plan-sim-rec b { font-weight:800; }
+.plan-sim-rec-good { background:rgba(34,197,94,.1); border-left:3px solid #16a34a;
+  color:#15803d; }
+.plan-sim-rec-mid  { background:rgba(245,158,11,.1); border-left:3px solid #d97706;
+  color:#b45309; }
+.plan-sim-rec-bad  { background:rgba(239,68,68,.1); border-left:3px solid #dc2626;
+  color:#b91c1c; }
+.plan-sim-rec-neutral { background:var(--surface2); border-left:3px solid var(--txt3);
+  color:var(--txt2); }
+
+@media (max-width:900px) {
+  .plan-goals-overview { grid-template-columns:repeat(2,1fr); }
+  .plan-sim-wrap { grid-template-columns:1fr; }
+  .plan-sim-cards { grid-template-columns:1fr; }
+}
 @media (max-width:600px) {
-  .plan-sim-row { grid-template-columns:repeat(2,1fr); }
+  .plan-goals-overview { padding:14px 16px; gap:10px; }
+  .plan-goals-ov-stat b { font-size:15px; }
+  .plan-goal-card { padding:14px 16px; }
+  .plan-goal-current { font-size:18px; }
+  .plan-goals-toolbar { gap:10px; }
+  .plan-toolbar-btn { width:100%; justify-content:center; }
+  .plan-sim-input-card, .plan-sim-result-card { padding:16px 16px; }
+  .plan-deposit-quick { gap:5px; }
+  .plan-deposit-quick button { font-size:10.5px; padding:4px 9px; }
 }

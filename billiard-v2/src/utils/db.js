@@ -604,3 +604,90 @@ export const updatePlanningItem = async (id, item) => {
 export const deletePlanningItem = async (id) => {
   await query("DELETE FROM planning_items WHERE id = $1", [id]);
 };
+
+// ── Planning Goals (Anggaran / Tabungan) ──────────────────────
+
+const rowToGoal = (row) => ({
+  id:             row.id,
+  nama:           row.nama,
+  targetAmount:   parseInt(row.target_amount)  || 0,
+  currentAmount:  parseInt(row.current_amount) || 0,
+  autoPercent:    parseInt(row.auto_percent)   || 0,
+  source:         row.source         ?? "laba",
+  status:         row.status         ?? "active",
+  linkedItemId:   row.linked_item_id ?? null,
+  targetDate:     row.target_date    ?? "",
+  catatan:        row.catatan        ?? "",
+  createdAt:      row.created_at,
+  updatedAt:      row.updated_at,
+});
+
+export const readPlanningGoals = async () => {
+  const res = await query(
+    `SELECT * FROM planning_goals
+     ORDER BY CASE status WHEN 'active' THEN 1 WHEN 'paused' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END,
+              created_at DESC`
+  );
+  return res.rows.map(rowToGoal);
+};
+
+export const addPlanningGoal = async (g) => {
+  const id = g.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
+  await query(
+    `INSERT INTO planning_goals
+     (id, nama, target_amount, current_amount, auto_percent, source, status, linked_item_id, target_date, catatan)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      id,
+      (g.nama || "").trim().slice(0, 200),
+      parseInt(g.targetAmount)  || 0,
+      parseInt(g.currentAmount) || 0,
+      Math.max(0, Math.min(100, parseInt(g.autoPercent) || 0)),
+      (g.source || "laba").slice(0, 20),
+      (g.status || "active").slice(0, 20),
+      (g.linkedItemId || "").trim() || null,
+      (g.targetDate || "").slice(0, 10),
+      (g.catatan || "").trim().slice(0, 500),
+    ]
+  );
+  return id;
+};
+
+export const updatePlanningGoal = async (id, g) => {
+  await query(
+    `UPDATE planning_goals SET
+       nama=$2, target_amount=$3, auto_percent=$4, source=$5, status=$6,
+       linked_item_id=$7, target_date=$8, catatan=$9, updated_at=NOW()
+     WHERE id=$1`,
+    [
+      id,
+      (g.nama || "").trim().slice(0, 200),
+      parseInt(g.targetAmount) || 0,
+      Math.max(0, Math.min(100, parseInt(g.autoPercent) || 0)),
+      (g.source || "laba").slice(0, 20),
+      (g.status || "active").slice(0, 20),
+      (g.linkedItemId || "").trim() || null,
+      (g.targetDate || "").slice(0, 10),
+      (g.catatan || "").trim().slice(0, 500),
+    ]
+  );
+};
+
+// Tambah deposit ke goal (current_amount += amount). Auto-mark completed
+// kalau current >= target.
+export const addGoalDeposit = async (id, amount) => {
+  const amt = parseInt(amount) || 0;
+  if (amt <= 0) return;
+  await query(
+    `UPDATE planning_goals
+     SET current_amount = current_amount + $2,
+         status = CASE WHEN current_amount + $2 >= target_amount THEN 'completed' ELSE status END,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [id, amt]
+  );
+};
+
+export const deletePlanningGoal = async (id) => {
+  await query("DELETE FROM planning_goals WHERE id = $1", [id]);
+};

@@ -370,5 +370,23 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Planning Goals — tabungan target (Anggaran) ─────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS planning_goals (
+      id             TEXT PRIMARY KEY,
+      nama           TEXT NOT NULL,
+      target_amount  BIGINT NOT NULL DEFAULT 0,
+      current_amount BIGINT NOT NULL DEFAULT 0,
+      auto_percent   INTEGER DEFAULT 0,
+      source         TEXT DEFAULT 'laba',
+      status         TEXT DEFAULT 'active',
+      linked_item_id TEXT,
+      target_date    TEXT DEFAULT '',
+      catatan        TEXT DEFAULT '',
+      created_at     TIMESTAMPTZ DEFAULT NOW(),
+      updated_at     TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };

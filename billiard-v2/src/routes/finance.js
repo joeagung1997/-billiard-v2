@@ -19,6 +19,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
+  readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
@@ -470,9 +471,13 @@ router.get("/analisis/biaya/hapus", requireOwner, async (req, res) => {
 // ── Planning & Roadmap (owner only) ─────────────────────────────
 router.get("/planning", requireOwner, async (req, res) => {
   try {
-    const items = await readPlanningItems();
+    const [items, goals] = await Promise.all([
+      readPlanningItems(),
+      readPlanningGoals(),
+    ]);
     res.send(planningPage({
       items,
+      goals,
       token: "",
       role: "owner",
       displayName: res.locals.financeDisplay || "",
@@ -539,6 +544,81 @@ router.post("/planning/delete", requireOwner, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("[PLANNING] delete error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Goals (Anggaran / Tabungan) ─────────────────────────────────
+router.post("/planning/goal/add", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const nama = (body.nama || "").trim();
+    const target = parseInt(body.target_amount) || 0;
+    if (!nama || target <= 0) return res.status(400).json({ ok: false, error: "Nama & target wajib (target > 0)." });
+    await addPlanningGoal({
+      nama,
+      targetAmount:  target,
+      currentAmount: parseInt(body.current_amount) || 0,
+      autoPercent:   parseInt(body.auto_percent) || 0,
+      source:        body.source,
+      status:        body.status,
+      linkedItemId:  body.linked_item_id,
+      targetDate:    body.target_date,
+      catatan:       body.catatan,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] goal add error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/goal/edit", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const id = (body.id || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "ID goal wajib." });
+    const target = parseInt(body.target_amount) || 0;
+    if (target <= 0) return res.status(400).json({ ok: false, error: "Target harus > 0." });
+    await updatePlanningGoal(id, {
+      nama:          body.nama,
+      targetAmount:  target,
+      autoPercent:   parseInt(body.auto_percent) || 0,
+      source:        body.source,
+      status:        body.status,
+      linkedItemId:  body.linked_item_id,
+      targetDate:    body.target_date,
+      catatan:       body.catatan,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] goal edit error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/goal/deposit", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const id = (body.id || "").trim();
+    const amount = parseInt(body.amount) || 0;
+    if (!id || amount <= 0) return res.status(400).json({ ok: false, error: "ID goal & amount > 0 wajib." });
+    await addGoalDeposit(id, amount);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] goal deposit error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/goal/delete", requireOwner, async (req, res) => {
+  try {
+    const id = (req.body?.id || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "ID goal wajib." });
+    await deletePlanningGoal(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] goal delete error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
