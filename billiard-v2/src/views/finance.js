@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=48\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=49\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1547,10 +1547,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + (transaksiOnly
       ? // FULL mode (/transaksi): type tabs + filter bar (search + dropdowns)
         "<div class=\"fin-tbl-type-tabs\" role=\"tablist\">"
-        +   "<button type=\"button\" class=\"fin-type-tab active\" data-trx-type=\"semua\" onclick=\"setTrxType('semua')\"><i class=\"ti ti-layout-list\"></i> Semua</button>"
-        +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan</button>"
-        +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran</button>"
-        +   "<button type=\"button\" class=\"fin-type-tab fin-type-void\" data-trx-type=\"void\" onclick=\"setTrxType('void')\"><i class=\"ti ti-ban\"></i> Dibatalkan</button>"
+        +   "<button type=\"button\" class=\"fin-type-tab active\" data-trx-type=\"semua\" onclick=\"setTrxType('semua')\"><i class=\"ti ti-layout-list\"></i> Semua <span class=\"trx-tab-count\" id=\"cntSemua\">" + sortedTbl.length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan <span class=\"trx-tab-count\" id=\"cntIn\">" + sortedTbl.filter(function(t){return t.jenis==='pemasukan'&&!t.voidedAt;}).length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran <span class=\"trx-tab-count\" id=\"cntOut\">" + sortedTbl.filter(function(t){return t.jenis==='pengeluaran'&&!t.voidedAt;}).length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-void\" data-trx-type=\"void\" onclick=\"setTrxType('void')\"><i class=\"ti ti-ban\"></i> Dibatalkan <span class=\"trx-tab-count\" id=\"cntVoid\">" + sortedTbl.filter(function(t){return !!t.voidedAt;}).length + "</span></button>"
         + "</div>"
         // Filter bar — search di row pertama, dropdowns di row kedua
         + "<div class=\"trx-filter-bar\">"
