@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=53\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=54\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -861,6 +861,22 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       }).join("")
     : "<div class=\"empty-donut-leg\"><i class=\"ti ti-chart-donut\"></i>Belum ada data</div>";
 
+  // ── Saldo berjalan map (running balance per trx id) ──────────
+  // Sort ASC (oldest first), accumulate, then index by id.
+  const saldoBerjalanMap = {};
+  let _runCum = 0;
+  const _sortedAsc = [...sortedTbl].sort((a, b) =>
+    a.tanggal !== b.tanggal
+      ? a.tanggal.localeCompare(b.tanggal)
+      : (new Date(a.createdAt ?? 0).getTime()) - (new Date(b.createdAt ?? 0).getTime())
+  );
+  _sortedAsc.forEach((t) => {
+    if (!t.voidedAt) {
+      _runCum += t.jenis === "pemasukan" ? t.jumlah : -t.jumlah;
+    }
+    saldoBerjalanMap[t.id] = _runCum;
+  });
+
   // ── Transaction rows ────────────────────────────────────────
   const makeRow = function(t, idx) {
     const isIn    = t.jenis === "pemasukan";
@@ -917,6 +933,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       + "<div class=\"fr-td fr-amount-col\">"
       + "<div class=\"" + (isIn ? "amt-in" : "amt-out") + "\">" + (isIn ? "+" : "−") + rp(t.jumlah) + "</div>"
       + "<span class=\"t-badge " + (isIn ? "in" : "out") + "\"><i class=\"ti ti-arrow-" + (isIn ? "up" : "down") + "\" style=\"font-size:9px;margin-right:2px\"></i>" + (isIn ? "Masuk" : "Keluar") + "</span>"
+      + "<div class=\"fr-saldo-runner\" title=\"Saldo berjalan setelah transaksi ini\">Saldo: " + rp(saldoBerjalanMap[t.id] || 0) + "</div>"
       + "</div>"
       + "<div class=\"fr-td right fr-act\">" + aksiHt + "</div>"
       + "</div>";
@@ -1308,11 +1325,16 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
           : (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu"))
     +   "</p>"
     + "</div>"
-    + (isOwner ? "" : (
-        "<div class=\"topbar-actions\">"
-        + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
+    + (isOwner && transaksiOnly
+      ? "<div class=\"topbar-actions\">"
+        + "<button type=\"button\" class=\"btn-outline\" onclick=\"trxExport('csv')\" title=\"Ekspor data ke CSV\"><i class=\"ti ti-file-spreadsheet\"></i> Ekspor CSV</button>"
+        + "<button type=\"button\" class=\"btn-outline\" onclick=\"trxExport('print')\" title=\"Cetak laporan\"><i class=\"ti ti-printer\"></i> Cetak Laporan</button>"
         + "</div>"
-      ))
+      : (isOwner ? "" : (
+          "<div class=\"topbar-actions\">"
+          + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
+          + "</div>"
+        )))
     + "</div>"
 
     // Wrap pre-table content. Pada mode transaksiOnly, di-hide via inline style
@@ -1526,28 +1548,44 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Tutup wrapper #finDashOnly (lihat tag pembuka sebelum kas-card)
     + "</div>"
 
-    // ── Summary (cuma muncul di /transaksi) — clean 4-column grid w/ dividers
+    // ── Summary (cuma muncul di /transaksi) — 4 horizontal cards
     + (transaksiOnly
-      ? "<div class=\"trx-sum\">"
-        + "<div class=\"trx-sum-icon\"><i class=\"ti ti-chart-pie\"></i></div>"
-        + "<div class=\"trx-sum-stats\">"
-        +   "<div class=\"trx-stat\">"
-        +     "<div class=\"trx-stat-lbl\">Total</div>"
-        +     "<div class=\"trx-stat-val\"><b id=\"sumTrxCount\">" + sortedTbl.length + "</b><span class=\"trx-stat-suffix\">transaksi</span></div>"
+      ? "<div class=\"trx-summary-grid\">"
+        // Card 1: Total Transaksi
+        + "<div class=\"trx-sum-cell\">"
+        +   "<div class=\"trx-sum-cell-hdr\">"
+        +     "<div class=\"trx-sum-cell-ic\"><i class=\"ti ti-chart-pie\"></i></div>"
+        +     "<div class=\"trx-sum-cell-lbl\">Total Transaksi</div>"
         +   "</div>"
-        +   "<div class=\"trx-stat\">"
-        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-arrow-up-right\"></i> Pemasukan</div>"
-        +     "<div class=\"trx-stat-val in\" id=\"sumTrxIn\">Rp 0</div>"
+        +   "<div class=\"trx-sum-cell-val\"><span id=\"sumTrxCount\">" + sortedTbl.length + "</span> <span class=\"trx-sum-cell-unit\">catatan</span></div>"
+        +   "<div class=\"trx-sum-cell-sub\" id=\"sumTrxCountSub\">—</div>"
+        + "</div>"
+        // Card 2: Pemasukan
+        + "<div class=\"trx-sum-cell trx-cell-in\">"
+        +   "<div class=\"trx-sum-cell-hdr\">"
+        +     "<div class=\"trx-sum-cell-ic in\"><i class=\"ti ti-arrow-up-right\"></i></div>"
+        +     "<div class=\"trx-sum-cell-lbl\">Pemasukan</div>"
         +   "</div>"
-        +   "<div class=\"trx-stat\">"
-        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-arrow-down-right\"></i> Pengeluaran</div>"
-        +     "<div class=\"trx-stat-val out\" id=\"sumTrxOut\">Rp 0</div>"
+        +   "<div class=\"trx-sum-cell-val in\" id=\"sumTrxIn\">Rp 0</div>"
+        +   "<div class=\"trx-sum-cell-sub\" id=\"sumTrxInSub\">—</div>"
+        + "</div>"
+        // Card 3: Pengeluaran
+        + "<div class=\"trx-sum-cell trx-cell-out\">"
+        +   "<div class=\"trx-sum-cell-hdr\">"
+        +     "<div class=\"trx-sum-cell-ic out\"><i class=\"ti ti-arrow-down-right\"></i></div>"
+        +     "<div class=\"trx-sum-cell-lbl\">Pengeluaran</div>"
         +   "</div>"
-        +   "<div class=\"trx-stat trx-stat-net\">"
-        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-equal\"></i> Net / Saldo</div>"
-        +     "<div class=\"trx-stat-val net\" id=\"sumTrxNet\">Rp 0</div>"
-        +     "<div class=\"trx-stat-info\" id=\"sumTrxVoidInfo\"></div>"
+        +   "<div class=\"trx-sum-cell-val out\" id=\"sumTrxOut\">Rp 0</div>"
+        +   "<div class=\"trx-sum-cell-sub\" id=\"sumTrxOutSub\">—</div>"
+        + "</div>"
+        // Card 4: Net / Saldo Periode
+        + "<div class=\"trx-sum-cell trx-cell-net\">"
+        +   "<div class=\"trx-sum-cell-hdr\">"
+        +     "<div class=\"trx-sum-cell-ic net\"><i class=\"ti ti-arrows-exchange-2\"></i></div>"
+        +     "<div class=\"trx-sum-cell-lbl\">Net / Saldo Periode</div>"
         +   "</div>"
+        +   "<div class=\"trx-sum-cell-val net\" id=\"sumTrxNet\">Rp 0</div>"
+        +   "<div class=\"trx-sum-cell-sub\" id=\"sumTrxVoidInfo\">—</div>"
         + "</div>"
         + "</div>"
       : "")
@@ -1984,7 +2022,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "document.querySelectorAll('.fin-type-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-trx-type')==='semua');});"
     +   "var cust=document.getElementById('tblCustomRange');if(cust)cust.style.display='none';"
     +   "renderTbl();}"
-    + "function trxExport(){alert('🚧 Export Excel/PDF segera hadir!\\n\\nUntuk sementara, gunakan filter & screenshot atau salin manual.');}"
+    + "function trxExport(type){var lbl=type==='csv'?'Ekspor CSV':(type==='print'?'Cetak Laporan':'Export');alert('🚧 '+lbl+' segera hadir!\\n\\nUntuk sementara, gunakan filter & screenshot.');}"
     // Mapping kategori → sumber bisnis (utk filter Sumber)
     + "function _getTrxSumber(kat){"
     +   "var k=(kat||'').toLowerCase();"
@@ -2065,11 +2103,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "if(cEl){var shown=Math.min(end,total)-start;"
     +     "cEl.innerHTML=(total===0?'Tidak ada':shown+' dari '+total)+' transaksi';}"
     // Update summary cards (cuma kalau elementnya ada → di /transaksi page)
+    +   "var nIn=0,nOut=0;visible.forEach(function(r){var i=parseInt(r.getAttribute('data-idx'));var t=(typeof TRX_DATA!=='undefined'&&!isNaN(i))?TRX_DATA[i]:null;if(t&&!t.voidedAt){if(t.jenis==='pemasukan')nIn++;else if(t.jenis==='pengeluaran')nOut++;}});"
     +   "var sCount=document.getElementById('sumTrxCount');if(sCount)sCount.textContent=total;"
+    +   "var sCountSub=document.getElementById('sumTrxCountSub');if(sCountSub)sCountSub.textContent=(nIn+' masuk · '+nOut+' keluar'+(voidN>0?' · '+voidN+' void':''));"
     +   "var sIn=document.getElementById('sumTrxIn');if(sIn)sIn.textContent=_rpFmt(sumIn);"
+    +   "var sInSub=document.getElementById('sumTrxInSub');if(sInSub){var avg=nIn>0?Math.round(sumIn/nIn):0;sInSub.textContent=nIn>0?('Rata-rata '+_rpFmt(avg)+' / trx'):'Tidak ada pemasukan';}"
     +   "var sOut=document.getElementById('sumTrxOut');if(sOut)sOut.textContent=_rpFmt(sumOut);"
-    +   "var sNet=document.getElementById('sumTrxNet');if(sNet){var net=sumIn-sumOut;sNet.textContent=(net<0?'-':'+')+_rpFmt(Math.abs(net));sNet.style.color=net>=0?'#16a34a':'#dc2626';}"
-    +   "var sVoid=document.getElementById('sumTrxVoidInfo');if(sVoid)sVoid.textContent=voidN>0?'(termasuk '+voidN+' void)':'';"
+    +   "var sOutSub=document.getElementById('sumTrxOutSub');if(sOutSub)sOutSub.textContent=nOut>0?(nOut+' catatan pengeluaran'):'Tidak ada pengeluaran';"
+    +   "var sNet=document.getElementById('sumTrxNet');if(sNet){var net=sumIn-sumOut;sNet.textContent=(net<0?'-':'+')+_rpFmt(Math.abs(net));sNet.style.color=net>=0?'#2563eb':'#dc2626';}"
+    +   "var sVoid=document.getElementById('sumTrxVoidInfo');if(sVoid){var margin=sumIn>0?((sumIn-sumOut)/sumIn*100).toFixed(1):'0';sVoid.textContent=(voidN>0?'Termasuk '+voidN+' void · ':'')+'Margin '+margin+'%';}"
     +   "var emp=document.querySelector('.empty-state');"
     +   "if(emp&&rows.length>0)emp.style.display=total===0?'flex':'none';"
     +   "var pgEl=document.getElementById('tblPagi');if(!pgEl)return;"
