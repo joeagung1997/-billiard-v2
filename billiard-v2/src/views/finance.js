@@ -1279,8 +1279,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "</h1>"
     +   "<p class=\"fin-page-sub\">"
     +     (transaksiOnly
-    +       ? "Daftar lengkap catatan pemasukan &amp; pengeluaran — bisa di-filter, dicari, dan dibatalkan."
-    +       : (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu"))
+          ? "Daftar lengkap catatan pemasukan &amp; pengeluaran — bisa di-filter, dicari, dan dibatalkan."
+          : (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu"))
     +   "</p>"
     + "</div>"
     + (isOwner ? "" : (
