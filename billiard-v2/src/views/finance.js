@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=47\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=48\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -930,6 +930,17 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     : "<div class=\"empty-state\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
   const moreCount = Math.max(0, sortedTbl.length - 5);
 
+  // ── Filter dropdown options utk /transaksi page ──
+  // Unique kategori dari sortedTbl (lebih akurat drpd kategoriList, krn cuma yg dipake)
+  const uniqueKats = Array.from(new Set(sortedTbl.map((t) => t.kategori).filter(Boolean))).sort();
+  const trxKatOpts = uniqueKats.map((k) => "<option value=\"" + escHtml(k) + "\">" + escHtml(k) + "</option>").join("");
+  // Unique kru — username → displayName mapping
+  const uniqueKru = Array.from(new Set(sortedTbl.map((t) => t.dicatatOleh).filter(Boolean))).sort();
+  const trxKruOpts = uniqueKru.map((u) => {
+    const nm = userNameMap[u] || u;
+    return "<option value=\"" + escHtml(u) + "\">" + escHtml(nm) + "</option>";
+  }).join("");
+
   const hasDateFilter = !!tDari;
 
   const chartLabelsJson = safeJson(chartLabels);
@@ -1510,51 +1521,78 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Tutup wrapper #finDashOnly (lihat tag pembuka sebelum kas-card)
     + "</div>"
 
-    // ── Summary cards (cuma muncul di /transaksi) — recompute saat filter berubah
+    // ── Summary compact (cuma muncul di /transaksi) — single card 2-line
     + (transaksiOnly
-      ? "<div class=\"fin-trx-summary\">"
-        + "<div class=\"fin-sum-card fin-sum-total\"><div class=\"fin-sum-ic\"><i class=\"ti ti-receipt\"></i></div>"
-        +   "<div><div class=\"fin-sum-lbl\">Total Transaksi</div>"
-        +   "<div class=\"fin-sum-val\" id=\"sumTrxCount\">" + sortedTbl.length + "</div></div></div>"
-        + "<div class=\"fin-sum-card fin-sum-in\"><div class=\"fin-sum-ic in\"><i class=\"ti ti-arrow-up-right\"></i></div>"
-        +   "<div><div class=\"fin-sum-lbl\">Pemasukan</div>"
-        +   "<div class=\"fin-sum-val inc\" id=\"sumTrxIn\">Rp 0</div></div></div>"
-        + "<div class=\"fin-sum-card fin-sum-out\"><div class=\"fin-sum-ic out\"><i class=\"ti ti-arrow-down-right\"></i></div>"
-        +   "<div><div class=\"fin-sum-lbl\">Pengeluaran</div>"
-        +   "<div class=\"fin-sum-val out\" id=\"sumTrxOut\">Rp 0</div></div></div>"
-        + "<div class=\"fin-sum-card fin-sum-net\"><div class=\"fin-sum-ic net\"><i class=\"ti ti-scale\"></i></div>"
-        +   "<div><div class=\"fin-sum-lbl\">Net / Saldo <span id=\"sumTrxVoidInfo\" style=\"font-size:10px;color:var(--txt3);font-weight:500;margin-left:4px\"></span></div>"
-        +   "<div class=\"fin-sum-val net\" id=\"sumTrxNet\">Rp 0</div></div></div>"
+      ? "<div class=\"trx-sum-card\">"
+        + "<div class=\"trx-sum-icon\"><i class=\"ti ti-chart-pie\"></i></div>"
+        + "<div class=\"trx-sum-body\">"
+        +   "<div class=\"trx-sum-row\">"
+        +     "<span class=\"trx-sum-item\"><b id=\"sumTrxCount\">" + sortedTbl.length + "</b> transaksi</span>"
+        +     "<span class=\"trx-sum-sep\">·</span>"
+        +     "<span class=\"trx-sum-item in\">Masuk <b id=\"sumTrxIn\">Rp 0</b></span>"
+        +     "<span class=\"trx-sum-sep\">·</span>"
+        +     "<span class=\"trx-sum-item out\">Keluar <b id=\"sumTrxOut\">Rp 0</b></span>"
+        +   "</div>"
+        +   "<div class=\"trx-sum-row trx-sum-net-row\">"
+        +     "<span class=\"trx-sum-net-lbl\">Net:</span>"
+        +     "<b class=\"trx-sum-net-val\" id=\"sumTrxNet\">Rp 0</b>"
+        +     "<span class=\"trx-sum-void-info\" id=\"sumTrxVoidInfo\"></span>"
+        +   "</div>"
+        + "</div>"
         + "</div>"
       : "")
 
     // ── Transaction table ───────────────────────────────────────
     + "<div class=\"fin-table-card\" id=\"trx-list\">"
     + (transaksiOnly
-      ? // FULL mode (/transaksi): type tabs + toolbar (search + date chips)
+      ? // FULL mode (/transaksi): type tabs + filter bar (search + dropdowns)
         "<div class=\"fin-tbl-type-tabs\" role=\"tablist\">"
         +   "<button type=\"button\" class=\"fin-type-tab active\" data-trx-type=\"semua\" onclick=\"setTrxType('semua')\"><i class=\"ti ti-layout-list\"></i> Semua</button>"
         +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan</button>"
         +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran</button>"
         +   "<button type=\"button\" class=\"fin-type-tab fin-type-void\" data-trx-type=\"void\" onclick=\"setTrxType('void')\"><i class=\"ti ti-ban\"></i> Dibatalkan</button>"
         + "</div>"
-        + "<div class=\"fin-tbl-toolbar\">"
-        + "<div class=\"fin-search-wrap\">"
-        + "<i class=\"ti ti-search\"></i>"
-        + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"renderTbl()\">"
+        // Filter bar — search di row pertama, dropdowns di row kedua
+        + "<div class=\"trx-filter-bar\">"
+        + "<div class=\"trx-search-wrap\">"
+        +   "<i class=\"ti ti-search\"></i>"
+        +   "<input type=\"text\" class=\"trx-search-inp\" id=\"trxSearch\" placeholder=\"Cari keterangan, kategori, atau kru...\" oninput=\"renderTbl()\">"
         + "</div>"
-        + "<div class=\"fin-tbl-chips\">"
-        +   "<button type=\"button\" class=\"fin-tbl-chip active\" data-tbl-filter=\"today\" onclick=\"setTblFilter('today')\">Hari ini</button>"
-        +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"yesterday\" onclick=\"setTblFilter('yesterday')\">Kemarin</button>"
-        +   (isOwner
-          ? "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"custom\" onclick=\"toggleTblCustom()\">Custom</button>"
-            + "<div id=\"tblCustomRange\" style=\"display:none;align-items:center;gap:5px\">"
-            +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"
-            +   "<span style=\"color:var(--txt3);font-size:11px\">—</span>"
-            +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblSampai\" onchange=\"setTblFilter('custom')\">"
-            + "</div>"
-          : "")
-        +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"all\" onclick=\"setTblFilter('all')\">Semua</button>"
+        + "<div class=\"trx-filter-row\">"
+        +   "<select class=\"trx-fdrop\" id=\"filterDate\" onchange=\"setTblFilter(this.value)\">"
+        +     "<option value=\"today\" selected>📅 Hari Ini</option>"
+        +     "<option value=\"yesterday\">Kemarin</option>"
+        +     "<option value=\"this-week\">Minggu Ini</option>"
+        +     "<option value=\"this-month\">Bulan Ini</option>"
+        +     (isOwner ? "<option value=\"custom\">Custom...</option>" : "")
+        +     "<option value=\"all\">Semua Tanggal</option>"
+        +   "</select>"
+        +   "<div id=\"tblCustomRange\" class=\"trx-custom-range\" style=\"display:none\">"
+        +     "<input type=\"date\" class=\"trx-fdate\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"
+        +     "<span class=\"trx-fdate-sep\">—</span>"
+        +     "<input type=\"date\" class=\"trx-fdate\" id=\"tblSampai\" onchange=\"setTblFilter('custom')\">"
+        +   "</div>"
+        +   "<select class=\"trx-fdrop\" id=\"filterKategori\" onchange=\"renderTbl()\">"
+        +     "<option value=\"\">🏷️ Semua Kategori</option>"
+        +     trxKatOpts
+        +   "</select>"
+        +   "<select class=\"trx-fdrop\" id=\"filterSumber\" onchange=\"renderTbl()\">"
+        +     "<option value=\"\">🎯 Semua Sumber</option>"
+        +     "<option value=\"billiard\">🎱 Billiard</option>"
+        +     "<option value=\"warkop\">☕ Warkop</option>"
+        +     "<option value=\"lain\">Lain-lain</option>"
+        +   "</select>"
+        +   (isOwner && trxKruOpts
+            ? "<select class=\"trx-fdrop\" id=\"filterKru\" onchange=\"renderTbl()\">"
+              + "<option value=\"\">👤 Semua Kru</option>" + trxKruOpts
+              + "</select>"
+            : "")
+        +   "<select class=\"trx-fdrop\" id=\"filterBayar\" onchange=\"renderTbl()\">"
+        +     "<option value=\"\">💳 Semua Bayar</option>"
+        +     "<option value=\"cash\">💵 Cash</option>"
+        +     "<option value=\"qris\">📱 QRIS</option>"
+        +   "</select>"
+        +   "<button type=\"button\" class=\"trx-fclear\" onclick=\"clearAllFilters()\" title=\"Reset semua filter\"><i class=\"ti ti-filter-off\"></i> Reset</button>"
         + "</div>"
         + "</div>"
       : // PREVIEW mode (dashboard): cuma header 'Transaksi Terbaru' + link Lihat Semua
@@ -1576,13 +1614,18 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       ? // FULL mode footer
         "<div class=\"fin-tbl-footer\">"
         + "<div class=\"fin-tf-left\">"
-        + "<span id=\"tblCount\">" + sortedTbl.length + " transaksi"
-        + (voidedCount > 0 ? " <span style=\"color:#a32d2d\">(" + voidedCount + " dibatalkan)</span>" : "")
-        + "</span>"
-        + "<span style=\"color:#e2e8e0\">|</span>"
-        + "<span>Saldo: <span class=\"fin-tf-saldo\" id=\"tblSaldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
+        + "<span id=\"tblCount\">" + sortedTbl.length + " transaksi</span>"
         + "</div>"
         + "<div class=\"fin-pagination\" id=\"tblPagi\"></div>"
+        + "<div class=\"fin-tf-right\">"
+        +   "<select class=\"trx-fdrop trx-fdrop-sm\" id=\"perPageSel\" onchange=\"setPerPage(this.value)\">"
+        +     "<option value=\"10\" selected>10 / halaman</option>"
+        +     "<option value=\"20\">20 / halaman</option>"
+        +     "<option value=\"50\">50 / halaman</option>"
+        +     "<option value=\"100\">100 / halaman</option>"
+        +   "</select>"
+        +   "<button type=\"button\" class=\"trx-export-btn\" onclick=\"trxExport()\" title=\"Ekspor data\"><i class=\"ti ti-download\"></i> Export</button>"
+        + "</div>"
         + "</div>"
       : // PREVIEW mode footer — 'Lihat semua N transaksi' button
         "<div class=\"fin-tbl-preview-footer\">"
@@ -1915,39 +1958,66 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "if(match)shown++;});"
     + "var empty=document.querySelector('.empty-state');"
     + "if(empty)empty.style.display=shown===0&&rows.length?'flex':(rows.length?'none':'flex');}"
-    // ── Tabel transaksi: filter chip + search + pagination ─────
+    // ── Tabel transaksi: filter dropdowns + search + pagination ─────
     + "var tblState={filter:'today',type:'semua',page:1,perPage:10};"
     + "function setTrxType(t){tblState.type=t;tblState.page=1;"
     +   "document.querySelectorAll('.fin-type-tab').forEach(function(b){"
     +     "b.classList.toggle('active',b.getAttribute('data-trx-type')===t);});"
     +   "renderTbl();}"
+    + "function setPerPage(n){tblState.perPage=parseInt(n)||10;tblState.page=1;renderTbl();}"
+    + "function clearAllFilters(){"
+    +   "var s=document.getElementById('trxSearch');if(s)s.value='';"
+    +   "['filterKategori','filterSumber','filterKru','filterBayar'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});"
+    +   "var d=document.getElementById('filterDate');if(d)d.value='all';"
+    +   "tblState.filter='all';tblState.type='semua';tblState.page=1;"
+    +   "document.querySelectorAll('.fin-type-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-trx-type')==='semua');});"
+    +   "var cust=document.getElementById('tblCustomRange');if(cust)cust.style.display='none';"
+    +   "renderTbl();}"
+    + "function trxExport(){alert('🚧 Export Excel/PDF segera hadir!\\n\\nUntuk sementara, gunakan filter & screenshot atau salin manual.');}"
+    // Mapping kategori → sumber bisnis (utk filter Sumber)
+    + "function _getTrxSumber(kat){"
+    +   "var k=(kat||'').toLowerCase();"
+    +   "if(k.indexOf('sewa')>=0||k.indexOf('meja')>=0||k.indexOf('billiard')>=0||k.indexOf('turnamen')>=0)return 'billiard';"
+    +   "if(k.indexOf('kopi')>=0||k.indexOf('snack')>=0||k.indexOf('makanan')>=0||k.indexOf('minuman')>=0||k.indexOf('rokok')>=0)return 'warkop';"
+    +   "return 'lain';"
+    + "}"
     + "function _today(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
     +   "return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}"
     + "function _yesterday(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
     +   "d.setDate(d.getDate()-1);"
     +   "return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}"
     + "function setTblFilter(f){tblState.filter=f;tblState.page=1;"
-    +   "document.querySelectorAll('.fin-tbl-chip').forEach(function(b){"
-    +     "b.classList.toggle('active',b.getAttribute('data-tbl-filter')===f);});"
+    +   "var sel=document.getElementById('filterDate');if(sel)sel.value=f;"
     +   "var cust=document.getElementById('tblCustomRange');"
     +   "if(cust)cust.style.display=f==='custom'?'inline-flex':'none';"
+    +   "if(f==='custom'){"
+    +     "var d=document.getElementById('tblDari'),s=document.getElementById('tblSampai');"
+    +     "var td=_today();if(d&&!d.value)d.value=td;if(s&&!s.value)s.value=td;"
+    +   "}"
     +   "renderTbl();}"
-    + "function toggleTblCustom(){"
-    +   "var cust=document.getElementById('tblCustomRange');if(!cust)return;"
-    +   "var open=cust.style.display!=='none';"
-    +   "if(open){setTblFilter('today');}else{"
-    +     "var td=_today();var d=document.getElementById('tblDari');var s=document.getElementById('tblSampai');"
-    +     "if(d&&!d.value)d.value=td;if(s&&!s.value)s.value=td;"
-    +     "setTblFilter('custom');}}"
+    + "function _thisWeekRange(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + ")d.setDate(d.getDate()-1);"
+    +   "var dow=d.getDay()===0?6:d.getDay()-1;var mon=new Date(d);mon.setDate(d.getDate()-dow);"
+    +   "var ymd=function(x){return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};"
+    +   "return {dari:ymd(mon),sampai:ymd(d)};}"
+    + "function _thisMonthRange(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + ")d.setDate(d.getDate()-1);"
+    +   "var ymd=function(x){return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};"
+    +   "var first=new Date(d.getFullYear(),d.getMonth(),1);return {dari:ymd(first),sampai:ymd(d)};}"
     + "function renderTbl(){"
     +   "var q=(document.getElementById('trxSearch')||{}).value;q=(q||'').toLowerCase();"
     +   "var f=tblState.filter;var typ=tblState.type||'semua';"
     +   "var dari='',sampai='';"
     +   "if(f==='today'){dari=sampai=_today();}"
     +   "else if(f==='yesterday'){dari=sampai=_yesterday();}"
+    +   "else if(f==='this-week'){var w=_thisWeekRange();dari=w.dari;sampai=w.sampai;}"
+    +   "else if(f==='this-month'){var m=_thisMonthRange();dari=m.dari;sampai=m.sampai;}"
     +   "else if(f==='custom'){"
     +     "dari=(document.getElementById('tblDari')||{}).value||'';"
     +     "sampai=(document.getElementById('tblSampai')||{}).value||'';}"
+    // Additional dropdown filters
+    +   "var fKat=(document.getElementById('filterKategori')||{}).value||'';"
+    +   "var fSum=(document.getElementById('filterSumber')||{}).value||'';"
+    +   "var fKru=(document.getElementById('filterKru')||{}).value||'';"
+    +   "var fBay=(document.getElementById('filterBayar')||{}).value||'';"
     +   "var rows=document.querySelectorAll('#trxRows .fin-row');"
     +   "var visible=[];var sumIn=0,sumOut=0,voidN=0;"
     +   "rows.forEach(function(r){"
@@ -1959,14 +2029,17 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "var matchDate=true;"
     +     "if(dari&&tgl<dari)matchDate=false;"
     +     "if(sampai&&tgl>sampai)matchDate=false;"
-    // Type filter
-    +     "var matchType=true;"
+    +     "var matchType=true,matchKat=true,matchSum=true,matchKru=true,matchBay=true;"
     +     "if(t){"
     +       "if(typ==='pemasukan')matchType=(t.jenis==='pemasukan'&&!t.voidedAt);"
     +       "else if(typ==='pengeluaran')matchType=(t.jenis==='pengeluaran'&&!t.voidedAt);"
     +       "else if(typ==='void')matchType=!!t.voidedAt;"
+    +       "if(fKat)matchKat=(t.kategori===fKat);"
+    +       "if(fSum)matchSum=(_getTrxSumber(t.kategori)===fSum);"
+    +       "if(fKru)matchKru=(t.dicatatOleh===fKru);"
+    +       "if(fBay)matchBay=(t.bayar===fBay);"
     +     "}"
-    +     "if(matchSearch&&matchDate&&matchType){"
+    +     "if(matchSearch&&matchDate&&matchType&&matchKat&&matchSum&&matchKru&&matchBay){"
     +       "visible.push(r);"
     +       "if(t&&!t.voidedAt){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
     +       "if(t&&t.voidedAt)voidN++;"
