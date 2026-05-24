@@ -32,7 +32,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
   const profileName   = (displayName || "").trim() || "Owner";
   const profileAvatar = initials(displayName);
 
-  // ── Section definitions
+  // ── Section definitions (urutan: Utama → Operasional → Member → Billiard
+  //    → Warkop → SDM → Laporan → Pengaturan)
   const sections = [
     {
       key: "utama",
@@ -40,6 +41,17 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       label: "Utama",
       items: [
         { id: "dashboard", href: "/admin?tk=" + token, icon: "ti ti-layout-dashboard", label: "Dashboard" },
+      ],
+    },
+    {
+      key: "operasional",
+      emoji: "💰",
+      label: "Operasional",
+      items: [
+        { id: "keuangan",  href: "/operasional",          icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
+        { id: "transaksi", href: "/operasional#trx-list", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
+        { id: "analisis",  href: "/operasional/analisis", icon: "ti ti-target",    label: "Analisis Target",    tk: true },
+        { id: "kategori",  href: "/operasional/kategori", icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
     {
@@ -69,17 +81,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
         { id: "menu",     href: "/operasional/menu",      icon: "ti ti-list-details",     label: "Kelola Menu",      tk: true },
         { id: "stok",     href: soon("Stok & Inventory"), icon: "ti ti-package",          label: "Stok & Inventory", soon: true },
         { id: "supplier", href: soon("Supplier"),         icon: "ti ti-truck-delivery",   label: "Supplier",         soon: true },
-      ],
-    },
-    {
-      key: "operasional",
-      emoji: "💰",
-      label: "Operasional",
-      items: [
-        { id: "keuangan",  href: "/operasional",          icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
-        { id: "transaksi", href: "/operasional#trx-list", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
-        { id: "analisis",  href: "/operasional/analisis", icon: "ti ti-target",    label: "Analisis Target",    tk: true },
-        { id: "kategori",  href: "/operasional/kategori", icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
     {
