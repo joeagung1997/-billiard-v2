@@ -932,7 +932,6 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "</div>';"
     +   "});"
     +   "html+='</div>';"
-    +   // Auto-recommendation
     +   "var rec='';var recCls='neutral';"
     +   "if(normalBep===0){rec='⚠️ Rugi — Pendapatan ga cukup nutupin biaya rutin. Reconsider.';recCls='bad';}"
     +   "else if(normalBep<=6&&normalRoi>=100){rec='✅ Sangat Layak — BEP cepat ('+normalBep.toFixed(1)+' bln) dan ROI tahun 1 tinggi ('+normalRoi.toFixed(0)+'%). Rekomendasi: <b>EKSEKUSI</b>.';recCls='good';}"
