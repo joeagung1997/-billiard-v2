@@ -36,7 +36,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=19\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=20\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1586,7 +1586,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "<i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i>"
     +   "</button>"
     + "</div>"
-    + "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">"
+    + "<div class=\"fin-qty-stepper\">"
+    +   "<button type=\"button\" class=\"fin-qty-btn\" onclick=\"wizQtyMinus(this)\" aria-label=\"Kurangi\">−</button>"
+    +   "<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"wizCalcTotal()\">"
+    +   "<button type=\"button\" class=\"fin-qty-btn\" onclick=\"wizQtyPlus(this)\" aria-label=\"Tambah\">+</button>"
+    + "</div>"
     + "<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>"
     + "<div class=\"wiz-extras\" style=\"grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px\">"
     + "<div class=\"wiz-temp\" style=\"display:none;flex-direction:row;gap:6px;align-items:center\">"
@@ -2017,7 +2021,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "+'<span class=\"mip-text\">Pilih item...</span>'"
     + "+'<i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i>'"
     + "+'</button></div>'"
-    + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" oninput=\"wizCalcTotal()\">'"
+    + "+'<div class=\"fin-qty-stepper\">'"
+    + "+'<button type=\"button\" class=\"fin-qty-btn\" onclick=\"wizQtyMinus(this)\" aria-label=\"Kurangi\">\\u2212</button>'"
+    + "+'<input type=\"number\" class=\"fin-qty-inp\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"wizCalcTotal()\">'"
+    + "+'<button type=\"button\" class=\"fin-qty-btn\" onclick=\"wizQtyPlus(this)\" aria-label=\"Tambah\">+</button>'"
+    + "+'</div>'"
     + "+'<button type=\"button\" class=\"fin-btn-rm-row\" onclick=\"wizRmItem(this)\"><i class=\"ti ti-x\"></i></button>'"
     + "+WIZ_EXTRAS_HTML;"
     + "c.appendChild(r);}"
@@ -2061,6 +2069,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "b.style.borderColor='var(--border2)';b.style.background='transparent';b.style.color='var(--txt2)';}});}"
     + "wizCalcTotal();}"
     + "function wizRmItem(btn){var rows=document.querySelectorAll('#wizMenuItems .fin-menu-row');if(rows.length>1){btn.closest('.fin-menu-row').remove();wizCalcTotal();}}"
+    + "function wizQtyMinus(btn){var inp=btn.parentElement.querySelector('.fin-qty-inp');var v=(parseInt(inp.value)||1)-1;inp.value=Math.max(1,v);wizCalcTotal();}"
+    + "function wizQtyPlus(btn){var inp=btn.parentElement.querySelector('.fin-qty-inp');inp.value=(parseInt(inp.value)||0)+1;wizCalcTotal();}"
     + "function wizCalcTotal(){"
     + "var total=0;"
     + "document.querySelectorAll('#wizMenuItems .fin-menu-row').forEach(function(r){"
