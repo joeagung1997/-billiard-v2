@@ -1074,7 +1074,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".mip-btn:hover{border-color:var(--accent)}",
     ".mip-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     ".mip-text-filled{color:var(--txt);font-weight:500}",
-    ".mip-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}",
+    ".mip-overlay{display:none;position:fixed;inset:0;z-index:1100;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}",
     "@keyframes mipFadeIn{from{opacity:0}to{opacity:1}}",
     ".mip-overlay.open{display:flex}",
     ".mip-sheet{width:100%;max-width:520px;background:var(--surface);border-radius:18px 18px 0 0;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1)}",
