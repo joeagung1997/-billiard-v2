@@ -118,9 +118,13 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
   ];
 
   // Build nav HTML
+  // Section dianggap "open" kalau: ada item aktif DI section itu, ATAU
+  // section termasuk 'always open' (Operasional default expanded — section
+  // utama harian, biar 1-klik akses ke Dashboard Keuangan / Transaksi).
+  const alwaysOpenKeys = new Set(["operasional"]);
   let navHtml = "";
   for (const sec of sections) {
-    const isOpen = sec.items.some((i) => i.id === activePage);
+    const isOpen = alwaysOpenKeys.has(sec.key) || sec.items.some((i) => i.id === activePage);
     navHtml += `<div class="own-section${isOpen ? " open" : ""}" data-key="${sec.key}">`;
     navHtml += `<button type="button" class="own-section-hdr" onclick="ownToggle(this)">`
       +   `<span class="own-section-emoji">${sec.emoji}</span>`
