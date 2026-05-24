@@ -1588,6 +1588,8 @@ td          { padding:10px 16px; vertical-align:middle; }
   .fmg { margin-bottom:14px; }
   /* Inputs touch-friendly + font 16px supaya iOS tdk zoom on focus */
   .finp, .fsel { padding:13px 12px; font-size:16px; min-height:48px; }
+  /* Picker button (meja/durasi/item) — match .fsel sizing di mobile */
+  .mip-btn { padding:13px 12px; font-size:14px; min-height:48px; }
   .fin-pfx-lbl { padding:13px 11px; font-size:13px; }
   .fin-pfx-inp { padding:13px 11px; font-size:16px; min-height:48px; }
   /* Toggle 2-col tetap 2 kolom (compact) */
