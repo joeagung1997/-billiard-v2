@@ -6,6 +6,7 @@
 import { CONFIG } from "../config.js";
 import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam } from "../utils/format.js";
 import { initials } from "./finance.js";
+import { buildOwnerSidebar, buildOwnerTopbarBell } from "./sidebarOwner.js";
 
 // ── WA SVG icon (string biasa, bukan template literal) ────────
 const WA_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">'
@@ -602,6 +603,11 @@ function buildAdminTopbarProfile(user = {}) {
 
 // ── buildSidebar — shared sidebar HTML (revamp v2) ──────────────────────────
 function buildSidebar(token, activePage, user = {}) {
+  // Owner pakai sidebar unified baru (sections: Utama/Member/Billiard/Warkop/dll)
+  if (user.role === 'owner') {
+    return buildOwnerSidebar({ token, activePage, displayName: user.displayName || '' });
+  }
+
   const dashCls    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
   const membersCls = 'nav-item' + (activePage === 'members'   ? ' active' : '');
   // Persist token onclick (untuk navigate ke /operasional yg gak butuh tk param)
@@ -1025,7 +1031,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=38">'
+    + '<link rel="stylesheet" href="/admin.css?v=39">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1042,6 +1048,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<div class="topbar-label">' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
+    + (user.role === 'owner' ? buildOwnerTopbarBell() : '')
     + buildAdminTopbarProfile(user)
     + '</div></header>'
 
@@ -1443,7 +1450,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=38">'
+    + '<link rel="stylesheet" href="/admin.css?v=39">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1459,6 +1466,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<div class="topbar-label">Kelola Member · ' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
+    + (user.role === 'owner' ? buildOwnerTopbarBell() : '')
     + buildAdminTopbarProfile(user)
     + '</div></header>'
 

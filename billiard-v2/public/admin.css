@@ -276,6 +276,49 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
   letter-spacing:.08em; margin-top:1px; }
 @media (max-width:540px) { .tb-prof-info { display:none; } .topbar-profile { padding:3px; } }
 
+/* ── Topbar Bell (notifikasi) — owner header ─────────────────────── */
+.topbar-bell { position:relative; background:var(--surface2); border:1px solid var(--border2); border-radius:50%;
+  width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;
+  font-size:16px; color:var(--txt2); cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
+.topbar-bell:hover { background:var(--surface); border-color:var(--accent); color:var(--txt); }
+.topbar-bell-dot { position:absolute; top:6px; right:7px; width:8px; height:8px; border-radius:50%;
+  background:#ef4444; border:2px solid var(--surface); box-shadow:0 0 0 1px #ef4444; }
+
+/* Notif Sheet — slide-up bottom sheet */
+.notif-sheet-overlay { display:none; position:fixed; top:0; left:0; right:0; height:100dvh; z-index:1200;
+  background:rgba(15,23,42,.55); backdrop-filter:blur(3px); align-items:flex-end; justify-content:center; }
+.notif-sheet-overlay.open { display:flex; }
+.notif-sheet { width:100%; max-width:520px; background:var(--surface); border-radius:18px 18px 0 0;
+  max-height:60dvh; display:flex; flex-direction:column; overflow:hidden;
+  animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1); }
+@media (min-width:641px) { .notif-sheet-overlay { align-items:center; padding:16px; } .notif-sheet { border-radius:14px; max-height:60dvh; } }
+.notif-sheet-hdr { display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px 12px; border-bottom:1px solid var(--border); }
+.notif-sheet-title { font-size:15px; font-weight:700; color:var(--txt); display:flex; align-items:center; gap:8px; }
+.notif-sheet-title i { font-size:18px; color:var(--accent); }
+.notif-sheet-close { background:none; border:none; color:var(--txt3); cursor:pointer; font-size:20px;
+  padding:4px 6px; display:flex; align-items:center; }
+.notif-sheet-body { flex:1; overflow-y:auto; padding:24px 18px 32px; }
+.notif-empty { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:32px 0 16px; text-align:center; }
+
+/* ── Sidebar Owner — section toggle & soon badge ─────────────────── */
+.nav-section-toggle { user-select:none; }
+.nav-section-toggle .nav-chevron { margin-left:auto; transition:transform .2s; font-size:14px; color:var(--txt3); }
+.nav-section-toggle.open .nav-chevron { transform:rotate(180deg); }
+.soon-badge { display:inline-block; margin-left:8px; padding:2px 7px; border-radius:8px;
+  background:rgba(245,158,11,.12); color:#d97706; font-size:9px; font-weight:700;
+  letter-spacing:.04em; text-transform:uppercase; vertical-align:middle; }
+
+/* Bell di sidebar (desktop) — top-right corner di logo area */
+.sidebar-bell { position:relative; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:50%; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center;
+  font-size:15px; color:rgba(255,255,255,0.7); cursor:pointer; margin-left:auto; flex-shrink:0;
+  transition:background .15s, color .15s, border-color .15s; }
+.sidebar-bell:hover { background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.15); }
+.sidebar-bell-dot { position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%;
+  background:#ef4444; border:1.5px solid #0a1a0c; }
+
 /* ── Bottom nav (mobile) — Revamp v2 ─────────────────────────────── */
 .bottom-nav {
   display:none; position:fixed; bottom:0; left:0; right:0;

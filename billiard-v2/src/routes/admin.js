@@ -20,8 +20,19 @@ import {
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
 import { uploadQrToCloudinary } from "./share.js";
 import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess } from "../views/admin.js";
+import { segeraHadirPage } from "../views/segeraHadir.js";
 
 const router = Router();
+
+// ── GET /segera-hadir — placeholder utk fitur yg blm di-implement ────
+// Owner only. Title via ?title= query param.
+router.get("/segera-hadir", (req, res) => {
+  const tk   = req.query.tk ?? "";
+  const user = verifyToken(tk);
+  if (!user) return res.redirect("/admin");
+  const title = String(req.query.title ?? "Fitur Ini").slice(0, 80);
+  res.send(segeraHadirPage({ title, token: tk, user }));
+});
 
 // ── GET /admin — login atau dashboard ────────────────────────
 router.get("/", async (req, res) => {

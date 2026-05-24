@@ -2,6 +2,7 @@
 // ── HTML views untuk halaman keuangan ────────────────────────
 
 import { CONFIG } from "../config.js";
+import { buildOwnerSidebar, buildOwnerTopbarBell } from "./sidebarOwner.js";
 
 // ── Format rupiah ─────────────────────────────────────────────
 const rp = (n) => {
@@ -36,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=38\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=39\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -48,6 +49,13 @@ export function initials(name) {
 }
 
 export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", displayName = "", shift = "siang") {
+  // Owner pakai sidebar unified baru. Mapping page → activePage di owner sidebar.
+  if (role === "owner") {
+    const activeMap = { keuangan: "keuangan", kategori: "kategori", menu: "menu",
+                        sdm: "kru", monitoring: "aktivitas-kru", analisis: "analisis" };
+    return buildOwnerSidebar({ token: ftk, activePage: activeMap[page] || page, displayName });
+  }
+
   const isOwner = role === "owner";
   const isKeu  = page === "keuangan";
   const isKat  = page === "kategori";
@@ -1243,7 +1251,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
     + "<div class=\"topbar-label\">Keuangan · " + bulanLabel + "</div></div>"
     + "</div>"
-    + "<div class=\"topbar-right\">" + buildFinanceTopbarProfile(role, displayName) + "</div>"
+    + "<div class=\"topbar-right\">" + (role === "owner" ? buildOwnerTopbarBell() : "") + buildFinanceTopbarProfile(role, displayName) + "</div>"
     + "</header>"
 
     + "<div class=\"page\">"
@@ -1893,6 +1901,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(wizS.tipe==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
     + "wizUpdateDateDisplay();}}"
+    // Auto-open trx modal via URL param ?openModal=trx (utk Aksi Cepat 'Transaksi Baru' di sidebar)
+    + "(function(){try{var u=new URL(window.location.href);if(u.searchParams.get('openModal')==='trx'){setTimeout(openTrxModal,100);u.searchParams.delete('openModal');history.replaceState(null,'',u.toString());}}catch(_){}})();"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
     + "function openVoidModal(btn){"
     + "document.getElementById('voidId').value=btn.dataset.id;"
@@ -3403,7 +3413,7 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     + "<div><div class=\"topbar-name\">Analisis Target</div>"
     + "<div class=\"topbar-label\">Detail biaya &amp; rekomendasi</div></div>"
     + "</div>"
-    + "<div class=\"topbar-right\">" + buildFinanceTopbarProfile(role, displayName) + "</div>"
+    + "<div class=\"topbar-right\">" + (role === "owner" ? buildOwnerTopbarBell() : "") + buildFinanceTopbarProfile(role, displayName) + "</div>"
     + "</header>"
 
     + "<div class=\"page\" style=\"padding-bottom:80px\">"
