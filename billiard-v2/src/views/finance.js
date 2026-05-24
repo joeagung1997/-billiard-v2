@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=41\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=42\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1247,7 +1247,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Owner Header (desktop only) — breadcrumb + search + bell + actions
     + (role === "owner" ? buildOwnerHeader({
         breadcrumb: [{ label: "Operasional", href: "/operasional" }, { label: "Dashboard Keuangan" }],
-        actionsHtml: '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
+        actionsHtml:
+          '<a href="/operasional/kategori" class="own-header-btn"><i class="ti ti-tag"></i> Kategori</a>'
+        + '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
       }) : "")
 
     // Mobile topbar
@@ -1264,20 +1266,25 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
 
     + "<button class=\"fin-fab\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\"></i> Catat Transaksi</button>"
 
-    // ── Desktop topbar ──────────────────────────────────────────
-    + "<div class=\"dash-topbar\">"
-    + "<div><div class=\"page-title\">Dashboard Keuangan"
-    + "<span style=\"margin-left:10px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;"
-    + "background:" + (isOwner ? "rgba(45,102,36,.1)" : "rgba(30,64,175,.1)") + ";"
-    + "color:" + (isOwner ? "#2d6624" : "#1e40af") + ";vertical-align:middle\">"
-    + (isOwner ? "Owner" : "Partner") + "</span></div>"
-    + "<div class=\"page-sub\">"
-    + (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu")
-    + "</div></div>"
-    + "<div class=\"topbar-actions\">"
-    + (isOwner ? "<a href=\"/operasional/kategori\" class=\"btn-outline\"><i class=\"ti ti-settings\" style=\"font-size:14px\"></i> Kategori</a>" : "")
-    + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
-    + "</div></div>"
+    // ── Desktop page heading ───────────────────────────────────
+    // Owner: actions (Kategori + Catat Transaksi) sudah di .own-header, jadi
+    // topbar-actions disembunyikan utk owner. Karyawan tetep punya tombol.
+    + "<div class=\"dash-topbar fin-page-head\">"
+    + "<div class=\"fin-page-head-text\">"
+    +   "<h1 class=\"fin-page-title\">Dashboard Keuangan"
+    +     " <span class=\"fin-role-badge fin-role-" + (isOwner ? "owner" : "partner") + "\">"
+    +     "<i class=\"ti ti-" + (isOwner ? "crown" : "user-check") + "\"></i>" + (isOwner ? "OWNER" : "PARTNER") + "</span>"
+    +   "</h1>"
+    +   "<p class=\"fin-page-sub\">"
+    +     (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu")
+    +   "</p>"
+    + "</div>"
+    + (isOwner ? "" : (
+        "<div class=\"topbar-actions\">"
+        + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
+        + "</div>"
+      ))
+    + "</div>"
 
     // ── Saldo Kas Awal (modal kembalian) ────────────────────────
     + "<div class=\"fin-kas-card\">"

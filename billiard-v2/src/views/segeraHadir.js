@@ -15,7 +15,7 @@ export function segeraHadirPage({ title = "Fitur Ini", token = "", user = {} }) 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/admin.css?v=41">
+    <link rel="stylesheet" href="/admin.css?v=42">
     <style>
       .soon-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 80px);padding:24px}
       .soon-card{max-width:480px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:40px 28px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
