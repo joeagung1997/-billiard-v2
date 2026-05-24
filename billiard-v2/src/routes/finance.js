@@ -283,13 +283,27 @@ router.post("/tambah", async (req, res) => {
   // hari sebelumnya, biar transaksi dini hari tdk pisah dari closing shift.
   const tanggalBiz = applyBusinessDay(tanggal.slice(0, 10), (jam ?? "").slice(0, 5));
 
+  // Kopi/Snack add-on (hanya untuk pemasukan Main Billiard) — simpan sbg
+  // transaksi terpisah supaya Analisis Target & laporan per-kategori akurat.
+  const kopiJumlahRaw = (req.body.kopi_jumlah ?? "").replace(/\./g, "");
+  const kopiJumlahNum = parseInt(kopiJumlahRaw) || 0;
+  const kopiKeterangan = (req.body.kopi_keterangan ?? "").trim().slice(0, 200);
+  const hasKopiAddon = jenis === "pemasukan"
+    && kopiJumlahNum > 0
+    && kopiKeterangan
+    && (kategori ?? "").trim() === "Sewa Meja";
+
   try {
+    const waktuSafe = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang";
+    const jamSafe   = (jam ?? "").slice(0, 5);
+    const userId    = res.locals.financeUser || "";
+
     await appendTransaksi({
       id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       tanggal:     tanggalBiz,
-      jam:         (jam ?? "").slice(0, 5),
+      jam:         jamSafe,
       jenis,
-      waktu:       ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang",
+      waktu:       waktuSafe,
       kategori:    (kategori ?? "").trim(),
       subKategori,
       keterangan:  (keterangan ?? "").trim().slice(0, 200),
@@ -297,8 +311,28 @@ router.post("/tambah", async (req, res) => {
       createdAt:   new Date().toISOString(),
       bayar,
       buktiUrl,
-      dicatatOleh: res.locals.financeUser || "",
+      dicatatOleh: userId,
     });
+
+    // Transaksi ke-2: Kopi/Snack add-on (kalau ada). Share waktu/bayar/bukti.
+    if (hasKopiAddon) {
+      await appendTransaksi({
+        id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        tanggal:     tanggalBiz,
+        jam:         jamSafe,
+        jenis:       "pemasukan",
+        waktu:       waktuSafe,
+        kategori:    "Kopi / Snack",
+        subKategori: "",
+        keterangan:  kopiKeterangan,
+        jumlah:      kopiJumlahNum,
+        createdAt:   new Date().toISOString(),
+        bayar,
+        buktiUrl,
+        dicatatOleh: userId,
+      });
+    }
+
     res.redirect("/operasional?msg=created");
   } catch (err) {
     console.error("[FINANCE] tambah POST error:", err.message);

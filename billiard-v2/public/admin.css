@@ -1525,7 +1525,20 @@ td          { padding:10px 16px; vertical-align:middle; }
 .fin-sd.done       { background:#3a7d2c; }
 
 .fin-dynamic       { overflow:hidden; max-height:0; opacity:0; transition:max-height .4s cubic-bezier(.23,1,.32,1),opacity .3s ease; }
-.fin-dynamic.open  { max-height:600px; opacity:1; }
+.fin-dynamic.open  { max-height:1500px; opacity:1; }
+
+/* Addon toggle (Sekalian pesan minum/makan? di section Billiard) */
+.wiz-addon-toggle      { display:flex; align-items:center; gap:10px; padding:11px 13px; border:1.5px solid #e2e8e0; border-radius:9px; background:#f9fbf8; cursor:pointer; font-size:13px; color:#1a2318; transition:background .12s,border-color .12s; user-select:none; }
+.wiz-addon-toggle:hover{ border-color:#3a7d2c; background:#f0f7eb; }
+.wiz-addon-toggle.on   { border-color:#3a7d2c; background:#eaf3e2; color:#2d6624; }
+.wiz-addon-toggle input{ width:18px; height:18px; accent-color:#3a7d2c; cursor:pointer; flex-shrink:0; margin:0; }
+.wiz-addon-toggle span { display:flex; align-items:center; gap:6px; flex:1; }
+.wiz-addon-toggle span i{ font-size:16px; color:#3a7d2c; }
+
+/* Breakdown total saat addon aktif */
+.wiz-addon-display     { margin-top:8px; padding:9px 12px; background:rgba(45,102,36,.07); border:1px solid rgba(45,102,36,.18); border-radius:8px; font-size:12px; color:#2d6624; }
+.wiz-addon-sub         { line-height:1.5; }
+.wiz-addon-grand       { font-size:13px; font-weight:700; color:#1a2318; margin-top:3px; font-family:'DM Mono',monospace; }
 
 .fin-inp-pfx           { display:flex; align-items:center; border:1.5px solid #e2e8e0; border-radius:9px; background:#f9fbf8; overflow:hidden; transition:border-color .15s; }
 .fin-inp-pfx:focus-within { border-color:#3a7d2c; background:#fff; }
