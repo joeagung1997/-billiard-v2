@@ -2,7 +2,7 @@
 // ── HTML views untuk halaman keuangan ────────────────────────
 
 import { CONFIG } from "../config.js";
-import { buildOwnerSidebar, buildOwnerTopbarBell } from "./sidebarOwner.js";
+import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader } from "./sidebarOwner.js";
 
 // ── Format rupiah ─────────────────────────────────────────────
 const rp = (n) => {
@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=40\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=41\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1243,6 +1243,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "keuangan", role, displayName, defaultShift)
     + "<div class=\"main-wrap\">"
+
+    // Owner Header (desktop only) — breadcrumb + search + bell + actions
+    + (role === "owner" ? buildOwnerHeader({
+        breadcrumb: [{ label: "Operasional", href: "/operasional" }, { label: "Dashboard Keuangan" }],
+        actionsHtml: '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
+      }) : "")
 
     // Mobile topbar
     + "<header class=\"topbar\">"

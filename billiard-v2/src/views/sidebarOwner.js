@@ -235,3 +235,35 @@ export function buildOwnerTopbarBell() {
     <span class="topbar-bell-dot" id="topbarBellDot" style="display:none"></span>
   </button>`;
 }
+
+// ── Owner Header (desktop only) ──────────────────────────────
+// Breadcrumb + global search + quick icons + page-specific action buttons.
+// breadcrumb: array of {label, href?} — last item is current page (no link).
+// actionsHtml: string HTML untuk action buttons di kanan (page-specific).
+// hasNotifDot: tampilin red dot di bell (kalau ada notif unread).
+export function buildOwnerHeader({ breadcrumb = [], actionsHtml = "", hasNotifDot = false } = {}) {
+  const bcParts = breadcrumb.map((b, i) => {
+    const isLast = i === breadcrumb.length - 1;
+    const sep = i > 0 ? `<i class="ti ti-chevron-right own-bc-sep"></i>` : "";
+    if (isLast || !b.href) {
+      return `${sep}<span class="own-bc-curr">${b.label}</span>`;
+    }
+    return `${sep}<a href="${b.href}" class="own-bc-link">${b.label}</a>`;
+  }).join("");
+
+  return `<header class="own-header">
+    <nav class="own-bc">${bcParts}</nav>
+    <div class="own-search">
+      <i class="ti ti-search own-search-icon"></i>
+      <input type="text" class="own-search-input" placeholder="Cari transaksi, member, meja..." autocomplete="off" disabled>
+    </div>
+    <div class="own-header-actions">
+      <button type="button" class="own-header-icon" title="Bantuan" onclick="alert('Bantuan: hubungi owner via WA')"><i class="ti ti-help"></i></button>
+      <button type="button" class="own-header-icon own-header-bell" onclick="openNotifSheet()" title="Notifikasi">
+        <i class="ti ti-bell"></i>
+        ${hasNotifDot ? '<span class="own-header-bell-dot"></span>' : ''}
+      </button>
+      ${actionsHtml}
+    </div>
+  </header>`;
+}

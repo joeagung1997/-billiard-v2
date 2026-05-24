@@ -414,6 +414,63 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .sidebar-bell-dot { position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%;
   background:#ef4444; border:1.5px solid #0a1a0c; }
 
+/* ═══════════════════════════════════════════════════════════════════
+   OWNER HEADER — sticky top header (desktop only)
+   Breadcrumb + search + bell + page-specific action buttons
+   ═══════════════════════════════════════════════════════════════════ */
+.own-header { display:none; position:sticky; top:0; z-index:55;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:12px 24px; align-items:center; gap:16px; box-shadow:0 1px 0 rgba(0,0,0,.02); }
+@media (min-width:769px) { .own-header { display:flex; } }
+
+/* Breadcrumb */
+.own-bc { display:flex; align-items:center; gap:6px; min-width:0; flex-shrink:0; }
+.own-bc-link { font-size:13px; font-weight:500; color:var(--txt2); text-decoration:none;
+  padding:4px 6px; border-radius:6px; transition:background .12s, color .12s; }
+.own-bc-link:hover { background:var(--surface2); color:var(--txt); }
+.own-bc-curr { font-size:13px; font-weight:600; color:var(--txt); padding:4px 6px; }
+.own-bc-sep { font-size:14px; color:var(--txt3); opacity:.5; }
+
+/* Global Search */
+.own-search { position:relative; flex:1; max-width:520px; }
+.own-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  font-size:15px; color:var(--txt3); }
+.own-search-input { width:100%; padding:9px 12px 9px 36px;
+  border:1px solid var(--border2); border-radius:9px; background:var(--surface2);
+  font-family:var(--ff); font-size:13px; color:var(--txt); outline:none;
+  transition:border-color .15s, background .15s; }
+.own-search-input::placeholder { color:var(--txt3); }
+.own-search-input:focus:not(:disabled) { border-color:var(--accent); background:var(--surface); }
+.own-search-input:disabled { cursor:not-allowed; opacity:.7; }
+
+/* Right actions group */
+.own-header-actions { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+
+/* Icon-only buttons (help, bell) */
+.own-header-icon { position:relative; width:36px; height:36px; border-radius:9px;
+  background:var(--surface2); border:1px solid var(--border2);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:16px; color:var(--txt2); cursor:pointer;
+  transition:background .15s, border-color .15s, color .15s; }
+.own-header-icon:hover { background:var(--surface); border-color:var(--accent); color:var(--txt); }
+.own-header-bell-dot { position:absolute; top:6px; right:8px; width:8px; height:8px;
+  border-radius:50%; background:#ef4444; border:2px solid var(--surface); }
+
+/* Action buttons (Ekspor, Catat Transaksi, etc) */
+.own-header-btn { display:inline-flex; align-items:center; gap:6px;
+  padding:8px 14px; border-radius:9px; border:1px solid var(--border2);
+  background:var(--surface); color:var(--txt); font-size:13px; font-weight:600;
+  font-family:var(--ff); cursor:pointer; text-decoration:none;
+  transition:background .15s, border-color .15s, transform .1s; }
+.own-header-btn:hover { background:var(--surface2); border-color:var(--accent); }
+.own-header-btn:active { transform:scale(.97); }
+.own-header-btn i { font-size:15px; }
+.own-header-btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.own-header-btn-primary:hover { background:#1f4d1c; border-color:#1f4d1c; color:#fff; }
+
+/* Topbar mobile — hide pada desktop kalau own-header aktif */
+@media (min-width:769px) { body:has(.own-header) .topbar { display:none; } }
+
 /* ── Bottom nav (mobile) — Revamp v2 ─────────────────────────────── */
 .bottom-nav {
   display:none; position:fixed; bottom:0; left:0; right:0;
