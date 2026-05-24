@@ -1566,9 +1566,12 @@ td          { padding:10px 16px; vertical-align:middle; }
 .fr-td.muted      { color:var(--txt3); font-size:11px; }
 .fr-td.mono       { font-family:var(--ff-mono); }
 
-/* Tanggal: 2-line compact (24 Mei / 2026 · 00:20) */
-.fr-tgl-main      { font-size:13px; font-weight:700; color:var(--txt); line-height:1.15; font-family:var(--ff-mono); }
-.fr-tgl-sub       { font-size:10.5px; color:var(--txt3); font-weight:500; margin-top:2px; line-height:1.1; font-family:var(--ff-mono); }
+/* Tanggal cell: 2-line "24 Mei 2026" / "00:20" — column flex */
+.fr-tgl-cell      { flex-direction:column; align-items:flex-start; gap:2px; }
+.fr-tgl-main      { font-size:12px; font-weight:600; color:var(--txt); line-height:1.2;
+  font-family:var(--ff); white-space:nowrap; }
+.fr-tgl-sub       { font-size:10.5px; color:var(--txt3); font-weight:500; line-height:1;
+  font-family:var(--ff-mono); }
 
 /* Keterangan */
 .fr-desc          { flex-direction:column; align-items:flex-start; gap:5px; min-width:0; }

@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=51\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=52\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -865,12 +865,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const makeRow = function(t, idx) {
     const isIn    = t.jenis === "pemasukan";
     const isVoid  = !!t.voidedAt;
-    // Tanggal 2-line compact: "24 Mei" / "2026 · 00:20"
+    // Tanggal 2-line compact: "24 Mei 2026" / "00:20"
     const d = new Date(t.tanggal + "T00:00:00");
-    const tglMain = d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-    const tglSub  = d.getFullYear() + (t.jam ? " · " + escHtml(t.jam) : "");
+    const tglMain = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
     const tglDisp = "<div class=\"fr-tgl-main\">" + tglMain + "</div>"
-                  + "<div class=\"fr-tgl-sub\">" + tglSub + "</div>";
+                  + (t.jam ? "<div class=\"fr-tgl-sub\">" + escHtml(t.jam) + "</div>" : "");
     const rowCls   = "fin-row " + (isVoid ? "trx-voided" : (isIn ? "fin-row-in" : "fin-row-out"));
     const reasonHt = isVoid
       ? "<div class=\"trx-void-reason\" title=\"Dibatalkan: " + escHtml(t.voidReason || "—") + "\">"
@@ -885,7 +884,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + " onclick=\"openVoidModal(this)\">"
         + "<i class=\"ti ti-ban\"></i></button>";
     return "<div class=\"" + rowCls + "\" data-tanggal=\"" + escHtml(t.tanggal || "") + "\" data-idx=\"" + idx + "\" onclick=\"if(event.target.closest('.icon-btn,.fr-bukti-thumb,a,button'))return;openTrxDetail(" + idx + ")\">"
-      + "<div class=\"fr-td muted mono\">" + tglDisp + "</div>"
+      + "<div class=\"fr-td fr-tgl-cell\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">"
       +   (t.keterangan
@@ -978,7 +977,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-row-in:hover{background:#f0fdf4!important}",
     ".fin-row-out:hover{background:#fff5f5!important}",
     // ── Tabel 5-kolom (merge Jumlah+Tipe) ───────────────────────
-    ".fin-tbl-head,.fin-row{grid-template-columns:88px minmax(0,1fr) 130px 130px 48px!important;gap:14px}",
+    ".fin-tbl-head,.fin-row{grid-template-columns:96px minmax(0,1fr) 130px 130px 48px!important;gap:14px}",
     ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
     ".fr-bayar-cash{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.02em}",
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
