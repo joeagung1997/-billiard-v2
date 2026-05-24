@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=43\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=44\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -922,6 +922,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ? "<div id=\"trxRows\">" + sortedTbl.map(makeRow).join("") + "</div>"
     : "<div class=\"empty-state\" id=\"emptyState\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
 
+  // Preview mode (dashboard): cuma 5 terbaru — bypass filter chips & pagination.
+  // Pakai id 'trxRowsPreview' supaya renderTbl (yg cari #trxRows) skip ini.
+  const previewTbl  = sortedTbl.slice(0, 5);
+  const previewRows = previewTbl.length > 0
+    ? "<div id=\"trxRowsPreview\">" + previewTbl.map(makeRow).join("") + "</div>"
+    : "<div class=\"empty-state\"><i class=\"ti ti-receipt-off\"></i>Belum ada transaksi di periode ini</div>";
+  const moreCount = Math.max(0, sortedTbl.length - 5);
+
   const hasDateFilter = !!tDari;
 
   const chartLabelsJson = safeJson(chartLabels);
@@ -1503,25 +1511,34 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
 
     // ── Transaction table ───────────────────────────────────────
     + "<div class=\"fin-table-card\" id=\"trx-list\">"
-    + "<div class=\"fin-tbl-toolbar\">"
-    + "<div class=\"fin-search-wrap\">"
-    + "<i class=\"ti ti-search\"></i>"
-    + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"renderTbl()\">"
-    + "</div>"
-    + "<div class=\"fin-tbl-chips\">"
-    +   "<button type=\"button\" class=\"fin-tbl-chip active\" data-tbl-filter=\"today\" onclick=\"setTblFilter('today')\">Hari ini</button>"
-    +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"yesterday\" onclick=\"setTblFilter('yesterday')\">Kemarin</button>"
-    +   (isOwner
-      ? "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"custom\" onclick=\"toggleTblCustom()\">Custom</button>"
-        + "<div id=\"tblCustomRange\" style=\"display:none;align-items:center;gap:5px\">"
-        +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"
-        +   "<span style=\"color:var(--txt3);font-size:11px\">—</span>"
-        +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblSampai\" onchange=\"setTblFilter('custom')\">"
+    + (transaksiOnly
+      ? // FULL mode (/transaksi): toolbar (search + filter chips) + pagination footer
+        "<div class=\"fin-tbl-toolbar\">"
+        + "<div class=\"fin-search-wrap\">"
+        + "<i class=\"ti ti-search\"></i>"
+        + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"renderTbl()\">"
         + "</div>"
-      : "")
-    +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"all\" onclick=\"setTblFilter('all')\">Semua</button>"
-    + "</div>"
-    + "</div>"
+        + "<div class=\"fin-tbl-chips\">"
+        +   "<button type=\"button\" class=\"fin-tbl-chip active\" data-tbl-filter=\"today\" onclick=\"setTblFilter('today')\">Hari ini</button>"
+        +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"yesterday\" onclick=\"setTblFilter('yesterday')\">Kemarin</button>"
+        +   (isOwner
+          ? "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"custom\" onclick=\"toggleTblCustom()\">Custom</button>"
+            + "<div id=\"tblCustomRange\" style=\"display:none;align-items:center;gap:5px\">"
+            +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"
+            +   "<span style=\"color:var(--txt3);font-size:11px\">—</span>"
+            +   "<input type=\"date\" class=\"fin-tbl-date\" id=\"tblSampai\" onchange=\"setTblFilter('custom')\">"
+            + "</div>"
+          : "")
+        +   "<button type=\"button\" class=\"fin-tbl-chip\" data-tbl-filter=\"all\" onclick=\"setTblFilter('all')\">Semua</button>"
+        + "</div>"
+        + "</div>"
+      : // PREVIEW mode (dashboard): cuma header 'Transaksi Terbaru' + link Lihat Semua
+        "<div class=\"fin-tbl-preview-hdr\">"
+        + "<div><h3 class=\"fin-tbl-preview-title\"><i class=\"ti ti-receipt\"></i> Transaksi Terbaru</h3>"
+        + "<p class=\"fin-tbl-preview-sub\">5 transaksi terakhir — klik 'Lihat Semua' utk daftar lengkap</p></div>"
+        + "<a href=\"/operasional/transaksi\" class=\"fin-tbl-preview-link\">Lihat Semua <i class=\"ti ti-arrow-right\"></i></a>"
+        + "</div>"
+      )
     + "<div class=\"fin-tbl-head\">"
     + "<div class=\"fin-th\">Tanggal</div>"
     + "<div class=\"fin-th\">Keterangan</div>"
@@ -1529,17 +1546,28 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-th\">Jumlah &amp; Tipe</div>"
     + "<div class=\"fin-th right\">Aksi</div>"
     + "</div>"
-    + rows
-    + "<div class=\"fin-tbl-footer\">"
-    + "<div class=\"fin-tf-left\">"
-    + "<span id=\"tblCount\">" + sortedTbl.length + " transaksi"
-    + (voidedCount > 0 ? " <span style=\"color:#a32d2d\">(" + voidedCount + " dibatalkan)</span>" : "")
-    + "</span>"
-    + "<span style=\"color:#e2e8e0\">|</span>"
-    + "<span>Saldo: <span class=\"fin-tf-saldo\" id=\"tblSaldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
-    + "</div>"
-    + "<div class=\"fin-pagination\" id=\"tblPagi\"></div>"
-    + "</div>"
+    + (transaksiOnly ? rows : previewRows)
+    + (transaksiOnly
+      ? // FULL mode footer
+        "<div class=\"fin-tbl-footer\">"
+        + "<div class=\"fin-tf-left\">"
+        + "<span id=\"tblCount\">" + sortedTbl.length + " transaksi"
+        + (voidedCount > 0 ? " <span style=\"color:#a32d2d\">(" + voidedCount + " dibatalkan)</span>" : "")
+        + "</span>"
+        + "<span style=\"color:#e2e8e0\">|</span>"
+        + "<span>Saldo: <span class=\"fin-tf-saldo\" id=\"tblSaldo\" style=\"color:" + (saldo >= 0 ? "#2d6624" : "#a32d2d") + "\">" + (saldo < 0 ? "−" : "+") + rp(Math.abs(saldo)) + "</span></span>"
+        + "</div>"
+        + "<div class=\"fin-pagination\" id=\"tblPagi\"></div>"
+        + "</div>"
+      : // PREVIEW mode footer — 'Lihat semua N transaksi' button
+        "<div class=\"fin-tbl-preview-footer\">"
+        + "<a href=\"/operasional/transaksi\" class=\"fin-tbl-preview-btn\">"
+        + (moreCount > 0
+            ? "<i class=\"ti ti-list-details\"></i> Lihat semua " + sortedTbl.length + " transaksi <i class=\"ti ti-arrow-right\"></i>"
+            : "<i class=\"ti ti-list-details\"></i> Buka halaman Transaksi <i class=\"ti ti-arrow-right\"></i>")
+        + "</a>"
+        + "</div>"
+      )
     + "</div>"
 
     + "</div>"
