@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=49\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=50\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1521,22 +1521,27 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Tutup wrapper #finDashOnly (lihat tag pembuka sebelum kas-card)
     + "</div>"
 
-    // ── Summary compact (cuma muncul di /transaksi) — single card 2-line
+    // ── Summary (cuma muncul di /transaksi) — clean 4-column grid w/ dividers
     + (transaksiOnly
-      ? "<div class=\"trx-sum-card\">"
+      ? "<div class=\"trx-sum\">"
         + "<div class=\"trx-sum-icon\"><i class=\"ti ti-chart-pie\"></i></div>"
-        + "<div class=\"trx-sum-body\">"
-        +   "<div class=\"trx-sum-row\">"
-        +     "<span class=\"trx-sum-item\"><b id=\"sumTrxCount\">" + sortedTbl.length + "</b> transaksi</span>"
-        +     "<span class=\"trx-sum-sep\">·</span>"
-        +     "<span class=\"trx-sum-item in\">Masuk <b id=\"sumTrxIn\">Rp 0</b></span>"
-        +     "<span class=\"trx-sum-sep\">·</span>"
-        +     "<span class=\"trx-sum-item out\">Keluar <b id=\"sumTrxOut\">Rp 0</b></span>"
+        + "<div class=\"trx-sum-stats\">"
+        +   "<div class=\"trx-stat\">"
+        +     "<div class=\"trx-stat-lbl\">Total</div>"
+        +     "<div class=\"trx-stat-val\"><b id=\"sumTrxCount\">" + sortedTbl.length + "</b><span class=\"trx-stat-suffix\">transaksi</span></div>"
         +   "</div>"
-        +   "<div class=\"trx-sum-row trx-sum-net-row\">"
-        +     "<span class=\"trx-sum-net-lbl\">Net:</span>"
-        +     "<b class=\"trx-sum-net-val\" id=\"sumTrxNet\">Rp 0</b>"
-        +     "<span class=\"trx-sum-void-info\" id=\"sumTrxVoidInfo\"></span>"
+        +   "<div class=\"trx-stat\">"
+        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-arrow-up-right\"></i> Pemasukan</div>"
+        +     "<div class=\"trx-stat-val in\" id=\"sumTrxIn\">Rp 0</div>"
+        +   "</div>"
+        +   "<div class=\"trx-stat\">"
+        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-arrow-down-right\"></i> Pengeluaran</div>"
+        +     "<div class=\"trx-stat-val out\" id=\"sumTrxOut\">Rp 0</div>"
+        +   "</div>"
+        +   "<div class=\"trx-stat trx-stat-net\">"
+        +     "<div class=\"trx-stat-lbl\"><i class=\"ti ti-equal\"></i> Net / Saldo</div>"
+        +     "<div class=\"trx-stat-val net\" id=\"sumTrxNet\">Rp 0</div>"
+        +     "<div class=\"trx-stat-info\" id=\"sumTrxVoidInfo\"></div>"
         +   "</div>"
         + "</div>"
         + "</div>"
