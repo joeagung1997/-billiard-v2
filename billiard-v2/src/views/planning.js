@@ -105,7 +105,8 @@ function renderWishlistTab(items) {
 
   return `
     <div class="plan-tab-content">
-      <!-- Summary mini -->
+      ${items.length > 0 ? `
+      <!-- Summary mini — cuma tampil kalau ada item -->
       <div class="plan-wishlist-summary">
         <div class="plan-sum-item"><span class="plan-sum-lbl">Total Item</span><b>${items.length}</b></div>
         <div class="plan-sum-item"><span class="plan-sum-lbl">Estimasi Total</span><b>${rp(totalEstimasi)}</b></div>
@@ -114,13 +115,37 @@ function renderWishlistTab(items) {
           ${countByStatus.idea || 0} ide · ${countByStatus.plan || 0} plan · ${countByStatus.ongoing || 0} on-going · ${countByStatus.done || 0} done
         </b></div>
       </div>
+      ` : ''}
 
       ${items.length === 0
-        ? `<div class="plan-empty">
-            <i class="ti ti-clipboard-list"></i>
+        ? `<div class="plan-empty-hero">
+            <div class="plan-empty-illust">
+              <div class="plan-empty-icon-bg"></div>
+              <i class="ti ti-clipboard-list plan-empty-icon"></i>
+              <span class="plan-empty-sparkle plan-empty-sparkle-1">✨</span>
+              <span class="plan-empty-sparkle plan-empty-sparkle-2">💡</span>
+              <span class="plan-empty-sparkle plan-empty-sparkle-3">🎯</span>
+            </div>
             <div class="plan-empty-title">Belum ada item di wishlist</div>
-            <div class="plan-empty-sub">Mulai catat rencana upgrade & ekspansi bisnis kamu.</div>
-            <button type="button" class="btn-primary" onclick="openPlanModal('')"><i class="ti ti-plus"></i> Tambah Item Pertama</button>
+            <div class="plan-empty-sub">Mulai catat rencana upgrade & ekspansi bisnis kamu.<br>Klik salah satu template di bawah untuk memulai cepat 👇</div>
+            <div class="plan-empty-templates">
+              <button type="button" class="plan-template-btn plan-tpl-billiard" onclick="openPlanModalFromTpl('billiard')">
+                <span class="plan-tpl-ic">🎱</span>
+                <span class="plan-tpl-info"><b>Tambah Meja Billiard</b><span>Estimasi Rp 12 jt</span></span>
+              </button>
+              <button type="button" class="plan-template-btn plan-tpl-warkop" onclick="openPlanModalFromTpl('warkop')">
+                <span class="plan-tpl-ic">☕</span>
+                <span class="plan-tpl-info"><b>Beli Mesin Espresso</b><span>Estimasi Rp 8 jt</span></span>
+              </button>
+              <button type="button" class="plan-template-btn plan-tpl-renov" onclick="openPlanModalFromTpl('renovasi')">
+                <span class="plan-tpl-ic">🔨</span>
+                <span class="plan-tpl-info"><b>Pasang AC Area Billiard</b><span>Estimasi Rp 3.5 jt</span></span>
+              </button>
+              <button type="button" class="plan-template-btn plan-tpl-blank" onclick="openPlanModal('')">
+                <span class="plan-tpl-ic">➕</span>
+                <span class="plan-tpl-info"><b>Item Custom</b><span>Mulai dari kosong</span></span>
+              </button>
+            </div>
           </div>`
         : `${renderGroup('urgent', 'Urgent', groups.urgent)}
            ${renderGroup('penting', 'Penting', groups.penting)}
@@ -165,34 +190,104 @@ function renderAnggaranTab() {
   `;
 }
 
-// ── Timeline tab (preview) ──────────────────────────────────
-function renderTimelineTab() {
+// ── Timeline tab (FUNCTIONAL — Gantt from wishlist items) ───
+function renderTimelineTab(items) {
+  // Filter items dgn target_date set & status != cancelled
+  const dated = items.filter((it) => it.targetDate && it.status !== "cancelled");
+
+  // Build 12 bulan ke depan dari bulan ini
+  const today = new Date();
+  const todayKey = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    months.push({
+      key: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"),
+      label: d.toLocaleDateString("id-ID", { month: "short" }),
+      year: d.getFullYear(),
+      isThisMonth: i === 0,
+    });
+  }
+
+  // Render header row
+  const hdrCells = months.map((m, i) => {
+    const yrLbl = (i === 0 || m.label === "Jan") ? `<span class="plan-tl-year">${m.year}</span>` : "";
+    return `<div class="plan-tl-month${m.isThisMonth ? " current" : ""}">${m.label}${yrLbl}</div>`;
+  }).join("");
+
+  // Status → bar color mapping
+  const statusColor = {
+    idea:    { color: "#94a3b8", style: "striped" },
+    plan:    { color: "#2563eb", style: "striped" },
+    ongoing: { color: "#3a7d2c", style: "solid"   },
+    done:    { color: "#16a34a", style: "solid"   },
+  };
+
+  // Render row per item: bar from todayKey → targetMonth
+  const rowsHtml = dated.length === 0
+    ? `<div class="plan-empty plan-tl-empty">
+         <i class="ti ti-timeline-event-exclamation"></i>
+         <div class="plan-empty-title">Belum ada item ber-target tanggal</div>
+         <div class="plan-empty-sub">Set 'Target Tanggal Eksekusi' di item Wishlist untuk muncul di timeline.</div>
+       </div>`
+    : dated.map((it) => {
+        const targetKey = it.targetDate.slice(0, 7);
+        let startIdx = months.findIndex((m) => m.key === todayKey);
+        if (startIdx < 0) startIdx = 0;
+        let endIdx = months.findIndex((m) => m.key === targetKey);
+        const isOverdue = targetKey < todayKey;
+        // Kalau target di luar 12 bulan ke depan, clamp ke index terakhir (overflow tag)
+        const overflow = endIdx < 0 && targetKey > months[months.length - 1].key;
+        if (endIdx < 0) endIdx = months.length - 1;
+        if (isOverdue) { startIdx = 0; endIdx = 0; }
+        // Grid columns 1-based, +1 utk label kolom (1), +1 utk bar start
+        const colStart = startIdx + 2;
+        const colEnd   = endIdx + 3; // grid-column end is exclusive
+        const sc = statusColor[it.status] || statusColor.plan;
+        const barClass = "plan-tl-bar plan-tl-bar-" + sc.style + (isOverdue ? " plan-tl-bar-overdue" : "");
+        const barStyle = "grid-column:" + colStart + "/" + colEnd + ";"
+                       + "background:" + (isOverdue ? "#dc2626" : sc.color);
+        const katMap = KATEGORI_LABELS[it.kategori] || KATEGORI_LABELS.lain;
+        return `
+          <div class="plan-tl-row" data-id="${escHtml(it.id)}" onclick="openPlanModal('${escHtml(it.id)}')">
+            <div class="plan-tl-task">
+              <div class="plan-tl-task-title">${escHtml(it.nama)}</div>
+              <div class="plan-tl-task-meta">
+                <span style="color:${katMap.color}">${katMap.lbl}</span>
+                <span class="plan-tl-task-sep">·</span>
+                <span>${rp(it.estimasi)}</span>
+                ${overflow ? '<span class="plan-tl-overflow">›</span>' : ''}
+                ${isOverdue ? '<span class="plan-tl-overdue-pill">Overdue</span>' : ''}
+              </div>
+            </div>
+            <div class="${barClass}" style="${barStyle}" title="${escHtml(it.targetDate)} · ${escHtml(it.status)}">
+              <span class="plan-tl-bar-lbl">${it.status === 'ongoing' ? '🚧' : it.status === 'done' ? '✅' : it.status === 'idea' ? '💡' : '📋'}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
   return `
     <div class="plan-tab-content">
-      <div class="plan-soon-card">
-        <div class="plan-soon-hdr">
-          <div class="plan-soon-ic"><i class="ti ti-timeline-event-exclamation"></i></div>
+      <div class="plan-tl-card">
+        <div class="plan-tl-hdr">
           <div>
-            <div class="plan-soon-title">Roadmap Timeline</div>
-            <div class="plan-soon-sub">Visual Gantt chart 6-12 bulan — drag-drop reschedule. Segera hadir.</div>
+            <h3 class="plan-tl-title">🗺️ Roadmap 12 Bulan Ke Depan</h3>
+            <p class="plan-tl-sub">${dated.length} item ber-jadwal · Status & color sesuai prioritas eksekusi</p>
           </div>
-          <span class="plan-soon-badge">Segera</span>
+          <div class="plan-tl-legend">
+            <span class="plan-tl-legend-item"><span class="plan-tl-dot solid" style="background:#3a7d2c"></span>On-going</span>
+            <span class="plan-tl-legend-item"><span class="plan-tl-dot striped"></span>Plan</span>
+            <span class="plan-tl-legend-item"><span class="plan-tl-dot" style="background:#dc2626"></span>Overdue</span>
+          </div>
         </div>
-        <div class="plan-soon-preview">
-          <div class="plan-gantt-preview">
-            <div class="plan-gantt-hdr">
-              <span></span>
-              <span>Jun</span><span>Jul</span><span>Agu</span><span>Sep</span><span>Okt</span><span>Nov</span>
-            </div>
-            <div class="plan-gantt-row"><span class="plan-gantt-lbl">Tambah meja 4</span><div class="plan-gantt-bar" style="grid-column:5/7;background:#3a7d2c"></div></div>
-            <div class="plan-gantt-row"><span class="plan-gantt-lbl">Pasang AC</span><div class="plan-gantt-bar" style="grid-column:2/4;background:#d97706"></div></div>
-            <div class="plan-gantt-row"><span class="plan-gantt-lbl">Upgrade karpet</span><div class="plan-gantt-bar" style="grid-column:3/5;background:#a855f7"></div></div>
-            <div class="plan-gantt-row"><span class="plan-gantt-lbl">Kulkas display</span><div class="plan-gantt-bar" style="grid-column:4/6;background:#2563eb"></div></div>
+        <div class="plan-tl-grid">
+          <div class="plan-tl-thead">
+            <div class="plan-tl-task-hdr">Item</div>
+            ${hdrCells}
           </div>
-          <div class="plan-soon-features">
-            <div class="plan-soon-feat"><i class="ti ti-calendar"></i> Drag-drop untuk reschedule item</div>
-            <div class="plan-soon-feat"><i class="ti ti-link"></i> Link ke kalender + reminder vendor</div>
-            <div class="plan-soon-feat"><i class="ti ti-eye"></i> Filter per kategori / prioritas</div>
+          <div class="plan-tl-tbody">
+            ${rowsHtml}
           </div>
         </div>
       </div>
@@ -343,7 +438,7 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
   const itemsJson = JSON.stringify(items).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=56\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=57\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -367,16 +462,21 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
 
     + "<div class=\"page\">"
 
-    // Page heading
-    + "<div class=\"dash-topbar fin-page-head\">"
-    + "<div class=\"fin-page-head-text\">"
-    + "<h1 class=\"fin-page-title\">📈 Planning &amp; Roadmap"
-    +   " <span class=\"fin-role-badge fin-role-owner\"><i class=\"ti ti-crown\"></i>OWNER</span>"
-    + "</h1>"
-    + "<p class=\"fin-page-sub\">Catat rencana upgrade, alokasi tabungan goal, dan simulasi ROI ekspansi bisnis.</p>"
-    + "</div>"
-    + "<div class=\"topbar-actions\">"
-    + "<button type=\"button\" class=\"btn-primary\" onclick=\"openPlanModal('')\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Tambah Item</button>"
+    // Hero page heading — gradient bg, illustration, stats inline
+    + "<div class=\"plan-hero\">"
+    + "<div class=\"plan-hero-deco\"></div>"
+    + "<div class=\"plan-hero-content\">"
+    +   "<div class=\"plan-hero-icon\"><i class=\"ti ti-route-2\"></i></div>"
+    +   "<div class=\"plan-hero-text\">"
+    +     "<div class=\"plan-hero-eyebrow\">Operasional · Strategi Bisnis</div>"
+    +     "<h1 class=\"plan-hero-title\">Planning &amp; Roadmap <span class=\"plan-hero-badge\"><i class=\"ti ti-crown\"></i>OWNER</span></h1>"
+    +     "<p class=\"plan-hero-sub\">Catat rencana upgrade, alokasi tabungan goal, dan simulasi ROI ekspansi bisnis. Bantu kamu ambil keputusan berdasarkan angka — bukan feeling.</p>"
+    +     "<div class=\"plan-hero-stats\">"
+    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-clipboard-list\"></i> <b>" + items.length + "</b> item</span>"
+    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-coin\"></i> Estimasi <b>" + rp(items.reduce((s, i) => s + (i.estimasi || 0), 0)) + "</b></span>"
+    +       "<span class=\"plan-hero-stat plan-hero-roi\"><i class=\"ti ti-trending-up\"></i> Potensi ROI <b>" + rp(items.reduce((s, i) => s + (i.roiEstimate || 0), 0)) + "/bln</b></span>"
+    +     "</div>"
+    +   "</div>"
     + "</div>"
     + "</div>"
 
@@ -384,14 +484,14 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
     + "<div class=\"plan-tabs-nav\">"
     + "<button type=\"button\" class=\"plan-tab-btn active\" data-tab=\"wishlist\" onclick=\"switchPlanTab('wishlist')\"><i class=\"ti ti-clipboard-list\"></i> Wishlist <span class=\"plan-tab-count\">" + items.length + "</span></button>"
     + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"anggaran\" onclick=\"switchPlanTab('anggaran')\"><i class=\"ti ti-piggy-bank\"></i> Anggaran <span class=\"plan-soon-pill\">Segera</span></button>"
-    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"timeline\" onclick=\"switchPlanTab('timeline')\"><i class=\"ti ti-timeline-event\"></i> Timeline <span class=\"plan-soon-pill\">Segera</span></button>"
+    + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"timeline\" onclick=\"switchPlanTab('timeline')\"><i class=\"ti ti-timeline-event\"></i> Timeline" + (items.filter((it) => it.targetDate && it.status !== "cancelled").length > 0 ? " <span class=\"plan-tab-count\">" + items.filter((it) => it.targetDate && it.status !== "cancelled").length + "</span>" : "") + "</button>"
     + "<button type=\"button\" class=\"plan-tab-btn\" data-tab=\"simulasi\" onclick=\"switchPlanTab('simulasi')\"><i class=\"ti ti-calculator\"></i> Simulasi <span class=\"plan-soon-pill\">Segera</span></button>"
     + "</div>"
 
     // Tab contents
     + "<div class=\"plan-tab-wrap\" data-tab-content=\"wishlist\">" + renderWishlistTab(items) + "</div>"
     + "<div class=\"plan-tab-wrap\" data-tab-content=\"anggaran\" style=\"display:none\">" + renderAnggaranTab() + "</div>"
-    + "<div class=\"plan-tab-wrap\" data-tab-content=\"timeline\" style=\"display:none\">" + renderTimelineTab() + "</div>"
+    + "<div class=\"plan-tab-wrap\" data-tab-content=\"timeline\" style=\"display:none\">" + renderTimelineTab(items) + "</div>"
     + "<div class=\"plan-tab-wrap\" data-tab-content=\"simulasi\" style=\"display:none\">" + renderSimulasiTab() + "</div>"
 
     + "</div>" // .page
@@ -432,6 +532,20 @@ export function planningPage({ items = [], token = "", role = "owner", displayNa
     +   "setTimeout(function(){document.getElementById('planFNama').focus();},150);"
     + "}"
     + "function closePlanModal(){document.getElementById('planModalOv').classList.remove('open');}"
+    // Template quick-start: pre-fill modal dgn data umum
+    + "function openPlanModalFromTpl(tpl){"
+    +   "var t={billiard:{nama:'Tambah meja billiard ke-4',kategori:'billiard',estimasi:12000000,prioritas:'urgent',status:'plan',roi:4500000},"
+    +     "warkop:{nama:'Beli mesin espresso',kategori:'warkop',estimasi:8000000,prioritas:'penting',status:'idea',roi:1500000},"
+    +     "renovasi:{nama:'Pasang AC area billiard',kategori:'renovasi',estimasi:3500000,prioritas:'urgent',status:'plan',roi:0}};"
+    +   "var x=t[tpl];if(!x){openPlanModal('');return;}"
+    +   "openPlanModal('');"
+    +   "document.getElementById('planFNama').value=x.nama;"
+    +   "document.getElementById('planFKategori').value=x.kategori;"
+    +   "document.getElementById('planFEstimasi').value=_planRpFmt(x.estimasi);"
+    +   "document.getElementById('planFPrioritas').value=x.prioritas;"
+    +   "document.getElementById('planFStatus').value=x.status;"
+    +   "if(x.roi)document.getElementById('planFRoi').value=_planRpFmt(x.roi);"
+    + "}"
     + "function _planRpFmt(n){var a=Math.abs(Math.round(Number(n)||0));var s=String(a);return s.replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.');}"
     + "function planFmtNum(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?_planRpFmt(n):'';}"
     + "function submitPlanForm(e){"
