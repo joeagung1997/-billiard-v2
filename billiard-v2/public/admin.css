@@ -616,9 +616,33 @@ body.sidebar-lock { overflow:hidden; }
   .trx-summary-grid { grid-template-columns:repeat(2,1fr); }
 }
 @media (max-width:640px) {
-  .trx-summary-grid { grid-template-columns:1fr; gap:10px; }
-  .trx-sum-cell { padding:14px 16px; }
-  .trx-sum-cell-val { font-size:22px; }
+  .trx-summary-grid { grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+  .trx-sum-cell { padding:11px 12px; gap:5px; }
+  .trx-sum-cell-hdr { gap:7px; }
+  .trx-sum-cell-ic { width:26px; height:26px; font-size:13px; border-radius:7px; }
+  .trx-sum-cell-lbl { font-size:9.5px; letter-spacing:.06em; }
+  .trx-sum-cell-val { font-size:18px; }
+  .trx-sum-cell-unit { font-size:11px; }
+  .trx-sum-cell-sub { font-size:10px; line-height:1.35; }
+}
+@media (max-width:380px) {
+  .trx-summary-grid { grid-template-columns:1fr; }
+}
+
+/* ── Mobile: page heading actions (Ekspor + Cetak) ───────────────── */
+@media (max-width:640px) {
+  .fin-page-head { flex-direction:column; align-items:stretch !important; }
+  .fin-page-head .topbar-actions { width:100%; display:flex; gap:8px; flex-wrap:wrap; }
+  .fin-page-head .topbar-actions > * { flex:1 1 calc(50% - 4px);
+    justify-content:center; font-size:12px; padding:9px 10px !important; min-height:38px; }
+  .fin-page-head .topbar-actions i { font-size:14px; }
+}
+
+/* ── Mobile: footer (per-page, pagination, export) ───────────────── */
+@media (max-width:640px) {
+  .fin-tf-right { justify-content:flex-start; flex-wrap:wrap; gap:6px; }
+  .trx-fdrop-sm { font-size:11px; padding:5px 22px 5px 9px; }
+  .trx-export-btn { font-size:11.5px; padding:6px 10px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

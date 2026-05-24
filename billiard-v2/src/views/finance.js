@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=54\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=55\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1000,8 +1000,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
     ".fr-bayar-cash{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.02em}",
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
-    // Mobile: hide ID (col 1) + Kategori (col 4) + Aksi (col 6) — sisain Tanggal/Keterangan/Jumlah
-    "@media(max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:90px 1fr 130px!important;gap:10px!important}.fin-th:nth-child(1),.fr-td:nth-child(1),.fin-th:nth-child(4),.fr-td:nth-child(4),.fin-th:nth-child(6),.fr-td:nth-child(6){display:none!important}}",
+    // Tablet (641-768px): hide ID + Aksi, keep 4-col grid (Tgl | Desc | Kat | Jumlah)
+    "@media(min-width:641px) and (max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:88px 1fr 120px 120px!important;gap:10px!important}.fin-th:nth-child(1),.fr-td:nth-child(1),.fin-th:nth-child(6),.fr-td:nth-child(6){display:none!important}}",
+    // Mobile (≤640px): card-style row — flex-wrap, kategori as inline badge
+    "@media(max-width:640px){.fin-tbl-head{display:none!important}.fin-row{display:flex!important;flex-wrap:wrap!important;gap:8px 10px!important;grid-template-columns:unset!important;padding:12px 14px!important;align-items:center}.fr-id-cell,.fin-row>.fr-act{display:none!important}.fin-row>.fr-tgl-cell{flex:0 0 auto;order:1;flex-direction:row!important;align-items:baseline;gap:6px}.fin-row>.fr-amount-col{order:2;margin-left:auto;align-items:flex-end;text-align:right}.fin-row>.fr-desc{order:3;flex:1 1 100%;min-width:0}.fin-row>.fr-td:nth-child(4){order:4;flex:0 0 auto;margin-top:-4px}.fr-tgl-main{font-size:12px}.fr-tgl-sub{font-size:11px}.amt-in,.amt-out{font-size:15px}.fr-saldo-runner{font-size:9.5px;padding:1px 5px;margin-top:2px}.t-badge{font-size:9.5px}.cat-tag{font-size:10.5px;padding:3px 8px}}",
     // ── Cards rounded ───────────────────────────────────────────
     ".fin-pgbar{position:fixed;top:0;left:0;z-index:9999;height:3px;background:var(--accent);width:0;pointer-events:none}",
     ".fin-pgbar.run{width:82%;transition:width 9s cubic-bezier(.12,0,.39,0)}",
