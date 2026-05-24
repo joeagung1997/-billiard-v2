@@ -1074,12 +1074,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".mip-btn:hover{border-color:var(--accent)}",
     ".mip-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     ".mip-text-filled{color:var(--txt);font-weight:500}",
-    ".mip-overlay{display:none;position:fixed;inset:0;z-index:1100;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}",
+    ".mip-overlay{display:none;position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:1100;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}",
     "@keyframes mipFadeIn{from{opacity:0}to{opacity:1}}",
     ".mip-overlay.open{display:flex}",
-    ".mip-sheet{width:100%;max-width:520px;background:var(--surface);border-radius:18px 18px 0 0;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1)}",
+    ".mip-sheet{width:100%;max-width:520px;background:var(--surface);border-radius:18px 18px 0 0;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1)}",
     "@keyframes mipSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}",
-    "@media(min-width:641px){.mip-overlay{align-items:center;padding:16px}.mip-sheet{border-radius:14px;max-height:75vh}}",
+    "@media(min-width:641px){.mip-overlay{align-items:center;padding:16px}.mip-sheet{border-radius:14px;max-height:75vh;max-height:75dvh}}",
     ".mip-sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)}",
     ".mip-sheet-title{font-size:15px;font-weight:700;color:var(--txt)}",
     ".mip-close{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:20px;padding:4px 6px;display:flex;align-items:center}",
@@ -2055,9 +2055,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var titleEl=document.getElementById('mipSheetTitle');if(titleEl)titleEl.textContent=title||'Pilih Item';"
     +   "var searchWrap=document.getElementById('mipSearchWrap');if(searchWrap)searchWrap.style.display=hideSearch?'none':'';"
     +   "document.getElementById('mipOv').classList.add('open');"
+    // Fallback: pakai visualViewport API utk browser yg blm support 100dvh
+    // (cegah keyboard ke-overlay item list saat user search di mobile)
+    +   "_mipBindKeyboardAdjust();"
     // Auto-focus search hanya kalau search visible
     +   "if(!hideSearch)setTimeout(function(){var s=document.getElementById('mipSearch');if(s){s.value='';s.focus();}},150);"
     + "}"
+    + "function _mipApplyVv(){var ov=document.getElementById('mipOv');if(!ov||!ov.classList.contains('open'))return;if(window.visualViewport)ov.style.height=window.visualViewport.height+'px';}"
+    + "function _mipBindKeyboardAdjust(){if(!window.visualViewport||window._mipVvBound)return;window._mipVvBound=true;window.visualViewport.addEventListener('resize',_mipApplyVv);window.visualViewport.addEventListener('scroll',_mipApplyVv);}"
     + "function pickItem(itBtn){"
     +   "if(!_mipSel)return;"
     +   "var v=itBtn.getAttribute('data-v');var l=itBtn.getAttribute('data-l');"
@@ -2068,7 +2073,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "_mipSel.dispatchEvent(new Event('change',{bubbles:true}));"
     +   "closeItemPicker();"
     + "}"
-    + "function closeItemPicker(){document.getElementById('mipOv').classList.remove('open');_mipSel=null;}"
+    + "function closeItemPicker(){var ov=document.getElementById('mipOv');if(ov){ov.classList.remove('open');ov.style.height='';}_mipSel=null;}"
     + "function filterItemPicker(){"
     +   "var q=(document.getElementById('mipSearch').value||'').toLowerCase();"
     +   "var items=document.querySelectorAll('#mipList .mip-item');"
