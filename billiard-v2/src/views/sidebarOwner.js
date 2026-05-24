@@ -21,168 +21,142 @@ function initials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-// Helper: build sidebar nav item (atau submenu item)
-function navItem(href, icon, label, isActive, tkOnclick) {
-  const cls = "nav-item" + (isActive ? " active" : "");
-  const onclick = tkOnclick ? ` onclick="${tkOnclick}"` : "";
-  return `<a href="${href}" class="${cls}"${onclick}>`
-    + `<div class="nav-item-icon"><i class="${icon}"></i></div>`
-    + `<span class="nav-item-text">${label}</span>`
-    + `</a>`;
-}
-
-function subItem(href, label, isActive, tkOnclick) {
-  const cls = "submenu-item" + (isActive ? " active" : "");
-  const onclick = tkOnclick ? ` onclick="${tkOnclick}"` : "";
-  return `<a href="${href}" class="${cls}"${onclick}>`
-    + `<div class="sub-dot"></div>${label}`
-    + `</a>`;
-}
-
 export function buildOwnerSidebar({ token = "", activePage = "", displayName = "" } = {}) {
-  // Persist token utk navigate ke route yg butuh ?tk= di-resolve dari localStorage
   const tkSet = token
     ? `try{localStorage.setItem('warpat_atk','${token}');}catch(_){}`
     : "";
 
-  // Append ?tk= ke /admin/segera-hadir biar verifyToken lolos
   const tkParam = token ? `&tk=${encodeURIComponent(token)}` : "";
-
-  // URL "Segera Hadir" placeholder — title encoded sbg query param.
-  // Routed via /admin/segera-hadir (admin router mounted di /admin).
   const soon = (title) => "/admin/segera-hadir?title=" + encodeURIComponent(title) + tkParam;
 
   const profileName   = (displayName || "").trim() || "Owner";
   const profileAvatar = initials(displayName);
 
-  // Detect active section (utk auto-open submenu yg ada item aktif)
-  const sectionActive = (items) => items.some((id) => id === activePage);
-
-  // ── Section definitions (utk semua group)
+  // ── Section definitions
   const sections = [
     {
       key: "utama",
-      label: "🏠 Utama",
-      icon: "ti ti-home",
+      emoji: "🏠",
+      label: "Utama",
       items: [
         { id: "dashboard", href: "/admin?tk=" + token, icon: "ti ti-layout-dashboard", label: "Dashboard" },
       ],
     },
     {
       key: "member",
-      label: "👥 Member",
-      icon: "ti ti-users",
+      emoji: "👥",
+      label: "Member",
       items: [
-        { id: "members",            href: "/admin/members?tk=" + token, icon: "ti ti-user-circle", label: "Kelola Member" },
-        { id: "riwayat-kunjungan",  href: soon("Riwayat Kunjungan"),    icon: "ti ti-history",     label: "Riwayat Kunjungan", soon: true },
+        { id: "members",           href: "/admin/members?tk=" + token, icon: "ti ti-user-circle", label: "Kelola Member" },
+        { id: "riwayat-kunjungan", href: soon("Riwayat Kunjungan"),    icon: "ti ti-history",     label: "Riwayat Kunjungan", soon: true },
       ],
     },
     {
       key: "billiard",
-      label: "🎱 Billiard",
-      icon: "ti ti-circle-number-8",
+      emoji: "🎱",
+      label: "Billiard",
       items: [
-        { id: "manajemen-meja", href: soon("Manajemen Meja"), icon: "ti ti-grid-dots",        label: "Manajemen Meja", soon: true },
-        { id: "riwayat-sewa",   href: soon("Riwayat Sewa"),   icon: "ti ti-receipt-2",        label: "Riwayat Sewa",   soon: true },
-        { id: "turnamen",       href: soon("Turnamen"),       icon: "ti ti-trophy",           label: "Turnamen",       soon: true },
+        { id: "manajemen-meja", href: soon("Manajemen Meja"), icon: "ti ti-grid-dots",  label: "Manajemen Meja", soon: true },
+        { id: "riwayat-sewa",   href: soon("Riwayat Sewa"),   icon: "ti ti-receipt-2",  label: "Riwayat Sewa",   soon: true },
+        { id: "turnamen",       href: soon("Turnamen"),       icon: "ti ti-trophy",     label: "Turnamen",       soon: true },
       ],
     },
     {
       key: "warkop",
-      label: "☕ Warkop",
-      icon: "ti ti-coffee",
+      emoji: "☕",
+      label: "Warkop",
       items: [
-        { id: "menu",     href: "/operasional/menu", icon: "ti ti-list-details", label: "Kelola Menu",      tk: true },
-        { id: "stok",     href: soon("Stok & Inventory"),  icon: "ti ti-package",      label: "Stok & Inventory", soon: true },
-        { id: "supplier", href: soon("Supplier"),          icon: "ti ti-truck-delivery", label: "Supplier",         soon: true },
+        { id: "menu",     href: "/operasional/menu",      icon: "ti ti-list-details",     label: "Kelola Menu",      tk: true },
+        { id: "stok",     href: soon("Stok & Inventory"), icon: "ti ti-package",          label: "Stok & Inventory", soon: true },
+        { id: "supplier", href: soon("Supplier"),         icon: "ti ti-truck-delivery",   label: "Supplier",         soon: true },
       ],
     },
     {
       key: "operasional",
-      label: "💰 Operasional",
-      icon: "ti ti-wallet",
+      emoji: "💰",
+      label: "Operasional",
       items: [
-        { id: "keuangan",  href: "/operasional",            icon: "ti ti-chart-pie",     label: "Dashboard Keuangan", tk: true },
-        { id: "transaksi", href: "/operasional#trx-list",   icon: "ti ti-receipt",       label: "Transaksi",          tk: true },
-        { id: "analisis",  href: "/operasional/analisis",   icon: "ti ti-target",        label: "Analisis Target",    tk: true },
-        { id: "kategori",  href: "/operasional/kategori",   icon: "ti ti-tag",           label: "Kelola Kategori",    tk: true },
+        { id: "keuangan",  href: "/operasional",          icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
+        { id: "transaksi", href: "/operasional#trx-list", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
+        { id: "analisis",  href: "/operasional/analisis", icon: "ti ti-target",    label: "Analisis Target",    tk: true },
+        { id: "kategori",  href: "/operasional/kategori", icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
     {
       key: "sdm",
-      label: "👨‍💼 SDM",
-      icon: "ti ti-id-badge-2",
+      emoji: "👨‍💼",
+      label: "SDM",
       items: [
-        { id: "kru",            href: "/operasional/sdm",                       icon: "ti ti-users-group", label: "Kelola Kru",     tk: true },
-        { id: "penggajian",     href: "/operasional/sdm#gaji",                  icon: "ti ti-coin",        label: "Penggajian",     tk: true },
-        { id: "aktivitas-kru",  href: "/operasional/monitoring/aktivitas",      icon: "ti ti-activity",    label: "Aktivitas Kru",  tk: true },
-        { id: "shift-setoran",  href: "/operasional/monitoring/setoran",        icon: "ti ti-cash",        label: "Shift & Setoran", tk: true },
+        { id: "kru",            href: "/operasional/sdm",                   icon: "ti ti-users-group", label: "Kelola Kru",      tk: true },
+        { id: "penggajian",     href: "/operasional/sdm#gaji",              icon: "ti ti-coin",        label: "Penggajian",      tk: true },
+        { id: "aktivitas-kru",  href: "/operasional/monitoring/aktivitas",  icon: "ti ti-activity",    label: "Aktivitas Kru",   tk: true },
+        { id: "shift-setoran",  href: "/operasional/monitoring/setoran",    icon: "ti ti-cash",        label: "Shift & Setoran", tk: true },
       ],
     },
     {
       key: "laporan",
-      label: "📊 Laporan",
-      icon: "ti ti-report-analytics",
+      emoji: "📊",
+      label: "Laporan",
       items: [
-        { id: "laporan-untung-rugi",   href: soon("Laporan Untung Rugi"),  icon: "ti ti-trending-up",    label: "Untung Rugi",  soon: true },
-        { id: "laporan-arus-kas",      href: soon("Laporan Arus Kas"),     icon: "ti ti-arrows-exchange", label: "Arus Kas",     soon: true },
-        { id: "laporan-per-sumber",    href: soon("Laporan Per Sumber"),   icon: "ti ti-chart-donut",    label: "Per Sumber",   soon: true },
-        { id: "laporan-per-kategori",  href: soon("Laporan Per Kategori"), icon: "ti ti-chart-bar",      label: "Per Kategori", soon: true },
+        { id: "laporan-untung-rugi",  href: soon("Laporan Untung Rugi"),  icon: "ti ti-trending-up",     label: "Untung Rugi",  soon: true },
+        { id: "laporan-arus-kas",     href: soon("Laporan Arus Kas"),     icon: "ti ti-arrows-exchange", label: "Arus Kas",     soon: true },
+        { id: "laporan-per-sumber",   href: soon("Laporan Per Sumber"),   icon: "ti ti-chart-donut",     label: "Per Sumber",   soon: true },
+        { id: "laporan-per-kategori", href: soon("Laporan Per Kategori"), icon: "ti ti-chart-bar",       label: "Per Kategori", soon: true },
       ],
     },
     {
       key: "pengaturan",
-      label: "⚙️ Pengaturan",
-      icon: "ti ti-settings",
+      emoji: "⚙️",
+      label: "Pengaturan",
       items: [
-        { id: "profil",   href: soon("Profil"),                icon: "ti ti-user-cog",  label: "Profil",                soon: true },
-        { id: "pengguna", href: soon("Pengguna & Hak Akses"),  icon: "ti ti-shield-lock", label: "Pengguna & Hak Akses", soon: true },
-        { id: "backup",   href: soon("Backup Data"),           icon: "ti ti-database-export", label: "Backup Data",      soon: true },
+        { id: "profil",   href: soon("Profil"),               icon: "ti ti-user-cog",        label: "Profil",                soon: true },
+        { id: "pengguna", href: soon("Pengguna & Hak Akses"), icon: "ti ti-shield-lock",     label: "Pengguna & Hak Akses",  soon: true },
+        { id: "backup",   href: soon("Backup Data"),          icon: "ti ti-database-export", label: "Backup Data",           soon: true },
       ],
     },
   ];
 
-  // Render sections sbg submenu (collapsible)
+  // Build nav HTML
   let navHtml = "";
   for (const sec of sections) {
-    const isOpen = sectionActive(sec.items.map((i) => i.id));
-    navHtml += `<div class="nav-group">`;
-    // Section header sbg toggle submenu — pakai .nav-item + chevron
-    navHtml += `<div class="nav-item nav-section-toggle${isOpen ? " open" : ""}" onclick="toggleSubmenu('${sec.key}', this)">`
-      +   `<div class="nav-item-icon"><i class="${sec.icon}"></i></div>`
-      +   `<span class="nav-item-text">${sec.label}</span>`
-      +   `<i class="ti ti-chevron-down nav-chevron"></i>`
-      + `</div>`;
-    // Submenu
-    navHtml += `<div class="submenu-wrap"><div class="submenu${isOpen ? " open" : ""}" id="sub-${sec.key}">`;
+    const isOpen = sec.items.some((i) => i.id === activePage);
+    navHtml += `<div class="own-section${isOpen ? " open" : ""}" data-key="${sec.key}">`;
+    navHtml += `<button type="button" class="own-section-hdr" onclick="ownToggle(this)">`
+      +   `<span class="own-section-emoji">${sec.emoji}</span>`
+      +   `<span class="own-section-label">${sec.label}</span>`
+      +   `<i class="ti ti-chevron-down own-section-chev"></i>`
+      + `</button>`;
+    navHtml += `<div class="own-section-body">`;
     for (const it of sec.items) {
       const isActive = it.id === activePage;
-      const onclick = it.tk ? tkSet : "";
-      const soonBadge = it.soon ? ` <span class="soon-badge">Segera</span>` : "";
-      navHtml += `<a href="${it.href}" class="submenu-item${isActive ? " active" : ""}"${onclick ? ` onclick="${onclick}"` : ""}>`
-        + `<div class="sub-dot"></div>${it.label}${soonBadge}`
+      const onclick  = it.tk ? tkSet : "";
+      const itemCls  = "own-item"
+        + (isActive ? " active" : "")
+        + (it.soon ? " own-item-soon" : "");
+      navHtml += `<a href="${it.href}" class="${itemCls}"${onclick ? ` onclick="${onclick}"` : ""}>`
+        + `<i class="${it.icon} own-item-icon"></i>`
+        + `<span class="own-item-label">${it.label}</span>`
+        + (it.soon ? `<span class="own-item-dot" title="Segera hadir"></span>` : "")
         + `</a>`;
     }
-    navHtml += `</div></div>`;
+    navHtml += `</div>`;
     navHtml += `</div>`;
   }
 
-  return `<aside class="sidebar">
-    <div class="logo-area">
-      <div class="logo-row">
-        <div class="logo-mark"><i class="ti ti-circle-number-8"></i><div class="logo-online"></div></div>
-        <div class="logo-text">
-          <div class="logo-name">${CONFIG.NAMA_ARENA}</div>
-          <div class="logo-sub">Owner Panel</div>
-        </div>
-        <button type="button" class="sidebar-bell" onclick="openNotifSheet()" aria-label="Notifikasi" title="Notifikasi">
-          <i class="ti ti-bell"></i>
-          <span class="sidebar-bell-dot" style="display:none"></span>
-        </button>
+  return `<aside class="sidebar own-sidebar">
+    <div class="own-brand">
+      <div class="own-brand-logo"><i class="ti ti-circle-number-8"></i><span class="own-brand-online"></span></div>
+      <div class="own-brand-text">
+        <div class="own-brand-name">${CONFIG.NAMA_ARENA}</div>
+        <div class="own-brand-sub">Owner Panel</div>
       </div>
+      <button type="button" class="sidebar-bell" onclick="openNotifSheet()" aria-label="Notifikasi" title="Notifikasi">
+        <i class="ti ti-bell"></i>
+        <span class="sidebar-bell-dot" style="display:none"></span>
+      </button>
     </div>
 
-    <!-- Notif sheet (rendered once per page; bell button buka via openNotifSheet) -->
+    <!-- Notif sheet (rendered once per page) -->
     <div class="notif-sheet-overlay" id="notifSheetOv" onclick="if(event.target===this)closeNotifSheet()">
       <div class="notif-sheet">
         <div class="notif-sheet-hdr">
@@ -198,41 +172,32 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
         </div>
       </div>
     </div>
-    <div class="sidebar-divider"></div>
 
-    <div class="nav-scroll">
+    <div class="own-nav-scroll">
       ${navHtml}
     </div>
 
-    <div class="sidebar-divider"></div>
-    <div class="quick-actions">
-      <div class="nav-group-label" style="padding-bottom:8px">⚡ Aksi Cepat</div>
-      <div class="qa-grid">
-        <a href="/scan" class="qa-btn"><i class="ti ti-qrcode"></i>Scan Member</a>
-        <a href="/operasional?openModal=trx" class="qa-btn"${tkSet ? ` onclick="${tkSet}"` : ""}><i class="ti ti-plus"></i>Transaksi Baru</a>
+    <div class="own-quick">
+      <div class="own-quick-label">Aksi Cepat</div>
+      <div class="own-quick-grid">
+        <a href="/scan" class="own-quick-btn"><i class="ti ti-qrcode"></i><span>Scan Member</span></a>
+        <a href="/operasional?openModal=trx" class="own-quick-btn own-quick-btn-primary"${tkSet ? ` onclick="${tkSet}"` : ""}><i class="ti ti-plus"></i><span>Transaksi Baru</span></a>
       </div>
     </div>
 
-    <div class="sidebar-bottom">
-      <div class="profile-card">
-        <div class="profile-avatar" style="background:rgba(45,102,36,.18);color:#22c55e">${profileAvatar}</div>
-        <div class="profile-info">
-          <div class="profile-name">${profileName}</div>
-          <div class="profile-role">Owner</div>
-        </div>
-        <div class="profile-actions">
-          <button class="profile-btn danger" title="Logout" onclick="ownerLogout()"><i class="ti ti-logout"></i></button>
-        </div>
+    <div class="own-profile">
+      <div class="own-profile-avatar">${profileAvatar}</div>
+      <div class="own-profile-info">
+        <div class="own-profile-name">${profileName}</div>
+        <div class="own-profile-role">Owner</div>
       </div>
+      <button type="button" class="own-profile-logout" onclick="ownerLogout()" aria-label="Logout" title="Keluar"><i class="ti ti-logout"></i></button>
     </div>
   </aside>
   <script>
-    function toggleSubmenu(id, el) {
-      var sub = document.getElementById("sub-" + id);
-      if (!sub) return;
-      var open = sub.classList.contains("open");
-      sub.classList.toggle("open", !open);
-      el.classList.toggle("open", !open);
+    function ownToggle(btn) {
+      var sec = btn.parentElement;
+      if (sec) sec.classList.toggle("open");
     }
     function ownerLogout() {
       if (!confirm("Keluar dari sesi owner?")) return;
@@ -241,8 +206,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     }
     function openNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.add("open");}
     function closeNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.remove("open");}
-    // Fallback handlers utk bottom-nav buttons (dipakai di halaman finance child)
-    // — kalau page-level script tdk define, ini yg dipakai.
+    // Fallback handlers utk bottom-nav buttons di halaman finance child
     if (typeof openBnSheet !== "function") {
       window.openBnSheet  = function(){var s=document.getElementById("bnSheet"),o=document.getElementById("bnSheetOv");if(s)s.classList.add("open");if(o)o.classList.add("open");};
       window.closeBnSheet = function(){var s=document.getElementById("bnSheet"),o=document.getElementById("bnSheetOv");if(s)s.classList.remove("open");if(o)o.classList.remove("open");};
@@ -260,7 +224,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
 }
 
 // Bell icon untuk topbar mobile (notif sheet sudah ke-render via buildOwnerSidebar).
-// openNotifSheet/closeNotifSheet defined di sidebar script.
 export function buildOwnerTopbarBell() {
   return `<button type="button" class="topbar-bell" onclick="openNotifSheet()" aria-label="Notifikasi">
     <i class="ti ti-bell"></i>

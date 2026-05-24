@@ -302,18 +302,113 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .notif-empty { display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:32px 0 16px; text-align:center; }
 
-/* ── Sidebar Owner — section toggle & soon badge ─────────────────── */
-.nav-section-toggle { user-select:none; }
-.nav-section-toggle .nav-chevron { margin-left:auto; transition:transform .2s; font-size:14px; color:var(--txt3); }
-.nav-section-toggle.open .nav-chevron { transform:rotate(180deg); }
-.soon-badge { display:inline-block; margin-left:8px; padding:2px 7px; border-radius:8px;
-  background:rgba(245,158,11,.12); color:#d97706; font-size:9px; font-weight:700;
-  letter-spacing:.04em; text-transform:uppercase; vertical-align:middle; }
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR OWNER — clean & spacious redesign
+   ═══════════════════════════════════════════════════════════════════ */
+
+.own-sidebar { display:flex; flex-direction:column; }
+
+/* ── Brand area (logo + bell) ─────────────────────────────────── */
+.own-brand { display:flex; align-items:center; gap:11px; padding:18px 16px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.05); }
+.own-brand-logo { position:relative; width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,#3a7d2c,#2d6624); display:flex; align-items:center;
+  justify-content:center; color:#fff; font-size:18px; flex-shrink:0; box-shadow:0 4px 10px rgba(45,102,36,.25); }
+.own-brand-online { position:absolute; bottom:-2px; right:-2px; width:10px; height:10px;
+  border-radius:50%; background:#22c55e; border:2px solid #0a1a0c; box-shadow:0 0 6px rgba(34,197,94,.6); }
+.own-brand-text { flex:1; min-width:0; }
+.own-brand-name { font-size:13px; font-weight:800; color:#fff; line-height:1.2;
+  letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.own-brand-sub { font-size:9.5px; font-weight:600; color:rgba(255,255,255,0.45);
+  text-transform:uppercase; letter-spacing:.1em; margin-top:3px; }
+
+/* ── Nav scroll area (sections + items) ───────────────────────── */
+.own-nav-scroll { flex:1; overflow-y:auto; padding:6px 10px;
+  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; }
+.own-nav-scroll::-webkit-scrollbar { width:5px; }
+.own-nav-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+
+/* ── Section (group of items) ─────────────────────────────────── */
+.own-section { margin:6px 0; }
+.own-section-hdr { display:flex; align-items:center; gap:9px; width:100%;
+  padding:9px 10px; background:transparent; border:none; cursor:pointer;
+  font-family:var(--ff); font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.12em; color:rgba(255,255,255,0.42);
+  border-radius:8px; transition:background .12s, color .12s; user-select:none; }
+.own-section-hdr:hover { background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.7); }
+.own-section.open .own-section-hdr { color:rgba(255,255,255,0.85); }
+.own-section-emoji { font-size:14px; line-height:1; }
+.own-section-label { flex:1; text-align:left; }
+.own-section-chev { font-size:14px; opacity:.5; transition:transform .25s; }
+.own-section.open .own-section-chev { transform:rotate(180deg); opacity:.9; }
+
+/* Section body — animated expand */
+.own-section-body { max-height:0; overflow:hidden;
+  transition:max-height .3s cubic-bezier(.4,0,.2,1); padding:0 4px; }
+.own-section.open .own-section-body { max-height:600px; padding-bottom:4px; }
+
+/* ── Item (nav link) ──────────────────────────────────────────── */
+.own-item { position:relative; display:flex; align-items:center; gap:11px;
+  padding:9px 12px; margin:1px 0;
+  color:rgba(255,255,255,0.62); font-size:13px; font-weight:500;
+  text-decoration:none; border-radius:8px;
+  transition:background .15s, color .15s; }
+.own-item:hover { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.95); }
+.own-item.active { background:rgba(45,102,36,0.22); color:#7dcf6a; font-weight:600; }
+.own-item.active::before { content:''; position:absolute; left:-4px; top:8px; bottom:8px;
+  width:3px; background:#3a7d2c; border-radius:0 3px 3px 0; box-shadow:0 0 6px rgba(58,125,44,.5); }
+.own-item-icon { font-size:16px; width:18px; text-align:center; flex-shrink:0; opacity:.85; }
+.own-item.active .own-item-icon { opacity:1; }
+.own-item-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Soon (Segera Hadir) — subtle dot indicator, no loud badge */
+.own-item-soon { opacity:.55; }
+.own-item-soon:hover { opacity:.85; }
+.own-item-dot { width:6px; height:6px; border-radius:50%;
+  background:#f59e0b; opacity:.7; flex-shrink:0; }
+
+/* ── Quick Actions ────────────────────────────────────────────── */
+.own-quick { padding:14px 14px 12px; border-top:1px solid rgba(255,255,255,0.05); }
+.own-quick-label { font-size:9.5px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.12em; color:rgba(255,255,255,0.4); margin-bottom:9px; padding:0 2px;
+  display:flex; align-items:center; gap:6px; }
+.own-quick-label::before { content:'⚡'; font-size:11px; }
+.own-quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.own-quick-btn { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; padding:11px 6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+  border-radius:9px; color:rgba(255,255,255,0.85); font-size:10.5px; font-weight:600;
+  text-decoration:none; cursor:pointer; font-family:var(--ff);
+  transition:background .15s, border-color .15s, transform .1s; }
+.own-quick-btn:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15); }
+.own-quick-btn:active { transform:scale(.97); }
+.own-quick-btn i { font-size:17px; color:#7dcf6a; }
+.own-quick-btn-primary { background:rgba(45,102,36,0.22); border-color:rgba(45,102,36,0.4); color:#fff; }
+.own-quick-btn-primary:hover { background:rgba(45,102,36,0.32); border-color:rgba(45,102,36,0.55); }
+.own-quick-btn-primary i { color:#7dcf6a; }
+
+/* ── Profile card ─────────────────────────────────────────────── */
+.own-profile { display:flex; align-items:center; gap:10px; padding:11px 14px;
+  border-top:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.02); }
+.own-profile-avatar { width:34px; height:34px; border-radius:9px;
+  background:rgba(45,102,36,.22); color:#7dcf6a;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11.5px; font-weight:800; letter-spacing:.04em; flex-shrink:0; }
+.own-profile-info { flex:1; min-width:0; line-height:1.2; }
+.own-profile-name { font-size:12.5px; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.own-profile-role { font-size:9.5px; font-weight:700; color:rgba(255,255,255,0.4);
+  text-transform:uppercase; letter-spacing:.1em; margin-top:2px; }
+.own-profile-logout { width:30px; height:30px; border-radius:8px;
+  background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);
+  color:rgba(239,68,68,0.85); font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  transition:background .15s, color .15s; }
+.own-profile-logout:hover { background:rgba(239,68,68,0.2); color:#f87171; }
 
 /* Bell di sidebar (desktop) — top-right corner di logo area */
 .sidebar-bell { position:relative; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
   border-radius:50%; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center;
-  font-size:15px; color:rgba(255,255,255,0.7); cursor:pointer; margin-left:auto; flex-shrink:0;
+  font-size:15px; color:rgba(255,255,255,0.7); cursor:pointer; flex-shrink:0;
   transition:background .15s, color .15s, border-color .15s; }
 .sidebar-bell:hover { background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.15); }
 .sidebar-bell-dot { position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%;
