@@ -1069,7 +1069,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-cs-val.mg{color:var(--accent)}",
     // ── Menu Item Picker (custom bottom-sheet) ─────────────────
     ".mip-wrap{position:relative;width:100%}",
-    ".mip-sel{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%}",
+    ".mip-sel{display:none}",
     ".mip-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);font-family:var(--ff);font-size:13px;color:var(--txt3);cursor:pointer;text-align:left;min-height:38px;transition:border-color .15s}",
     ".mip-btn:hover{border-color:var(--accent)}",
     ".mip-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
