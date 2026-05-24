@@ -2,7 +2,7 @@
 // ── HTML views untuk halaman keuangan ────────────────────────
 
 import { CONFIG } from "../config.js";
-import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader } from "./sidebarOwner.js";
+import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
 
 // ── Format rupiah ─────────────────────────────────────────────
 const rp = (n) => {
@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=44\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=45\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1265,6 +1265,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
 
     // Mobile topbar
     + "<header class=\"topbar\">"
+    + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-circle-number-8\"></i></div>"
     + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
@@ -2712,6 +2713,7 @@ export function financeKategoriPage(role = "owner", kategoriList = [], showErr =
     + buildFinanceSidebar("", "kategori", role)
     + "<div class=\"main-wrap\">"
     + "<header class=\"topbar\">"
+    + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-category\"></i></div>"
     + "<div><div class=\"topbar-name\">Kelola Kategori</div><div class=\"topbar-label\">Keuangan</div></div>"
@@ -3151,6 +3153,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + buildFinanceSidebar("", "menu", role)
     + "<div class=\"main-wrap\">"
     + "<header class=\"topbar\">"
+    + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-coffee\"></i></div>"
     + "<div><div class=\"topbar-name\">Kelola Menu</div><div class=\"topbar-label\">Kopi / Snack</div></div>"
@@ -3483,6 +3486,7 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
 
     // Topbar mobile
     + "<header class=\"topbar\">"
+    + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-target\"></i></div>"
     + "<div><div class=\"topbar-name\">Analisis Target</div>"

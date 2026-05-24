@@ -148,7 +148,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     navHtml += `</div>`;
   }
 
-  return `<aside class="sidebar own-sidebar">
+  return `<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+  <aside class="sidebar own-sidebar" id="ownSidebar">
     <div class="own-brand">
       <div class="own-brand-logo"><i class="ti ti-circle-number-8"></i><span class="own-brand-online"></span></div>
       <div class="own-brand-text">
@@ -158,6 +159,9 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       <button type="button" class="sidebar-bell" onclick="openNotifSheet()" aria-label="Notifikasi" title="Notifikasi">
         <i class="ti ti-bell"></i>
         <span class="sidebar-bell-dot" style="display:none"></span>
+      </button>
+      <button type="button" class="sidebar-close" onclick="closeSidebar()" aria-label="Tutup menu" title="Tutup">
+        <i class="ti ti-x"></i>
       </button>
     </div>
 
@@ -211,6 +215,20 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     }
     function openNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.add("open");}
     function closeNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.remove("open");}
+    // Mobile drawer: hamburger toggle sidebar + backdrop. Body lock scroll saat open.
+    function toggleSidebar(){
+      var s=document.getElementById("ownSidebar"),b=document.getElementById("sidebarBackdrop");
+      var willOpen = s && !s.classList.contains("open");
+      if(s)s.classList.toggle("open", willOpen);
+      if(b)b.classList.toggle("open", willOpen);
+      document.body.classList.toggle("sidebar-lock", willOpen);
+    }
+    function closeSidebar(){
+      var s=document.getElementById("ownSidebar"),b=document.getElementById("sidebarBackdrop");
+      if(s)s.classList.remove("open");
+      if(b)b.classList.remove("open");
+      document.body.classList.remove("sidebar-lock");
+    }
     // Fallback handlers utk bottom-nav buttons di halaman finance child
     if (typeof openBnSheet !== "function") {
       window.openBnSheet  = function(){var s=document.getElementById("bnSheet"),o=document.getElementById("bnSheetOv");if(s)s.classList.add("open");if(o)o.classList.add("open");};
@@ -233,6 +251,14 @@ export function buildOwnerTopbarBell() {
   return `<button type="button" class="topbar-bell" onclick="openNotifSheet()" aria-label="Notifikasi">
     <i class="ti ti-bell"></i>
     <span class="topbar-bell-dot" id="topbarBellDot" style="display:none"></span>
+  </button>`;
+}
+
+// Hamburger button untuk mobile topbar — buka drawer sidebar owner.
+// Visible cuma di mobile (<769px). Desktop sidebar selalu visible.
+export function buildOwnerMenuToggle() {
+  return `<button type="button" class="menu-toggle" onclick="toggleSidebar()" aria-label="Buka menu" title="Menu">
+    <i class="ti ti-menu-2"></i>
   </button>`;
 }
 

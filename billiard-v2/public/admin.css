@@ -414,6 +414,49 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .sidebar-bell-dot { position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%;
   background:#ef4444; border:1.5px solid #0a1a0c; }
 
+/* Sidebar close button (X) — visible only on mobile drawer mode */
+.sidebar-close { display:none; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+  border-radius:50%; width:32px; height:32px; align-items:center; justify-content:center;
+  font-size:16px; color:rgba(255,255,255,0.75); cursor:pointer; flex-shrink:0; margin-left:6px;
+  transition:background .15s, color .15s; }
+.sidebar-close:hover { background:rgba(255,255,255,0.1); color:#fff; }
+
+/* Backdrop for mobile drawer */
+.sidebar-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(2px); z-index:199; opacity:0; transition:opacity .2s; }
+.sidebar-backdrop.open { display:block; opacity:1; }
+
+/* Hamburger button — di mobile topbar */
+.menu-toggle { display:none; align-items:center; justify-content:center;
+  width:38px; height:38px; border-radius:9px;
+  background:var(--surface2); border:1px solid var(--border2);
+  color:var(--txt); font-size:18px; cursor:pointer; flex-shrink:0; margin-right:8px;
+  transition:background .15s, border-color .15s; }
+.menu-toggle:hover { background:var(--surface); border-color:var(--accent); }
+@media (max-width:768px) { .menu-toggle { display:inline-flex; } }
+
+/* Body lock scroll when drawer open */
+body.sidebar-lock { overflow:hidden; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   OWNER SIDEBAR — Mobile Drawer (slide-in from left)
+   Desktop: sidebar selalu visible (default behavior)
+   Mobile:  hidden by default → slide in via hamburger toggle
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width:768px) {
+  /* Override default .sidebar display:none — owner pakai drawer mode */
+  .sidebar.own-sidebar {
+    display:flex !important;
+    transform:translateX(-100%);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+    z-index:200;
+    box-shadow:4px 0 24px rgba(0,0,0,0.35);
+    width:88vw; max-width:320px;
+  }
+  .sidebar.own-sidebar.open { transform:translateX(0); }
+  .sidebar.own-sidebar .sidebar-close { display:inline-flex; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    OWNER HEADER — sticky top header (desktop only)
    Breadcrumb + search + bell + page-specific action buttons
