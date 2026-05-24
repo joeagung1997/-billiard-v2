@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=46\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=47\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -1510,11 +1510,35 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Tutup wrapper #finDashOnly (lihat tag pembuka sebelum kas-card)
     + "</div>"
 
+    // ── Summary cards (cuma muncul di /transaksi) — recompute saat filter berubah
+    + (transaksiOnly
+      ? "<div class=\"fin-trx-summary\">"
+        + "<div class=\"fin-sum-card fin-sum-total\"><div class=\"fin-sum-ic\"><i class=\"ti ti-receipt\"></i></div>"
+        +   "<div><div class=\"fin-sum-lbl\">Total Transaksi</div>"
+        +   "<div class=\"fin-sum-val\" id=\"sumTrxCount\">" + sortedTbl.length + "</div></div></div>"
+        + "<div class=\"fin-sum-card fin-sum-in\"><div class=\"fin-sum-ic in\"><i class=\"ti ti-arrow-up-right\"></i></div>"
+        +   "<div><div class=\"fin-sum-lbl\">Pemasukan</div>"
+        +   "<div class=\"fin-sum-val inc\" id=\"sumTrxIn\">Rp 0</div></div></div>"
+        + "<div class=\"fin-sum-card fin-sum-out\"><div class=\"fin-sum-ic out\"><i class=\"ti ti-arrow-down-right\"></i></div>"
+        +   "<div><div class=\"fin-sum-lbl\">Pengeluaran</div>"
+        +   "<div class=\"fin-sum-val out\" id=\"sumTrxOut\">Rp 0</div></div></div>"
+        + "<div class=\"fin-sum-card fin-sum-net\"><div class=\"fin-sum-ic net\"><i class=\"ti ti-scale\"></i></div>"
+        +   "<div><div class=\"fin-sum-lbl\">Net / Saldo <span id=\"sumTrxVoidInfo\" style=\"font-size:10px;color:var(--txt3);font-weight:500;margin-left:4px\"></span></div>"
+        +   "<div class=\"fin-sum-val net\" id=\"sumTrxNet\">Rp 0</div></div></div>"
+        + "</div>"
+      : "")
+
     // ── Transaction table ───────────────────────────────────────
     + "<div class=\"fin-table-card\" id=\"trx-list\">"
     + (transaksiOnly
-      ? // FULL mode (/transaksi): toolbar (search + filter chips) + pagination footer
-        "<div class=\"fin-tbl-toolbar\">"
+      ? // FULL mode (/transaksi): type tabs + toolbar (search + date chips)
+        "<div class=\"fin-tbl-type-tabs\" role=\"tablist\">"
+        +   "<button type=\"button\" class=\"fin-type-tab active\" data-trx-type=\"semua\" onclick=\"setTrxType('semua')\"><i class=\"ti ti-layout-list\"></i> Semua</button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan</button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran</button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-void\" data-trx-type=\"void\" onclick=\"setTrxType('void')\"><i class=\"ti ti-ban\"></i> Dibatalkan</button>"
+        + "</div>"
+        + "<div class=\"fin-tbl-toolbar\">"
         + "<div class=\"fin-search-wrap\">"
         + "<i class=\"ti ti-search\"></i>"
         + "<input class=\"fin-search-inp\" type=\"text\" placeholder=\"Cari keterangan atau kategori...\" id=\"trxSearch\" oninput=\"renderTbl()\">"
@@ -1892,7 +1916,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "var empty=document.querySelector('.empty-state');"
     + "if(empty)empty.style.display=shown===0&&rows.length?'flex':(rows.length?'none':'flex');}"
     // ── Tabel transaksi: filter chip + search + pagination ─────
-    + "var tblState={filter:'today',page:1,perPage:10};"
+    + "var tblState={filter:'today',type:'semua',page:1,perPage:10};"
+    + "function setTrxType(t){tblState.type=t;tblState.page=1;"
+    +   "document.querySelectorAll('.fin-type-tab').forEach(function(b){"
+    +     "b.classList.toggle('active',b.getAttribute('data-trx-type')===t);});"
+    +   "renderTbl();}"
     + "function _today(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
     +   "return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}"
     + "function _yesterday(){var d=new Date();if(d.getHours()<" + CONFIG.BUSINESS_DAY_CUTOFF_HOUR + "){d.setDate(d.getDate()-1);}"
@@ -1913,7 +1941,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "setTblFilter('custom');}}"
     + "function renderTbl(){"
     +   "var q=(document.getElementById('trxSearch')||{}).value;q=(q||'').toLowerCase();"
-    +   "var f=tblState.filter;"
+    +   "var f=tblState.filter;var typ=tblState.type||'semua';"
     +   "var dari='',sampai='';"
     +   "if(f==='today'){dari=sampai=_today();}"
     +   "else if(f==='yesterday'){dari=sampai=_yesterday();}"
@@ -1921,15 +1949,28 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "dari=(document.getElementById('tblDari')||{}).value||'';"
     +     "sampai=(document.getElementById('tblSampai')||{}).value||'';}"
     +   "var rows=document.querySelectorAll('#trxRows .fin-row');"
-    +   "var visible=[];"
+    +   "var visible=[];var sumIn=0,sumOut=0,voidN=0;"
     +   "rows.forEach(function(r){"
     +     "var tgl=r.getAttribute('data-tanggal')||'';"
+    +     "var idx=parseInt(r.getAttribute('data-idx'));"
+    +     "var t=(typeof TRX_DATA!=='undefined'&&!isNaN(idx))?TRX_DATA[idx]:null;"
     +     "var txt=r.textContent.toLowerCase();"
     +     "var matchSearch=!q||txt.indexOf(q)>=0;"
     +     "var matchDate=true;"
     +     "if(dari&&tgl<dari)matchDate=false;"
     +     "if(sampai&&tgl>sampai)matchDate=false;"
-    +     "if(matchSearch&&matchDate)visible.push(r);"
+    // Type filter
+    +     "var matchType=true;"
+    +     "if(t){"
+    +       "if(typ==='pemasukan')matchType=(t.jenis==='pemasukan'&&!t.voidedAt);"
+    +       "else if(typ==='pengeluaran')matchType=(t.jenis==='pengeluaran'&&!t.voidedAt);"
+    +       "else if(typ==='void')matchType=!!t.voidedAt;"
+    +     "}"
+    +     "if(matchSearch&&matchDate&&matchType){"
+    +       "visible.push(r);"
+    +       "if(t&&!t.voidedAt){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
+    +       "if(t&&t.voidedAt)voidN++;"
+    +     "}"
     +     "r.style.display='none';});"
     +   "var total=visible.length;var pp=tblState.perPage;"
     +   "var maxPg=Math.max(1,Math.ceil(total/pp));"
@@ -1939,6 +1980,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var cEl=document.getElementById('tblCount');"
     +   "if(cEl){var shown=Math.min(end,total)-start;"
     +     "cEl.innerHTML=(total===0?'Tidak ada':shown+' dari '+total)+' transaksi';}"
+    // Update summary cards (cuma kalau elementnya ada → di /transaksi page)
+    +   "var sCount=document.getElementById('sumTrxCount');if(sCount)sCount.textContent=total;"
+    +   "var sIn=document.getElementById('sumTrxIn');if(sIn)sIn.textContent=_rpFmt(sumIn);"
+    +   "var sOut=document.getElementById('sumTrxOut');if(sOut)sOut.textContent=_rpFmt(sumOut);"
+    +   "var sNet=document.getElementById('sumTrxNet');if(sNet){var net=sumIn-sumOut;sNet.textContent=(net<0?'-':'+')+_rpFmt(Math.abs(net));sNet.style.color=net>=0?'#16a34a':'#dc2626';}"
+    +   "var sVoid=document.getElementById('sumTrxVoidInfo');if(sVoid)sVoid.textContent=voidN>0?'(termasuk '+voidN+' void)':'';"
     +   "var emp=document.querySelector('.empty-state');"
     +   "if(emp&&rows.length>0)emp.style.display=total===0?'flex':'none';"
     +   "var pgEl=document.getElementById('tblPagi');if(!pgEl)return;"

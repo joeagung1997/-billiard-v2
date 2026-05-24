@@ -583,6 +583,58 @@ body.sidebar-lock { overflow:hidden; }
   .fin-tbl-preview-sub { font-size:11.5px; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   TRX SUMMARY CARDS — di atas tabel /transaksi, update via renderTbl
+   ═══════════════════════════════════════════════════════════════════ */
+.fin-trx-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.fin-sum-card { background:var(--surface); border:1px solid var(--border); border-radius:11px;
+  padding:14px 16px; display:flex; align-items:center; gap:12px;
+  transition:border-color .15s, transform .12s; }
+.fin-sum-card:hover { border-color:var(--accent); transform:translateY(-1px); }
+.fin-sum-ic { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:rgba(45,102,36,.1); color:var(--accent); font-size:18px; flex-shrink:0; }
+.fin-sum-ic.in  { background:rgba(34,197,94,.12); color:#16a34a; }
+.fin-sum-ic.out { background:rgba(239,68,68,.12); color:#dc2626; }
+.fin-sum-ic.net { background:rgba(59,130,246,.12); color:#2563eb; }
+.fin-sum-lbl { font-size:10.5px; font-weight:700; color:var(--txt3); text-transform:uppercase;
+  letter-spacing:.08em; margin-bottom:3px; }
+.fin-sum-val { font-size:18px; font-weight:800; color:var(--txt); font-family:var(--ff-mono); line-height:1.1; }
+.fin-sum-val.inc { color:#16a34a; }
+.fin-sum-val.out { color:#dc2626; }
+.fin-sum-val.net { color:#2563eb; }
+
+@media (max-width:768px) {
+  .fin-trx-summary { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .fin-sum-card { padding:11px 12px; gap:9px; }
+  .fin-sum-ic { width:34px; height:34px; font-size:15px; }
+  .fin-sum-val { font-size:15px; }
+  .fin-sum-lbl { font-size:9.5px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRX TYPE TABS — Semua / Pemasukan / Pengeluaran / Void
+   ═══════════════════════════════════════════════════════════════════ */
+.fin-tbl-type-tabs { display:flex; align-items:center; gap:2px; padding:10px 14px 0;
+  border-bottom:1px solid var(--border); background:var(--surface);
+  overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.fin-type-tab { display:inline-flex; align-items:center; gap:6px;
+  padding:10px 14px; background:transparent; border:none;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  font-family:var(--ff); font-size:13px; font-weight:600; color:var(--txt3);
+  cursor:pointer; white-space:nowrap; transition:color .15s, border-color .15s; }
+.fin-type-tab i { font-size:15px; }
+.fin-type-tab:hover { color:var(--txt2); }
+.fin-type-tab.active { color:var(--txt); border-bottom-color:var(--accent); font-weight:700; }
+.fin-type-tab.fin-type-in.active   { color:#16a34a; border-bottom-color:#16a34a; }
+.fin-type-tab.fin-type-out.active  { color:#dc2626; border-bottom-color:#dc2626; }
+.fin-type-tab.fin-type-void.active { color:#7a8c78; border-bottom-color:#7a8c78; }
+
+@media (max-width:640px) {
+  .fin-tbl-type-tabs { padding:6px 8px 0; }
+  .fin-type-tab { padding:9px 11px; font-size:12px; }
+  .fin-type-tab i { font-size:14px; }
+}
+
 /* ── Bottom nav (mobile) — Revamp v2 ─────────────────────────────── */
 .bottom-nav {
   display:none; position:fixed; bottom:0; left:0; right:0;
