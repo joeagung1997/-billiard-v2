@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=52\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=53\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -883,7 +883,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
         + " onclick=\"openVoidModal(this)\">"
         + "<i class=\"ti ti-ban\"></i></button>";
+    const idShort = String(t.id).slice(-6);
     return "<div class=\"" + rowCls + "\" data-tanggal=\"" + escHtml(t.tanggal || "") + "\" data-idx=\"" + idx + "\" onclick=\"if(event.target.closest('.icon-btn,.fr-bukti-thumb,a,button'))return;openTrxDetail(" + idx + ")\">"
+      + "<div class=\"fr-td fr-id-cell\" title=\"ID Transaksi\">#" + escHtml(idShort) + "</div>"
       + "<div class=\"fr-td fr-tgl-cell\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">"
@@ -893,7 +895,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         ? "<span style=\"font-style:italic;color:var(--txt3);font-weight:500\">(" + escHtml(t.kategori) + ")</span>"
         : "—")
       + "</div>"
-      + "<div class=\"fr-desc-meta\"><span class=\"fr-meta-id\">#" + escHtml(String(t.id).slice(-6)) + "</span>"
+      + "<div class=\"fr-desc-meta\">"
       + (t.bayar === "cash" ? "<span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? "<span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
       + (t.buktiUrl ? "<a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
       + (t.dicatatOleh
@@ -977,11 +979,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-row-in:hover{background:#f0fdf4!important}",
     ".fin-row-out:hover{background:#fff5f5!important}",
     // ── Tabel 5-kolom (merge Jumlah+Tipe) ───────────────────────
-    ".fin-tbl-head,.fin-row{grid-template-columns:96px minmax(0,1fr) 130px 130px 48px!important;gap:14px}",
+    ".fin-tbl-head,.fin-row{grid-template-columns:74px 96px minmax(0,1fr) 130px 130px 48px!important;gap:14px}",
     ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
     ".fr-bayar-cash{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.02em}",
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
-    "@media(max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:90px 1fr 150px!important}.fin-th:nth-child(3),.fr-td:nth-child(3){display:none!important}.fin-th:nth-child(n+5),.fr-td:nth-child(n+5){display:none!important}}",
+    // Mobile: hide ID (col 1) + Kategori (col 4) + Aksi (col 6) — sisain Tanggal/Keterangan/Jumlah
+    "@media(max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:90px 1fr 130px!important;gap:10px!important}.fin-th:nth-child(1),.fr-td:nth-child(1),.fin-th:nth-child(4),.fr-td:nth-child(4),.fin-th:nth-child(6),.fr-td:nth-child(6){display:none!important}}",
     // ── Cards rounded ───────────────────────────────────────────
     ".fin-pgbar{position:fixed;top:0;left:0;z-index:9999;height:3px;background:var(--accent);width:0;pointer-events:none}",
     ".fin-pgbar.run{width:82%;transition:width 9s cubic-bezier(.12,0,.39,0)}",
@@ -1610,6 +1613,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
       )
     + "<div class=\"fin-tbl-head\">"
+    + "<div class=\"fin-th\">ID</div>"
     + "<div class=\"fin-th\">Tanggal</div>"
     + "<div class=\"fin-th\">Keterangan</div>"
     + "<div class=\"fin-th\">Kategori</div>"
