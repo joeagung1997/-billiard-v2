@@ -531,3 +531,76 @@ export const updateFixedCost = async (id, { nama, frekuensi, nominal }) => {
 export const deleteFixedCost = async (id) => {
   await query("DELETE FROM fixed_costs WHERE id = $1", [parseInt(id)]);
 };
+
+// ── Planning / Roadmap Bisnis (wishlist items) ────────────────
+
+const rowToPlanning = (row) => ({
+  id:           row.id,
+  nama:         row.nama,
+  kategori:     row.kategori        ?? "lain",
+  estimasi:     parseInt(row.estimasi) || 0,
+  prioritas:    row.prioritas       ?? "nice",
+  status:       row.status          ?? "idea",
+  targetDate:   row.target_date     ?? "",
+  vendor:       row.vendor          ?? "",
+  catatan:      row.catatan         ?? "",
+  roiEstimate:  parseInt(row.roi_estimate) || 0,
+  createdAt:    row.created_at,
+  updatedAt:    row.updated_at,
+});
+
+const PLANNING_PRIORITAS_ORDER = "CASE prioritas WHEN 'urgent' THEN 1 WHEN 'penting' THEN 2 WHEN 'nice' THEN 3 ELSE 4 END";
+
+export const readPlanningItems = async () => {
+  const res = await query(
+    `SELECT * FROM planning_items ORDER BY ${PLANNING_PRIORITAS_ORDER}, created_at DESC`
+  );
+  return res.rows.map(rowToPlanning);
+};
+
+export const addPlanningItem = async (item) => {
+  const id = item.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
+  await query(
+    `INSERT INTO planning_items
+     (id, nama, kategori, estimasi, prioritas, status, target_date, vendor, catatan, roi_estimate)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      id,
+      (item.nama || "").trim().slice(0, 200),
+      (item.kategori || "lain").slice(0, 30),
+      parseInt(item.estimasi) || 0,
+      (item.prioritas || "nice").slice(0, 20),
+      (item.status || "idea").slice(0, 20),
+      (item.targetDate || "").slice(0, 10),
+      (item.vendor || "").trim().slice(0, 150),
+      (item.catatan || "").trim().slice(0, 500),
+      parseInt(item.roiEstimate) || 0,
+    ]
+  );
+  return id;
+};
+
+export const updatePlanningItem = async (id, item) => {
+  await query(
+    `UPDATE planning_items SET
+       nama=$2, kategori=$3, estimasi=$4, prioritas=$5, status=$6,
+       target_date=$7, vendor=$8, catatan=$9, roi_estimate=$10, updated_at=NOW()
+     WHERE id=$1`,
+    [
+      id,
+      (item.nama || "").trim().slice(0, 200),
+      (item.kategori || "lain").slice(0, 30),
+      parseInt(item.estimasi) || 0,
+      (item.prioritas || "nice").slice(0, 20),
+      (item.status || "idea").slice(0, 20),
+      (item.targetDate || "").slice(0, 10),
+      (item.vendor || "").trim().slice(0, 150),
+      (item.catatan || "").trim().slice(0, 500),
+      parseInt(item.roiEstimate) || 0,
+    ]
+  );
+};
+
+export const deletePlanningItem = async (id) => {
+  await query("DELETE FROM planning_items WHERE id = $1", [id]);
+};

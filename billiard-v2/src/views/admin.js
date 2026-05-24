@@ -1031,7 +1031,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=55">'
+    + '<link rel="stylesheet" href="/admin.css?v=56">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1457,7 +1457,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=55">'
+    + '<link rel="stylesheet" href="/admin.css?v=56">'
     + '</head><body>'
 
     + '<div class="layout">'

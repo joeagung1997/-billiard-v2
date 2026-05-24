@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=55\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=56\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -52,7 +52,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   // Owner pakai sidebar unified baru. Mapping page → activePage di owner sidebar.
   if (role === "owner") {
     const activeMap = { keuangan: "keuangan", transaksi: "transaksi", kategori: "kategori",
-                        menu: "menu", sdm: "kru", monitoring: "aktivitas-kru", analisis: "analisis" };
+                        menu: "menu", sdm: "kru", monitoring: "aktivitas-kru",
+                        analisis: "analisis", planning: "planning" };
     return buildOwnerSidebar({ token: ftk, activePage: activeMap[page] || page, displayName });
   }
 

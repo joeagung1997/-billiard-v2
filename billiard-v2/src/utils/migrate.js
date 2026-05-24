@@ -352,5 +352,23 @@ export const runMigrations = async () => {
     console.log("[DB] Seed default fixed_costs (6 item).");
   }
 
+  // ── Planning / Roadmap Bisnis — wishlist item ───────────────
+  await query(`
+    CREATE TABLE IF NOT EXISTS planning_items (
+      id           TEXT PRIMARY KEY,
+      nama         TEXT NOT NULL,
+      kategori     TEXT DEFAULT 'lain',
+      estimasi     BIGINT DEFAULT 0,
+      prioritas    TEXT DEFAULT 'nice',
+      status       TEXT DEFAULT 'idea',
+      target_date  TEXT DEFAULT '',
+      vendor       TEXT DEFAULT '',
+      catatan      TEXT DEFAULT '',
+      roi_estimate BIGINT DEFAULT 0,
+      created_at   TIMESTAMPTZ DEFAULT NOW(),
+      updated_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };

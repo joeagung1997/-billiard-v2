@@ -18,6 +18,7 @@ import {
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
   readAdminAccounts, readKaryawan,
+  readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
@@ -29,6 +30,7 @@ import {
   financeKategoriPage, financeMenuPage,
   financeAnalisisPage,
 } from "../views/finance.js";
+import { planningPage } from "../views/planning.js";
 
 const router = Router();
 
@@ -462,6 +464,82 @@ router.get("/analisis/biaya/hapus", requireOwner, async (req, res) => {
   } catch (err) {
     console.error("[FINANCE] hapus biaya error:", err.message);
     res.redirect("/operasional/analisis?msg=err");
+  }
+});
+
+// ── Planning & Roadmap (owner only) ─────────────────────────────
+router.get("/planning", requireOwner, async (req, res) => {
+  try {
+    const items = await readPlanningItems();
+    res.send(planningPage({
+      items,
+      token: "",
+      role: "owner",
+      displayName: res.locals.financeDisplay || "",
+    }));
+  } catch (err) {
+    console.error("[PLANNING] list error:", err.message);
+    res.status(500).send("Gagal memuat halaman planning.");
+  }
+});
+
+router.post("/planning/add", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const nama = (body.nama || "").trim();
+    if (!nama) return res.status(400).send("Nama item wajib diisi.");
+    await addPlanningItem({
+      nama,
+      kategori:     body.kategori,
+      estimasi:     body.estimasi,
+      prioritas:    body.prioritas,
+      status:       body.status,
+      targetDate:   body.target_date,
+      vendor:       body.vendor,
+      catatan:      body.catatan,
+      roiEstimate:  body.roi_estimate,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] add error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/edit", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const id = (body.id || "").trim();
+    if (!id) return res.status(400).send("ID item wajib.");
+    const nama = (body.nama || "").trim();
+    if (!nama) return res.status(400).send("Nama item wajib.");
+    await updatePlanningItem(id, {
+      nama,
+      kategori:     body.kategori,
+      estimasi:     body.estimasi,
+      prioritas:    body.prioritas,
+      status:       body.status,
+      targetDate:   body.target_date,
+      vendor:       body.vendor,
+      catatan:      body.catatan,
+      roiEstimate:  body.roi_estimate,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] edit error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/delete", requireOwner, async (req, res) => {
+  try {
+    const id = (req.body?.id || "").trim();
+    if (!id) return res.status(400).send("ID item wajib.");
+    await deletePlanningItem(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] delete error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
