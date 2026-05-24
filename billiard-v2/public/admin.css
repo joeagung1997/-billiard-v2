@@ -329,14 +329,20 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .own-nav-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
 
 /* ── Section (group of items) ─────────────────────────────────── */
-.own-section { margin:6px 0; }
+.own-section { margin:2px 0; }
+/* Subtle divider antara section — biar section closed tdk keliatan nyambung */
+.own-section + .own-section { position:relative; margin-top:10px; padding-top:10px; }
+.own-section + .own-section::before { content:''; position:absolute;
+  top:0; left:12px; right:12px; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent); }
+
 .own-section-hdr { display:flex; align-items:center; gap:9px; width:100%;
-  padding:9px 10px; background:transparent; border:none; cursor:pointer;
+  padding:11px 12px; background:transparent; border:none; cursor:pointer;
   font-family:var(--ff); font-size:10px; font-weight:700; text-transform:uppercase;
   letter-spacing:.12em; color:rgba(255,255,255,0.42);
   border-radius:8px; transition:background .12s, color .12s; user-select:none; }
-.own-section-hdr:hover { background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.7); }
-.own-section.open .own-section-hdr { color:rgba(255,255,255,0.85); }
+.own-section-hdr:hover { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.78); }
+.own-section.open .own-section-hdr { color:rgba(255,255,255,0.92); background:rgba(255,255,255,0.02); }
 .own-section-emoji { font-size:14px; line-height:1; }
 .own-section-label { flex:1; text-align:left; }
 .own-section-chev { font-size:14px; opacity:.5; transition:transform .25s; }
@@ -345,7 +351,7 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 /* Section body — animated expand */
 .own-section-body { max-height:0; overflow:hidden;
   transition:max-height .3s cubic-bezier(.4,0,.2,1); padding:0 4px; }
-.own-section.open .own-section-body { max-height:600px; padding-bottom:4px; }
+.own-section.open .own-section-body { max-height:600px; padding:6px 4px 8px; }
 
 /* ── Item (nav link) ──────────────────────────────────────────── */
 .own-item { position:relative; display:flex; align-items:center; gap:11px;
