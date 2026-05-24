@@ -49,7 +49,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       label: "Operasional",
       items: [
         { id: "keuangan",  href: "/operasional",          icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
-        { id: "transaksi", href: "/operasional#trx-list", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
+        { id: "transaksi", href: "/operasional/transaksi", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
         { id: "analisis",  href: "/operasional/analisis", icon: "ti ti-target",    label: "Analisis Target",    tk: true },
         { id: "kategori",  href: "/operasional/kategori", icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],

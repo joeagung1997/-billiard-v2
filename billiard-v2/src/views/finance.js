@@ -37,7 +37,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=42\">";
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=43\">";
 }
 
 // Helper: inisial 2 huruf dari nama (mis. "Zidan Kecil" → "ZK")
@@ -51,8 +51,8 @@ export function initials(name) {
 export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", displayName = "", shift = "siang") {
   // Owner pakai sidebar unified baru. Mapping page → activePage di owner sidebar.
   if (role === "owner") {
-    const activeMap = { keuangan: "keuangan", kategori: "kategori", menu: "menu",
-                        sdm: "kru", monitoring: "aktivitas-kru", analisis: "analisis" };
+    const activeMap = { keuangan: "keuangan", transaksi: "transaksi", kategori: "kategori",
+                        menu: "menu", sdm: "kru", monitoring: "aktivitas-kru", analisis: "analisis" };
     return buildOwnerSidebar({ token: ftk, activePage: activeMap[page] || page, displayName });
   }
 
@@ -533,7 +533,7 @@ export function financeLoginPage(showErr) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
-export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], karyawanAll = [], analisis = null, msg = "" }) {
+export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], accountsAll = [], karyawanAll = [], analisis = null, msg = "", transaksiOnly = false }) {
   const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
@@ -1241,12 +1241,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</head><body>"
 
     + "<div class=\"layout\">"
-    + buildFinanceSidebar(token, "keuangan", role, displayName, defaultShift)
+    + buildFinanceSidebar(token, transaksiOnly ? "transaksi" : "keuangan", role, displayName, defaultShift)
     + "<div class=\"main-wrap\">"
 
     // Owner Header (desktop only) — breadcrumb + search + bell + actions
     + (role === "owner" ? buildOwnerHeader({
-        breadcrumb: [{ label: "Operasional", href: "/operasional" }, { label: "Dashboard Keuangan" }],
+        breadcrumb: [
+          { label: "Operasional", href: "/operasional" },
+          { label: transaksiOnly ? "Transaksi" : "Dashboard Keuangan" },
+        ],
         actionsHtml:
           '<a href="/operasional/kategori" class="own-header-btn"><i class="ti ti-tag"></i> Kategori</a>'
         + '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
@@ -1267,16 +1270,17 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<button class=\"fin-fab\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\"></i> Catat Transaksi</button>"
 
     // ── Desktop page heading ───────────────────────────────────
-    // Owner: actions (Kategori + Catat Transaksi) sudah di .own-header, jadi
-    // topbar-actions disembunyikan utk owner. Karyawan tetep punya tombol.
     + "<div class=\"dash-topbar fin-page-head\">"
     + "<div class=\"fin-page-head-text\">"
-    +   "<h1 class=\"fin-page-title\">Dashboard Keuangan"
+    +   "<h1 class=\"fin-page-title\">"
+    +     (transaksiOnly ? "Riwayat Transaksi" : "Dashboard Keuangan")
     +     " <span class=\"fin-role-badge fin-role-" + (isOwner ? "owner" : "partner") + "\">"
     +     "<i class=\"ti ti-" + (isOwner ? "crown" : "user-check") + "\"></i>" + (isOwner ? "OWNER" : "PARTNER") + "</span>"
     +   "</h1>"
     +   "<p class=\"fin-page-sub\">"
-    +     (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu")
+    +     (transaksiOnly
+    +       ? "Daftar lengkap catatan pemasukan &amp; pengeluaran — bisa di-filter, dicari, dan dibatalkan."
+    +       : (isOwner ? "Laporan pemasukan, pengeluaran &amp; saldo" : "Tampilan hari ini — catat transaksi shift kamu"))
     +   "</p>"
     + "</div>"
     + (isOwner ? "" : (
@@ -1285,6 +1289,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
       ))
     + "</div>"
+
+    // Wrap pre-table content. Pada mode transaksiOnly, di-hide via inline style
+    // — content masih dirender (state, JS deps tetap aktif) cuma tdk visible.
+    + "<div id=\"finDashOnly\"" + (transaksiOnly ? " style=\"display:none\"" : "") + ">"
 
     // ── Saldo Kas Awal (modal kembalian) ────────────────────────
     + "<div class=\"fin-kas-card\">"
@@ -1490,8 +1498,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
       : "")
 
+    // Tutup wrapper #finDashOnly (lihat tag pembuka sebelum kas-card)
+    + "</div>"
+
     // ── Transaction table ───────────────────────────────────────
-    + "<div class=\"fin-table-card\">"
+    + "<div class=\"fin-table-card\" id=\"trx-list\">"
     + "<div class=\"fin-tbl-toolbar\">"
     + "<div class=\"fin-search-wrap\">"
     + "<i class=\"ti ti-search\"></i>"

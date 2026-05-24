@@ -148,92 +148,105 @@ router.get("/logout", (_req, res) => {
 router.use(requireFinanceAuth);
 
 // ── GET /operasional — dashboard ─────────────────────────────────
+// Helper: bangun data utk financeDashboard. Dipake oleh route '/' (Dashboard
+// Keuangan) dan '/transaksi' (Riwayat Transaksi — same data, beda view).
+async function buildDashboardData(req, res) {
+  const role = res.locals.financeRole;
+  const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList] = await Promise.all([
+    readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
+    readAdminAccounts(), readKaryawan(true),
+  ]);
+
+  // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
+  // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
+  // tutup tengah malam tetap dianggap "hari ini" sampai pagi.
+  const today      = todayBusinessDayISO();
+  const todayD     = new Date(today + "T00:00:00Z");
+  const yesterday  = new Date(todayD.getTime() - 86400000).toISOString().slice(0, 10);
+  const allowedKy  = [yesterday, today];
+
+  let tglDari, tglSampai, bulanFilter, jenisFilter;
+  if (role === "karyawan") {
+    const reqDay = (req.query.tgl_dari ?? req.query.day ?? "").slice(0, 10);
+    const pickDay = allowedKy.includes(reqDay) ? reqDay : today;
+    tglDari     = pickDay;
+    tglSampai   = pickDay;
+    bulanFilter = pickDay.slice(0, 7);
+    jenisFilter = "";
+  } else {
+    bulanFilter = req.query.bulan      ?? "";
+    jenisFilter = req.query.jenis      ?? "";
+    tglDari     = req.query.tgl_dari   ?? "";
+    tglSampai   = req.query.tgl_sampai ?? "";
+  }
+
+  // ── Analisis target operasional ────────────────────────────
+  const { breakdown: costBreakdown, targets } = await loadAnalisisData();
+  // Pemasukan utk 3 scope: hari ini (business day), minggu ini (Sen-Min), bulan ini
+  const dow       = new Date(today + "T00:00:00Z").getUTCDay() === 0 ? 6 : new Date(today + "T00:00:00Z").getUTCDay() - 1;
+  const mondayD   = new Date(new Date(today + "T00:00:00Z").getTime() - dow * 86400000);
+  const mondayStr = mondayD.toISOString().slice(0, 10);
+  const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
+
+  // Rekomendasi tambah karyawan: rata-rata 30 hari terakhir
+  const last30Start = new Date(new Date(today + "T00:00:00Z").getTime() - 29 * 86400000).toISOString().slice(0, 10);
+  const last30In    = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= last30Start && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const last30Avg   = Math.round(last30In / 30);
+
+  const analisis = {
+    targets,
+    costBreakdown,
+    hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
+    minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
+    bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
+    simulasi: {
+      rataPemasukan: last30Avg,
+      ...evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000),
+    },
+  };
+
+  // Shift: priority lookup (karyawan table → admin_accounts.shift → cookie → 'siang')
+  const myDisplay  = (res.locals.financeDisplay || "").trim().toLowerCase();
+  const myKaryawan = myDisplay
+    ? karyawanList.find((k) => (k.nama || "").trim().toLowerCase() === myDisplay)
+    : null;
+  const me = accounts.find((a) => a.username.toLowerCase() === (res.locals.financeUser || "").toLowerCase());
+  const effectiveShift = myKaryawan?.shift || me?.shift || res.locals.financeShift || "siang";
+
+  return {
+    transaksi, token: "", role,
+    displayName: res.locals.financeDisplay || "",
+    shift:       effectiveShift,
+    bulanFilter, jenisFilter, tglDari, tglSampai,
+    kategoriList, subKategoriList, menuItems, toppings,
+    accountsAll:  accounts,
+    karyawanAll:  karyawanList,
+    analisis,
+    msg: req.query.msg || "",
+  };
+}
+
 router.get("/", async (req, res) => {
   try {
-    const role = res.locals.financeRole;
-    const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList] = await Promise.all([
-      readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
-      readAdminAccounts(), readKaryawan(true),
-    ]);
-
-    // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
-    // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
-    // tutup tengah malam tetap dianggap "hari ini" sampai pagi.
-    const today      = todayBusinessDayISO();
-    const todayD     = new Date(today + "T00:00:00Z");
-    const yesterday  = new Date(todayD.getTime() - 86400000).toISOString().slice(0, 10);
-    const allowedKy  = [yesterday, today];
-    const todayBulan = today.slice(0, 7);
-
-    let tglDari, tglSampai, bulanFilter, jenisFilter;
-    if (role === "karyawan") {
-      const reqDay = (req.query.tgl_dari ?? req.query.day ?? "").slice(0, 10);
-      const pickDay = allowedKy.includes(reqDay) ? reqDay : today;
-      tglDari     = pickDay;
-      tglSampai   = pickDay;
-      bulanFilter = pickDay.slice(0, 7);
-      jenisFilter = "";
-    } else {
-      bulanFilter = req.query.bulan      ?? "";
-      jenisFilter = req.query.jenis      ?? "";
-      tglDari     = req.query.tgl_dari   ?? "";
-      tglSampai   = req.query.tgl_sampai ?? "";
-    }
-
-    // ── Analisis target operasional ────────────────────────────
-    const { breakdown: costBreakdown, targets } = await loadAnalisisData();
-    // Pemasukan utk 3 scope: hari ini (business day), minggu ini (Sen-Min), bulan ini
-    const dow       = new Date(today + "T00:00:00Z").getUTCDay() === 0 ? 6 : new Date(today + "T00:00:00Z").getUTCDay() - 1;
-    const mondayD   = new Date(new Date(today + "T00:00:00Z").getTime() - dow * 86400000);
-    const mondayStr = mondayD.toISOString().slice(0, 10);
-    const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
-
-    // Rekomendasi tambah karyawan: rata-rata 30 hari terakhir
-    const last30Start = new Date(new Date(today + "T00:00:00Z").getTime() - 29 * 86400000).toISOString().slice(0, 10);
-    const last30In    = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= last30Start && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const last30Avg   = Math.round(last30In / 30);
-
-    const analisis = {
-      targets,
-      costBreakdown,
-      hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
-      minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
-      bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
-      simulasi: {
-        rataPemasukan: last30Avg,
-        ...evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000),
-      },
-    };
-
-    // Shift: priority lookup
-    // 1. Tabel `karyawan` (SDM Manajemen) by nama matching displayName — single
-    //    source of truth utk shift karyawan operasional
-    // 2. admin_accounts.shift fallback (lookup by username) — utk user yg blm
-    //    terdaftar di SDM Manajemen
-    // 3. Cookie shift (terakhir)
-    // 4. Default 'siang'
-    const myDisplay  = (res.locals.financeDisplay || "").trim().toLowerCase();
-    const myKaryawan = myDisplay
-      ? karyawanList.find((k) => (k.nama || "").trim().toLowerCase() === myDisplay)
-      : null;
-    const me = accounts.find((a) => a.username.toLowerCase() === (res.locals.financeUser || "").toLowerCase());
-    const effectiveShift = myKaryawan?.shift || me?.shift || res.locals.financeShift || "siang";
-
-    res.send(financeDashboard({
-      transaksi, token: "", role,
-      displayName: res.locals.financeDisplay || "",
-      shift:       effectiveShift,
-      bulanFilter, jenisFilter, tglDari, tglSampai,
-      kategoriList, subKategoriList, menuItems, toppings,
-      accountsAll:  accounts,
-      karyawanAll:  karyawanList,
-      analisis,
-      msg: req.query.msg || "",
-    }));
+    const data = await buildDashboardData(req, res);
+    res.send(financeDashboard(data));
   } catch (err) {
     console.error("[FINANCE] dashboard error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
+// ── GET /operasional/transaksi — daftar transaksi (dashboard mode 'transaksiOnly') ──
+// Same data fetch + view sbg dashboard, tapi summary blocks (kas, charts, target)
+// di-hide via display:none. User cuma lihat tabel transaksi + filter chips.
+router.get("/transaksi", async (req, res) => {
+  try {
+    const data = await buildDashboardData(req, res);
+    res.send(financeDashboard({ ...data, transaksiOnly: true }));
+  } catch (err) {
+    console.error("[FINANCE] /transaksi error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
   }
 });
