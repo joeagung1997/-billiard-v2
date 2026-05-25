@@ -233,6 +233,15 @@ async function buildDashboardData(req, res) {
 
 router.get("/", async (req, res) => {
   try {
+    // Default landing: filter "Hari Ini" jika owner & belum spesifikan periode.
+    // Karyawan dihandle terpisah di buildDashboardData (forced ke hari ini/kemarin).
+    if (res.locals.financeRole !== "karyawan"
+        && !req.query.bulan && !req.query.tgl_dari && !req.query.tgl_sampai && !req.query.jenis) {
+      const today = todayBusinessDayISO();
+      req.query.bulan      = today.slice(0, 7);
+      req.query.tgl_dari   = today;
+      req.query.tgl_sampai = today;
+    }
     const data = await buildDashboardData(req, res);
     res.send(financeDashboard(data));
   } catch (err) {
