@@ -22,7 +22,7 @@ import {
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
-import { applyBusinessDay, todayBusinessDayISO } from "../utils/format.js";
+import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
 import {
@@ -189,13 +189,16 @@ async function buildDashboardData(req, res) {
   const dow       = new Date(today + "T00:00:00Z").getUTCDay() === 0 ? 6 : new Date(today + "T00:00:00Z").getUTCDay() - 1;
   const mondayD   = new Date(new Date(today + "T00:00:00Z").getTime() - dow * 86400000);
   const mondayStr = mondayD.toISOString().slice(0, 10);
-  const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
-  const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
-  const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
+  // Kategori "Tukar Uang" (internal transfer cash↔QRIS) di-exclude dari semua
+  // aggregasi pemasukan — bukan revenue beneran. Lihat utils/format.js.
+  const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG;
+  const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const inMinggu = transaksi.filter((t) => isRevPem(t) && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const inBulan  = transaksi.filter((t) => isRevPem(t) && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
 
   // Rekomendasi tambah karyawan: rata-rata 30 hari terakhir
   const last30Start = new Date(new Date(today + "T00:00:00Z").getTime() - 29 * 86400000).toISOString().slice(0, 10);
-  const last30In    = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= last30Start && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  const last30In    = transaksi.filter((t) => isRevPem(t) && t.tanggal >= last30Start && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
   const last30Avg   = Math.round(last30In / 30);
 
   const analisis = {
@@ -395,16 +398,18 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const dow       = todayD.getUTCDay() === 0 ? 6 : todayD.getUTCDay() - 1;
     const mondayD   = new Date(todayD.getTime() - dow * 86400000);
     const mondayStr = mondayD.toISOString().slice(0, 10);
-    const inHari   = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const inMinggu = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const inBulan  = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
+    // Exclude kategori "Tukar Uang" — internal transfer, bukan revenue.
+    const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG;
+    const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inMinggu = transaksi.filter((t) => isRevPem(t) && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const inBulan  = transaksi.filter((t) => isRevPem(t) && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
 
     // Trend 30 hari: { tanggal, pemasukan }
     const trend30 = [];
     for (let i = 29; i >= 0; i--) {
       const d   = new Date(todayD.getTime() - i * 86400000);
       const iso = d.toISOString().slice(0, 10);
-      const pem = transaksi.filter((t) => t.jenis === "pemasukan" && !t.voidedAt && t.tanggal === iso).reduce((s, t) => s + (t.jumlah || 0), 0);
+      const pem = transaksi.filter((t) => isRevPem(t) && t.tanggal === iso).reduce((s, t) => s + (t.jumlah || 0), 0);
       trend30.push({ tanggal: iso, pemasukan: pem });
     }
 

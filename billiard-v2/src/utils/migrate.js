@@ -21,6 +21,8 @@ const DEFAULT_KATEGORI = [
   { nama: "Turnamen",                jenis: "pemasukan"   },
   { nama: "Registrasi Member",       jenis: "pemasukan"   },
   { nama: "Lain-lain",               jenis: "pemasukan"   },
+  // Tukar Uang (internal transfer, lihat utils/format.js)
+  { nama: "Tukar Uang",              jenis: "pemasukan"   },
   // Pengeluaran
   { nama: "Operasional Rutin",       jenis: "pengeluaran" },
   { nama: "Stok Bahan-bahan",        jenis: "pengeluaran" },
@@ -29,6 +31,7 @@ const DEFAULT_KATEGORI = [
   { nama: "Aset & Perbaikan",        jenis: "pengeluaran" },
   { nama: "SDM",                     jenis: "pengeluaran" },
   { nama: "Lain-lain",               jenis: "pengeluaran" },
+  { nama: "Tukar Uang",              jenis: "pengeluaran" },
 ];
 
 // Kategori pengeluaran lama yang digantikan oleh struktur baru
@@ -164,6 +167,18 @@ export const runMigrations = async () => {
       );
     }
   }
+
+  // ── Tambah kategori "Tukar Uang" untuk DB yg sudah existing ──
+  // Idempotent: ON CONFLICT DO NOTHING. Urutan = 999 → muncul di paling bawah
+  // list kategori, tapi user bisa drag-and-drop di /operasional/kategori.
+  await query(
+    `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, 'pemasukan',   999) ON CONFLICT (nama, jenis) DO NOTHING`,
+    ["Tukar Uang"]
+  );
+  await query(
+    `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, 'pengeluaran', 999) ON CONFLICT (nama, jenis) DO NOTHING`,
+    ["Tukar Uang"]
+  );
 
   // ── Tabel sub_kategori ───────────────────────────────────────────
   await query(`

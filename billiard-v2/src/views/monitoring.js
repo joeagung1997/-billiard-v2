@@ -2,6 +2,7 @@
 // ── HTML views untuk Monitoring Karyawan ─────────────────────
 
 import { docHeadV4, buildFinanceSidebar, buildFinanceBottomNav, buildFinanceTopbarProfile, escHtml } from "./finance.js";
+import { KAT_TUKAR_UANG } from "../utils/format.js";
 
 // ── Format Rupiah ─────────────────────────────────────────────
 const rp = (n) => {
@@ -206,9 +207,9 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
   const nameMap = Object.fromEntries(
     accountsAll.map((a) => [a.username, a.display_name || a.username])
   );
-  // Summary stats
-  const totalIn  = logs.filter((l) => l.jenis === "pemasukan").reduce((s, l) => s + l.jumlah, 0);
-  const totalOut = logs.filter((l) => l.jenis === "pengeluaran").reduce((s, l) => s + l.jumlah, 0);
+  // Summary stats — exclude kategori "Tukar Uang" (internal transfer, bukan revenue)
+  const totalIn  = logs.filter((l) => l.jenis === "pemasukan" && l.kategori !== KAT_TUKAR_UANG).reduce((s, l) => s + l.jumlah, 0);
+  const totalOut = logs.filter((l) => l.jenis === "pengeluaran" && l.kategori !== KAT_TUKAR_UANG).reduce((s, l) => s + l.jumlah, 0);
   const uniqueRecorders = new Set(logs.map((l) => l.dicatatOleh).filter(Boolean));
 
   const summaryHtml = "<div class=\"mon-sum-row\">"

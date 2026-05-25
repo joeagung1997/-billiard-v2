@@ -2,6 +2,7 @@
 // ── HTML views untuk halaman keuangan ────────────────────────
 
 import { CONFIG } from "../config.js";
+import { KAT_TUKAR_UANG } from "../utils/format.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
 
 // ── Format rupiah ─────────────────────────────────────────────
@@ -666,37 +667,45 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const activeSortedTbl = tDari
     ? activeFiltered.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
     : activeFiltered;
-  const chartTotalIn  = activeSortedTbl.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
-  const chartTotalOut = activeSortedTbl.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
+  // Revenue-only versions — kategori "Tukar Uang" (internal transfer cash↔QRIS)
+  // tidak dihitung sbg pemasukan/pengeluaran beneran. Lihat utils/format.js
+  // untuk konsep & alasan. Tetap visible di tabel & filter tab, tapi exclude
+  // dari semua kalkulasi total/margin/breakdown.
+  const revenueFiltered  = activeFiltered.filter((t) => t.kategori !== KAT_TUKAR_UANG);
+  const revenueSortedTbl = activeSortedTbl.filter((t) => t.kategori !== KAT_TUKAR_UANG);
+  const chartTotalIn  = revenueSortedTbl.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
+  const chartTotalOut = revenueSortedTbl.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
   const chartSaldo    = chartTotalIn - chartTotalOut;
   const chartMargin   = chartTotalIn > 0 ? ((chartSaldo / chartTotalIn) * 100).toFixed(1) : "0";
   // Count vars utk stat cards — ikut scope range (tDari) supaya konsisten dgn chartTotal*.
   // Tanpa ini, card "Pemasukan / Pengeluaran / Transaksi" tampil bulan-wide meski filter "Hari Ini" aktif.
-  const chartPemasukanCount   = activeSortedTbl.filter((t) => t.jenis === "pemasukan").length;
-  const chartPengeluaranCount = activeSortedTbl.filter((t) => t.jenis === "pengeluaran").length;
-  const chartTrxCount         = activeSortedTbl.length;
+  const chartPemasukanCount   = revenueSortedTbl.filter((t) => t.jenis === "pemasukan").length;
+  const chartPengeluaranCount = revenueSortedTbl.filter((t) => t.jenis === "pengeluaran").length;
+  const chartTrxCount         = revenueSortedTbl.length;
   const chartVoidedCount      = tDari
     ? filtered.filter((t) => t.voidedAt && t.tanggal >= tDari && t.tanggal <= tSampaiEff).length
     : voidedCount;
+  // Hitung jumlah Tukar Uang dalam scope, biar bisa ditampilkan sbg info terpisah.
+  const tukarCount = activeSortedTbl.filter((t) => t.kategori === KAT_TUKAR_UANG).length;
 
-  // Breakdown metode pembayaran (pemasukan saja)
-  const totalCash = activeSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "cash").reduce((s, t) => s + t.jumlah, 0);
-  const totalQris = activeSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "qris").reduce((s, t) => s + t.jumlah, 0);
+  // Breakdown metode pembayaran (pemasukan saja, exclude Tukar Uang)
+  const totalCash = revenueSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "cash").reduce((s, t) => s + t.jumlah, 0);
+  const totalQris = revenueSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "qris").reduce((s, t) => s + t.jumlah, 0);
 
-  // Summary (exclude voided)
-  const pemasukan   = activeFiltered.filter((t) => t.jenis === "pemasukan");
-  const pengeluaran = activeFiltered.filter((t) => t.jenis === "pengeluaran");
+  // Summary (exclude voided + Tukar Uang)
+  const pemasukan   = revenueFiltered.filter((t) => t.jenis === "pemasukan");
+  const pengeluaran = revenueFiltered.filter((t) => t.jenis === "pengeluaran");
   const totalIn     = pemasukan.reduce((s, t) => s + t.jumlah, 0);
   const totalOut    = pengeluaran.reduce((s, t) => s + t.jumlah, 0);
   const saldo       = totalIn - totalOut;
   const margin      = totalIn > 0 ? ((saldo / totalIn) * 100).toFixed(1) : "0";
 
-  // Perbandingan bulan lalu untuk badge "vs Apr 2026" (exclude voided)
+  // Perbandingan bulan lalu untuk badge "vs Apr 2026" (exclude voided + Tukar Uang)
   const prevDate    = new Date(bFilter + "-01");
   prevDate.setMonth(prevDate.getMonth() - 1);
   const prevBulan   = prevDate.getFullYear() + "-" + String(prevDate.getMonth() + 1).padStart(2, "0");
   const prevLabel   = prevDate.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
-  const prevIn      = transaksi.filter((t) => !t.voidedAt && t.tanggal.slice(0, 7) === prevBulan && t.jenis === "pemasukan")
+  const prevIn      = transaksi.filter((t) => !t.voidedAt && t.kategori !== KAT_TUKAR_UANG && t.tanggal.slice(0, 7) === prevBulan && t.jenis === "pemasukan")
                                .reduce((s, t) => s + t.jumlah, 0);
   const inDelta     = prevIn > 0 ? Math.round(((totalIn - prevIn) / prevIn) * 100) : 0;
 
@@ -749,7 +758,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     chartLabels = SLOTS.map((s) => s.lbl);
     chartIn  = SLOTS.map(() => 0);
     chartOut = SLOTS.map(() => 0);
-    activeSortedTbl.forEach(function(t) {
+    revenueSortedTbl.forEach(function(t) {
       const h   = parseInt((t.jam || "00:00").split(":")[0]) || 0;
       const idx = SLOTS.findIndex((s) => h >= s.h0 && h < s.h1);
       const i   = idx < 0 ? 0 : idx;
@@ -766,7 +775,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     chartIn  = [0, 0, 0, 0, 0, 0, 0];
     chartOut = [0, 0, 0, 0, 0, 0, 0];
     const monMs = new Date(mondayStr + "T00:00:00").getTime();
-    activeSortedTbl.forEach(function(t) {
+    revenueSortedTbl.forEach(function(t) {
       const diff = Math.floor((new Date(t.tanggal + "T00:00:00").getTime() - monMs) / 86400000);
       if (diff >= 0 && diff < 7) {
         if (t.jenis === "pemasukan") chartIn[diff]  += t.jumlah;
@@ -790,15 +799,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         const d    = new Date(fromMs + i * 86400000);
         const dStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
         chartLabels.push(d.getDate() + "/" + (d.getMonth() + 1));
-        chartIn.push(activeSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0));
-        chartOut.push(activeSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0));
+        chartIn.push(revenueSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0));
+        chartOut.push(revenueSortedTbl.filter((t) => t.tanggal === dStr && t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0));
       }
     } else {
       const numWeeks = Math.ceil(diffDays / 7);
       chartLabels = Array.from({ length: numWeeks }, (_, i) => "Minggu " + (i + 1));
       chartIn  = new Array(numWeeks).fill(0);
       chartOut = new Array(numWeeks).fill(0);
-      activeSortedTbl.forEach(function(t) {
+      revenueSortedTbl.forEach(function(t) {
         const wi = Math.min(Math.floor((new Date(t.tanggal + "T00:00:00").getTime() - fromMs) / (7 * 86400000)), numWeeks - 1);
         if (wi >= 0) {
           if (t.jenis === "pemasukan") chartIn[wi]  += t.jumlah;
@@ -814,7 +823,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     chartLabels = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"];
     chartIn     = [0, 0, 0, 0];
     chartOut    = [0, 0, 0, 0];
-    activeSortedTbl.forEach(function(t) {
+    revenueSortedTbl.forEach(function(t) {
       const day = parseInt((t.tanggal || "").split("-")[2] || "1", 10);
       const wi  = Math.min(Math.floor((day - 1) / 7), 3);
       if (t.jenis === "pemasukan") chartIn[wi]  += t.jumlah;
@@ -824,6 +833,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   }
 
   // ── Detail chart: per tanggal / hari / jam (owner only) ───────
+  // Pakai revenueFiltered (exclude Tukar Uang) supaya chart breakdown selaras
+  // dgn total Pemasukan/Pengeluaran di stat cards.
   const daysInBulan = new Date(parseInt(bFilter.split("-")[0], 10), parseInt(bFilter.split("-")[1], 10), 0).getDate();
   const byDateLabels = Array.from({ length: daysInBulan }, (_, i) => String(i + 1));
   const byDateInp  = new Array(daysInBulan).fill(0);
@@ -832,7 +843,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const byDayOut   = [0, 0, 0, 0, 0, 0, 0];
   const byHourInp  = new Array(24).fill(0);
   const byHourOut  = new Array(24).fill(0);
-  activeFiltered.forEach(function(t) {
+  revenueFiltered.forEach(function(t) {
     const dayNum = parseInt((t.tanggal || "").split("-")[2], 10);
     if (dayNum >= 1 && dayNum <= daysInBulan) {
       if (t.jenis === "pemasukan") byDateInp[dayNum - 1] += t.jumlah;
@@ -848,8 +859,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   });
 
   // ── Category breakdown for donut chart ───────────────────────
+  // Exclude Tukar Uang dari donut komposisi pemasukan (bukan revenue beneran).
   const catMap = {};
-  activeSortedTbl.filter((t) => t.jenis === "pemasukan").forEach(function(t) {
+  revenueSortedTbl.filter((t) => t.jenis === "pemasukan").forEach(function(t) {
     catMap[t.kategori || "Lainnya"] = (catMap[t.kategori || "Lainnya"] || 0) + t.jumlah;
   });
   const catEntries = Object.entries(catMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 4);

@@ -5,6 +5,18 @@ import { CONFIG } from "../config.js";
 
 const ID_TZ = "Asia/Jakarta";
 
+// ── Kategori khusus "Tukar Uang" ─────────────────────────────
+// Internal transfer cash ↔ QRIS (mis. customer tukar cash ke transfer rekening).
+// Net Rp 0 ke revenue — bukan pemasukan/pengeluaran beneran. Otomatis EXCLUDED
+// dari semua agregasi total Pemasukan/Pengeluaran/Saldo/Margin di dashboard,
+// tapi tetap visible di tabel transaksi (sbg record untuk audit kas).
+// Cara pakai: catat 2 paired transaksi — 1 pengeluaran Cash + 1 pemasukan QRIS
+// (atau sebaliknya), keduanya dgn kategori "Tukar Uang".
+export const KAT_TUKAR_UANG = "Tukar Uang";
+
+// Filter helper: true kalau transaksi BUKAN tukar uang (kandidat aggregasi revenue).
+export const isRevenueTrx = (t) => t && t.kategori !== KAT_TUKAR_UANG;
+
 // ── Business day helper ──────────────────────────────────────
 // Operasional buka 09:00 — biasanya tutup dini hari (00:00–02:00, kadang lebih).
 // Transaksi yg dilakukan sebelum jam cutoff dianggap masih shift hari sebelumnya.
