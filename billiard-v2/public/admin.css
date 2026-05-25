@@ -2025,6 +2025,9 @@ td          { padding:10px 16px; vertical-align:middle; }
 .fin-tog-btn.sel         { border-color:#2d6624; background:#eaf3de; color:#2d6624; box-shadow:0 0 0 3px rgba(45,102,36,.1); }
 .fin-tog-btn.sel-siang   { border-color:#c47f1a; background:#faeeda; color:#c47f1a; box-shadow:0 0 0 3px rgba(196,127,26,.1); }
 .fin-tog-btn.sel-malam   { border-color:#2660a4; background:#e6f1fb; color:#2660a4; box-shadow:0 0 0 3px rgba(38,96,164,.1); }
+/* Status "Belum Bayar" — warning kuning, beda dari "Sudah Bayar" (hijau .sel)
+   biar visual cue jelas: ini state yang perlu di-follow-up (piutang/hutang). */
+.fin-tog-btn.sel-belum   { border-color:#b3791b; background:#fef3c7; color:#b3791b; box-shadow:0 0 0 3px rgba(179,121,27,.12); }
 
 .fin-step-dots     { display:flex; gap:5px; align-items:center; }
 .fin-sd            { width:6px; height:6px; border-radius:99px; background:#e2e8e0; transition:all .25s; }

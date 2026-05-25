@@ -1047,8 +1047,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
     // Badge "Belum Lunas" — kuning, lebih prominent karena ini status penting.
     ".fr-belum-lunas{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:#fef3c7;color:#b3791b;border:1px solid #fcd34d;letter-spacing:.02em}",
-    // Row highlight saat belum lunas — yellow tint border-left + bg subtle.
-    ".trx-belum-lunas{border-left:3px solid #fcd34d!important;background:linear-gradient(90deg,#fffbeb 0%,transparent 30%)!important}",
+    // Row highlight saat belum lunas — yellow tint penuh + border kiri tebal,
+    // override fin-row-in/-out hover supaya cue belum-lunas tetap dominan.
+    ".trx-belum-lunas{border-left:4px solid #f59e0b!important;background:#fef9e7!important}",
+    ".trx-belum-lunas:hover{background:#fef3c7!important}",
     // Tombol "Tandai Lunas" — hijau (positive action).
     ".icon-btn.ok{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}",
     ".icon-btn.ok:hover{background:#bbf7d0}",
@@ -2321,10 +2323,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "document.getElementById('wiz-cash').className='fin-tog-btn'+(b==='cash'?' sel':'');"
     + "document.getElementById('wiz-qris').className='fin-tog-btn'+(b==='qris'?' sel':'');"
     + "wizUpdateUpload();}"
-    // Toggle status lunas — false = belum bayar (piutang/hutang).
+    // Toggle status lunas — "Sudah Bayar" pakai sel (hijau), "Belum Bayar" pakai
+    // sel-belum (kuning warning) supaya beda visual cue.
     + "function wizSetLunas(v){wizS.lunas=!!v;"
     + "document.getElementById('wiz-lunas').className='fin-tog-btn'+(v?' sel':'');"
-    + "document.getElementById('wiz-belum').className='fin-tog-btn'+(!v?' sel':'');"
+    + "document.getElementById('wiz-belum').className='fin-tog-btn'+(!v?' sel-belum':'');"
     + "var h=document.getElementById('wizLunasHint');if(h)h.style.display=v?'none':'';}"
     + "var WIZ_EXTRAS_HTML="
     + safeJson(
