@@ -299,9 +299,9 @@ router.get("/transaksi", requireApiAuth(["finance", "admin"]), async (req, res) 
     const maxRows = Math.min(parseInt(limit) || 100, 1000);
     data = data.slice(0, maxRows);
 
-    // Exclude kategori "Tukar Uang" (internal transfer, bukan revenue).
-    const totalPemasukan   = data.filter((t) => t.jenis === "pemasukan"   && t.kategori !== KAT_TUKAR_UANG).reduce((s, t) => s + t.jumlah, 0);
-    const totalPengeluaran = data.filter((t) => t.jenis === "pengeluaran" && t.kategori !== KAT_TUKAR_UANG).reduce((s, t) => s + t.jumlah, 0);
+    // Exclude kategori "Tukar Uang" (internal transfer) + transaksi belum lunas.
+    const totalPemasukan   = data.filter((t) => t.jenis === "pemasukan"   && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false).reduce((s, t) => s + t.jumlah, 0);
+    const totalPengeluaran = data.filter((t) => t.jenis === "pengeluaran" && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false).reduce((s, t) => s + t.jumlah, 0);
 
     return ok(res, {
       total: data.length,
@@ -437,9 +437,9 @@ router.get("/dashboard", requireApiAuth(["admin"]), async (req, res) => {
     const memberBaru        = members.filter((m) =>
       m.tanggalDaftar && new Date(m.tanggalDaftar).toISOString().startsWith(curBulan)
     ).length;
-    // Exclude kategori "Tukar Uang" (internal transfer, bukan revenue).
-    const totalPemasukan    = transaksi.filter((t) => t.jenis === "pemasukan"   && t.kategori !== KAT_TUKAR_UANG).reduce((s, t) => s + t.jumlah, 0);
-    const totalPengeluaran  = transaksi.filter((t) => t.jenis === "pengeluaran" && t.kategori !== KAT_TUKAR_UANG).reduce((s, t) => s + t.jumlah, 0);
+    // Exclude kategori "Tukar Uang" (internal transfer) + transaksi belum lunas.
+    const totalPemasukan    = transaksi.filter((t) => t.jenis === "pemasukan"   && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false).reduce((s, t) => s + t.jumlah, 0);
+    const totalPengeluaran  = transaksi.filter((t) => t.jenis === "pengeluaran" && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false).reduce((s, t) => s + t.jumlah, 0);
 
     return ok(res, {
       data: {

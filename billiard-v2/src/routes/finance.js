@@ -12,7 +12,7 @@ const __routeDir = dirname(fileURLToPath(import.meta.url));
 // Upload dir: project-root/public/uploads/receipts/
 const RECEIPT_DIR = join(__routeDir, "../../public/uploads/receipts");
 import {
-  readTransaksi, appendTransaksi, voidTransaksi,
+  readTransaksi, appendTransaksi, voidTransaksi, markTransaksiLunas,
   readKategori, addKategori, deleteKategori, updateKategoriUrutan,
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
@@ -191,7 +191,9 @@ async function buildDashboardData(req, res) {
   const mondayStr = mondayD.toISOString().slice(0, 10);
   // Kategori "Tukar Uang" (internal transfer cash↔QRIS) di-exclude dari semua
   // aggregasi pemasukan — bukan revenue beneran. Lihat utils/format.js.
-  const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG;
+  // Plus filter lunas: transaksi "belum bayar" (piutang) belum boleh dihitung
+  // sebagai revenue cash-basis sampai customer benar-benar bayar.
+  const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
   const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
   const inMinggu = transaksi.filter((t) => isRevPem(t) && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
   const inBulan  = transaksi.filter((t) => isRevPem(t) && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
@@ -321,6 +323,10 @@ router.post("/tambah", async (req, res) => {
     && kopiKeterangan
     && (kategori ?? "").trim() === "Sewa Meja";
 
+  // Status lunas: form kirim "lunas=0" untuk belum bayar, otherwise default true.
+  // Kopi add-on ikut status lunas dari transaksi parent (one-shot wizard).
+  const lunas = req.body.lunas !== "0";
+
   try {
     const waktuSafe = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : "siang";
     const jamSafe   = (jam ?? "").slice(0, 5);
@@ -340,9 +346,10 @@ router.post("/tambah", async (req, res) => {
       bayar,
       buktiUrl,
       dicatatOleh: userId,
+      lunas,
     });
 
-    // Transaksi ke-2: Kopi/Snack add-on (kalau ada). Share waktu/bayar/bukti.
+    // Transaksi ke-2: Kopi/Snack add-on (kalau ada). Share waktu/bayar/bukti/lunas.
     if (hasKopiAddon) {
       await appendTransaksi({
         id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
@@ -358,12 +365,27 @@ router.post("/tambah", async (req, res) => {
         bayar,
         buktiUrl,
         dicatatOleh: userId,
+        lunas,
       });
     }
 
     res.redirect("/operasional?msg=created");
   } catch (err) {
     console.error("[FINANCE] tambah POST error:", err.message);
+    res.redirect("/operasional?msg=err");
+  }
+});
+
+// ── POST /operasional/lunas — tandai transaksi sbg lunas (settle piutang/hutang)
+router.post("/lunas", async (req, res) => {
+  const id = (req.body.id ?? "").trim();
+  if (!id) return res.redirect("/operasional?msg=err");
+
+  try {
+    await markTransaksiLunas(id);
+    res.redirect("/operasional?msg=lunas");
+  } catch (err) {
+    console.error("[FINANCE] lunas error:", err.message);
     res.redirect("/operasional?msg=err");
   }
 });
@@ -398,8 +420,9 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const dow       = todayD.getUTCDay() === 0 ? 6 : todayD.getUTCDay() - 1;
     const mondayD   = new Date(todayD.getTime() - dow * 86400000);
     const mondayStr = mondayD.toISOString().slice(0, 10);
-    // Exclude kategori "Tukar Uang" — internal transfer, bukan revenue.
-    const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG;
+    // Exclude kategori "Tukar Uang" + transaksi belum lunas (piutang) — bukan
+    // revenue cash-basis sampai dibayar.
+    const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
     const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
     const inMinggu = transaksi.filter((t) => isRevPem(t) && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
     const inBulan  = transaksi.filter((t) => isRevPem(t) && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);

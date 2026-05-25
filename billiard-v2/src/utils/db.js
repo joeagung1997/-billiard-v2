@@ -54,6 +54,9 @@ const rowToTransaksi = (row) => ({
   bayar:        row.bayar        ?? "",
   buktiUrl:     row.bukti_url    ?? "",
   dicatatOleh:  row.dicatat_oleh ?? "",
+  // Default TRUE — data lama (sebelum kolom lunas ditambah) dianggap lunas.
+  lunas:        row.lunas        !== false,
+  lunasAt:      row.lunas_at     ?? null,
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -196,9 +199,12 @@ export const readTransaksi = async () => {
 };
 
 export const appendTransaksi = async (item) => {
+  // Default lunas = true kalau tidak di-specify. lunas_at = NOW() kalau lunas
+  // saat dicatat, NULL kalau belum (akan diisi saat user klik "Tandai Lunas").
+  const lunas = item.lunas !== false;
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh, lunas, lunas_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
@@ -208,8 +214,22 @@ export const appendTransaksi = async (item) => {
       item.bayar ?? "",
       item.buktiUrl ?? "",
       item.dicatatOleh ?? "",
+      lunas,
+      lunas ? (item.lunasAt ?? new Date().toISOString()) : null,
     ]
   );
+};
+
+// Tandai transaksi sebagai lunas (set lunas=TRUE + lunas_at=NOW()).
+// Idempotent — kalau sudah lunas, gak ada efek.
+export const markTransaksiLunas = async (id) => {
+  const res = await query(
+    `UPDATE transaksi
+       SET lunas = TRUE, lunas_at = NOW()
+     WHERE id = $1 AND lunas = FALSE AND voided_at IS NULL`,
+    [id]
+  );
+  return res.rowCount > 0;
 };
 
 export const deleteTransaksi = async (id) => {

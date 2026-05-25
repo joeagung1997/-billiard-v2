@@ -207,9 +207,10 @@ export function monitoringAktivitas({ logs, tglDari, tglSampai, username, jenis,
   const nameMap = Object.fromEntries(
     accountsAll.map((a) => [a.username, a.display_name || a.username])
   );
-  // Summary stats — exclude kategori "Tukar Uang" (internal transfer, bukan revenue)
-  const totalIn  = logs.filter((l) => l.jenis === "pemasukan" && l.kategori !== KAT_TUKAR_UANG).reduce((s, l) => s + l.jumlah, 0);
-  const totalOut = logs.filter((l) => l.jenis === "pengeluaran" && l.kategori !== KAT_TUKAR_UANG).reduce((s, l) => s + l.jumlah, 0);
+  // Summary stats — exclude kategori "Tukar Uang" + transaksi belum lunas.
+  const isRev = (l) => l.kategori !== KAT_TUKAR_UANG && l.lunas !== false;
+  const totalIn  = logs.filter((l) => l.jenis === "pemasukan"   && isRev(l)).reduce((s, l) => s + l.jumlah, 0);
+  const totalOut = logs.filter((l) => l.jenis === "pengeluaran" && isRev(l)).reduce((s, l) => s + l.jumlah, 0);
   const uniqueRecorders = new Set(logs.map((l) => l.dicatatOleh).filter(Boolean));
 
   const summaryHtml = "<div class=\"mon-sum-row\">"

@@ -17,6 +17,16 @@ export const KAT_TUKAR_UANG = "Tukar Uang";
 // Filter helper: true kalau transaksi BUKAN tukar uang (kandidat aggregasi revenue).
 export const isRevenueTrx = (t) => t && t.kategori !== KAT_TUKAR_UANG;
 
+// ── Status lunas ─────────────────────────────────────────────
+// Transaksi punya field `lunas` (boolean, default true). Saat user catat
+// transaksi tapi belum dibayar (mis. customer kasbon / nota supplier blm
+// dibayar), set ke false. Ditampilkan sbg "Belum Lunas" di tabel.
+//
+// Helper di bawah default ke true untuk backward compat dgn data lama
+// (transaksi sebelum migrasi yg lunas-nya undefined dianggap lunas).
+// Pakai untuk filter aggregasi total Pemasukan/Pengeluaran di dashboard.
+export const isLunas = (t) => t && t.lunas !== false;
+
 // ── Business day helper ──────────────────────────────────────
 // Operasional buka 09:00 — biasanya tutup dini hari (00:00–02:00, kadang lebih).
 // Transaksi yg dilakukan sebelum jam cutoff dianggap masih shift hari sebelumnya.

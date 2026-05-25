@@ -867,13 +867,15 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
   });
 
   // ── Ringkasan keuangan ────────────────────────────────────────
-  // Exclude kategori "Tukar Uang" — internal transfer, bukan revenue/expense.
+  // Exclude kategori "Tukar Uang" (internal transfer) + transaksi belum lunas
+  // (piutang/hutang yg blm dibayar — cash-basis: belum boleh dihitung).
+  const isRev = (t) => t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
   const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
-  const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan) && t.kategori !== KAT_TUKAR_UANG);
+  const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan) && isRev(t));
   const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
   const pengeluaranBulan = trxBulan.filter((t) => t.jenis === 'pengeluaran').reduce((s, t) => s + (t.jumlah ?? 0), 0);
   const saldoBulan       = pemasukanBulan - pengeluaranBulan;
-  const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr && t.kategori !== KAT_TUKAR_UANG);
+  const trxHariIni       = transaksi.filter((t) => t.tanggal === todayStr && isRev(t));
   const pemasukanHariIni = trxHariIni.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
 
   // ── Trend kunjungan 30 hari ───────────────────────────────────

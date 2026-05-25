@@ -540,6 +540,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const isOwner = role === "owner";
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
     : msg === "voided"    ? "Transaksi dibatalkan. Saldo sudah diperbarui."
+    : msg === "lunas"     ? "Transaksi ditandai lunas. Sekarang dihitung di total Pemasukan/Pengeluaran."
     : msg === "err"       ? "Gagal menyimpan. Cek isian form lalu coba lagi."
     : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner."
     : "";
@@ -667,12 +668,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const activeSortedTbl = tDari
     ? activeFiltered.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
     : activeFiltered;
-  // Revenue-only versions — kategori "Tukar Uang" (internal transfer cash↔QRIS)
-  // tidak dihitung sbg pemasukan/pengeluaran beneran. Lihat utils/format.js
-  // untuk konsep & alasan. Tetap visible di tabel & filter tab, tapi exclude
-  // dari semua kalkulasi total/margin/breakdown.
-  const revenueFiltered  = activeFiltered.filter((t) => t.kategori !== KAT_TUKAR_UANG);
-  const revenueSortedTbl = activeSortedTbl.filter((t) => t.kategori !== KAT_TUKAR_UANG);
+  // Revenue-only versions — exclude dari kalkulasi total:
+  // - kategori "Tukar Uang" (internal transfer cash↔QRIS, bukan revenue)
+  // - transaksi belum lunas (piutang/hutang — cash-basis: blm masuk pemasukan)
+  // Keduanya tetap visible di tabel, tapi tidak dihitung di total/margin/breakdown.
+  const isRev = (t) => t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
+  const revenueFiltered  = activeFiltered.filter(isRev);
+  const revenueSortedTbl = activeSortedTbl.filter(isRev);
   const chartTotalIn  = revenueSortedTbl.filter((t) => t.jenis === "pemasukan").reduce((s, t) => s + t.jumlah, 0);
   const chartTotalOut = revenueSortedTbl.filter((t) => t.jenis === "pengeluaran").reduce((s, t) => s + t.jumlah, 0);
   const chartSaldo    = chartTotalIn - chartTotalOut;
@@ -902,19 +904,33 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const makeRow = function(t, idx) {
     const isIn    = t.jenis === "pemasukan";
     const isVoid  = !!t.voidedAt;
+    const isBelum = t.lunas === false && !isVoid;
     // Tanggal 2-line compact: "24 Mei 2026" / "00:20"
     const d = new Date(t.tanggal + "T00:00:00");
     const tglMain = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
     const tglDisp = "<div class=\"fr-tgl-main\">" + tglMain + "</div>"
                   + (t.jam ? "<div class=\"fr-tgl-sub\">" + escHtml(t.jam) + "</div>" : "");
-    const rowCls   = "fin-row " + (isVoid ? "trx-voided" : (isIn ? "fin-row-in" : "fin-row-out"));
+    const rowCls   = "fin-row "
+      + (isVoid ? "trx-voided" : (isIn ? "fin-row-in" : "fin-row-out"))
+      + (isBelum ? " trx-belum-lunas" : "");
     const reasonHt = isVoid
       ? "<div class=\"trx-void-reason\" title=\"Dibatalkan: " + escHtml(t.voidReason || "—") + "\">"
         + "<i class=\"ti ti-ban\"></i> Dibatalkan: " + escHtml(t.voidReason || "—") + "</div>"
       : "";
+    // Aksi: VOID badge (jika voided), atau group tombol [Tandai Lunas] [Batalkan].
+    // Tombol Tandai Lunas hanya muncul saat lunas=false (transaksi piutang/hutang).
+    const lunasBtn = isBelum
+      ? "<button type=\"button\" class=\"icon-btn ok\" title=\"Tandai sudah lunas\""
+        + " data-id=\"" + escHtml(t.id) + "\""
+        + " data-desc=\"" + escHtml(t.keterangan || t.kategori || "(tanpa keterangan)") + "\""
+        + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
+        + " onclick=\"openLunasModal(this)\">"
+        + "<i class=\"ti ti-check\"></i></button>"
+      : "";
     const aksiHt = isVoid
       ? "<span class=\"trx-void-badge\">VOID</span>"
-      : "<button type=\"button\" class=\"icon-btn danger\" title=\"Batalkan transaksi\""
+      : lunasBtn
+        + "<button type=\"button\" class=\"icon-btn danger\" title=\"Batalkan transaksi\""
         + " data-id=\"" + escHtml(t.id) + "\""
         + " data-desc=\"" + escHtml(t.keterangan || t.kategori || "(tanpa keterangan)") + "\""
         + " data-amount=\"" + (isIn ? "+" : "−") + escHtml(rp(t.jumlah)) + "\""
@@ -940,6 +956,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         : "—")
       + "</div>"
       + "<div class=\"fr-desc-meta\">"
+      + (isBelum ? "<span class=\"fr-belum-lunas\" title=\"Belum dibayar — tidak masuk total revenue sampai dilunaskan\"><i class=\"ti ti-clock-hour-4\" style=\"font-size:11px\"></i> Belum Lunas</span>" : "")
       + (t.bayar === "cash" ? "<span class=\"fr-bayar-cash\">💵 Cash</span>" : t.bayar === "qris" ? "<span class=\"fr-bayar-qris\">⚡ QRIS</span>" : "")
       + (t.buktiUrl ? "<a href=\"" + escHtml(t.buktiUrl) + "\" target=\"_blank\" title=\"Lihat bukti foto\"><img src=\"" + escHtml(t.buktiUrl) + "\" class=\"fr-bukti-thumb\" loading=\"lazy\"></a>" : "")
       + (t.dicatatOleh
@@ -1028,6 +1045,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
     ".fr-bayar-cash{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.02em}",
     ".fr-bayar-qris{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(38,96,164,.12);color:var(--accent);letter-spacing:.02em}",
+    // Badge "Belum Lunas" — kuning, lebih prominent karena ini status penting.
+    ".fr-belum-lunas{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:#fef3c7;color:#b3791b;border:1px solid #fcd34d;letter-spacing:.02em}",
+    // Row highlight saat belum lunas — yellow tint border-left + bg subtle.
+    ".trx-belum-lunas{border-left:3px solid #fcd34d!important;background:linear-gradient(90deg,#fffbeb 0%,transparent 30%)!important}",
+    // Tombol "Tandai Lunas" — hijau (positive action).
+    ".icon-btn.ok{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}",
+    ".icon-btn.ok:hover{background:#bbf7d0}",
     // Tablet (641-768px): hide ID + Aksi, keep 4-col grid (Tgl | Desc | Kat | Jumlah)
     "@media(min-width:641px) and (max-width:768px){.fin-tbl-head,.fin-row{grid-template-columns:88px 1fr 120px 120px!important;gap:10px!important}.fin-th:nth-child(1),.fr-td:nth-child(1),.fin-th:nth-child(6),.fr-td:nth-child(6){display:none!important}}",
     // Mobile (≤640px): card-style row — flex-wrap, kategori as inline badge
@@ -1183,6 +1207,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".trx-dt-footer{padding:14px 16px 18px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;box-sizing:border-box}",
     ".trx-dt-btn-void{flex:1 1 140px;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 12px;background:#fee2e2;color:#b91c1c;border:1px solid rgba(239,68,68,.3);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff)}",
     ".trx-dt-btn-void:hover{background:#fecaca}",
+    ".trx-dt-btn-lunas{flex:1 1 140px;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 12px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff)}",
+    ".trx-dt-btn-lunas:hover{background:#bbf7d0}",
     ".trx-dt-btn-close{flex:1 1 100px;min-width:0;padding:11px 12px;background:var(--surface2);color:var(--txt);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff)}",
     ".trx-dt-btn-close:hover{background:var(--surface)}",
     // ── Toast notifikasi (compact, slide-in dari kanan atas) ────
@@ -1862,6 +1888,17 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<button type=\"button\" class=\"fin-tog-btn sel\" id=\"wiz-cash\" onclick=\"wizSetBayar('cash')\"><i class=\"ti ti-cash\"></i>Cash</button>"
     + "<button type=\"button\" class=\"fin-tog-btn\" id=\"wiz-qris\" onclick=\"wizSetBayar('qris')\"><i class=\"ti ti-qrcode\"></i>QRIS</button>"
     + "</div></div>"
+    // ── Status lunas — default Sudah Bayar. Belum bayar = piutang (pemasukan)
+    //    atau hutang (pengeluaran). Tidak dihitung di total sampai dilunaskan.
+    + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Status Pembayaran</label>"
+    + "<div class=\"fin-tog-2\">"
+    + "<button type=\"button\" class=\"fin-tog-btn sel\" id=\"wiz-lunas\" onclick=\"wizSetLunas(true)\"><i class=\"ti ti-check\"></i>Sudah Bayar</button>"
+    + "<button type=\"button\" class=\"fin-tog-btn\" id=\"wiz-belum\" onclick=\"wizSetLunas(false)\"><i class=\"ti ti-clock-hour-4\"></i>Belum Bayar</button>"
+    + "</div>"
+    + "<div id=\"wizLunasHint\" style=\"display:none;font-size:11px;color:#b3791b;margin-top:6px;line-height:1.4;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:6px 10px\">"
+    +   "<i class=\"ti ti-info-circle\" style=\"font-size:12px\"></i> Transaksi tidak dihitung di total Pemasukan/Pengeluaran sampai ditandai lunas."
+    + "</div>"
+    + "</div>"
     // ── Upload bukti foto (QRIS / nota pengeluaran) ─────────────
     + "<div class=\"fmg\" id=\"wizUploadWrap\" style=\"display:none\">"
     + "<label class=\"fin-wiz-lbl\" id=\"wizUploadLbl\">Bukti Foto <span style=\"font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;color:#b0bfae\">(opsional)</span></label>"
@@ -1892,6 +1929,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-sb-row\"><span>Kategori</span><span class=\"fin-sb-val\" id=\"sumKat\">—</span></div>"
     + "<div class=\"fin-sb-row\"><span>Keterangan</span><span class=\"fin-sb-val\" id=\"sumKet\">—</span></div>"
     + "<div class=\"fin-sb-row\"><span>Pembayaran</span><span class=\"fin-sb-val\" id=\"sumBayar\">Cash</span></div>"
+    + "<div class=\"fin-sb-row\"><span>Status</span><span class=\"fin-sb-val\" id=\"sumLunas\"><span style=\"color:#16a34a;font-weight:700\">✓ Sudah Bayar</span></span></div>"
     + "<div class=\"fin-sb-total\"><span>Total</span><span class=\"fin-sb-total-val\" id=\"sumTotal\">Rp 0</span></div>"
     + "</div></div>"
     + "<form id=\"wizForm\" action=\"/operasional/tambah\" method=\"post\" style=\"display:none\">"
@@ -1903,6 +1941,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<input type=\"hidden\" name=\"keterangan\" id=\"wizFKet\">"
     + "<input type=\"hidden\" name=\"jumlah\" id=\"wizFJ\">"
     + "<input type=\"hidden\" name=\"bayar\" id=\"wizFBayar\" value=\"cash\">"
+    + "<input type=\"hidden\" name=\"lunas\" id=\"wizFLunas\" value=\"1\">"
     + "<input type=\"hidden\" name=\"bukti_b64\" id=\"wizFBukti\" value=\"\">"
     + "<input type=\"hidden\" name=\"kopi_keterangan\" id=\"wizFKopiKet\" value=\"\">"
     + "<input type=\"hidden\" name=\"kopi_jumlah\" id=\"wizFKopiJ\" value=\"\">"
@@ -1952,6 +1991,35 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<button type=\"button\" class=\"fin-btn-back\" onclick=\"closeVoidModal()\">Tutup</button>"
     + "<button type=\"submit\" style=\"display:flex;align-items:center;gap:6px;padding:9px 16px;background:#a32d2d;border:none;border-radius:9px;font-size:13px;color:#fff;cursor:pointer;font-weight:600;font-family:inherit\">"
     + "<i class=\"ti ti-ban\" style=\"font-size:14px\"></i> Konfirmasi Batalkan</button>"
+    + "</div>"
+    + "</form>"
+    + "</div>"
+    + "</div>"
+
+    // ── Modal Tandai Lunas (settle piutang/hutang) ───────────────
+    + "<div class=\"overlay\" id=\"lunasOverlay\" onclick=\"if(event.target===this)closeLunasModal()\">"
+    + "<div class=\"over-modal\" style=\"width:420px\">"
+    + "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:14px\">"
+    + "<div style=\"width:36px;height:36px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;color:#16a34a\"><i class=\"ti ti-check\" style=\"font-size:18px\"></i></div>"
+    + "<div><div style=\"font-size:16px;font-weight:600;color:#1a2318\">Tandai Lunas</div>"
+    + "<div style=\"font-size:11px;color:#7a8c78;margin-top:1px\">Setelah lunas, transaksi dihitung di total Pemasukan/Pengeluaran</div></div>"
+    + "</div>"
+    + "<div style=\"background:#f9fbf8;border:1px solid #e2e8e0;border-radius:9px;padding:12px 14px;margin-bottom:14px\">"
+    + "<div style=\"display:flex;justify-content:space-between;gap:12px;margin-bottom:6px\">"
+    + "<span style=\"font-size:11px;color:#7a8c78;text-transform:uppercase;letter-spacing:.08em\">Keterangan</span>"
+    + "<span id=\"lunasDesc\" style=\"font-size:13px;color:#1a2318;font-weight:500;text-align:right\">—</span>"
+    + "</div>"
+    + "<div style=\"display:flex;justify-content:space-between;gap:12px\">"
+    + "<span style=\"font-size:11px;color:#7a8c78;text-transform:uppercase;letter-spacing:.08em\">Jumlah</span>"
+    + "<span id=\"lunasAmount\" style=\"font-size:14px;font-weight:700;color:#1a2318;font-family:'DM Mono',monospace\">—</span>"
+    + "</div>"
+    + "</div>"
+    + "<form id=\"lunasForm\" action=\"/operasional/lunas\" method=\"post\" onsubmit=\"startLoad()\">"
+    + "<input type=\"hidden\" name=\"id\" id=\"lunasId\">"
+    + "<div style=\"display:flex;justify-content:flex-end;gap:8px;margin-top:8px\">"
+    + "<button type=\"button\" class=\"fin-btn-back\" onclick=\"closeLunasModal()\">Tutup</button>"
+    + "<button type=\"submit\" style=\"display:flex;align-items:center;gap:6px;padding:9px 16px;background:#16a34a;border:none;border-radius:9px;font-size:13px;color:#fff;cursor:pointer;font-weight:600;font-family:inherit\">"
+    + "<i class=\"ti ti-check\" style=\"font-size:14px\"></i> Konfirmasi Lunas</button>"
     + "</div>"
     + "</form>"
     + "</div>"
@@ -2122,7 +2190,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "}"
     +     "if(matchSearch&&matchDate&&matchType&&matchKat&&matchSum&&matchKru&&matchBay){"
     +       "visible.push(r);"
-    +       "if(t&&!t.voidedAt){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
+    // Sum cuma transaksi lunas (cash-basis). Belum lunas tidak masuk total.
+    +       "if(t&&!t.voidedAt&&t.lunas!==false){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
     +       "if(t&&t.voidedAt)voidN++;"
     +     "}"
     +     "r.style.display='none';});"
@@ -2155,7 +2224,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "function goTblPage(n){tblState.page=Math.max(1,n);renderTbl();}"
     + "window.addEventListener('DOMContentLoaded',function(){renderTbl();});"
     + "function openTrxModal(){"
-    + "document.getElementById('trxOverlay').classList.add('open');wizRemoveFile();wizGoTo(1);"
+    + "document.getElementById('trxOverlay').classList.add('open');wizRemoveFile();wizSetLunas(true);wizGoTo(1);"
     + "var dtEl=document.getElementById('wizDatetime');"
     + "if(dtEl){if(wizS.tipe==='income'){dtEl.value=wizNowLocal();}else{dtEl.value='';}"
     + "wizUpdateDateDisplay();}}"
@@ -2170,7 +2239,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "document.getElementById('voidOverlay').classList.add('open');"
     + "setTimeout(function(){document.getElementById('voidReason').focus();},150);}"
     + "function closeVoidModal(){document.getElementById('voidOverlay').classList.remove('open');}"
-    + "var wizS={step:1,tipe:'income',act:'billiard',waktu:'" + defaultShift + "',bayar:'cash',kopiAddon:false};"
+    // Modal Tandai Lunas — submit POST /operasional/lunas dgn id transaksi.
+    + "function openLunasModal(btn){"
+    + "document.getElementById('lunasId').value=btn.dataset.id;"
+    + "document.getElementById('lunasDesc').textContent=btn.dataset.desc;"
+    + "document.getElementById('lunasAmount').textContent=btn.dataset.amount;"
+    + "document.getElementById('lunasOverlay').classList.add('open');}"
+    + "function closeLunasModal(){document.getElementById('lunasOverlay').classList.remove('open');}"
+    + "var wizS={step:1,tipe:'income',act:'billiard',waktu:'" + defaultShift + "',bayar:'cash',lunas:true,kopiAddon:false};"
     + "function wizSetTipe(t){wizS.tipe=t;"
     + "document.getElementById('wiz-income').className='fin-tog-btn'+(t==='income'?' sel-income':'');"
     + "document.getElementById('wiz-expense').className='fin-tog-btn'+(t==='expense'?' sel-expense':'');"
@@ -2245,6 +2321,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "document.getElementById('wiz-cash').className='fin-tog-btn'+(b==='cash'?' sel':'');"
     + "document.getElementById('wiz-qris').className='fin-tog-btn'+(b==='qris'?' sel':'');"
     + "wizUpdateUpload();}"
+    // Toggle status lunas — false = belum bayar (piutang/hutang).
+    + "function wizSetLunas(v){wizS.lunas=!!v;"
+    + "document.getElementById('wiz-lunas').className='fin-tog-btn'+(v?' sel':'');"
+    + "document.getElementById('wiz-belum').className='fin-tog-btn'+(!v?' sel':'');"
+    + "var h=document.getElementById('wizLunasHint');if(h)h.style.display=v?'none':'';}"
     + "var WIZ_EXTRAS_HTML="
     + safeJson(
         '<div class="wiz-extras" style="grid-column:1/-1;display:none;flex-direction:column;gap:6px;padding:6px 0 2px">'
@@ -2260,7 +2341,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "function _rpFmt(n){var a=Math.abs(Math.round(Number(n)||0));var s=String(a);var p=[];for(var i=s.length;i>0;i-=3)p.unshift(s.slice(Math.max(0,i-3),i));return (Number(n)<0?'-':'')+'Rp '+p.join('.');}"
     + "function openTrxDetail(idx){"
     +   "var t=TRX_DATA[idx];if(!t)return;"
-    +   "var isIn=t.jenis==='pemasukan';var isVoid=!!t.voidedAt;"
+    +   "var isIn=t.jenis==='pemasukan';var isVoid=!!t.voidedAt;var isBelum=t.lunas===false&&!isVoid;"
     +   "var tglFmt=new Date(t.tanggal+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});"
     +   "var pencatatNm=t.dicatatOleh?(USER_NAME_MAP[t.dicatatOleh]||t.dicatatOleh):'—';"
     +   "var pencatatShift=t.dicatatOleh?(USER_SHIFT_MAP[t.dicatatOleh]||'siang'):'';"
@@ -2278,13 +2359,19 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "rows.push({l:'ID',v:'<span style=\"font-family:var(--ff-mono);font-size:11px;color:var(--txt3)\">#'+String(t.id).slice(-8)+'</span>'});"
     +   "if(t.buktiUrl)rows.push({l:'Bukti Foto',v:'<a href=\"'+t.buktiUrl+'\" target=\"_blank\"><img src=\"'+t.buktiUrl+'\" style=\"max-width:160px;max-height:160px;border-radius:8px;border:1px solid var(--border);cursor:pointer\"></a>'});"
     +   "if(isVoid)rows.push({l:'Status',v:'<span class=\"trx-void-badge\">VOID</span> <span style=\"font-size:12px;color:var(--txt3);margin-left:6px\">'+(t.voidReason||'—')+'</span>'});"
+    +   "else if(isBelum)rows.push({l:'Status',v:'<span class=\"fr-belum-lunas\"><i class=\"ti ti-clock-hour-4\" style=\"font-size:11px\"></i> Belum Lunas</span> <span style=\"font-size:11px;color:var(--txt3);margin-left:6px\">tidak masuk total revenue</span>'});"
+    +   "else if(t.lunasAt)rows.push({l:'Status',v:'<span style=\"color:#16a34a;font-weight:700\">✓ Lunas</span>'});"
     +   "var body=rows.map(function(r){return '<div class=\"trx-dt-row\"><div class=\"trx-dt-l\">'+r.l+'</div><div class=\"trx-dt-v\">'+r.v+'</div></div>';}).join('');"
     +   "document.getElementById('trxDtBody').innerHTML=body;"
     +   "var footer='';"
     +   "if(!isVoid){"
     +     "var desc=(t.keterangan||t.kategori||'(tanpa keterangan)').replace(/'/g,'&apos;').replace(/\"/g,'&quot;');"
     +     "var amount=(isIn?'+':'-')+_rpFmt(t.jumlah);"
-    +     "footer='<button type=\"button\" class=\"trx-dt-btn-void\" onclick=\"closeTrxDetail();var b={dataset:{id:\\''+t.id+'\\',desc:\\''+desc+'\\',amount:\\''+amount+'\\'}};openVoidModal(b);\">"
+    +     "if(isBelum){"
+    +       "footer='<button type=\"button\" class=\"trx-dt-btn-lunas\" onclick=\"closeTrxDetail();var b={dataset:{id:\\''+t.id+'\\',desc:\\''+desc+'\\',amount:\\''+amount+'\\'}};openLunasModal(b);\">"
+    +         "<i class=\"ti ti-check\"></i> Tandai Lunas</button>';"
+    +     "}"
+    +     "footer+='<button type=\"button\" class=\"trx-dt-btn-void\" onclick=\"closeTrxDetail();var b={dataset:{id:\\''+t.id+'\\',desc:\\''+desc+'\\',amount:\\''+amount+'\\'}};openVoidModal(b);\">"
     +       "<i class=\"ti ti-ban\"></i> Batalkan Transaksi</button>';"
     +   "}"
     +   "footer+='<button type=\"button\" class=\"trx-dt-btn-close\" onclick=\"closeTrxDetail()\">Tutup</button>';"
@@ -2571,7 +2658,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "document.getElementById('wizFKopiKet').value=kopiKet;"
     + "document.getElementById('wizFKopiJ').value=kopiJNum>0?String(kopiJNum):'';"
     + "document.getElementById('wizFBayar').value=wizS.bayar;"
+    + "document.getElementById('wizFLunas').value=wizS.lunas?'1':'0';"
     + "var sbEl=document.getElementById('sumBayar');if(sbEl)sbEl.textContent=wizS.bayar==='qris'?'QRIS':'Cash';"
+    + "var slEl=document.getElementById('sumLunas');if(slEl)slEl.innerHTML=wizS.lunas?'<span style=\"color:#16a34a;font-weight:700\">✓ Sudah Bayar</span>':'<span style=\"color:#b3791b;font-weight:700\">⏳ Belum Bayar (Piutang/Hutang)</span>';"
     + "}"
     + "var pct={1:33,2:66,3:100};document.getElementById('wizProg').style.width=pct[n]+'%';"
     + "[1,2,3].forEach(function(i){document.getElementById('wizSd'+i).className='fin-sd'+(i===n?' active':i<n?' done':'');});"

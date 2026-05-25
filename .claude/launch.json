@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "billiard-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/app.js"],
+      "cwd": "billiard-v2",
+      "port": 3000
+    }
+  ]
+}

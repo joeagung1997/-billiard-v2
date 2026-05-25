@@ -111,6 +111,11 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bayar       TEXT DEFAULT ''`);
   // Bukti foto (QRIS transfer proof / nota pengeluaran) — path relatif ke public/
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bukti_url   TEXT DEFAULT ''`);
+  // Status lunas — customer kasbon / nota supplier blm dibayar. Default TRUE
+  // supaya semua transaksi existing dianggap lunas (backward compat).
+  // lunas_at = waktu transaksi dilunaskan (nullable, NULL kalau blm lunas).
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS lunas       BOOLEAN DEFAULT TRUE`);
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS lunas_at    TIMESTAMPTZ`);
 
   // Point lifetime — 1 point tiap check-in. Beda dgn total_main yg
   // reset tiap siklus. Backfill dari logs (SCAN + SCAN_RESET +
