@@ -914,8 +914,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
       + "<div class=\"fr-td fr-tgl-cell\">" + tglDisp + "</div>"
       + "<div class=\"fr-td fr-desc\">"
       + "<div class=\"fr-desc-title\">"
+      // Prioritas display: keterangan (user-typed) > subKategori (mis. "Token Listrik")
+      // > kategori italic. Tanpa fallback ke subKategori, pengeluaran dgn kategori
+      // sama tampil identik di tabel meski sub-kategorinya beda.
       +   (t.keterangan
-        ? escHtml(t.keterangan)
+        ? escHtml(t.keterangan) + (t.subKategori
+            ? " <span style=\"font-size:11px;color:var(--txt3);font-weight:400\">· " + escHtml(t.subKategori) + "</span>"
+            : "")
+        : t.subKategori
+        ? escHtml(t.subKategori)
         : t.kategori
         ? "<span style=\"font-style:italic;color:var(--txt3);font-weight:500\">(" + escHtml(t.kategori) + ")</span>"
         : "—")
