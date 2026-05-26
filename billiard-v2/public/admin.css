@@ -2699,6 +2699,14 @@ td          { padding:10px 16px; vertical-align:middle; }
 .plan-row-done { opacity:.72; }
 .plan-row-done .plan-row-title { text-decoration:line-through; text-decoration-color:rgba(0,0,0,.25); }
 
+/* Grup Ditunda — visual dim, di paling bawah jadi backlog area */
+.plan-group-ditunda { opacity:.7; background:linear-gradient(180deg,rgba(99,102,241,.03),transparent);
+  border-style:dashed; }
+.plan-group-ditunda:hover { opacity:.92; }
+.plan-group-ditunda .plan-group-hdr { background:rgba(99,102,241,.04); }
+.plan-group-ditunda .plan-row { background:transparent; }
+.plan-group-ditunda .plan-group-hdr small { color:var(--txt3); font-size:10px; margin-left:4px; }
+
 /* Quick action: Tandai Selesai (hijau) */
 .plan-btn-done { border-color:rgba(34,197,94,.4); color:#16a34a; }
 .plan-btn-done:hover { border-color:#16a34a; background:rgba(34,197,94,.08); color:#15803d; }

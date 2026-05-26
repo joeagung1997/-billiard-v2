@@ -37,6 +37,7 @@ const STATUS_LABELS = {
   plan:      { lbl: "📋 Plan",       bg: "rgba(59,130,246,.12)",  color: "#2563eb" },
   ongoing:   { lbl: "🚧 On-going",   bg: "rgba(245,158,11,.12)",  color: "#d97706" },
   done:      { lbl: "✅ Done",        bg: "rgba(34,197,94,.12)",   color: "#16a34a" },
+  ditunda:   { lbl: "⏸ Ditunda",     bg: "rgba(99,102,241,.12)",  color: "#6366f1" },
   cancelled: { lbl: "❌ Cancelled",  bg: "rgba(239,68,68,.12)",   color: "#dc2626" },
 };
 
@@ -45,13 +46,18 @@ const renderTag = (map, key) => {
   return `<span class="plan-tag" style="background:${m.bg};color:${m.color}">${m.lbl}</span>`;
 };
 
-// Group items by prioritas
+// Group items by prioritas — items dgn status=ditunda dipisahin ke grup khusus
+// di bawah supaya gak ganggu fokus utama
 const groupByPrioritas = (items) => {
-  const groups = { urgent: [], penting: [], nice: [], idea: [] };
+  const groups = { urgent: [], penting: [], nice: [], idea: [], ditunda: [] };
   items.forEach((it) => {
-    const p = it.prioritas || "nice";
-    if (groups[p]) groups[p].push(it);
-    else groups.nice.push(it);
+    if (it.status === "ditunda") {
+      groups.ditunda.push(it);
+    } else {
+      const p = it.prioritas || "nice";
+      if (groups[p]) groups[p].push(it);
+      else groups.nice.push(it);
+    }
   });
   return groups;
 };
@@ -106,7 +112,7 @@ const calcUrgencyFactor = (targetDate) => {
   return 1.0;
 };
 const calcSkor = (it) => {
-  if (!it || it.status === "done" || it.status === "cancelled") return 0;
+  if (!it || it.status === "done" || it.status === "cancelled" || it.status === "ditunda") return 0;
   const est = Number(it.estimasi) || 0;
   const roi = Number(it.roiEstimate) || 0;
   if (est <= 0 || roi <= 0) return 0;
@@ -253,6 +259,20 @@ function renderWishlistTab(items) {
     `;
   };
 
+  // Grup khusus utk item status=ditunda — visual dim, di paling bawah
+  const renderDitundaGroup = (rows) => {
+    if (!rows.length) return '';
+    return `
+      <div class="plan-group plan-group-ditunda">
+        <div class="plan-group-hdr">
+          <span class="plan-tag" style="background:rgba(99,102,241,.12);color:#6366f1">⏸ Ditunda <small style="font-weight:500;opacity:.7">— buat next planning</small></span>
+          <span class="plan-group-count">${rows.length} item</span>
+        </div>
+        <div class="plan-group-body">${rows.map(renderRow).join('')}</div>
+      </div>
+    `;
+  };
+
   const totalEstimasi = items.reduce((s, it) => s + (it.estimasi || 0), 0);
   const totalRoi = items.reduce((s, it) => s + (it.roiEstimate || 0), 0);
 
@@ -287,6 +307,7 @@ function renderWishlistTab(items) {
             <option value="plan">📋 Plan</option>
             <option value="ongoing">🚧 On-going</option>
             <option value="done">✅ Done</option>
+            <option value="ditunda">⏸ Ditunda</option>
             <option value="cancelled">❌ Cancelled</option>
           </select>
         </div>
@@ -363,6 +384,7 @@ function renderWishlistTab(items) {
             ${renderGroup('penting', 'Penting', groups.penting)}
             ${renderGroup('nice', 'Nice to have', groups.nice)}
             ${renderGroup('idea', 'Ide', groups.idea)}
+            ${renderDitundaGroup(groups.ditunda)}
           </div>
           <div id="planWishlistCompare" style="display:none">${renderCompareTable(items)}</div>
           <div id="planWishlistEmpty" class="plan-empty plan-filter-empty" style="display:none">
@@ -871,6 +893,7 @@ function renderItemModal() {
                 <option value="plan">📋 Plan</option>
                 <option value="ongoing">🚧 On-going</option>
                 <option value="done">✅ Done</option>
+                <option value="ditunda">⏸ Ditunda (buat next planning)</option>
                 <option value="cancelled">❌ Cancelled</option>
               </select>
             </div>
@@ -994,7 +1017,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=75\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=76\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1517,7 +1540,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "function _planRpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}"
     + "var _PLAN_KAT={billiard:{lbl:'🎱 Billiard',bg:'rgba(45,102,36,.12)',color:'#2d6624'},warkop:{lbl:'☕ Warkop',bg:'rgba(245,158,11,.12)',color:'#d97706'},renovasi:{lbl:'🔨 Renovasi',bg:'rgba(168,85,247,.12)',color:'#a855f7'},sdm:{lbl:'👥 SDM',bg:'rgba(59,130,246,.12)',color:'#2563eb'},marketing:{lbl:'📢 Marketing',bg:'rgba(236,72,153,.12)',color:'#db2777'},ekspansi:{lbl:'🚀 Ekspansi',bg:'rgba(239,68,68,.12)',color:'#dc2626'},lain:{lbl:'📦 Lain-lain',bg:'rgba(122,140,120,.12)',color:'#7a8c78'}};"
     + "var _PLAN_PRIO={urgent:{lbl:'🔴 Urgent',bg:'rgba(239,68,68,.12)',color:'#dc2626'},penting:{lbl:'🟡 Penting',bg:'rgba(245,158,11,.12)',color:'#d97706'},nice:{lbl:'🟢 Nice to have',bg:'rgba(34,197,94,.12)',color:'#16a34a'},idea:{lbl:'💡 Ide',bg:'rgba(122,140,120,.12)',color:'#7a8c78'}};"
-    + "var _PLAN_STAT={idea:{lbl:'💡 Idea',bg:'rgba(122,140,120,.12)',color:'#7a8c78'},plan:{lbl:'📋 Plan',bg:'rgba(59,130,246,.12)',color:'#2563eb'},ongoing:{lbl:'🚧 On-going',bg:'rgba(245,158,11,.12)',color:'#d97706'},done:{lbl:'✅ Done',bg:'rgba(34,197,94,.12)',color:'#16a34a'},cancelled:{lbl:'❌ Cancelled',bg:'rgba(239,68,68,.12)',color:'#dc2626'}};"
+    + "var _PLAN_STAT={idea:{lbl:'💡 Idea',bg:'rgba(122,140,120,.12)',color:'#7a8c78'},plan:{lbl:'📋 Plan',bg:'rgba(59,130,246,.12)',color:'#2563eb'},ongoing:{lbl:'🚧 On-going',bg:'rgba(245,158,11,.12)',color:'#d97706'},done:{lbl:'✅ Done',bg:'rgba(34,197,94,.12)',color:'#16a34a'},ditunda:{lbl:'⏸ Ditunda',bg:'rgba(99,102,241,.12)',color:'#6366f1'},cancelled:{lbl:'❌ Cancelled',bg:'rgba(239,68,68,.12)',color:'#dc2626'}};"
     + "function _planTagHtml(map,key){var m=map[key]||map.lain||map.idea;return '<span class=\"plan-tag\" style=\"background:'+m.bg+';color:'+m.color+'\">'+m.lbl+'</span>';}"
     + "function _planRpStr(n){var a=Math.abs(Math.round(Number(n)||0));return 'Rp '+_planRpFmt(a);}"
     + "function _planCalcBep(est,roi){var e=+est||0,r=+roi||0;if(e<=0||r<=0)return 0;return e/r;}"
@@ -1525,7 +1548,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "function _planCalcWarn(d,s,e){if(!d||!e||e<=0)return null;var t=new Date(d);if(isNaN(t))return null;var n=new Date();n.setHours(0,0,0,0);var dl=Math.floor((t-n)/86400000);if(dl<0)return null;var p=Math.min(100,(s/e)*100);if(dl<=30&&p<80)return{lvl:'danger',lbl:'Terlambat',icon:'ti-alert-triangle',daysLeft:dl};if(dl<=60&&p<50)return{lvl:'warn',lbl:'Perlu dikejar',icon:'ti-clock-exclamation',daysLeft:dl};return null;}"
     + "var _PLAN_PRIO_W={urgent:4,penting:3,nice:2,idea:1};"
     + "function _planUrg(d){if(!d)return 1;var n=new Date();n.setHours(0,0,0,0);var t=new Date(d);if(isNaN(t))return 1;var dl=Math.floor((t-n)/86400000);if(dl<0)return 0.8;if(dl<30)return 2;if(dl<90)return 1.5;if(dl<180)return 1.2;return 1;}"
-    + "function _planCalcSkor(it){if(!it||it.status==='done'||it.status==='cancelled')return 0;var e=+it.estimasi||0,r=+it.roiEstimate||0;if(e<=0||r<=0)return 0;var rr=(r/e)*100;var w=_PLAN_PRIO_W[it.prioritas||'nice']||2;return Math.round(rr*w*_planUrg(it.targetDate)*10)/10;}"
+    + "function _planCalcSkor(it){if(!it||it.status==='done'||it.status==='cancelled'||it.status==='ditunda')return 0;var e=+it.estimasi||0,r=+it.roiEstimate||0;if(e<=0||r<=0)return 0;var rr=(r/e)*100;var w=_PLAN_PRIO_W[it.prioritas||'nice']||2;return Math.round(rr*w*_planUrg(it.targetDate)*10)/10;}"
     + "function _planFindTop(items){var top=null,topV=0;items.forEach(function(it){var s=_planCalcSkor(it);if(s>topV){topV=s;top=it.id;}});return topV>0?top:null;}"
     + "function _planCashflow(it){var e=+it.estimasi||0,r=+it.roiEstimate||0;if(!it.targetDate||e<=0)return null;var t=new Date(it.targetDate);if(isNaN(t))return null;var b=t.toLocaleDateString('id-ID',{month:'long',year:'numeric'});var nx=new Date(t.getFullYear(),t.getMonth()+1,1);var n=nx.toLocaleDateString('id-ID',{month:'long',year:'numeric'});return{execBulan:b,outflow:e,nextBulan:n,monthlyROI:r};}"
     + "function _planRenderRow(it,topId){"
@@ -1590,9 +1613,10 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var topId=_planFindTop(arr);"
     +   "if(so==='default'){"
     +     "var prioOrder={urgent:1,penting:2,nice:3,idea:4};"
-    +     "var grp={urgent:[],penting:[],nice:[],idea:[]};"
-    +     "arr.forEach(function(x){var k=x.prioritas||'nice';if(grp[k])grp[k].push(x);else grp.nice.push(x);});"
-    +     "res.innerHTML=_planRenderGroup('urgent',grp.urgent,topId)+_planRenderGroup('penting',grp.penting,topId)+_planRenderGroup('nice',grp.nice,topId)+_planRenderGroup('idea',grp.idea,topId);"
+    +     "var grp={urgent:[],penting:[],nice:[],idea:[],ditunda:[]};"
+    +     "arr.forEach(function(x){if(x.status==='ditunda'){grp.ditunda.push(x);}else{var k=x.prioritas||'nice';if(grp[k])grp[k].push(x);else grp.nice.push(x);}});"
+    +     "var ditundaHtml=grp.ditunda.length>0?'<div class=\"plan-group plan-group-ditunda\"><div class=\"plan-group-hdr\"><span class=\"plan-tag\" style=\"background:rgba(99,102,241,.12);color:#6366f1\">⏸ Ditunda <small style=\"font-weight:500;opacity:.7\">— buat next planning</small></span><span class=\"plan-group-count\">'+grp.ditunda.length+' item</span></div><div class=\"plan-group-body\">'+grp.ditunda.map(function(it){return _planRenderRow(it,topId);}).join('')+'</div></div>':'';"
+    +     "res.innerHTML=_planRenderGroup('urgent',grp.urgent,topId)+_planRenderGroup('penting',grp.penting,topId)+_planRenderGroup('nice',grp.nice,topId)+_planRenderGroup('idea',grp.idea,topId)+ditundaHtml;"
     +   "}else{"
     +     "var sortFn={"
     +       "roi_desc:function(a,b){return(+b.roiEstimate||0)-(+a.roiEstimate||0);},"
