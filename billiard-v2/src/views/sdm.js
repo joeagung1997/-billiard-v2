@@ -750,7 +750,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
               const sm = h.summary;
               const ci = h.carryInfo;
               const statusE = ci.statusEffective;
-              const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round((sm.totalDibayarkan + ci.carryIn) / sm.gajiPokok * 100)) : 0;
+              // Effective received = real payment bulan ini + kasbon yg sudah ke-take
+              // dari bulan lalu. Lebih reflect "yg sudah diterima karyawan utk cover bulan ini".
+              const effectivePaid = sm.totalDibayarkan + ci.carryIn;
+              const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round(effectivePaid / sm.gajiPokok * 100)) : 0;
               const isActive = h.bulan === bulan;
               const url = "/operasional/sdm/" + karyawan.id + "?bulan=" + h.bulan;
               const chips = [];
@@ -759,8 +762,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
               }
               if (ci.carryIn > 0) {
                 chips.push(h.isFuture
-                  ? "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Sudah diambil " + rp(ci.carryIn) + " (kasbon)</span>"
-                  : "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Kasbon lalu " + rp(ci.carryIn) + "</span>");
+                  ? "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Dari kasbon: " + rp(ci.carryIn) + "</span>"
+                  : "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Termasuk kasbon lalu " + rp(ci.carryIn) + "</span>");
               }
               if (ci.excess > 0) {
                 chips.push("<span class=\"sdm-hist-chip sdm-hist-chip-excess\"><i class=\"ti ti-arrow-up-right\"></i> Excess " + rp(ci.excess) + " ke bulan depan</span>");
@@ -769,7 +772,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
               return "<a href=\"" + url + "\" class=\"sdm-hist-row" + (isActive ? " sdm-hist-row-active" : "") + (h.isFuture ? " sdm-hist-row-future" : "") + "\">"
                 + "<div class=\"sdm-hist-head\">"
                 +   "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + "</div>"
-                +   "<div class=\"sdm-hist-amt\"><b>" + rp(sm.totalDibayarkan) + "</b><span class=\"sdm-hist-of\">/ " + rp(sm.gajiPokok) + "</span></div>"
+                +   "<div class=\"sdm-hist-amt\"><b>" + rp(effectivePaid) + "</b><span class=\"sdm-hist-of\">/ " + rp(sm.gajiPokok) + "</span></div>"
                 + "</div>"
                 + chipsHtml
                 + "<div class=\"sdm-hist-foot\">"
