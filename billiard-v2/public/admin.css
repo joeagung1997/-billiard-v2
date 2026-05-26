@@ -2603,6 +2603,11 @@ td          { padding:10px 16px; vertical-align:middle; }
 .plan-tipe-hutang .plan-hide-roi,
 .plan-tipe-tabungan .plan-hide-roi { display:none !important; }
 
+/* Riwayat Pembayaran section — HANYA utk Hutang. Investasi & Tabungan
+   gak butuh tracking cicilan bulanan (asumsi bayar lump-sum / single shot). */
+.plan-tipe-investasi #planPaymentSection,
+.plan-tipe-tabungan #planPaymentSection { display:none !important; }
+
 /* Helper hint kecil di bawah label */
 .plan-form-hint { font-size:11px; color:var(--txt3); margin-top:3px;
   display:block; line-height:1.4; }
