@@ -11,6 +11,8 @@ import jwt from "jsonwebtoken";
 const __routeDir = dirname(fileURLToPath(import.meta.url));
 // Upload dir: project-root/public/uploads/receipts/
 const RECEIPT_DIR = join(__routeDir, "../../public/uploads/receipts");
+// Upload dir: project-root/public/uploads/planning/ (lampiran item planning)
+const PLANNING_DIR = join(__routeDir, "../../public/uploads/planning");
 import {
   readTransaksi, appendTransaksi, voidTransaksi, markTransaksiLunas,
   readKategori, addKategori, deleteKategori, updateKategoriUrutan,
@@ -510,6 +512,39 @@ router.get("/analisis/biaya/hapus", requireOwner, async (req, res) => {
   }
 });
 
+// ── Planning attachments helper ─────────────────────────────────
+// Terima array of { name, type, data } (base64) dari client.
+// Simpan file ke disk, return array of relative URLs (utk disimpan di DB).
+// Plus kept URLs (file existing yg tdk dihapus user).
+function savePlanningAttachments(rawList, keptUrls = []) {
+  const kept = Array.isArray(keptUrls)
+    ? keptUrls.filter((u) => typeof u === "string" && u.startsWith("/uploads/planning/")).slice(0, 10)
+    : [];
+  const out = [...kept];
+  if (!Array.isArray(rawList)) return out;
+  for (const f of rawList) {
+    if (out.length >= 10) break;
+    if (!f || typeof f.data !== "string") continue;
+    const m = f.data.match(/^data:(image\/(jpeg|jpg|png|webp)|application\/pdf);base64,(.+)$/i);
+    if (!m) continue;
+    const mime = m[1].toLowerCase();
+    let ext;
+    if (mime === "application/pdf") ext = "pdf";
+    else { const sub = m[2].toLowerCase(); ext = sub === "jpeg" ? "jpg" : sub; }
+    try {
+      const buf = Buffer.from(m[3], "base64");
+      if (buf.length > 5 * 1024 * 1024) continue; // max 5MB per file
+      if (!existsSync(PLANNING_DIR)) mkdirSync(PLANNING_DIR, { recursive: true });
+      const fname = "plan-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6) + "." + ext;
+      writeFileSync(join(PLANNING_DIR, fname), buf);
+      out.push("/uploads/planning/" + fname);
+    } catch (e) {
+      console.error("[PLANNING] save attachment error:", e.message);
+    }
+  }
+  return out;
+}
+
 // ── Planning & Roadmap (owner only) ─────────────────────────────
 router.get("/planning", requireOwner, async (req, res) => {
   try {
@@ -530,11 +565,33 @@ router.get("/planning", requireOwner, async (req, res) => {
   }
 });
 
+// Parse attachments dari body. Bisa berupa:
+// - body.attachments_new (JSON string of [{name,type,data}])
+// - body.attachments_kept (JSON string of existing URLs untuk dipertahankan)
+// - body.attachments (JSON string of urls — fallback untuk pemanggil internal)
+function resolvePlanningAttachments(body) {
+  let newList = [];
+  let keptList = [];
+  try { newList = JSON.parse(body.attachments_new || "[]"); } catch {}
+  try { keptList = JSON.parse(body.attachments_kept || "[]"); } catch {}
+  // Fallback: kalau cuma kirim attachments (array of URLs), perlakukan sbg kept
+  if (!Array.isArray(newList)) newList = [];
+  if (!Array.isArray(keptList)) keptList = [];
+  if (keptList.length === 0 && body.attachments) {
+    try {
+      const v = JSON.parse(body.attachments);
+      if (Array.isArray(v)) keptList = v.filter((u) => typeof u === "string");
+    } catch {}
+  }
+  return savePlanningAttachments(newList, keptList);
+}
+
 router.post("/planning/add", requireOwner, async (req, res) => {
   try {
     const body = req.body ?? {};
     const nama = (body.nama || "").trim();
     if (!nama) return res.status(400).send("Nama item wajib diisi.");
+    const attachments = resolvePlanningAttachments(body);
     await addPlanningItem({
       nama,
       kategori:     body.kategori,
@@ -546,6 +603,7 @@ router.post("/planning/add", requireOwner, async (req, res) => {
       catatan:      body.catatan,
       roiEstimate:  body.roi_estimate,
       savedAmount:  body.saved_amount,
+      attachments,
     });
     res.json({ ok: true });
   } catch (err) {
@@ -561,6 +619,7 @@ router.post("/planning/edit", requireOwner, async (req, res) => {
     if (!id) return res.status(400).send("ID item wajib.");
     const nama = (body.nama || "").trim();
     if (!nama) return res.status(400).send("Nama item wajib.");
+    const attachments = resolvePlanningAttachments(body);
     await updatePlanningItem(id, {
       nama,
       kategori:     body.kategori,
@@ -572,6 +631,7 @@ router.post("/planning/edit", requireOwner, async (req, res) => {
       catatan:      body.catatan,
       roiEstimate:  body.roi_estimate,
       savedAmount:  body.saved_amount,
+      attachments,
     });
     res.json({ ok: true });
   } catch (err) {

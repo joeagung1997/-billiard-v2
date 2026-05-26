@@ -24,7 +24,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────────
-app.use(express.json());
+app.use(express.json({ limit: "60mb" })); // 60mb buat upload base64 (planning attachments)
 app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 app.use(express.static(join(__dirname, "../public"), {
   etag: true,

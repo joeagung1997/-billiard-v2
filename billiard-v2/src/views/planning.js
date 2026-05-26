@@ -91,12 +91,60 @@ const calcDeadlineWarn = (targetDate, savedAmount, estimasi) => {
   return null;
 };
 
+// Skor prioritas otomatis: (ROI/biaya) × bobot prioritas × urgency.
+// Item dgn skor tertinggi dapet badge 🏆.
+const PRIORITAS_WEIGHT = { urgent: 4, penting: 3, nice: 2, idea: 1 };
+const calcUrgencyFactor = (targetDate) => {
+  if (!targetDate) return 1.0;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const t = new Date(targetDate); if (isNaN(t)) return 1.0;
+  const days = Math.floor((t - today) / (86400000));
+  if (days < 0) return 0.8;
+  if (days < 30)  return 2.0;
+  if (days < 90)  return 1.5;
+  if (days < 180) return 1.2;
+  return 1.0;
+};
+const calcSkor = (it) => {
+  if (!it || it.status === "done" || it.status === "cancelled") return 0;
+  const est = Number(it.estimasi) || 0;
+  const roi = Number(it.roiEstimate) || 0;
+  if (est <= 0 || roi <= 0) return 0;
+  const roiRatio = (roi / est) * 100; // ROI/biaya × 100 supaya angkanya lebih dapet di-grade
+  const w = PRIORITAS_WEIGHT[it.prioritas || "nice"] || 2;
+  const u = calcUrgencyFactor(it.targetDate);
+  return Math.round(roiRatio * w * u * 10) / 10;
+};
+// Cari item dgn skor tertinggi (yg dapet 🏆)
+const findTopSkor = (items) => {
+  let topId = null; let topVal = 0;
+  for (const it of items) {
+    const s = calcSkor(it);
+    if (s > topVal) { topVal = s; topId = it.id; }
+  }
+  return topVal > 0 ? topId : null;
+};
+
+// Dampak cashflow: bulan eksekusi -biaya, mulai bulan berikutnya +ROI/bln.
+// Return null kalau tdk lengkap.
+const calcCashflowImpact = (it) => {
+  const est = Number(it.estimasi) || 0;
+  const roi = Number(it.roiEstimate) || 0;
+  if (!it.targetDate || est <= 0) return null;
+  const t = new Date(it.targetDate); if (isNaN(t)) return null;
+  const bulanLbl = t.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const tNext = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+  const nextLbl = tNext.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  return { execBulan: bulanLbl, outflow: est, nextBulan: nextLbl, monthlyROI: roi };
+};
+
 function renderWishlistTab(items) {
   const groups = groupByPrioritas(items);
   const countByStatus = items.reduce((acc, it) => {
     acc[it.status || "idea"] = (acc[it.status || "idea"] || 0) + 1;
     return acc;
   }, {});
+  const topSkorId = findTopSkor(items);
 
   const renderRow = (it) => {
     const kat = KATEGORI_LABELS[it.kategori] || KATEGORI_LABELS.lain;
@@ -108,13 +156,23 @@ function renderWishlistTab(items) {
     const remaining = Math.max(0, estimasi - saved);
     const warn = calcDeadlineWarn(it.targetDate, saved, estimasi);
     const isDone = it.status === "done";
+    const skor = calcSkor(it);
+    const isTopSkor = it.id === topSkorId;
+    const attachments = Array.isArray(it.attachments) ? it.attachments.slice(0, 4) : [];
+    const moreAtt = (Array.isArray(it.attachments) ? it.attachments.length : 0) - attachments.length;
+    const cashflow = calcCashflowImpact(it);
+    // Pakai foto pertama sebagai thumbnail kalau ada — kalau gak, fallback emoji kategori
+    const firstImg = attachments.find((u) => /\.(jpe?g|png|webp|gif)$/i.test(u));
     return `
-    <div class="plan-row${isDone ? ' plan-row-done' : ''}" data-id="${escHtml(it.id)}">
+    <div class="plan-row${isDone ? ' plan-row-done' : ''}${isTopSkor ? ' plan-row-top' : ''}" data-id="${escHtml(it.id)}">
       <div class="plan-row-thumb" style="background:${kat.bg};color:${kat.color}">
-        <span class="plan-row-thumb-emoji">${kat.lbl.split(' ')[0]}</span>
+        ${firstImg
+          ? `<img src="${escHtml(firstImg)}" alt="" class="plan-row-thumb-img" loading="lazy">`
+          : `<span class="plan-row-thumb-emoji">${kat.lbl.split(' ')[0]}</span>`}
       </div>
       <div class="plan-row-main">
-        <div class="plan-row-title">${escHtml(it.nama)}</div>
+        <div class="plan-row-title">${isTopSkor ? '<span class="plan-trophy" title="Rekomendasi #1 dieksekusi duluan (skor tertinggi)">🏆</span> ' : ''}${escHtml(it.nama)}${skor > 0 ? ` <span class="plan-skor-badge" title="Skor prioritas otomatis">Skor ${skor}</span>` : ''}</div>
+        ${isTopSkor ? `<div class="plan-top-banner"><i class="ti ti-award"></i> Rekomendasi #1 dieksekusi duluan</div>` : ''}
         <div class="plan-row-meta">
           ${renderTag(KATEGORI_LABELS, it.kategori)}
           ${renderTag(STATUS_LABELS, it.status)}
@@ -128,6 +186,13 @@ function renderWishlistTab(items) {
           <div class="plan-row-prog-bar"><div class="plan-row-prog-fill plan-prog-${pct >= 100 ? 'done' : (pct >= 50 ? 'mid' : 'low')}" style="width:${pct}%"></div></div>
           <div class="plan-row-prog-txt">${rp(saved)} <span class="plan-row-prog-sep">/</span> ${rp(estimasi)} <b>(${pct}%)</b>${remaining > 0 ? ` <span class="plan-row-prog-rem">· sisa ${rp(remaining)}</span>` : ''}</div>
         </div>` : ''}
+        ${cashflow ? `<div class="plan-row-cashflow"><i class="ti ti-cash-banknote"></i> <b>Dampak cashflow:</b> ${cashflow.execBulan} <span class="plan-cf-out">−${rp(cashflow.outflow)}</span>${cashflow.monthlyROI > 0 ? `, mulai ${cashflow.nextBulan} <span class="plan-cf-in">+${rp(cashflow.monthlyROI)}/bln</span>` : ''}</div>` : ''}
+        ${attachments.length > 0 ? `<div class="plan-row-attachments">${attachments.map((u) => {
+          const isPdf = /\.pdf$/i.test(u);
+          return isPdf
+            ? `<a href="${escHtml(u)}" target="_blank" rel="noopener" class="plan-att plan-att-pdf" title="Lihat PDF"><i class="ti ti-file-text"></i> PDF</a>`
+            : `<a href="${escHtml(u)}" target="_blank" rel="noopener" class="plan-att plan-att-img"><img src="${escHtml(u)}" alt="" loading="lazy"></a>`;
+        }).join('')}${moreAtt > 0 ? `<span class="plan-att plan-att-more">+${moreAtt}</span>` : ''}</div>` : ''}
         ${it.catatan ? `<div class="plan-row-catatan">${escHtml(it.catatan)}</div>` : ''}
       </div>
       <div class="plan-row-side">
@@ -143,6 +208,39 @@ function renderWishlistTab(items) {
       </div>
     </div>
   `;
+  };
+
+  // Comparison table renderer (mode bandingkan)
+  const renderCompareTable = (rows) => {
+    const sorted = rows.slice().sort((a, b) => calcSkor(b) - calcSkor(a));
+    const head = `<thead><tr>
+        <th>#</th>
+        <th>Nama</th>
+        <th>Kategori</th>
+        <th class="num">Biaya</th>
+        <th class="num">ROI/bln</th>
+        <th class="num">Balik Modal</th>
+        <th>Prioritas</th>
+        <th class="num">Skor</th>
+        <th>Status</th>
+      </tr></thead>`;
+    const body = sorted.map((it, i) => {
+      const bep = fmtDurasi(calcBalikModal(it.estimasi, it.roiEstimate)) || '—';
+      const skor = calcSkor(it);
+      const isTop = it.id === topSkorId;
+      return `<tr class="${isTop ? 'plan-cmp-top' : ''}" onclick="openPlanModal('${escHtml(it.id)}')" style="cursor:pointer">
+        <td><b>${i + 1}</b></td>
+        <td>${isTop ? '🏆 ' : ''}${escHtml(it.nama)}</td>
+        <td>${renderTag(KATEGORI_LABELS, it.kategori)}</td>
+        <td class="num">${rp(it.estimasi)}</td>
+        <td class="num">${it.roiEstimate > 0 ? rp(it.roiEstimate) : '—'}</td>
+        <td class="num">${bep}</td>
+        <td>${renderTag(PRIORITAS_LABELS, it.prioritas)}</td>
+        <td class="num"><b>${skor > 0 ? skor : '—'}</b></td>
+        <td>${renderTag(STATUS_LABELS, it.status)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="plan-cmp-wrap"><table class="plan-cmp-table">${head}<tbody>${body}</tbody></table></div>`;
   };
 
   const renderGroup = (key, label, rows) => {
@@ -172,6 +270,14 @@ function renderWishlistTab(items) {
         <div class="plan-sum-item"><span class="plan-sum-lbl">Status</span><b class="plan-sum-status">
           ${countByStatus.idea || 0} ide · ${countByStatus.plan || 0} plan · ${countByStatus.ongoing || 0} on-going · ${countByStatus.done || 0} done
         </b></div>
+      </div>
+
+      <!-- View mode toggle: List vs Bandingkan -->
+      <div class="plan-view-toggle-wrap">
+        <div class="plan-view-toggle" role="tablist">
+          <button type="button" class="plan-view-btn active" data-view="list" onclick="switchPlanView('list')"><i class="ti ti-list"></i> List</button>
+          <button type="button" class="plan-view-btn" data-view="compare" onclick="switchPlanView('compare')"><i class="ti ti-table"></i> Bandingkan</button>
+        </div>
       </div>
 
       <!-- Filter & Sort toolbar -->
@@ -261,6 +367,7 @@ function renderWishlistTab(items) {
             ${renderGroup('nice', 'Nice to have', groups.nice)}
             ${renderGroup('idea', 'Ide', groups.idea)}
           </div>
+          <div id="planWishlistCompare" style="display:none">${renderCompareTable(items)}</div>
           <div id="planWishlistEmpty" class="plan-empty plan-filter-empty" style="display:none">
             <i class="ti ti-filter-off"></i>
             <div class="plan-empty-title">Tidak ada item cocok dgn filter</div>
@@ -774,6 +881,25 @@ function renderItemModal() {
             <label class="plan-form-lbl">Catatan / Link Referensi <span class="opt">opsional</span></label>
             <textarea id="planFCatatan" name="catatan" class="plan-form-inp" rows="3" maxlength="500" placeholder="Link Tokopedia, spec produk, dll..."></textarea>
           </div>
+
+          <!-- Upload lampiran: foto produk / brosur PDF supplier -->
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Lampiran <span class="opt">foto produk, brosur PDF (max 5MB/file, total 10 file)</span></label>
+            <div id="planDropzone" class="plan-dropzone" onclick="document.getElementById('planFileInp').click()" ondragover="planDzOver(event)" ondragleave="planDzLeave(event)" ondrop="planDzDrop(event)">
+              <i class="ti ti-cloud-upload"></i>
+              <div class="plan-dz-lbl">Klik atau drag file foto / PDF ke sini</div>
+              <div class="plan-dz-sub">JPG, PNG, WEBP, PDF — max 5MB per file</div>
+            </div>
+            <input type="file" id="planFileInp" accept="image/jpeg,image/png,image/webp,application/pdf" multiple style="display:none" onchange="planDzPickFiles(event)">
+            <div id="planAttList" class="plan-att-list"></div>
+          </div>
+
+          <!-- Dampak cashflow preview -->
+          <div class="plan-form-row" id="planImpactRow" style="display:none">
+            <label class="plan-form-lbl">Dampak Cashflow</label>
+            <div id="planImpactBox" class="plan-impact-box"></div>
+          </div>
+
           <div class="plan-form-actions">
             <button type="button" class="btn-outline" onclick="closePlanModal()">Batal</button>
             <button type="submit" class="btn-primary"><i class="ti ti-device-floppy"></i> Simpan</button>
@@ -791,7 +917,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=59\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=60\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -862,11 +988,14 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "document.querySelectorAll('.plan-tab-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-tab')===t);});"
     +   "document.querySelectorAll('.plan-tab-wrap').forEach(function(d){d.style.display=d.getAttribute('data-tab-content')===t?'':'none';});"
     + "}"
+    + "var _planKeptAtts=[];" // existing URLs to preserve
+    + "var _planNewAtts=[];"  // new files {name,type,data(base64)}
     + "function openPlanModal(id){"
     +   "var ov=document.getElementById('planModalOv');"
     +   "document.getElementById('planForm').reset();"
     +   "document.getElementById('planFId').value='';"
     +   "document.getElementById('planModalTitle').textContent='Tambah Item';"
+    +   "_planKeptAtts=[];_planNewAtts=[];"
     +   "if(id){"
     +     "var it=PLAN_ITEMS.find(function(x){return x.id===id;});"
     +     "if(it){"
@@ -882,12 +1011,91 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +       "document.getElementById('planFSaved').value=it.savedAmount?_planRpFmt(it.savedAmount):'';"
     +       "document.getElementById('planFVendor').value=it.vendor||'';"
     +       "document.getElementById('planFCatatan').value=it.catatan||'';"
+    +       "_planKeptAtts=Array.isArray(it.attachments)?it.attachments.slice():[];"
     +     "}"
     +   "}"
+    +   "_planRenderAttList();"
+    +   "_planUpdateImpact();"
     +   "ov.classList.add('open');"
     +   "setTimeout(function(){document.getElementById('planFNama').focus();},150);"
     + "}"
-    + "function closePlanModal(){document.getElementById('planModalOv').classList.remove('open');}"
+    + "function closePlanModal(){document.getElementById('planModalOv').classList.remove('open');_planKeptAtts=[];_planNewAtts=[];}"
+
+    // ── Upload lampiran (dropzone + file picker + base64 preview) ──
+    + "function planDzOver(e){e.preventDefault();e.currentTarget.classList.add('drag');}"
+    + "function planDzLeave(e){e.currentTarget.classList.remove('drag');}"
+    + "function planDzDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag');"
+    +   "if(e.dataTransfer&&e.dataTransfer.files)_planReadFiles(e.dataTransfer.files);}"
+    + "function planDzPickFiles(e){_planReadFiles(e.target.files);e.target.value='';}"
+    + "function _planReadFiles(fileList){"
+    +   "var arr=Array.from(fileList||[]);"
+    +   "var allowed=['image/jpeg','image/png','image/webp','application/pdf'];"
+    +   "arr.forEach(function(f){"
+    +     "if(!allowed.includes(f.type)){alert('Format tidak didukung: '+f.name+' ('+f.type+')');return;}"
+    +     "if(f.size>5*1024*1024){alert('File terlalu besar (max 5MB): '+f.name);return;}"
+    +     "if((_planKeptAtts.length+_planNewAtts.length)>=10){alert('Max 10 lampiran per item.');return;}"
+    +     "var rd=new FileReader();"
+    +     "rd.onload=function(ev){_planNewAtts.push({name:f.name,type:f.type,data:ev.target.result});_planRenderAttList();};"
+    +     "rd.readAsDataURL(f);"
+    +   "});"
+    + "}"
+    + "function _planRpEsc2(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}"
+    + "function _planRenderAttList(){"
+    +   "var el=document.getElementById('planAttList');if(!el)return;"
+    +   "var html='';"
+    +   "_planKeptAtts.forEach(function(u,i){"
+    +     "var isPdf=/\\.pdf$/i.test(u);"
+    +     "html+='<div class=\"plan-att-card\">'+(isPdf?'<div class=\"plan-att-pdf-thumb\"><i class=\"ti ti-file-text\"></i></div>':'<img src=\"'+_planRpEsc2(u)+'\" alt=\"\">')+'<button type=\"button\" class=\"plan-att-rm\" title=\"Hapus\" onclick=\"_planRmKept('+i+')\"><i class=\"ti ti-x\"></i></button></div>';"
+    +   "});"
+    +   "_planNewAtts.forEach(function(f,i){"
+    +     "var isPdf=f.type==='application/pdf';"
+    +     "html+='<div class=\"plan-att-card plan-att-new\">'+(isPdf?'<div class=\"plan-att-pdf-thumb\"><i class=\"ti ti-file-text\"></i><small>'+_planRpEsc2(f.name)+'</small></div>':'<img src=\"'+f.data+'\" alt=\"\">')+'<button type=\"button\" class=\"plan-att-rm\" title=\"Batalkan\" onclick=\"_planRmNew('+i+')\"><i class=\"ti ti-x\"></i></button></div>';"
+    +   "});"
+    +   "el.innerHTML=html;"
+    + "}"
+    + "function _planRmKept(i){_planKeptAtts.splice(i,1);_planRenderAttList();}"
+    + "function _planRmNew(i){_planNewAtts.splice(i,1);_planRenderAttList();}"
+
+    // ── Dampak cashflow preview (live di modal) ───────────────
+    + "function _planUpdateImpact(){"
+    +   "var d=document.getElementById('planFDate').value;"
+    +   "var est=parseInt((document.getElementById('planFEstimasi').value||'').replace(/\\./g,''))||0;"
+    +   "var roi=parseInt((document.getElementById('planFRoi').value||'').replace(/\\./g,''))||0;"
+    +   "var row=document.getElementById('planImpactRow');var box=document.getElementById('planImpactBox');"
+    +   "if(!row||!box)return;"
+    +   "if(!d||est<=0){row.style.display='none';return;}"
+    +   "var t=new Date(d);if(isNaN(t)){row.style.display='none';return;}"
+    +   "var bln=t.toLocaleDateString('id-ID',{month:'long',year:'numeric'});"
+    +   "var nx=new Date(t.getFullYear(),t.getMonth()+1,1);"
+    +   "var nxLbl=nx.toLocaleDateString('id-ID',{month:'long',year:'numeric'});"
+    +   "var html='<div class=\"plan-impact-line\"><span class=\"plan-impact-bullet plan-cf-out\">●</span> '+bln+': <b class=\"plan-cf-out\">−Rp '+_planRpFmt(est)+'</b> <small>(outflow eksekusi)</small></div>';"
+    +   "if(roi>0){"
+    +     "var bep=Math.ceil(est/roi);"
+    +     "html+='<div class=\"plan-impact-line\"><span class=\"plan-impact-bullet plan-cf-in\">●</span> Mulai '+nxLbl+': <b class=\"plan-cf-in\">+Rp '+_planRpFmt(roi)+'/bln</b> <small>(ROI proyeksi · BEP ~'+bep+' bln)</small></div>';"
+    +     "var totalYr=roi*12-est;"
+    +     "html+='<div class=\"plan-impact-line plan-impact-net\"><i class=\"ti ti-chart-line\"></i> Net 12 bulan setelah eksekusi: <b class=\"'+(totalYr>=0?'plan-cf-in':'plan-cf-out')+'\">'+(totalYr>=0?'+':'')+'Rp '+_planRpFmt(Math.abs(totalYr))+'</b></div>';"
+    +   "}else{html+='<div class=\"plan-impact-line\"><small style=\"color:var(--txt3)\">Isi ROI/bulan untuk lihat proyeksi pemasukan pasca eksekusi.</small></div>';}"
+    +   "box.innerHTML=html;row.style.display='';"
+    + "}"
+    // Wire impact preview ke input changes (date, estimasi, roi)
+    + "function _planWireImpact(){"
+    +   "['planFDate','planFEstimasi','planFRoi'].forEach(function(id){"
+    +     "var el=document.getElementById(id);if(!el||el._planImpactWired)return;"
+    +     "el.addEventListener('input',_planUpdateImpact);el.addEventListener('change',_planUpdateImpact);"
+    +     "el._planImpactWired=true;"
+    +   "});"
+    + "}"
+    + "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_planWireImpact);}else{_planWireImpact();}"
+
+    // ── View mode toggle (List vs Bandingkan) ─────────────────
+    + "function switchPlanView(v){"
+    +   "document.querySelectorAll('.plan-view-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-view')===v);});"
+    +   "var res=document.getElementById('planWishlistResults');var cmp=document.getElementById('planWishlistCompare');"
+    +   "var fbar=document.querySelector('.plan-filter-bar');"
+    +   "if(v==='compare'){if(res)res.style.display='none';if(cmp)cmp.style.display='';if(fbar)fbar.style.display='none';}"
+    +   "else{if(res)res.style.display='';if(cmp)cmp.style.display='none';if(fbar)fbar.style.display='';}"
+    + "}"
+
     // Template quick-start: pre-fill modal dgn data umum
     + "function openPlanModalFromTpl(tpl){"
     +   "var t={billiard:{nama:'Tambah meja billiard ke-4',kategori:'billiard',estimasi:12000000,prioritas:'urgent',status:'plan',roi:4500000},"
@@ -913,11 +1121,14 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "target_date:fd.get('target_date'),"
     +     "roi_estimate:(fd.get('roi_estimate')||'').replace(/\\./g,''),"
     +     "saved_amount:(fd.get('saved_amount')||'').replace(/\\./g,''),"
-    +     "vendor:fd.get('vendor'),catatan:fd.get('catatan')};"
+    +     "vendor:fd.get('vendor'),catatan:fd.get('catatan'),"
+    +     "attachments_kept:JSON.stringify(_planKeptAtts),"
+    +     "attachments_new:JSON.stringify(_planNewAtts)};"
     +   "var url=data.id?'/operasional/planning/edit':'/operasional/planning/add';"
-    +   "fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)})"
-    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal menyimpan: '+r.status);})"
-    +     ".catch(function(err){alert('Error: '+err.message);});"
+    +   "var btn=e.target.querySelector('button[type=submit]');if(btn){btn.disabled=true;btn.innerHTML='<i class=\"ti ti-loader-2\"></i> Menyimpan...';}"
+    +   "fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})"
+    +     ".then(function(r){if(r.ok)location.reload();else{if(btn){btn.disabled=false;btn.innerHTML='<i class=\"ti ti-device-floppy\"></i> Simpan';}alert('Gagal menyimpan: '+r.status);}})"
+    +     ".catch(function(err){if(btn){btn.disabled=false;btn.innerHTML='<i class=\"ti ti-device-floppy\"></i> Simpan';}alert('Error: '+err.message);});"
     + "}"
     + "function deletePlanItem(id){"
     +   "if(!confirm('Hapus item ini permanen? Tidak bisa di-undo.'))return;"
@@ -926,13 +1137,16 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "}"
 
     // ── Quick actions: Tandai Selesai / Duplikat / Kirim ke Anggaran ──
+    // Pakai JSON body biar attachments tetap kepertahankan saat quick action.
     + "function _planPostItem(url,it){"
+    +   "var atts=Array.isArray(it.attachments)?it.attachments:[];"
     +   "var data={id:it.id||'',nama:it.nama||'',kategori:it.kategori||'lain',"
     +     "estimasi:String(it.estimasi||0),prioritas:it.prioritas||'nice',"
     +     "status:it.status||'idea',target_date:it.targetDate||'',"
     +     "roi_estimate:String(it.roiEstimate||0),saved_amount:String(it.savedAmount||0),"
-    +     "vendor:it.vendor||'',catatan:it.catatan||''};"
-    +   "return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)});"
+    +     "vendor:it.vendor||'',catatan:it.catatan||'',"
+    +     "attachments_kept:JSON.stringify(atts),attachments_new:'[]'};"
+    +   "return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});"
     + "}"
     + "function markPlanDone(id){"
     +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
@@ -943,7 +1157,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "}"
     + "function duplicatePlanItem(id){"
     +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
-    +   "var copy=Object.assign({},it,{id:'',nama:(it.nama||'')+' (copy)',status:'idea',savedAmount:0});"
+    +   "var copy=Object.assign({},it,{id:'',nama:(it.nama||'')+' (copy)',status:'idea',savedAmount:0,attachments:[]});"
     +   "_planPostItem('/operasional/planning/add',copy)"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal duplikat');});"
     + "}"
@@ -971,7 +1185,12 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "function _planCalcBep(est,roi){var e=+est||0,r=+roi||0;if(e<=0||r<=0)return 0;return e/r;}"
     + "function _planFmtDur(b){if(!b||b<=0)return '';if(b<12)return Math.round(b)+' bulan';var t=(b/12).toFixed(1).replace(/\\.0$/,'');return t+' tahun';}"
     + "function _planCalcWarn(d,s,e){if(!d||!e||e<=0)return null;var t=new Date(d);if(isNaN(t))return null;var n=new Date();n.setHours(0,0,0,0);var dl=Math.floor((t-n)/86400000);if(dl<0)return null;var p=Math.min(100,(s/e)*100);if(dl<=30&&p<80)return{lvl:'danger',lbl:'Terlambat',icon:'ti-alert-triangle',daysLeft:dl};if(dl<=60&&p<50)return{lvl:'warn',lbl:'Perlu dikejar',icon:'ti-clock-exclamation',daysLeft:dl};return null;}"
-    + "function _planRenderRow(it){"
+    + "var _PLAN_PRIO_W={urgent:4,penting:3,nice:2,idea:1};"
+    + "function _planUrg(d){if(!d)return 1;var n=new Date();n.setHours(0,0,0,0);var t=new Date(d);if(isNaN(t))return 1;var dl=Math.floor((t-n)/86400000);if(dl<0)return 0.8;if(dl<30)return 2;if(dl<90)return 1.5;if(dl<180)return 1.2;return 1;}"
+    + "function _planCalcSkor(it){if(!it||it.status==='done'||it.status==='cancelled')return 0;var e=+it.estimasi||0,r=+it.roiEstimate||0;if(e<=0||r<=0)return 0;var rr=(r/e)*100;var w=_PLAN_PRIO_W[it.prioritas||'nice']||2;return Math.round(rr*w*_planUrg(it.targetDate)*10)/10;}"
+    + "function _planFindTop(items){var top=null,topV=0;items.forEach(function(it){var s=_planCalcSkor(it);if(s>topV){topV=s;top=it.id;}});return topV>0?top:null;}"
+    + "function _planCashflow(it){var e=+it.estimasi||0,r=+it.roiEstimate||0;if(!it.targetDate||e<=0)return null;var t=new Date(it.targetDate);if(isNaN(t))return null;var b=t.toLocaleDateString('id-ID',{month:'long',year:'numeric'});var nx=new Date(t.getFullYear(),t.getMonth()+1,1);var n=nx.toLocaleDateString('id-ID',{month:'long',year:'numeric'});return{execBulan:b,outflow:e,nextBulan:n,monthlyROI:r};}"
+    + "function _planRenderRow(it,topId){"
     +   "var kat=_PLAN_KAT[it.kategori]||_PLAN_KAT.lain;"
     +   "var bep=_planCalcBep(it.estimasi,it.roiEstimate);"
     +   "var bepLbl=_planFmtDur(bep);"
@@ -980,10 +1199,24 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var rem=Math.max(0,est-saved);"
     +   "var w=_planCalcWarn(it.targetDate,saved,est);"
     +   "var done=it.status==='done';"
+    +   "var sk=_planCalcSkor(it);"
+    +   "var isTop=it.id===topId&&topId;"
+    +   "var cf=_planCashflow(it);"
+    +   "var atts=Array.isArray(it.attachments)?it.attachments.slice(0,4):[];"
+    +   "var moreAtt=(Array.isArray(it.attachments)?it.attachments.length:0)-atts.length;"
+    +   "var firstImg=atts.find(function(u){return /\\.(jpe?g|png|webp|gif)$/i.test(u);});"
     +   "var idEsc=_planRpEsc(it.id);"
-    +   "var h='<div class=\"plan-row'+(done?' plan-row-done':'')+'\" data-id=\"'+idEsc+'\">';"
-    +   "h+='<div class=\"plan-row-thumb\" style=\"background:'+kat.bg+';color:'+kat.color+'\"><span class=\"plan-row-thumb-emoji\">'+kat.lbl.split(' ')[0]+'</span></div>';"
-    +   "h+='<div class=\"plan-row-main\"><div class=\"plan-row-title\">'+_planRpEsc(it.nama)+'</div><div class=\"plan-row-meta\">';"
+    +   "var h='<div class=\"plan-row'+(done?' plan-row-done':'')+(isTop?' plan-row-top':'')+'\" data-id=\"'+idEsc+'\">';"
+    +   "h+='<div class=\"plan-row-thumb\" style=\"background:'+kat.bg+';color:'+kat.color+'\">';"
+    +   "h+=firstImg?'<img src=\"'+_planRpEsc(firstImg)+'\" alt=\"\" class=\"plan-row-thumb-img\" loading=\"lazy\">':'<span class=\"plan-row-thumb-emoji\">'+kat.lbl.split(' ')[0]+'</span>';"
+    +   "h+='</div>';"
+    +   "h+='<div class=\"plan-row-main\"><div class=\"plan-row-title\">';"
+    +   "if(isTop)h+='<span class=\"plan-trophy\" title=\"Rekomendasi #1\">🏆</span> ';"
+    +   "h+=_planRpEsc(it.nama);"
+    +   "if(sk>0)h+=' <span class=\"plan-skor-badge\" title=\"Skor prioritas\">Skor '+sk+'</span>';"
+    +   "h+='</div>';"
+    +   "if(isTop)h+='<div class=\"plan-top-banner\"><i class=\"ti ti-award\"></i> Rekomendasi #1 dieksekusi duluan</div>';"
+    +   "h+='<div class=\"plan-row-meta\">';"
     +   "h+=_planTagHtml(_PLAN_KAT,it.kategori)+_planTagHtml(_PLAN_STAT,it.status);"
     +   "if(it.targetDate)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-calendar\"></i> '+_planRpEsc(it.targetDate)+'</span>';"
     +   "if(it.vendor)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-building-store\"></i> '+_planRpEsc(it.vendor)+'</span>';"
@@ -991,6 +1224,10 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(w)h+='<span class=\"plan-meta-item plan-warn-'+w.lvl+'\" title=\"H-'+w.daysLeft+' & progress '+pct+'%\"><i class=\"ti '+w.icon+'\"></i> '+w.lbl+'</span>';"
     +   "h+='</div>';"
     +   "if(est>0){var pcls=pct>=100?'done':(pct>=50?'mid':'low');h+='<div class=\"plan-row-progress\" title=\"Terkumpul '+_planRpStr(saved)+' dari '+_planRpStr(est)+'\"><div class=\"plan-row-prog-bar\"><div class=\"plan-row-prog-fill plan-prog-'+pcls+'\" style=\"width:'+pct+'%\"></div></div><div class=\"plan-row-prog-txt\">'+_planRpStr(saved)+' <span class=\"plan-row-prog-sep\">/</span> '+_planRpStr(est)+' <b>('+pct+'%)</b>'+(rem>0?' <span class=\"plan-row-prog-rem\">· sisa '+_planRpStr(rem)+'</span>':'')+'</div></div>';}"
+    +   "if(cf)h+='<div class=\"plan-row-cashflow\"><i class=\"ti ti-cash-banknote\"></i> <b>Dampak cashflow:</b> '+cf.execBulan+' <span class=\"plan-cf-out\">−'+_planRpStr(cf.outflow)+'</span>'+(cf.monthlyROI>0?', mulai '+cf.nextBulan+' <span class=\"plan-cf-in\">+'+_planRpStr(cf.monthlyROI)+'/bln</span>':'')+'</div>';"
+    +   "if(atts.length>0){h+='<div class=\"plan-row-attachments\">';"
+    +     "atts.forEach(function(u){var isPdf=/\\.pdf$/i.test(u);h+=isPdf?('<a href=\"'+_planRpEsc(u)+'\" target=\"_blank\" rel=\"noopener\" class=\"plan-att plan-att-pdf\" title=\"Lihat PDF\"><i class=\"ti ti-file-text\"></i> PDF</a>'):('<a href=\"'+_planRpEsc(u)+'\" target=\"_blank\" rel=\"noopener\" class=\"plan-att plan-att-img\"><img src=\"'+_planRpEsc(u)+'\" alt=\"\" loading=\"lazy\"></a>');});"
+    +     "if(moreAtt>0)h+='<span class=\"plan-att plan-att-more\">+'+moreAtt+'</span>';h+='</div>';}"
     +   "if(it.catatan)h+='<div class=\"plan-row-catatan\">'+_planRpEsc(it.catatan)+'</div>';"
     +   "h+='</div><div class=\"plan-row-side\"><div class=\"plan-row-estimasi\">'+_planRpStr(it.estimasi)+'</div>';"
     +   "if(it.roiEstimate>0)h+='<div class=\"plan-row-roi\">+ROI '+_planRpStr(it.roiEstimate)+'/bln</div>';"
@@ -1003,7 +1240,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "h+='</div></div></div>';"
     +   "return h;"
     + "}"
-    + "function _planRenderGroup(key,rows){if(!rows.length)return '';return '<div class=\"plan-group\"><div class=\"plan-group-hdr\">'+_planTagHtml(_PLAN_PRIO,key)+'<span class=\"plan-group-count\">'+rows.length+' item</span></div><div class=\"plan-group-body\">'+rows.map(_planRenderRow).join('')+'</div></div>';}"
+    + "function _planRenderGroup(key,rows,topId){if(!rows.length)return '';return '<div class=\"plan-group\"><div class=\"plan-group-hdr\">'+_planTagHtml(_PLAN_PRIO,key)+'<span class=\"plan-group-count\">'+rows.length+' item</span></div><div class=\"plan-group-body\">'+rows.map(function(it){return _planRenderRow(it,topId);}).join('')+'</div></div>';}"
     + "function applyPlanFilter(){"
     +   "var fs=document.getElementById('planFilterStatus');if(!fs)return;"
     +   "var st=fs.value,pr=document.getElementById('planFilterPrio').value,kt=document.getElementById('planFilterKat').value,so=document.getElementById('planFilterSort').value;"
@@ -1015,11 +1252,12 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(!res)return;"
     +   "if(arr.length===0){res.innerHTML='';if(emp)emp.style.display='';return;}"
     +   "if(emp)emp.style.display='none';"
+    +   "var topId=_planFindTop(arr);"
     +   "if(so==='default'){"
     +     "var prioOrder={urgent:1,penting:2,nice:3,idea:4};"
     +     "var grp={urgent:[],penting:[],nice:[],idea:[]};"
     +     "arr.forEach(function(x){var k=x.prioritas||'nice';if(grp[k])grp[k].push(x);else grp.nice.push(x);});"
-    +     "res.innerHTML=_planRenderGroup('urgent',grp.urgent)+_planRenderGroup('penting',grp.penting)+_planRenderGroup('nice',grp.nice)+_planRenderGroup('idea',grp.idea);"
+    +     "res.innerHTML=_planRenderGroup('urgent',grp.urgent,topId)+_planRenderGroup('penting',grp.penting,topId)+_planRenderGroup('nice',grp.nice,topId)+_planRenderGroup('idea',grp.idea,topId);"
     +   "}else{"
     +     "var sortFn={"
     +       "roi_desc:function(a,b){return(+b.roiEstimate||0)-(+a.roiEstimate||0);},"
@@ -1030,7 +1268,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "}[so];"
     +     "if(sortFn)arr.sort(sortFn);"
     +     "var sortLbl={roi_desc:'ROI Tertinggi',bep_asc:'Balik Modal Tercepat',target_asc:'Target Terdekat',cost_asc:'Termurah',cost_desc:'Termahal'}[so]||so;"
-    +     "res.innerHTML='<div class=\"plan-group\"><div class=\"plan-group-hdr\"><span class=\"plan-tag\" style=\"background:rgba(45,102,36,.12);color:#2d6624\"><i class=\"ti ti-arrows-sort\"></i> '+sortLbl+'</span><span class=\"plan-group-count\">'+arr.length+' item</span></div><div class=\"plan-group-body\">'+arr.map(_planRenderRow).join('')+'</div></div>';"
+    +     "res.innerHTML='<div class=\"plan-group\"><div class=\"plan-group-hdr\"><span class=\"plan-tag\" style=\"background:rgba(45,102,36,.12);color:#2d6624\"><i class=\"ti ti-arrows-sort\"></i> '+sortLbl+'</span><span class=\"plan-group-count\">'+arr.length+' item</span></div><div class=\"plan-group-body\">'+arr.map(function(it){return _planRenderRow(it,topId);}).join('')+'</div></div>';"
     +   "}"
     + "}"
     + "function resetPlanFilter(){"

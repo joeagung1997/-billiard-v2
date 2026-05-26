@@ -2282,8 +2282,121 @@ td          { padding:10px 16px; vertical-align:middle; }
 /* Thumbnail kategori di kiri kartu */
 .plan-row-thumb { width:44px; height:44px; border-radius:10px; display:flex;
   align-items:center; justify-content:center; flex-shrink:0; font-size:20px;
-  line-height:1; align-self:flex-start; margin-top:2px; }
+  line-height:1; align-self:flex-start; margin-top:2px; overflow:hidden; }
 .plan-row-thumb-emoji { display:block; }
+.plan-row-thumb-img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Top skor — kartu rekomendasi #1 */
+.plan-row-top { border-left:3px solid #fbbf24; background:linear-gradient(180deg,rgba(251,191,36,.06),transparent 40%); }
+.plan-trophy { display:inline-block; font-size:18px; vertical-align:-2px; margin-right:2px;
+  filter:drop-shadow(0 1px 2px rgba(251,191,36,.4)); animation:planTrophyShine 2.4s ease-in-out infinite; }
+@keyframes planTrophyShine { 0%,100% { transform:scale(1) rotate(0); } 50% { transform:scale(1.12) rotate(-4deg); } }
+.plan-skor-badge { display:inline-flex; align-items:center; padding:1px 6px; border-radius:4px;
+  background:rgba(45,102,36,.1); color:#15803d; font-size:10.5px; font-weight:700;
+  vertical-align:1px; margin-left:4px; font-family:var(--ff-mono); }
+.plan-top-banner { display:inline-flex; align-items:center; gap:5px; padding:3px 8px;
+  background:linear-gradient(90deg,rgba(251,191,36,.16),rgba(245,158,11,.1));
+  border-radius:5px; font-size:11px; font-weight:700; color:#b45309;
+  margin:4px 0 6px; line-height:1.2; }
+.plan-top-banner i { color:#d97706; font-size:13px; }
+
+/* Cashflow impact line di kartu */
+.plan-row-cashflow { margin-top:8px; padding:8px 10px; border-radius:7px;
+  background:rgba(59,130,246,.06); border:1px solid rgba(59,130,246,.16);
+  font-size:11.5px; color:var(--txt2); display:flex; align-items:flex-start; gap:6px;
+  line-height:1.5; flex-wrap:wrap; }
+.plan-row-cashflow i { color:#2563eb; margin-top:1px; flex-shrink:0; }
+.plan-row-cashflow b { color:var(--txt); font-weight:700; }
+.plan-cf-out { color:#dc2626; font-weight:700; }
+.plan-cf-in  { color:#16a34a; font-weight:700; }
+
+/* Attachments thumbnails di kartu */
+.plan-row-attachments { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.plan-att { display:inline-flex; align-items:center; justify-content:center;
+  width:48px; height:48px; border-radius:7px; overflow:hidden;
+  border:1px solid var(--border2); background:var(--surface2); flex-shrink:0;
+  text-decoration:none; transition:transform .12s, border-color .15s; }
+.plan-att:hover { transform:scale(1.05); border-color:var(--accent); }
+.plan-att-img img { width:100%; height:100%; object-fit:cover; display:block; }
+.plan-att-pdf { font-size:10px; font-weight:700; color:#dc2626;
+  background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.3);
+  flex-direction:column; gap:2px; padding:4px; }
+.plan-att-pdf i { font-size:18px; }
+.plan-att-more { background:rgba(122,140,120,.12); color:var(--txt3); font-size:13px;
+  font-weight:700; }
+
+/* Mode bandingkan toggle */
+.plan-view-toggle-wrap { display:flex; justify-content:flex-end; margin-bottom:10px; }
+.plan-view-toggle { display:inline-flex; gap:0; padding:3px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:9px; }
+.plan-view-btn { padding:6px 14px; font-size:12.5px; font-weight:600;
+  border:none; background:transparent; cursor:pointer; color:var(--txt2);
+  border-radius:6px; display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--ff); transition:all .15s; }
+.plan-view-btn i { font-size:14px; }
+.plan-view-btn:hover { color:var(--txt); }
+.plan-view-btn.active { background:var(--surface); color:var(--accent);
+  box-shadow:0 1px 3px rgba(15,32,16,0.08); font-weight:700; }
+
+/* Comparison table */
+.plan-cmp-wrap { background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; overflow:auto; -webkit-overflow-scrolling:touch;
+  box-shadow:0 1px 3px rgba(15,32,16,0.04); }
+.plan-cmp-table { width:100%; border-collapse:collapse; font-size:13px; }
+.plan-cmp-table thead { background:var(--surface2); }
+.plan-cmp-table th { text-align:left; padding:12px 14px; font-weight:700;
+  color:var(--txt2); font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+  border-bottom:1px solid var(--border); white-space:nowrap; }
+.plan-cmp-table th.num, .plan-cmp-table td.num { text-align:right; font-family:var(--ff-mono); }
+.plan-cmp-table td { padding:11px 14px; border-bottom:1px solid var(--border);
+  vertical-align:middle; }
+.plan-cmp-table tbody tr:hover { background:rgba(45,102,36,0.04); }
+.plan-cmp-table tbody tr:last-child td { border-bottom:none; }
+.plan-cmp-top { background:linear-gradient(90deg,rgba(251,191,36,.1),transparent 50%) !important;
+  border-left:3px solid #fbbf24; }
+
+/* Dropzone (modal upload) */
+.plan-dropzone { border:2px dashed var(--border2); border-radius:10px;
+  padding:24px 16px; text-align:center; cursor:pointer; transition:all .15s;
+  background:var(--surface2); }
+.plan-dropzone:hover, .plan-dropzone.drag { border-color:var(--accent);
+  background:rgba(45,102,36,.04); transform:translateY(-1px); }
+.plan-dropzone i { font-size:30px; color:var(--accent); display:block; margin-bottom:6px; }
+.plan-dz-lbl { font-size:13px; font-weight:600; color:var(--txt); }
+.plan-dz-sub { font-size:11px; color:var(--txt3); margin-top:3px; }
+
+/* Attachment preview list in modal */
+.plan-att-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.plan-att-list:empty { display:none; }
+.plan-att-card { position:relative; width:72px; height:72px; border-radius:8px;
+  overflow:hidden; border:1px solid var(--border2); background:var(--surface2); }
+.plan-att-card img { width:100%; height:100%; object-fit:cover; display:block; }
+.plan-att-new { box-shadow:0 0 0 2px rgba(45,102,36,.2); }
+.plan-att-pdf-thumb { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:100%; height:100%; gap:3px; padding:6px; color:#dc2626;
+  background:rgba(239,68,68,.06); }
+.plan-att-pdf-thumb i { font-size:24px; }
+.plan-att-pdf-thumb small { font-size:9px; color:var(--txt3); text-align:center;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;
+  font-weight:600; }
+.plan-att-rm { position:absolute; top:4px; right:4px; width:22px; height:22px;
+  border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:12px; padding:0; transition:background .15s; }
+.plan-att-rm:hover { background:#dc2626; }
+
+/* Dampak cashflow preview di modal */
+.plan-impact-box { background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(34,197,94,.05));
+  border:1px solid rgba(59,130,246,.18); border-radius:10px; padding:14px 16px;
+  display:flex; flex-direction:column; gap:8px; }
+.plan-impact-line { display:flex; align-items:center; gap:8px; font-size:12.5px;
+  color:var(--txt2); line-height:1.4; flex-wrap:wrap; }
+.plan-impact-line b { color:var(--txt); font-weight:700; }
+.plan-impact-line small { color:var(--txt3); font-weight:500; }
+.plan-impact-bullet { font-size:14px; line-height:1; }
+.plan-impact-net { padding-top:8px; border-top:1px dashed rgba(59,130,246,.2);
+  font-weight:600; }
+.plan-impact-net i { color:#2563eb; }
 
 /* Badge "Balik modal" */
 .plan-meta-bep { background:rgba(34,197,94,.08); color:#15803d; padding:3px 8px;

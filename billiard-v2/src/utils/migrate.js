@@ -392,6 +392,8 @@ export const runMigrations = async () => {
 
   // Kolom tabungan per item — Owner tracking "sudah terkumpul brp"
   await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS saved_amount BIGINT DEFAULT 0`);
+  // Lampiran foto/file — JSON array of URLs relatif ke public/
+  await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS attachments TEXT DEFAULT '[]'`);
 
   // ── Planning Goals — tabungan target (Anggaran) ─────────────
   await query(`

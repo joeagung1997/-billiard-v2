@@ -554,6 +554,17 @@ export const deleteFixedCost = async (id) => {
 
 // ── Planning / Roadmap Bisnis (wishlist items) ────────────────
 
+const parseAttachments = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+};
+
 const rowToPlanning = (row) => ({
   id:           row.id,
   nama:         row.nama,
@@ -566,6 +577,7 @@ const rowToPlanning = (row) => ({
   catatan:      row.catatan         ?? "",
   roiEstimate:  parseInt(row.roi_estimate) || 0,
   savedAmount:  parseInt(row.saved_amount) || 0,
+  attachments:  parseAttachments(row.attachments),
   createdAt:    row.created_at,
   updatedAt:    row.updated_at,
 });
@@ -583,8 +595,8 @@ export const addPlanningItem = async (item) => {
   const id = item.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
   await query(
     `INSERT INTO planning_items
-     (id, nama, kategori, estimasi, prioritas, status, target_date, vendor, catatan, roi_estimate, saved_amount)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+     (id, nama, kategori, estimasi, prioritas, status, target_date, vendor, catatan, roi_estimate, saved_amount, attachments)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       id,
       (item.nama || "").trim().slice(0, 200),
@@ -597,6 +609,7 @@ export const addPlanningItem = async (item) => {
       (item.catatan || "").trim().slice(0, 500),
       parseInt(item.roiEstimate) || 0,
       Math.max(0, parseInt(item.savedAmount) || 0),
+      JSON.stringify(parseAttachments(item.attachments).slice(0, 10)),
     ]
   );
   return id;
@@ -606,7 +619,8 @@ export const updatePlanningItem = async (id, item) => {
   await query(
     `UPDATE planning_items SET
        nama=$2, kategori=$3, estimasi=$4, prioritas=$5, status=$6,
-       target_date=$7, vendor=$8, catatan=$9, roi_estimate=$10, saved_amount=$11, updated_at=NOW()
+       target_date=$7, vendor=$8, catatan=$9, roi_estimate=$10, saved_amount=$11,
+       attachments=$12, updated_at=NOW()
      WHERE id=$1`,
     [
       id,
@@ -620,6 +634,7 @@ export const updatePlanningItem = async (id, item) => {
       (item.catatan || "").trim().slice(0, 500),
       parseInt(item.roiEstimate) || 0,
       Math.max(0, parseInt(item.savedAmount) || 0),
+      JSON.stringify(parseAttachments(item.attachments).slice(0, 10)),
     ]
   );
 };
