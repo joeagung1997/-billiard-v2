@@ -22,7 +22,7 @@ import {
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
   readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
-  deleteUnpaidPlanningPayments,
+  deleteUnpaidPlanningPayments, wipeAllPlanningPayments,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
@@ -727,8 +727,9 @@ router.post("/planning/payment/schedule", requireOwner, async (req, res) => {
     }
     const [yy, mm] = startBulan.split("-").map((s) => parseInt(s));
     if (!yy || !mm) return res.status(400).json({ ok: false, error: "Format bulan invalid." });
-    // Cleanup: hapus existing unpaid scheduled entries dulu utk hindari dupe
-    await deleteUnpaidPlanningPayments(itemId);
+    // Cleanup: clean-slate behavior — hapus SEMUA entries (paid + unpaid)
+    // dan reset saved_amount supaya rencana baru jadi single source of truth.
+    await wipeAllPlanningPayments(itemId);
     let rem = remaining > 0 ? remaining : amount * count;
     let added = 0;
     for (let i = 0; i < count && rem > 0; i++) {

@@ -746,6 +746,15 @@ export const deleteUnpaidPlanningPayments = async (itemId) => {
   await query("DELETE FROM planning_payments WHERE item_id = $1 AND paid = FALSE", [itemId]);
 };
 
+// Hapus SEMUA entries (paid + unpaid) utk satu item & reset saved_amount.
+// Dipakai saat user regenerate plan dgn clean-slate behavior — semua history
+// pembayaran hilang, mulai dari nol.
+export const wipeAllPlanningPayments = async (itemId) => {
+  if (!itemId) return;
+  await query("DELETE FROM planning_payments WHERE item_id = $1", [itemId]);
+  await query("UPDATE planning_items SET saved_amount = 0, updated_at = NOW() WHERE id = $1", [itemId]);
+};
+
 // ── Planning Goals (Anggaran / Tabungan) ──────────────────────
 
 const rowToGoal = (row) => ({

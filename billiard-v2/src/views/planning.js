@@ -1423,7 +1423,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(amt<=0||!bln||rem<=0){alert('Isi Jumlah & Bulan dulu.');return;}"
     +   "var count=Math.ceil(rem/amt);"
     +   "if(count>60){alert('Cicilan terlalu kecil — max 60 bulan/rencana.');return;}"
-    +   "if(!confirm('Buat rencana '+count+' bulan?\\n\\nJadwal cicilan sebelumnya yg BELUM dibayar akan diganti. Entry yg SUDAH dibayar tetap aman.\\n\\nSemua bulan akan masuk sbg jadwal di Riwayat. Centang saat udah bayar tiap bulan.'))return;"
+    +   "if(!confirm('Buat rencana '+count+' bulan?\\n\\n⚠ SEMUA entri pembayaran (jadwal & yg sudah dibayar) akan DIHAPUS & diganti rencana baru. Saldo terbayar reset ke 0.\\n\\nLanjutkan?'))return;"
     +   "fetch('/operasional/planning/payment/schedule',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({item_id:id,amount:String(amt),start_bulan:bln,count:String(count),remaining:String(rem)})})"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal buat rencana');});"
     + "}"
