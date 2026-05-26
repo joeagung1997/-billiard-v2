@@ -2279,10 +2279,78 @@ td          { padding:10px 16px; vertical-align:middle; }
 .plan-meta-item { font-size:11px; color:var(--txt3); display:inline-flex; align-items:center; gap:4px; }
 .plan-meta-item i { font-size:12px; }
 
+/* Thumbnail kategori di kiri kartu */
+.plan-row-thumb { width:44px; height:44px; border-radius:10px; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0; font-size:20px;
+  line-height:1; align-self:flex-start; margin-top:2px; }
+.plan-row-thumb-emoji { display:block; }
+
+/* Badge "Balik modal" */
+.plan-meta-bep { background:rgba(34,197,94,.08); color:#15803d; padding:3px 8px;
+  border-radius:5px; font-weight:600; }
+.plan-meta-bep i { color:#16a34a; }
+
+/* Warning deadline */
+.plan-warn-warn { background:rgba(245,158,11,.14); color:#b45309; padding:3px 8px;
+  border-radius:5px; font-weight:600; }
+.plan-warn-warn i { color:#d97706; }
+.plan-warn-danger { background:rgba(239,68,68,.14); color:#b91c1c; padding:3px 8px;
+  border-radius:5px; font-weight:700;
+  animation: planWarnPulse 1.6s ease-in-out infinite; }
+.plan-warn-danger i { color:#dc2626; }
+@keyframes planWarnPulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0); }
+  50% { box-shadow:0 0 0 4px rgba(239,68,68,.15); } }
+
+/* Progress bar tabungan per item */
+.plan-row-progress { margin-top:8px; }
+.plan-row-prog-bar { height:6px; background:rgba(122,140,120,0.16); border-radius:99px;
+  overflow:hidden; margin-bottom:4px; }
+.plan-row-prog-fill { height:100%; border-radius:99px; transition:width .4s ease; }
+.plan-prog-low { background:linear-gradient(90deg,#fbbf24,#f59e0b); }
+.plan-prog-mid { background:linear-gradient(90deg,#3b82f6,#2563eb); }
+.plan-prog-done { background:linear-gradient(90deg,#22c55e,#16a34a); }
+.plan-row-prog-txt { font-size:11px; color:var(--txt2); font-family:var(--ff-mono);
+  display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.plan-row-prog-txt b { color:var(--txt); font-weight:700; }
+.plan-row-prog-sep { color:var(--txt3); opacity:.6; }
+.plan-row-prog-rem { color:var(--txt3); font-weight:500; }
+
+/* Status done — kartu ke-strike */
+.plan-row-done { opacity:.72; }
+.plan-row-done .plan-row-title { text-decoration:line-through; text-decoration-color:rgba(0,0,0,.25); }
+
+/* Quick action: Tandai Selesai (hijau) */
+.plan-btn-done { border-color:rgba(34,197,94,.4); color:#16a34a; }
+.plan-btn-done:hover { border-color:#16a34a; background:rgba(34,197,94,.08); color:#15803d; }
+
+/* Filter & sort toolbar */
+.plan-filter-bar { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:12px 14px; margin-bottom:14px;
+  box-shadow:0 1px 3px rgba(15,32,16,0.04); }
+.plan-filter-grp { display:flex; flex-direction:column; gap:4px; flex:1; min-width:140px; }
+.plan-filter-lbl { font-size:10.5px; font-weight:700; color:var(--txt3);
+  text-transform:uppercase; letter-spacing:.06em; display:inline-flex;
+  align-items:center; gap:4px; }
+.plan-filter-lbl i { font-size:12px; }
+.plan-filter-inp { padding:8px 10px; border:1px solid var(--border2); border-radius:8px;
+  font-size:12.5px; font-family:var(--ff); color:var(--txt); background:var(--surface);
+  cursor:pointer; transition:border-color .15s; }
+.plan-filter-inp:hover, .plan-filter-inp:focus { border-color:var(--accent); outline:none; }
+.plan-filter-reset { width:36px; height:36px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--surface); color:var(--txt3); cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+  align-self:flex-end; flex-shrink:0; }
+.plan-filter-reset:hover { border-color:#dc2626; color:#dc2626; background:#fef2f2; }
+.plan-filter-empty { padding:40px 24px; }
+
 @media (max-width:640px) {
   .plan-row { flex-direction:column; align-items:stretch; gap:10px; }
   .plan-row-side { align-items:flex-start; flex-direction:row; flex-wrap:wrap; justify-content:space-between; }
   .plan-row-estimasi { font-size:15px; }
+  .plan-row-thumb { width:38px; height:38px; font-size:18px; }
+  .plan-filter-bar { padding:10px; }
+  .plan-filter-grp { min-width:calc(50% - 5px); flex:0 0 calc(50% - 5px); }
 }
 
 /* Empty state — revamped dgn template suggestions */

@@ -390,6 +390,9 @@ export const runMigrations = async () => {
     )
   `);
 
+  // Kolom tabungan per item — Owner tracking "sudah terkumpul brp"
+  await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS saved_amount BIGINT DEFAULT 0`);
+
   // ── Planning Goals — tabungan target (Anggaran) ─────────────
   await query(`
     CREATE TABLE IF NOT EXISTS planning_goals (

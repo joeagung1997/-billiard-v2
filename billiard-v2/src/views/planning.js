@@ -57,6 +57,40 @@ const groupByPrioritas = (items) => {
 };
 
 // ── Wishlist tab content ────────────────────────────────────
+// Hitung balik modal (bulan): estimasi ÷ roiEstimate per bulan
+const calcBalikModal = (estimasi, roi) => {
+  const e = Number(estimasi) || 0;
+  const r = Number(roi) || 0;
+  if (e <= 0 || r <= 0) return 0;
+  return e / r;
+};
+
+// Format durasi: < 12 bln → "X bulan", >= 12 bln → "X.Y tahun"
+const fmtDurasi = (bln) => {
+  if (!bln || bln <= 0) return "";
+  if (bln < 12) return Math.round(bln) + " bulan";
+  return (bln / 12).toFixed(1).replace(/\.0$/, "") + " tahun";
+};
+
+// Hitung warning deadline: H-30 prog<80% → "Terlambat", H-60 prog<50% → "Perlu dikejar"
+const calcDeadlineWarn = (targetDate, savedAmount, estimasi) => {
+  if (!targetDate || !estimasi || estimasi <= 0) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate);
+  if (isNaN(target)) return null;
+  const daysLeft = Math.floor((target - today) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return null;
+  const pct = Math.min(100, (savedAmount / estimasi) * 100);
+  if (daysLeft <= 30 && pct < 80) {
+    return { lvl: "danger", lbl: "Terlambat", icon: "ti-alert-triangle", daysLeft };
+  }
+  if (daysLeft <= 60 && pct < 50) {
+    return { lvl: "warn", lbl: "Perlu dikejar", icon: "ti-clock-exclamation", daysLeft };
+  }
+  return null;
+};
+
 function renderWishlistTab(items) {
   const groups = groupByPrioritas(items);
   const countByStatus = items.reduce((acc, it) => {
@@ -64,8 +98,21 @@ function renderWishlistTab(items) {
     return acc;
   }, {});
 
-  const renderRow = (it) => `
-    <div class="plan-row" data-id="${escHtml(it.id)}">
+  const renderRow = (it) => {
+    const kat = KATEGORI_LABELS[it.kategori] || KATEGORI_LABELS.lain;
+    const balikModalBln = calcBalikModal(it.estimasi, it.roiEstimate);
+    const balikModalLbl = fmtDurasi(balikModalBln);
+    const saved = Number(it.savedAmount) || 0;
+    const estimasi = Number(it.estimasi) || 0;
+    const pct = estimasi > 0 ? Math.min(100, Math.round((saved / estimasi) * 100)) : 0;
+    const remaining = Math.max(0, estimasi - saved);
+    const warn = calcDeadlineWarn(it.targetDate, saved, estimasi);
+    const isDone = it.status === "done";
+    return `
+    <div class="plan-row${isDone ? ' plan-row-done' : ''}" data-id="${escHtml(it.id)}">
+      <div class="plan-row-thumb" style="background:${kat.bg};color:${kat.color}">
+        <span class="plan-row-thumb-emoji">${kat.lbl.split(' ')[0]}</span>
+      </div>
       <div class="plan-row-main">
         <div class="plan-row-title">${escHtml(it.nama)}</div>
         <div class="plan-row-meta">
@@ -73,19 +120,30 @@ function renderWishlistTab(items) {
           ${renderTag(STATUS_LABELS, it.status)}
           ${it.targetDate ? `<span class="plan-meta-item"><i class="ti ti-calendar"></i> ${escHtml(it.targetDate)}</span>` : ''}
           ${it.vendor ? `<span class="plan-meta-item"><i class="ti ti-building-store"></i> ${escHtml(it.vendor)}</span>` : ''}
+          ${balikModalLbl ? `<span class="plan-meta-item plan-meta-bep" title="Estimasi balik modal dari ROI/bulan"><i class="ti ti-trending-up"></i> Balik modal: ${balikModalLbl}</span>` : ''}
+          ${warn ? `<span class="plan-meta-item plan-warn-${warn.lvl}" title="H-${warn.daysLeft} & progress ${pct}%"><i class="ti ${warn.icon}"></i> ${warn.lbl}</span>` : ''}
         </div>
+        ${estimasi > 0 ? `
+        <div class="plan-row-progress" title="Sudah terkumpul ${rp(saved)} dari target ${rp(estimasi)}">
+          <div class="plan-row-prog-bar"><div class="plan-row-prog-fill plan-prog-${pct >= 100 ? 'done' : (pct >= 50 ? 'mid' : 'low')}" style="width:${pct}%"></div></div>
+          <div class="plan-row-prog-txt">${rp(saved)} <span class="plan-row-prog-sep">/</span> ${rp(estimasi)} <b>(${pct}%)</b>${remaining > 0 ? ` <span class="plan-row-prog-rem">· sisa ${rp(remaining)}</span>` : ''}</div>
+        </div>` : ''}
         ${it.catatan ? `<div class="plan-row-catatan">${escHtml(it.catatan)}</div>` : ''}
       </div>
       <div class="plan-row-side">
         <div class="plan-row-estimasi">${rp(it.estimasi)}</div>
         ${it.roiEstimate > 0 ? `<div class="plan-row-roi">+ROI ${rp(it.roiEstimate)}/bln</div>` : ''}
         <div class="plan-row-actions">
+          ${!isDone ? `<button type="button" class="plan-btn-icon plan-btn-done" title="Tandai Selesai" onclick="markPlanDone('${escHtml(it.id)}')"><i class="ti ti-check"></i></button>` : ''}
+          <button type="button" class="plan-btn-icon" title="Kirim ke Anggaran" onclick="sendToAnggaran('${escHtml(it.id)}')"><i class="ti ti-piggy-bank"></i></button>
+          <button type="button" class="plan-btn-icon" title="Duplikat" onclick="duplicatePlanItem('${escHtml(it.id)}')"><i class="ti ti-copy"></i></button>
           <button type="button" class="plan-btn-icon" title="Edit" onclick="openPlanModal('${escHtml(it.id)}')"><i class="ti ti-edit"></i></button>
           <button type="button" class="plan-btn-icon danger" title="Hapus" onclick="deletePlanItem('${escHtml(it.id)}')"><i class="ti ti-trash"></i></button>
         </div>
       </div>
     </div>
   `;
+  };
 
   const renderGroup = (key, label, rows) => {
     if (!rows.length) return '';
@@ -114,6 +172,56 @@ function renderWishlistTab(items) {
         <div class="plan-sum-item"><span class="plan-sum-lbl">Status</span><b class="plan-sum-status">
           ${countByStatus.idea || 0} ide · ${countByStatus.plan || 0} plan · ${countByStatus.ongoing || 0} on-going · ${countByStatus.done || 0} done
         </b></div>
+      </div>
+
+      <!-- Filter & Sort toolbar -->
+      <div class="plan-filter-bar">
+        <div class="plan-filter-grp">
+          <label class="plan-filter-lbl"><i class="ti ti-filter"></i> Status</label>
+          <select id="planFilterStatus" class="plan-filter-inp" onchange="applyPlanFilter()">
+            <option value="">Semua</option>
+            <option value="idea">💡 Idea</option>
+            <option value="plan">📋 Plan</option>
+            <option value="ongoing">🚧 On-going</option>
+            <option value="done">✅ Done</option>
+            <option value="cancelled">❌ Cancelled</option>
+          </select>
+        </div>
+        <div class="plan-filter-grp">
+          <label class="plan-filter-lbl">Prioritas</label>
+          <select id="planFilterPrio" class="plan-filter-inp" onchange="applyPlanFilter()">
+            <option value="">Semua</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="penting">🟡 Penting</option>
+            <option value="nice">🟢 Nice to have</option>
+            <option value="idea">💡 Ide</option>
+          </select>
+        </div>
+        <div class="plan-filter-grp">
+          <label class="plan-filter-lbl">Kategori</label>
+          <select id="planFilterKat" class="plan-filter-inp" onchange="applyPlanFilter()">
+            <option value="">Semua</option>
+            <option value="billiard">🎱 Billiard</option>
+            <option value="warkop">☕ Warkop</option>
+            <option value="renovasi">🔨 Renovasi</option>
+            <option value="sdm">👥 SDM</option>
+            <option value="marketing">📢 Marketing</option>
+            <option value="ekspansi">🚀 Ekspansi</option>
+            <option value="lain">📦 Lain-lain</option>
+          </select>
+        </div>
+        <div class="plan-filter-grp">
+          <label class="plan-filter-lbl"><i class="ti ti-arrows-sort"></i> Urutkan</label>
+          <select id="planFilterSort" class="plan-filter-inp" onchange="applyPlanFilter()">
+            <option value="default">Prioritas (default)</option>
+            <option value="roi_desc">ROI tertinggi</option>
+            <option value="bep_asc">Balik modal tercepat</option>
+            <option value="target_asc">Target terdekat</option>
+            <option value="cost_asc">Termurah</option>
+            <option value="cost_desc">Termahal</option>
+          </select>
+        </div>
+        <button type="button" class="plan-filter-reset" onclick="resetPlanFilter()" title="Reset filter"><i class="ti ti-x"></i></button>
       </div>
       ` : ''}
 
@@ -147,10 +255,18 @@ function renderWishlistTab(items) {
               </button>
             </div>
           </div>`
-        : `${renderGroup('urgent', 'Urgent', groups.urgent)}
-           ${renderGroup('penting', 'Penting', groups.penting)}
-           ${renderGroup('nice', 'Nice to have', groups.nice)}
-           ${renderGroup('idea', 'Ide', groups.idea)}`}
+        : `<div id="planWishlistResults">
+            ${renderGroup('urgent', 'Urgent', groups.urgent)}
+            ${renderGroup('penting', 'Penting', groups.penting)}
+            ${renderGroup('nice', 'Nice to have', groups.nice)}
+            ${renderGroup('idea', 'Ide', groups.idea)}
+          </div>
+          <div id="planWishlistEmpty" class="plan-empty plan-filter-empty" style="display:none">
+            <i class="ti ti-filter-off"></i>
+            <div class="plan-empty-title">Tidak ada item cocok dgn filter</div>
+            <div class="plan-empty-sub">Coba reset filter atau ubah kriteria pencarian.</div>
+            <button type="button" class="btn-outline" onclick="resetPlanFilter()" style="margin-top:12px"><i class="ti ti-refresh"></i> Reset Filter</button>
+          </div>`}
     </div>
   `;
 }
@@ -647,6 +763,10 @@ function renderItemModal() {
             </div>
           </div>
           <div class="plan-form-row">
+            <label class="plan-form-lbl">Sudah Terkumpul (Rp) <span class="opt">tabungan saat ini</span></label>
+            <input type="text" inputmode="numeric" id="planFSaved" name="saved_amount" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
+          </div>
+          <div class="plan-form-row">
             <label class="plan-form-lbl">Vendor / Supplier <span class="opt">opsional</span></label>
             <input type="text" id="planFVendor" name="vendor" class="plan-form-inp" maxlength="150" placeholder="contoh: Pak Budi 081xxxxxxxxx">
           </div>
@@ -671,7 +791,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=58\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=59\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -759,6 +879,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +       "document.getElementById('planFStatus').value=it.status||'idea';"
     +       "document.getElementById('planFDate').value=it.targetDate||'';"
     +       "document.getElementById('planFRoi').value=it.roiEstimate?_planRpFmt(it.roiEstimate):'';"
+    +       "document.getElementById('planFSaved').value=it.savedAmount?_planRpFmt(it.savedAmount):'';"
     +       "document.getElementById('planFVendor').value=it.vendor||'';"
     +       "document.getElementById('planFCatatan').value=it.catatan||'';"
     +     "}"
@@ -791,6 +912,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "prioritas:fd.get('prioritas'),status:fd.get('status'),"
     +     "target_date:fd.get('target_date'),"
     +     "roi_estimate:(fd.get('roi_estimate')||'').replace(/\\./g,''),"
+    +     "saved_amount:(fd.get('saved_amount')||'').replace(/\\./g,''),"
     +     "vendor:fd.get('vendor'),catatan:fd.get('catatan')};"
     +   "var url=data.id?'/operasional/planning/edit':'/operasional/planning/add';"
     +   "fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)})"
@@ -801,6 +923,120 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(!confirm('Hapus item ini permanen? Tidak bisa di-undo.'))return;"
     +   "fetch('/operasional/planning/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)})"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal hapus');});"
+    + "}"
+
+    // ── Quick actions: Tandai Selesai / Duplikat / Kirim ke Anggaran ──
+    + "function _planPostItem(url,it){"
+    +   "var data={id:it.id||'',nama:it.nama||'',kategori:it.kategori||'lain',"
+    +     "estimasi:String(it.estimasi||0),prioritas:it.prioritas||'nice',"
+    +     "status:it.status||'idea',target_date:it.targetDate||'',"
+    +     "roi_estimate:String(it.roiEstimate||0),saved_amount:String(it.savedAmount||0),"
+    +     "vendor:it.vendor||'',catatan:it.catatan||''};"
+    +   "return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)});"
+    + "}"
+    + "function markPlanDone(id){"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "if(!confirm('Tandai item ini selesai (status: Done)?'))return;"
+    +   "var copy=Object.assign({},it,{status:'done'});"
+    +   "_planPostItem('/operasional/planning/edit',copy)"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal update status');});"
+    + "}"
+    + "function duplicatePlanItem(id){"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "var copy=Object.assign({},it,{id:'',nama:(it.nama||'')+' (copy)',status:'idea',savedAmount:0});"
+    +   "_planPostItem('/operasional/planning/add',copy)"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal duplikat');});"
+    + "}"
+    + "function sendToAnggaran(id){"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "switchPlanTab('anggaran');"
+    +   "openGoalModal('');"
+    +   "setTimeout(function(){"
+    +     "document.getElementById('goalFNama').value='Tabungan: '+(it.nama||'');"
+    +     "if(it.estimasi>0)document.getElementById('goalFTarget').value=_planRpFmt(it.estimasi);"
+    +     "if(it.targetDate)document.getElementById('goalFDate').value=it.targetDate;"
+    +     "var linkedSel=document.getElementById('goalFLinked');"
+    +     "if(linkedSel){var hasOpt=false;for(var i=0;i<linkedSel.options.length;i++){if(linkedSel.options[i].value===it.id){hasOpt=true;break;}}"
+    +       "if(hasOpt)linkedSel.value=it.id;}"
+    +   "},200);"
+    + "}"
+
+    // ── Filter & Sort (client-side, re-render wishlist groups) ─────
+    + "function _planRpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}"
+    + "var _PLAN_KAT={billiard:{lbl:'🎱 Billiard',bg:'rgba(45,102,36,.12)',color:'#2d6624'},warkop:{lbl:'☕ Warkop',bg:'rgba(245,158,11,.12)',color:'#d97706'},renovasi:{lbl:'🔨 Renovasi',bg:'rgba(168,85,247,.12)',color:'#a855f7'},sdm:{lbl:'👥 SDM',bg:'rgba(59,130,246,.12)',color:'#2563eb'},marketing:{lbl:'📢 Marketing',bg:'rgba(236,72,153,.12)',color:'#db2777'},ekspansi:{lbl:'🚀 Ekspansi',bg:'rgba(239,68,68,.12)',color:'#dc2626'},lain:{lbl:'📦 Lain-lain',bg:'rgba(122,140,120,.12)',color:'#7a8c78'}};"
+    + "var _PLAN_PRIO={urgent:{lbl:'🔴 Urgent',bg:'rgba(239,68,68,.12)',color:'#dc2626'},penting:{lbl:'🟡 Penting',bg:'rgba(245,158,11,.12)',color:'#d97706'},nice:{lbl:'🟢 Nice to have',bg:'rgba(34,197,94,.12)',color:'#16a34a'},idea:{lbl:'💡 Ide',bg:'rgba(122,140,120,.12)',color:'#7a8c78'}};"
+    + "var _PLAN_STAT={idea:{lbl:'💡 Idea',bg:'rgba(122,140,120,.12)',color:'#7a8c78'},plan:{lbl:'📋 Plan',bg:'rgba(59,130,246,.12)',color:'#2563eb'},ongoing:{lbl:'🚧 On-going',bg:'rgba(245,158,11,.12)',color:'#d97706'},done:{lbl:'✅ Done',bg:'rgba(34,197,94,.12)',color:'#16a34a'},cancelled:{lbl:'❌ Cancelled',bg:'rgba(239,68,68,.12)',color:'#dc2626'}};"
+    + "function _planTagHtml(map,key){var m=map[key]||map.lain||map.idea;return '<span class=\"plan-tag\" style=\"background:'+m.bg+';color:'+m.color+'\">'+m.lbl+'</span>';}"
+    + "function _planRpStr(n){var a=Math.abs(Math.round(Number(n)||0));return 'Rp '+_planRpFmt(a);}"
+    + "function _planCalcBep(est,roi){var e=+est||0,r=+roi||0;if(e<=0||r<=0)return 0;return e/r;}"
+    + "function _planFmtDur(b){if(!b||b<=0)return '';if(b<12)return Math.round(b)+' bulan';var t=(b/12).toFixed(1).replace(/\\.0$/,'');return t+' tahun';}"
+    + "function _planCalcWarn(d,s,e){if(!d||!e||e<=0)return null;var t=new Date(d);if(isNaN(t))return null;var n=new Date();n.setHours(0,0,0,0);var dl=Math.floor((t-n)/86400000);if(dl<0)return null;var p=Math.min(100,(s/e)*100);if(dl<=30&&p<80)return{lvl:'danger',lbl:'Terlambat',icon:'ti-alert-triangle',daysLeft:dl};if(dl<=60&&p<50)return{lvl:'warn',lbl:'Perlu dikejar',icon:'ti-clock-exclamation',daysLeft:dl};return null;}"
+    + "function _planRenderRow(it){"
+    +   "var kat=_PLAN_KAT[it.kategori]||_PLAN_KAT.lain;"
+    +   "var bep=_planCalcBep(it.estimasi,it.roiEstimate);"
+    +   "var bepLbl=_planFmtDur(bep);"
+    +   "var saved=+it.savedAmount||0;var est=+it.estimasi||0;"
+    +   "var pct=est>0?Math.min(100,Math.round((saved/est)*100)):0;"
+    +   "var rem=Math.max(0,est-saved);"
+    +   "var w=_planCalcWarn(it.targetDate,saved,est);"
+    +   "var done=it.status==='done';"
+    +   "var idEsc=_planRpEsc(it.id);"
+    +   "var h='<div class=\"plan-row'+(done?' plan-row-done':'')+'\" data-id=\"'+idEsc+'\">';"
+    +   "h+='<div class=\"plan-row-thumb\" style=\"background:'+kat.bg+';color:'+kat.color+'\"><span class=\"plan-row-thumb-emoji\">'+kat.lbl.split(' ')[0]+'</span></div>';"
+    +   "h+='<div class=\"plan-row-main\"><div class=\"plan-row-title\">'+_planRpEsc(it.nama)+'</div><div class=\"plan-row-meta\">';"
+    +   "h+=_planTagHtml(_PLAN_KAT,it.kategori)+_planTagHtml(_PLAN_STAT,it.status);"
+    +   "if(it.targetDate)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-calendar\"></i> '+_planRpEsc(it.targetDate)+'</span>';"
+    +   "if(it.vendor)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-building-store\"></i> '+_planRpEsc(it.vendor)+'</span>';"
+    +   "if(bepLbl)h+='<span class=\"plan-meta-item plan-meta-bep\" title=\"Estimasi balik modal\"><i class=\"ti ti-trending-up\"></i> Balik modal: '+bepLbl+'</span>';"
+    +   "if(w)h+='<span class=\"plan-meta-item plan-warn-'+w.lvl+'\" title=\"H-'+w.daysLeft+' & progress '+pct+'%\"><i class=\"ti '+w.icon+'\"></i> '+w.lbl+'</span>';"
+    +   "h+='</div>';"
+    +   "if(est>0){var pcls=pct>=100?'done':(pct>=50?'mid':'low');h+='<div class=\"plan-row-progress\" title=\"Terkumpul '+_planRpStr(saved)+' dari '+_planRpStr(est)+'\"><div class=\"plan-row-prog-bar\"><div class=\"plan-row-prog-fill plan-prog-'+pcls+'\" style=\"width:'+pct+'%\"></div></div><div class=\"plan-row-prog-txt\">'+_planRpStr(saved)+' <span class=\"plan-row-prog-sep\">/</span> '+_planRpStr(est)+' <b>('+pct+'%)</b>'+(rem>0?' <span class=\"plan-row-prog-rem\">· sisa '+_planRpStr(rem)+'</span>':'')+'</div></div>';}"
+    +   "if(it.catatan)h+='<div class=\"plan-row-catatan\">'+_planRpEsc(it.catatan)+'</div>';"
+    +   "h+='</div><div class=\"plan-row-side\"><div class=\"plan-row-estimasi\">'+_planRpStr(it.estimasi)+'</div>';"
+    +   "if(it.roiEstimate>0)h+='<div class=\"plan-row-roi\">+ROI '+_planRpStr(it.roiEstimate)+'/bln</div>';"
+    +   "h+='<div class=\"plan-row-actions\">';"
+    +   "if(!done)h+='<button type=\"button\" class=\"plan-btn-icon plan-btn-done\" title=\"Tandai Selesai\" onclick=\"markPlanDone(\\''+idEsc+'\\')\"><i class=\"ti ti-check\"></i></button>';"
+    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Kirim ke Anggaran\" onclick=\"sendToAnggaran(\\''+idEsc+'\\')\"><i class=\"ti ti-piggy-bank\"></i></button>';"
+    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Duplikat\" onclick=\"duplicatePlanItem(\\''+idEsc+'\\')\"><i class=\"ti ti-copy\"></i></button>';"
+    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Edit\" onclick=\"openPlanModal(\\''+idEsc+'\\')\"><i class=\"ti ti-edit\"></i></button>';"
+    +   "h+='<button type=\"button\" class=\"plan-btn-icon danger\" title=\"Hapus\" onclick=\"deletePlanItem(\\''+idEsc+'\\')\"><i class=\"ti ti-trash\"></i></button>';"
+    +   "h+='</div></div></div>';"
+    +   "return h;"
+    + "}"
+    + "function _planRenderGroup(key,rows){if(!rows.length)return '';return '<div class=\"plan-group\"><div class=\"plan-group-hdr\">'+_planTagHtml(_PLAN_PRIO,key)+'<span class=\"plan-group-count\">'+rows.length+' item</span></div><div class=\"plan-group-body\">'+rows.map(_planRenderRow).join('')+'</div></div>';}"
+    + "function applyPlanFilter(){"
+    +   "var fs=document.getElementById('planFilterStatus');if(!fs)return;"
+    +   "var st=fs.value,pr=document.getElementById('planFilterPrio').value,kt=document.getElementById('planFilterKat').value,so=document.getElementById('planFilterSort').value;"
+    +   "var arr=PLAN_ITEMS.slice();"
+    +   "if(st)arr=arr.filter(function(x){return(x.status||'idea')===st;});"
+    +   "if(pr)arr=arr.filter(function(x){return(x.prioritas||'nice')===pr;});"
+    +   "if(kt)arr=arr.filter(function(x){return(x.kategori||'lain')===kt;});"
+    +   "var res=document.getElementById('planWishlistResults');var emp=document.getElementById('planWishlistEmpty');"
+    +   "if(!res)return;"
+    +   "if(arr.length===0){res.innerHTML='';if(emp)emp.style.display='';return;}"
+    +   "if(emp)emp.style.display='none';"
+    +   "if(so==='default'){"
+    +     "var prioOrder={urgent:1,penting:2,nice:3,idea:4};"
+    +     "var grp={urgent:[],penting:[],nice:[],idea:[]};"
+    +     "arr.forEach(function(x){var k=x.prioritas||'nice';if(grp[k])grp[k].push(x);else grp.nice.push(x);});"
+    +     "res.innerHTML=_planRenderGroup('urgent',grp.urgent)+_planRenderGroup('penting',grp.penting)+_planRenderGroup('nice',grp.nice)+_planRenderGroup('idea',grp.idea);"
+    +   "}else{"
+    +     "var sortFn={"
+    +       "roi_desc:function(a,b){return(+b.roiEstimate||0)-(+a.roiEstimate||0);},"
+    +       "bep_asc:function(a,b){var pa=_planCalcBep(a.estimasi,a.roiEstimate),pb=_planCalcBep(b.estimasi,b.roiEstimate);if(pa===0)return 1;if(pb===0)return-1;return pa-pb;},"
+    +       "target_asc:function(a,b){if(!a.targetDate)return 1;if(!b.targetDate)return-1;return a.targetDate.localeCompare(b.targetDate);},"
+    +       "cost_asc:function(a,b){return(+a.estimasi||0)-(+b.estimasi||0);},"
+    +       "cost_desc:function(a,b){return(+b.estimasi||0)-(+a.estimasi||0);}"
+    +     "}[so];"
+    +     "if(sortFn)arr.sort(sortFn);"
+    +     "var sortLbl={roi_desc:'ROI Tertinggi',bep_asc:'Balik Modal Tercepat',target_asc:'Target Terdekat',cost_asc:'Termurah',cost_desc:'Termahal'}[so]||so;"
+    +     "res.innerHTML='<div class=\"plan-group\"><div class=\"plan-group-hdr\"><span class=\"plan-tag\" style=\"background:rgba(45,102,36,.12);color:#2d6624\"><i class=\"ti ti-arrows-sort\"></i> '+sortLbl+'</span><span class=\"plan-group-count\">'+arr.length+' item</span></div><div class=\"plan-group-body\">'+arr.map(_planRenderRow).join('')+'</div></div>';"
+    +   "}"
+    + "}"
+    + "function resetPlanFilter(){"
+    +   "['planFilterStatus','planFilterPrio','planFilterKat'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});"
+    +   "var so=document.getElementById('planFilterSort');if(so)so.value='default';"
+    +   "applyPlanFilter();"
     + "}"
 
     // ── Goal modal: add / edit ────────────────────────────
