@@ -172,7 +172,10 @@ const calcCashflowImpact = (it) => {
 
 function renderWishlistTab(items) {
   const groups = groupByPrioritas(items);
-  const countByStatus = items.reduce((acc, it) => {
+  // Ditunda items di-exclude dari semua summary stats (Total Item, Estimasi, ROI, Status)
+  const activeItems = items.filter((it) => it.status !== "ditunda");
+  const ditundaCount = items.length - activeItems.length;
+  const countByStatus = activeItems.reduce((acc, it) => {
     acc[it.status || "idea"] = (acc[it.status || "idea"] || 0) + 1;
     return acc;
   }, {});
@@ -306,15 +309,16 @@ function renderWishlistTab(items) {
     `;
   };
 
-  const totalEstimasi = items.reduce((s, it) => s + (it.estimasi || 0), 0);
-  const totalRoi = items.reduce((s, it) => s + (it.roiEstimate || 0), 0);
+  // Exclude ditunda dari aggregate total (item ditunda gak masuk hitungan)
+  const totalEstimasi = activeItems.reduce((s, it) => s + (it.estimasi || 0), 0);
+  const totalRoi = activeItems.reduce((s, it) => s + (it.roiEstimate || 0), 0);
 
   return `
     <div class="plan-tab-content">
       ${items.length > 0 ? `
-      <!-- Summary mini — cuma tampil kalau ada item -->
+      <!-- Summary mini — cuma tampil kalau ada item; ditunda di-exclude -->
       <div class="plan-wishlist-summary">
-        <div class="plan-sum-item"><span class="plan-sum-lbl">Total Item</span><b>${items.length}</b></div>
+        <div class="plan-sum-item"><span class="plan-sum-lbl">Total Item</span><b>${activeItems.length}${ditundaCount > 0 ? ` <small style="opacity:.6;font-weight:500">(+${ditundaCount} ditunda)</small>` : ''}</b></div>
         <div class="plan-sum-item"><span class="plan-sum-lbl">Estimasi Total</span><b>${rp(totalEstimasi)}</b></div>
         <div class="plan-sum-item"><span class="plan-sum-lbl">Potensi ROI</span><b class="plan-roi-val">${rp(totalRoi)}<small>/bln</small></b></div>
         <div class="plan-sum-item"><span class="plan-sum-lbl">Status</span><b class="plan-sum-status">
@@ -904,7 +908,7 @@ function renderItemModal() {
                 <option value="lain">📦 Lain-lain</option>
               </select>
             </div>
-            <div class="plan-form-row">
+            <div class="plan-form-row plan-form-estimasi-row">
               <label class="plan-form-lbl"><span id="planFEstimasiLbl">Estimasi Biaya (Rp)</span></label>
               <input type="text" inputmode="numeric" id="planFEstimasi" name="estimasi" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
             </div>
@@ -1050,7 +1054,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=77\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=78\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1084,9 +1088,9 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "<h1 class=\"plan-hero-title\">Planning &amp; Roadmap <span class=\"plan-hero-badge\"><i class=\"ti ti-crown\"></i>OWNER</span></h1>"
     +     "<p class=\"plan-hero-sub\">Catat rencana upgrade, alokasi tabungan goal, dan simulasi ROI ekspansi bisnis. Bantu kamu ambil keputusan berdasarkan angka — bukan feeling.</p>"
     +     "<div class=\"plan-hero-stats\">"
-    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-clipboard-list\"></i> <b>" + items.length + "</b> item</span>"
-    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-coin\"></i> Estimasi <b>" + rp(items.reduce((s, i) => s + (i.estimasi || 0), 0)) + "</b></span>"
-    +       "<span class=\"plan-hero-stat plan-hero-roi\"><i class=\"ti ti-trending-up\"></i> Potensi ROI <b>" + rp(items.reduce((s, i) => s + (i.roiEstimate || 0), 0)) + "/bln</b></span>"
+    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-clipboard-list\"></i> <b>" + items.filter((i) => i.status !== "ditunda").length + "</b> item" + (items.some((i) => i.status === "ditunda") ? " <small style=\"opacity:.7\">(+" + items.filter((i) => i.status === "ditunda").length + " ditunda)</small>" : "") + "</span>"
+    +       "<span class=\"plan-hero-stat\"><i class=\"ti ti-coin\"></i> Estimasi <b>" + rp(items.filter((i) => i.status !== "ditunda").reduce((s, i) => s + (i.estimasi || 0), 0)) + "</b></span>"
+    +       "<span class=\"plan-hero-stat plan-hero-roi\"><i class=\"ti ti-trending-up\"></i> Potensi ROI <b>" + rp(items.filter((i) => i.status !== "ditunda").reduce((s, i) => s + (i.roiEstimate || 0), 0)) + "/bln</b></span>"
     +     "</div>"
     +   "</div>"
     + "</div>"

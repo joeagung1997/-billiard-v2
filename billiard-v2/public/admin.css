@@ -2606,6 +2606,17 @@ td          { padding:10px 16px; vertical-align:middle; }
    gak butuh tracking cicilan bulanan (asumsi bayar lump-sum / single shot). */
 .plan-tipe-investasi #planPaymentSection { display:none !important; }
 
+/* Highlight field Total Tagihan saat tipe=Hutang — angka paling penting */
+.plan-tipe-hutang .plan-form-estimasi-row { position:relative; }
+.plan-tipe-hutang .plan-form-estimasi-row .plan-form-lbl { color:#b91c1c; font-weight:700; }
+.plan-tipe-hutang .plan-form-estimasi-row .plan-form-inp {
+  border-color:#dc2626; border-width:1.5px;
+  background:linear-gradient(180deg,rgba(254,242,242,.7),rgba(254,242,242,.3));
+  font-weight:700; font-size:14.5px; color:#7f1d1d;
+  box-shadow:0 0 0 3px rgba(220,38,38,.08); }
+.plan-tipe-hutang .plan-form-estimasi-row .plan-form-inp:focus {
+  border-color:#b91c1c; box-shadow:0 0 0 4px rgba(220,38,38,.15); outline:none; }
+
 /* Helper hint kecil di bawah label */
 .plan-form-hint { font-size:11px; color:var(--txt3); margin-top:3px;
   display:block; line-height:1.4; }
