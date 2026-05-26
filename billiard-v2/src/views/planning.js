@@ -946,11 +946,11 @@ function renderItemModal() {
           <div class="plan-form-grid">
             <div class="plan-form-row">
               <label class="plan-form-lbl">Bulan <span class="req">*</span></label>
-              <input type="month" id="paymentFBulan" name="bulan" class="plan-form-inp" required>
+              <input type="month" id="paymentFBulan" name="bulan" class="plan-form-inp" required onchange="_planUpdatePaymentProjection()">
             </div>
             <div class="plan-form-row">
               <label class="plan-form-lbl">Jumlah (Rp) <span class="req">*</span></label>
-              <input type="text" inputmode="numeric" id="paymentFAmount" name="amount" class="plan-form-inp" required placeholder="0" oninput="planFmtNum(this)">
+              <input type="text" inputmode="numeric" id="paymentFAmount" name="amount" class="plan-form-inp" required placeholder="0" oninput="planFmtNum(this);_planUpdatePaymentProjection()">
             </div>
           </div>
           <div class="plan-deposit-quick">
@@ -960,6 +960,10 @@ function renderItemModal() {
             <button type="button" onclick="setPaymentAmount(2000000)">+Rp 2jt</button>
             <button type="button" onclick="setPaymentAmount('sisa')">Lunasi Sisa</button>
           </div>
+
+          <!-- Proyeksi cicilan real-time -->
+          <div id="paymentProjection" class="plan-payment-projection" style="display:none"></div>
+
           <div class="plan-form-row">
             <label class="plan-form-lbl">Catatan <span class="opt">opsional</span></label>
             <input type="text" id="paymentFCatatan" name="catatan" class="plan-form-inp" maxlength="300" placeholder="contoh: Bayar via Gopay">
@@ -981,7 +985,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=62\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=63\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1272,6 +1276,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "document.getElementById('paymentCurrent').textContent=_planRpStr(saved);"
     +   "document.getElementById('paymentTarget').textContent=_planRpStr(est);"
     +   "document.getElementById('paymentRemain').textContent=_planRpStr(Math.max(0,est-saved));"
+    +   "_planUpdatePaymentProjection();"
     +   "document.getElementById('paymentModalOv').classList.add('open');"
     +   "setTimeout(function(){document.getElementById('paymentFAmount').focus();},150);"
     + "}"
@@ -1280,6 +1285,36 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var inp=document.getElementById('paymentFAmount');"
     +   "if(v==='sisa'){var id=document.getElementById('paymentItemId').value;var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;var rem=Math.max(0,(+it.estimasi||0)-(+it.savedAmount||0));inp.value=rem>0?_planRpFmt(rem):'';}"
     +   "else{inp.value=_planRpFmt(v);}"
+    +   "_planUpdatePaymentProjection();"
+    + "}"
+
+    // Proyeksi real-time di sub-modal Bayar Cicilan: kalau bayar X/bln, lunas dlm Y bulan tgl Z
+    + "function _planUpdatePaymentProjection(){"
+    +   "var box=document.getElementById('paymentProjection');if(!box)return;"
+    +   "var id=document.getElementById('paymentItemId').value;"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});"
+    +   "if(!it){box.style.display='none';return;}"
+    +   "var amt=parseInt((document.getElementById('paymentFAmount').value||'').replace(/\\./g,''))||0;"
+    +   "var saved=+it.savedAmount||0,est=+it.estimasi||0;"
+    +   "var rem=Math.max(0,est-saved);"
+    +   "if(amt<=0||rem<=0||est<=0){box.style.display='none';return;}"
+    +   "var thisMonth=Math.min(amt,rem);"
+    +   "var sisaSetelahIni=Math.max(0,rem-thisMonth);"
+    +   "var bulanLeft=sisaSetelahIni>0?Math.ceil(sisaSetelahIni/amt):0;"
+    +   "var totalBulan=1+bulanLeft;"
+    +   "var bulanInpVal=document.getElementById('paymentFBulan').value;"
+    +   "var startDate=bulanInpVal?new Date(parseInt(bulanInpVal.slice(0,4)),parseInt(bulanInpVal.slice(5,7))-1,1):new Date();"
+    +   "var endDate=new Date(startDate.getFullYear(),startDate.getMonth()+totalBulan-1,1);"
+    +   "var endLbl=endDate.toLocaleDateString('id-ID',{month:'long',year:'numeric'});"
+    +   "var html='<div class=\"plan-proj-hdr\"><i class=\"ti ti-calculator\"></i> Rencana Cicilan</div>';"
+    +   "html+='<div class=\"plan-proj-grid\">';"
+    +   "html+='<div class=\"plan-proj-stat\"><span>Cicilan/bln</span><b>'+_planRpStr(amt)+'</b></div>';"
+    +   "html+='<div class=\"plan-proj-stat\"><span>Total bulan</span><b>'+totalBulan+' bulan</b></div>';"
+    +   "html+='<div class=\"plan-proj-stat plan-proj-end\"><span>Selesai (lunas)</span><b>'+endLbl+'</b></div>';"
+    +   "html+='</div>';"
+    +   "if(sisaSetelahIni>0){html+='<div class=\"plan-proj-note\">Setelah bayar bulan ini, sisa <b>'+_planRpStr(sisaSetelahIni)+'</b> akan lunas dalam <b>'+bulanLeft+' bulan lagi</b> kalau tetap '+_planRpStr(amt)+'/bln.</div>';}"
+    +   "else{html+='<div class=\"plan-proj-note plan-proj-lunas\"><i class=\"ti ti-check\"></i> <b>Lunas bulan ini!</b></div>';}"
+    +   "box.innerHTML=html;box.style.display='';"
     + "}"
     + "function submitPaymentForm(e){"
     +   "e.preventDefault();"
