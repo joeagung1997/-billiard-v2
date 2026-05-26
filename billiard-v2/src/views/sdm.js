@@ -455,20 +455,60 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
   const trxBulan = allTrx.filter((t) => t.bulan === bulan);
   const r        = hitungRingkasan(karyawan, trxBulan);
 
-  // ── Riwayat bulanan: 12 bulan terakhir, skip bulan sebelum tgl mulai ──
+  // ── Riwayat bulanan dgn cutoff & carry-forward kasbon ─────────
+  // (1) Cutoff: bulan paling awal = max(tgl_mulai, earliest_trx_bulan). Sebelum itu di-skip.
   const HISTORY_MONTHS = 12;
+  const allBulansInData = [...new Set(allTrx.map((t) => t.bulan).filter(Boolean))].sort();
+  const earliestTrxStr = allBulansInData[0];
+  let cutoffMo = -Infinity;
+  if (earliestTrxStr) {
+    const [ey, em] = earliestTrxStr.split("-").map(Number);
+    if (ey && em) cutoffMo = ey * 12 + (em - 1);
+  }
   const tglMulaiObj = karyawan.tgl_mulai ? new Date(karyawan.tgl_mulai) : null;
-  const tglMulaiMo = tglMulaiObj ? tglMulaiObj.getFullYear() * 12 + tglMulaiObj.getMonth() : -Infinity;
+  if (tglMulaiObj && !isNaN(tglMulaiObj)) {
+    const tm = tglMulaiObj.getFullYear() * 12 + tglMulaiObj.getMonth();
+    cutoffMo = Math.max(cutoffMo, tm);
+  }
+  // (2) Carry-forward: kelebihan bayar di bulan X jadi kasbon (advance) bulan X+1.
+  //     Hitung running carry dari cutoff sampai bulan ini.
   const nowD = new Date();
+  const nowMo = nowD.getFullYear() * 12 + nowD.getMonth();
+  const carryByBulan = {};
+  let runningCarry = 0;
+  if (cutoffMo > -Infinity) {
+    for (let mo = cutoffMo; mo <= nowMo; mo++) {
+      const y2 = Math.floor(mo / 12);
+      const m2 = mo % 12;
+      const bk = y2 + "-" + String(m2 + 1).padStart(2, "0");
+      const trxB = allTrx.filter((t) => t.bulan === bk);
+      const rB = hitungRingkasan(karyawan, trxB);
+      const effectiveTarget = Math.max(0, rB.gajiPokok - runningCarry);
+      const excess = rB.totalDibayarkan - effectiveTarget;
+      let statusE;
+      if (rB.totalDibayarkan + runningCarry >= rB.gajiPokok && rB.gajiPokok > 0) statusE = "lunas";
+      else if (rB.totalDibayarkan + runningCarry > 0) statusE = "sebagian";
+      else statusE = "belum";
+      carryByBulan[bk] = {
+        carryIn: runningCarry,
+        effectiveTarget,
+        excess: Math.max(0, excess),
+        statusEffective: statusE,
+      };
+      runningCarry = Math.max(0, excess);
+    }
+  }
+  // (3) Build history rows (max 12, dari sekarang ke belakang, sampai cutoff)
   const historyData = [];
   for (let i = 0; i < HISTORY_MONTHS; i++) {
     const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
     const monKey = d.getFullYear() * 12 + d.getMonth();
-    if (monKey < tglMulaiMo) break;
+    if (monKey < cutoffMo) break;
     const bulanKey = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
     const trxMo = allTrx.filter((t) => t.bulan === bulanKey);
     const sum = hitungRingkasan(karyawan, trxMo);
-    historyData.push({ bulan: bulanKey, summary: sum });
+    const cInfo = carryByBulan[bulanKey] || { carryIn: 0, excess: 0, effectiveTarget: sum.gajiPokok, statusEffective: sum.status };
+    historyData.push({ bulan: bulanKey, summary: sum, carryInfo: cInfo });
   }
 
   const HARI = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
@@ -559,6 +599,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     ".sdm-hist-pct{font-size:10.5px;color:var(--txt3);font-weight:600;font-family:var(--ff-mono);min-width:32px;text-align:right}",
     ".sdm-hist-amt{font-family:var(--ff-mono);font-size:12px;color:var(--txt2);text-align:right;white-space:nowrap}",
     ".sdm-hist-amt small{color:var(--txt3);display:block;font-size:10px;margin-top:1px}",
+    ".sdm-hist-carry{color:#6366f1;font-weight:500;font-size:10px;display:block;margin-top:2px;font-family:var(--ff-mono)}",
+    ".sdm-hist-excess{color:#16a34a;font-weight:600;font-size:9.5px;display:block;margin-top:2px;font-family:var(--ff-mono)}",
     "@media(max-width:640px){.sdm-hist-row{grid-template-columns:90px 1fr auto;font-size:12px}.sdm-hist-amt{display:none}}",
   ].join("");
 
@@ -656,21 +698,25 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
 
     + "</div>" // end det-grid
 
-    // ── Riwayat Bulanan (12 bulan terakhir) ─────────────────────
+    // ── Riwayat Bulanan dgn carry-forward kasbon ──────────────────
     + (historyData.length > 0
         ? "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px\">"
           + "<div class=\"det-card-title\"><i class=\"ti ti-calendar-stats\"></i> Riwayat Bulanan <span style=\"margin-left:auto;font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:20px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3)\">" + historyData.length + " bulan</span></div>"
           + "<div class=\"sdm-hist-list\">"
           + historyData.map((h) => {
               const sm = h.summary;
-              const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round(sm.totalDibayarkan / sm.gajiPokok * 100)) : 0;
+              const ci = h.carryInfo;
+              const statusE = ci.statusEffective;
+              const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round((sm.totalDibayarkan + ci.carryIn) / sm.gajiPokok * 100)) : 0;
               const isActive = h.bulan === bulan;
               const url = "/operasional/sdm/" + karyawan.id + "?bulan=" + h.bulan;
+              const carryInLbl = ci.carryIn > 0 ? "<small class=\"sdm-hist-carry\">+ kasbon lalu " + rp(ci.carryIn) + "</small>" : "";
+              const excessLbl  = ci.excess > 0  ? "<small class=\"sdm-hist-excess\">excess → bln depan " + rp(ci.excess) + "</small>" : "";
               return "<a href=\"" + url + "\" class=\"sdm-hist-row" + (isActive ? " sdm-hist-row-active" : "") + "\">"
-                + "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + "</div>"
-                + "<div class=\"sdm-hist-bar-wrap\"><div class=\"sdm-hist-bar\"><div class=\"sdm-hist-bar-fill sdm-hist-bar-" + sm.status + "\" style=\"width:" + pct + "%\"></div></div><div class=\"sdm-hist-pct\">" + pct + "%</div></div>"
-                + "<div class=\"sdm-hist-amt\">" + rp(sm.totalDibayarkan) + "<small>/ " + rp(sm.gajiPokok) + "</small></div>"
-                + statusBadge(sm.status)
+                + "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + carryInLbl + "</div>"
+                + "<div class=\"sdm-hist-bar-wrap\"><div class=\"sdm-hist-bar\"><div class=\"sdm-hist-bar-fill sdm-hist-bar-" + statusE + "\" style=\"width:" + pct + "%\"></div></div><div class=\"sdm-hist-pct\">" + pct + "%</div></div>"
+                + "<div class=\"sdm-hist-amt\">" + rp(sm.totalDibayarkan) + "<small>/ " + rp(sm.gajiPokok) + "</small>" + excessLbl + "</div>"
+                + statusBadge(statusE)
                 + "</a>";
             }).join("")
           + "</div>"

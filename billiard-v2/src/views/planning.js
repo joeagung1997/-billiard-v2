@@ -131,6 +131,32 @@ const findTopSkor = (items) => {
   return topVal > 0 ? topId : null;
 };
 
+// Hutang-specific: hitung cicilan/bln (avg 3 bln terakhir) + tanggal selesai.
+// Return null kalau bukan hutang atau gak ada data pembayaran.
+const calcHutangProgress = (it) => {
+  if (!it || it.tipe !== "hutang") return null;
+  const ps = Array.isArray(it.payments) ? it.payments : [];
+  const est = Number(it.estimasi) || 0;
+  const saved = Number(it.savedAmount) || 0;
+  const rem = Math.max(0, est - saved);
+  if (est <= 0) return null;
+  if (rem <= 0) return { lunas: true, avgPerMonth: 0, monthsLeft: 0, projectedDate: null };
+  if (ps.length === 0) return { lunas: false, avgPerMonth: 0, monthsLeft: null, projectedDate: null };
+  const byMonth = {};
+  ps.forEach((p) => { byMonth[p.bulan] = (byMonth[p.bulan] || 0) + (Number(p.amount) || 0); });
+  const bulans = Object.keys(byMonth).sort().reverse().slice(0, 3);
+  if (bulans.length === 0) return { lunas: false, avgPerMonth: 0, monthsLeft: null, projectedDate: null };
+  const total = bulans.reduce((s, b) => s + byMonth[b], 0);
+  const avg = total / bulans.length;
+  if (avg <= 0) return { lunas: false, avgPerMonth: 0, monthsLeft: null, projectedDate: null };
+  const monthsLeft = Math.ceil(rem / avg);
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + monthsLeft);
+  const projectedDate = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+  return { lunas: false, avgPerMonth: avg, monthsLeft, projectedDate };
+};
+
 // Dampak cashflow: bulan eksekusi -biaya, mulai bulan berikutnya +ROI/bln.
 // Return null kalau tdk lengkap.
 const calcCashflowImpact = (it) => {
@@ -167,6 +193,7 @@ function renderWishlistTab(items) {
     const attachments = Array.isArray(it.attachments) ? it.attachments.slice(0, 4) : [];
     const moreAtt = (Array.isArray(it.attachments) ? it.attachments.length : 0) - attachments.length;
     const cashflow = calcCashflowImpact(it);
+    const hutangProg = calcHutangProgress(it);
     // Pakai foto pertama sebagai thumbnail kalau ada — kalau gak, fallback emoji kategori
     const firstImg = attachments.find((u) => /\.(jpe?g|png|webp|gif)$/i.test(u));
     return `
@@ -184,7 +211,13 @@ function renderWishlistTab(items) {
           ${renderTag(STATUS_LABELS, it.status)}
           ${it.targetDate ? `<span class="plan-meta-item"><i class="ti ti-calendar"></i> ${escHtml(it.targetDate)}</span>` : ''}
           ${it.vendor ? `<span class="plan-meta-item"><i class="ti ti-building-store"></i> ${escHtml(it.vendor)}</span>` : ''}
-          ${balikModalLbl ? `<span class="plan-meta-item plan-meta-bep" title="Estimasi balik modal dari ROI/bulan"><i class="ti ti-trending-up"></i> Balik modal: ${balikModalLbl}</span>` : ''}
+          ${(it.tipe !== 'hutang' && balikModalLbl) ? `<span class="plan-meta-item plan-meta-bep" title="Estimasi balik modal dari ROI/bulan"><i class="ti ti-trending-up"></i> Balik modal: ${balikModalLbl}</span>` : ''}
+          ${(it.tipe === 'hutang' && hutangProg) ? (hutangProg.lunas
+            ? `<span class="plan-meta-item plan-meta-hutang-lunas" title="Tagihan sudah lunas"><i class="ti ti-check"></i> Lunas</span>`
+            : (hutangProg.avgPerMonth > 0
+              ? `<span class="plan-meta-item plan-meta-cicilan" title="Avg cicilan 3 bln terakhir"><i class="ti ti-credit-card"></i> Cicilan: ${rp(hutangProg.avgPerMonth)}/bln</span>
+                 <span class="plan-meta-item plan-meta-lunas-target" title="Estimasi tanggal lunas"><i class="ti ti-calendar-check"></i> Selesai: ${hutangProg.projectedDate} (${hutangProg.monthsLeft} bln lagi)</span>`
+              : `<span class="plan-meta-item plan-meta-cicilan-empty"><i class="ti ti-credit-card"></i> Belum ada pembayaran</span>`)) : ''}
           ${warn ? `<span class="plan-meta-item plan-warn-${warn.lvl}" title="H-${warn.daysLeft} & progress ${pct}%"><i class="ti ${warn.icon}"></i> ${warn.lbl}</span>` : ''}
         </div>
         ${estimasi > 0 ? `
@@ -1017,7 +1050,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=76\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=77\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1551,6 +1584,20 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "function _planCalcSkor(it){if(!it||it.status==='done'||it.status==='cancelled'||it.status==='ditunda')return 0;var e=+it.estimasi||0,r=+it.roiEstimate||0;if(e<=0||r<=0)return 0;var rr=(r/e)*100;var w=_PLAN_PRIO_W[it.prioritas||'nice']||2;return Math.round(rr*w*_planUrg(it.targetDate)*10)/10;}"
     + "function _planFindTop(items){var top=null,topV=0;items.forEach(function(it){var s=_planCalcSkor(it);if(s>topV){topV=s;top=it.id;}});return topV>0?top:null;}"
     + "function _planCashflow(it){var e=+it.estimasi||0,r=+it.roiEstimate||0;if(!it.targetDate||e<=0)return null;var t=new Date(it.targetDate);if(isNaN(t))return null;var b=t.toLocaleDateString('id-ID',{month:'long',year:'numeric'});var nx=new Date(t.getFullYear(),t.getMonth()+1,1);var n=nx.toLocaleDateString('id-ID',{month:'long',year:'numeric'});return{execBulan:b,outflow:e,nextBulan:n,monthlyROI:r};}"
+    + "function _planHutangProg(it){"
+    +   "if(!it||it.tipe!=='hutang')return null;"
+    +   "var ps=Array.isArray(it.payments)?it.payments:[];"
+    +   "var est=+it.estimasi||0,saved=+it.savedAmount||0;var rem=Math.max(0,est-saved);"
+    +   "if(est<=0)return null;if(rem<=0)return{lunas:true,avgPerMonth:0,monthsLeft:0,projectedDate:null};"
+    +   "if(ps.length===0)return{lunas:false,avgPerMonth:0,monthsLeft:null,projectedDate:null};"
+    +   "var bm={};ps.forEach(function(p){bm[p.bulan]=(bm[p.bulan]||0)+(+p.amount||0);});"
+    +   "var bs=Object.keys(bm).sort().reverse().slice(0,3);"
+    +   "if(bs.length===0)return{lunas:false,avgPerMonth:0,monthsLeft:null,projectedDate:null};"
+    +   "var tot=bs.reduce(function(s,b){return s+bm[b];},0);var avg=tot/bs.length;"
+    +   "if(avg<=0)return{lunas:false,avgPerMonth:0,monthsLeft:null,projectedDate:null};"
+    +   "var ml=Math.ceil(rem/avg);var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+ml);"
+    +   "return{lunas:false,avgPerMonth:avg,monthsLeft:ml,projectedDate:d.toLocaleDateString('id-ID',{month:'short',year:'numeric'})};"
+    + "}"
     + "function _planRenderRow(it,topId){"
     +   "var kat=_PLAN_KAT[it.kategori]||_PLAN_KAT.lain;"
     +   "var bep=_planCalcBep(it.estimasi,it.roiEstimate);"
@@ -1563,6 +1610,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var sk=_planCalcSkor(it);"
     +   "var isTop=it.id===topId&&topId;"
     +   "var cf=_planCashflow(it);"
+    +   "var hp=_planHutangProg(it);"
     +   "var atts=Array.isArray(it.attachments)?it.attachments.slice(0,4):[];"
     +   "var moreAtt=(Array.isArray(it.attachments)?it.attachments.length:0)-atts.length;"
     +   "var firstImg=atts.find(function(u){return /\\.(jpe?g|png|webp|gif)$/i.test(u);});"
@@ -1581,7 +1629,12 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "h+=_planTagHtml(_PLAN_KAT,it.kategori)+_planTagHtml(_PLAN_STAT,it.status);"
     +   "if(it.targetDate)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-calendar\"></i> '+_planRpEsc(it.targetDate)+'</span>';"
     +   "if(it.vendor)h+='<span class=\"plan-meta-item\"><i class=\"ti ti-building-store\"></i> '+_planRpEsc(it.vendor)+'</span>';"
-    +   "if(bepLbl)h+='<span class=\"plan-meta-item plan-meta-bep\" title=\"Estimasi balik modal\"><i class=\"ti ti-trending-up\"></i> Balik modal: '+bepLbl+'</span>';"
+    +   "if(it.tipe!=='hutang'&&bepLbl)h+='<span class=\"plan-meta-item plan-meta-bep\" title=\"Estimasi balik modal\"><i class=\"ti ti-trending-up\"></i> Balik modal: '+bepLbl+'</span>';"
+    +   "if(it.tipe==='hutang'&&hp){"
+    +     "if(hp.lunas){h+='<span class=\"plan-meta-item plan-meta-hutang-lunas\"><i class=\"ti ti-check\"></i> Lunas</span>';}"
+    +     "else if(hp.avgPerMonth>0){h+='<span class=\"plan-meta-item plan-meta-cicilan\" title=\"Avg cicilan 3 bln terakhir\"><i class=\"ti ti-credit-card\"></i> Cicilan: '+_planRpStr(hp.avgPerMonth)+'/bln</span><span class=\"plan-meta-item plan-meta-lunas-target\" title=\"Estimasi tanggal lunas\"><i class=\"ti ti-calendar-check\"></i> Selesai: '+hp.projectedDate+' ('+hp.monthsLeft+' bln lagi)</span>';}"
+    +     "else{h+='<span class=\"plan-meta-item plan-meta-cicilan-empty\"><i class=\"ti ti-credit-card\"></i> Belum ada pembayaran</span>';}"
+    +   "}"
     +   "if(w)h+='<span class=\"plan-meta-item plan-warn-'+w.lvl+'\" title=\"H-'+w.daysLeft+' & progress '+pct+'%\"><i class=\"ti '+w.icon+'\"></i> '+w.lbl+'</span>';"
     +   "h+='</div>';"
     +   "if(est>0){var pcls=pct>=100?'done':(pct>=50?'mid':'low');h+='<div class=\"plan-row-progress\" title=\"Terkumpul '+_planRpStr(saved)+' dari '+_planRpStr(est)+'\"><div class=\"plan-row-prog-bar\"><div class=\"plan-row-prog-fill plan-prog-'+pcls+'\" style=\"width:'+pct+'%\"></div></div><div class=\"plan-row-prog-txt\">'+_planRpStr(saved)+' <span class=\"plan-row-prog-sep\">/</span> '+_planRpStr(est)+' <b>('+pct+'%)</b>'+(rem>0?' <span class=\"plan-row-prog-rem\">· sisa '+_planRpStr(rem)+'</span>':'')+'</div></div>';}"
