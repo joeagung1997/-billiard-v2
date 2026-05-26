@@ -2480,7 +2480,8 @@ td          { padding:10px 16px; vertical-align:middle; }
   color:#fff; box-shadow:0 1px 3px rgba(45,102,36,.2); }
 .plan-proj-preset.active:hover { background:var(--accent); color:#fff; opacity:.92; }
 .plan-proj-reset { border-color:rgba(122,140,120,.4); color:var(--txt3);
-  margin-left:auto; font-size:11px; }
+  margin-left:auto; margin-top:8px; font-size:11px;
+  flex-basis:100%; justify-content:center; max-width:120px; }
 .plan-proj-reset:hover { border-color:#dc2626; color:#dc2626; background:#fef2f2; }
 .plan-proj-reset i { font-size:12px; }
 
