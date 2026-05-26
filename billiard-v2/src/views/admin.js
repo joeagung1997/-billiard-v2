@@ -1864,3 +1864,307 @@ export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
 
 // editMemberPage() dihapus — edit member sekarang inline via modal
 // detail di /admin/members. GET /admin/edit jadi save-only endpoint.
+
+// ── Riwayat Kunjungan ─────────────────────────────────────────
+// Tabel log scan member: SCAN, SCAN_RESET, BONUS_EARNED, BONUS_KLAIM,
+// BONUS_EXPIRED. Sumber data dari readLog() (last 500). Filter client-side
+// supaya interaksi instant — search nama/kode, filter bulan, filter aksi.
+export function riwayatKunjunganPage({ log = [], token, req, user = {} }) {
+  const VISIT_ACTIONS = ['SCAN', 'SCAN_RESET', 'BONUS_EARNED', 'BONUS_KLAIM', 'BONUS_EXPIRED'];
+
+  // Filter ke aksi yang relevan utk "kunjungan" — exclude aksi admin (DAFTAR, EDIT, HAPUS, RESET_QR)
+  const visits = log.filter((l) => VISIT_ACTIONS.includes(l.aksi));
+
+  const nowWib   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const curBulan = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
+
+  // Operational day = periode 24h sejak jam 2 pagi WIB. Konsisten dgn dashboard.
+  const opDay = (date) => {
+    const w = new Date(new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    if (w.getHours() < 2) w.setDate(w.getDate() - 1);
+    return w.getFullYear() + '-' + String(w.getMonth() + 1).padStart(2, '0') + '-' + String(w.getDate()).padStart(2, '0');
+  };
+  const todayOp = opDay(new Date());
+
+  // YMD (WIB) untuk log tertentu
+  const ymdOf = (ts) => {
+    const d = new Date(new Date(ts).toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+
+  // Senin minggu ini (untuk stat minggu-ini)
+  const dow       = nowWib.getDay() === 0 ? 6 : nowWib.getDay() - 1;
+  const mondayD   = new Date(nowWib); mondayD.setDate(mondayD.getDate() - dow);
+  const mondayStr = mondayD.getFullYear() + '-' + String(mondayD.getMonth() + 1).padStart(2, '0') + '-' + String(mondayD.getDate()).padStart(2, '0');
+
+  // Hitung stats — pakai aksi SCAN/SCAN_RESET aja utk "kunjungan" (BONUS_* itu side-effect)
+  const isScanish = (l) => l.aksi === 'SCAN' || l.aksi === 'SCAN_RESET';
+  const visitsHariIni  = visits.filter((l) => isScanish(l) && opDay(l.ts) === todayOp);
+  const visitsMingguIni = visits.filter((l) => isScanish(l) && ymdOf(l.ts) >= mondayStr && ymdOf(l.ts) <= todayOp);
+  const visitsBulanIni  = visits.filter((l) => isScanish(l) && (ymdOf(l.ts) || '').startsWith(curBulan));
+
+  // Member unik bulan ini (by kode)
+  const memberUnikBulan = new Set(visitsBulanIni.map((l) => l.kode)).size;
+
+  // Data untuk client JS — pre-format tgl/jam supaya client tinggal render
+  const dataVisits = visits.map(({ kode, nama, aksi, detail, ts }) => ({
+    kode, nama, aksi, detail: detail ?? '',
+    ts: new Date(ts).toISOString(),
+    bulan: ymdOf(ts).slice(0, 7),
+    tgl: new Date(ts).toLocaleString('id-ID', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+    }),
+    tglFull: new Date(ts).toLocaleString('id-ID', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+    }),
+  }));
+
+  const bulanOpts = getBulanOptions()
+    .map((o) => '<option value="' + o.val + '"' + (o.selected ? ' selected' : '') + '>' + o.lbl + '</option>')
+    .join('');
+
+  const now = new Date().toLocaleString('id-ID', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+  });
+
+  return '<!DOCTYPE html><html lang="id"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<title>Riwayat Kunjungan — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=58">'
+    + '<style>'
+    + '.rk-aksi-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;font-family:var(--ff-mono,monospace);letter-spacing:.02em;white-space:nowrap}'
+    + '.rk-aksi-scan{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}'
+    + '.rk-aksi-reset{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.25)}'
+    + '.rk-aksi-bonus{background:rgba(168,85,247,.14);color:#a855f7;border:1px solid rgba(168,85,247,.28)}'
+    + '.rk-aksi-claim{background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.25)}'
+    + '.rk-aksi-expired{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.22)}'
+    + '.rk-row{display:grid;grid-template-columns:160px 1fr 130px 1.4fr;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd);align-items:center;font-size:13px}'
+    + '.rk-row:hover{background:rgba(34,197,94,.04)}'
+    + '.rk-row:last-child{border-bottom:none}'
+    + '.rk-tgl{color:var(--txt2);font-family:var(--ff-mono,monospace);font-size:12px}'
+    + '.rk-mb-nm{color:var(--txt);font-weight:600;line-height:1.3}'
+    + '.rk-mb-kd{color:var(--txt3);font-size:11px;font-family:var(--ff-mono,monospace);margin-top:2px}'
+    + '.rk-detail{color:var(--txt2);font-size:12px;line-height:1.4}'
+    + '.rk-row-mob{display:none}'
+    + '@media (max-width:768px){'
+    + '  .rk-tbl-head{display:none}'
+    + '  .rk-row{display:none}'
+    + '  .rk-row-mob{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-bottom:1px solid var(--bd)}'
+    + '  .rk-row-mob:last-child{border-bottom:none}'
+    + '  .rk-mob-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}'
+    + '  .rk-mob-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--txt3)}'
+    + '}'
+    + '</style>'
+    + '</head><body>'
+
+    + '<div class="layout">'
+    + buildSidebar(token, 'riwayat-kunjungan', user)
+
+    + '<div class="main-wrap">'
+
+    // Owner Header (desktop) — breadcrumb + actions
+    + (user.role === 'owner' ? buildOwnerHeader({
+        breadcrumb: [{ label: 'Member', href: '/admin/members?tk=' + token }, { label: 'Riwayat Kunjungan' }],
+        actionsHtml: '',
+      }) : '')
+
+    // Mobile topbar
+    + '<header class="topbar">'
+    + (user.role === 'owner' ? buildOwnerMenuToggle() : '')
+    + '<div class="topbar-brand">'
+    + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
+    + '<i class="ti ti-circle-number-8"></i></div>'
+    + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="topbar-label">Riwayat Kunjungan · ' + now + '</div></div>'
+    + '</div>'
+    + '<div class="topbar-right">'
+    + (user.role === 'owner' ? buildOwnerTopbarBell() : '')
+    + buildAdminTopbarProfile(user)
+    + '</div></header>'
+
+    + '<div class="page">'
+
+    // ── Desktop title ──────────────────────────────────────────
+    + '<div class="dash-topbar">'
+    + '<div>'
+    + '<div class="page-title">Riwayat Kunjungan</div>'
+    + '<div class="page-sub">Log scan member, klaim bonus &amp; aktivitas terkait</div>'
+    + '</div>'
+    + '<div class="topbar-actions">'
+    + '<span id="rk-badge" class="filter-badge" style="display:none"></span>'
+    + '</div>'
+    + '</div>'
+
+    // ── Stat grid ──────────────────────────────────────────────
+    + '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Hari Ini<div class="stat-icon green"><i class="ti ti-scan"></i></div></div>'
+    + '<div class="stat-value">' + visitsHariIni.length + '</div>'
+    + '<div class="stat-footer">Sejak 02:00 WIB</div></div>'
+
+    + '<div class="stat-card blue">'
+    + '<div class="stat-label">Minggu Ini<div class="stat-icon blue"><i class="ti ti-calendar-week"></i></div></div>'
+    + '<div class="stat-value">' + visitsMingguIni.length + '</div>'
+    + '<div class="stat-footer">Senin–Minggu</div></div>'
+
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Bulan Ini<div class="stat-icon green"><i class="ti ti-calendar"></i></div></div>'
+    + '<div class="stat-value">' + visitsBulanIni.length + '</div>'
+    + '<div class="stat-footer">Total scan ' + nowWib.toLocaleDateString('id-ID', { month: 'long' }) + '</div></div>'
+
+    + '<div class="stat-card amber">'
+    + '<div class="stat-label">Member Unik<div class="stat-icon amber"><i class="ti ti-users"></i></div></div>'
+    + '<div class="stat-value">' + memberUnikBulan + '</div>'
+    + '<div class="stat-footer">Bulan ini</div></div>'
+
+    + '</div>'
+
+    // ── Toolbar ────────────────────────────────────────────────
+    + '<div class="toolbar-card">'
+    + '<div class="search-wrap" style="flex:1;min-width:160px;position:relative">'
+    + '<i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px"></i>'
+    + '<input class="search-input" type="text" id="rk-cari" placeholder="Cari nama, kode, atau detail…" oninput="rkFilter()" autocomplete="off" style="padding-left:34px"></div>'
+    + '<select id="rk-bulan" class="sel" onchange="rkFilter()"><option value="">Semua bulan</option>' + bulanOpts + '</select>'
+    + '<select id="rk-aksi" class="sel" onchange="rkFilter()">'
+    + '<option value="">Semua aksi</option>'
+    + '<option value="SCAN">Scan</option>'
+    + '<option value="SCAN_RESET">Scan + Reset</option>'
+    + '<option value="BONUS_EARNED">Bonus Earned</option>'
+    + '<option value="BONUS_KLAIM">Bonus Klaim</option>'
+    + '<option value="BONUS_EXPIRED">Bonus Expired</option>'
+    + '</select>'
+    + '</div>'
+
+    // ── Table ──────────────────────────────────────────────────
+    + '<div class="table-card">'
+    + '<div id="rk-summary" class="filter-summary" style="display:none"></div>'
+    + '<div class="tbl-head rk-tbl-head" style="grid-template-columns:160px 1fr 130px 1.4fr">'
+    + '<div class="tbl-th">Tanggal</div>'
+    + '<div class="tbl-th">Member</div>'
+    + '<div class="tbl-th">Aksi</div>'
+    + '<div class="tbl-th">Detail</div>'
+    + '</div>'
+    + '<div id="rk-tbody"></div>'
+    + '<div id="rk-empty" class="empty-state" style="display:none"><i class="ti ti-history"></i>Tidak ada riwayat yang cocok</div>'
+    + '</div>'
+
+    + '<div class="tbl-pg" id="rk-pg" style="display:none;margin-top:10px;border-radius:14px"></div>'
+
+    + '<p style="margin-top:14px;font-size:11px;color:var(--txt3);text-align:center">'
+    + '<i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px"></i> '
+    + 'Menampilkan 500 log terakhir. Aksi: SCAN (kunjungan), SCAN_RESET (kunjungan + reset 30 hari), '
+    + 'BONUS_EARNED (dapat bonus), BONUS_KLAIM (klaim reward), BONUS_EXPIRED (bonus kedaluwarsa).'
+    + '</p>'
+
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + buildBottomNav(token, 'riwayat-kunjungan', user)
+
+    + '<script>'
+    + 'var RK_DATA=' + JSON.stringify(dataVisits).replace(/</g, '\\u003c') + ';'
+    + 'var RK_PAGE_SIZE=50;'
+    + 'var rkPage=1;'
+    + 'function rkAksiBadge(aksi){'
+    +   'var map={'
+    +     'SCAN:["rk-aksi-scan","ti-scan","Scan"],'
+    +     'SCAN_RESET:["rk-aksi-reset","ti-refresh","Scan + Reset"],'
+    +     'BONUS_EARNED:["rk-aksi-bonus","ti-award","Bonus Earned"],'
+    +     'BONUS_KLAIM:["rk-aksi-claim","ti-gift","Bonus Klaim"],'
+    +     'BONUS_EXPIRED:["rk-aksi-expired","ti-clock-x","Bonus Expired"]'
+    +   '};'
+    +   'var x=map[aksi]||["rk-aksi-scan","ti-circle-dot",aksi];'
+    +   'return "<span class=\\"rk-aksi-badge "+x[0]+"\\"><i class=\\"ti "+x[1]+"\\"></i>"+x[2]+"</span>";'
+    + '}'
+    + 'function rkEsc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}'
+    + 'function rkFilter(){'
+    +   'var q=(document.getElementById("rk-cari").value||"").trim().toLowerCase();'
+    +   'var bln=document.getElementById("rk-bulan").value;'
+    +   'var aksi=document.getElementById("rk-aksi").value;'
+    +   'var arr=RK_DATA.filter(function(r){'
+    +     'if(bln&&r.bulan!==bln)return false;'
+    +     'if(aksi&&r.aksi!==aksi)return false;'
+    +     'if(q){'
+    +       'var blob=((r.nama||"")+" "+(r.kode||"")+" "+(r.detail||"")).toLowerCase();'
+    +       'if(blob.indexOf(q)===-1)return false;'
+    +     '}'
+    +     'return true;'
+    +   '});'
+    +   'rkRender(arr);'
+    +   'rkUpdateBadge(arr.length,q,bln,aksi);'
+    + '}'
+    + 'function rkUpdateBadge(n,q,bln,aksi){'
+    +   'var badge=document.getElementById("rk-badge");'
+    +   'var summary=document.getElementById("rk-summary");'
+    +   'var hasFilter=q||bln||aksi;'
+    +   'if(hasFilter){'
+    +     'badge.style.display="inline-flex";'
+    +     'badge.innerHTML="<i class=\\"ti ti-filter\\"></i> "+n+" hasil";'
+    +     'summary.style.display="block";'
+    +     'var bits=[];'
+    +     'if(q)bits.push("kata kunci: <b>"+rkEsc(q)+"</b>");'
+    +     'if(bln)bits.push("bulan: <b>"+rkEsc(bln)+"</b>");'
+    +     'if(aksi)bits.push("aksi: <b>"+rkEsc(aksi)+"</b>");'
+    +     'summary.innerHTML="<i class=\\"ti ti-filter\\"></i> Filter aktif — "+bits.join(" · ")+" — <button onclick=\\"rkReset()\\" style=\\"background:none;border:none;color:var(--accent);cursor:pointer;font-weight:600;text-decoration:underline\\">Reset</button>";'
+    +   '}else{'
+    +     'badge.style.display="none";'
+    +     'summary.style.display="none";'
+    +   '}'
+    + '}'
+    + 'function rkReset(){'
+    +   'document.getElementById("rk-cari").value="";'
+    +   'document.getElementById("rk-bulan").value="";'
+    +   'document.getElementById("rk-aksi").value="";'
+    +   'rkPage=1;rkFilter();'
+    + '}'
+    + 'function rkRender(arr){'
+    +   'var tbody=document.getElementById("rk-tbody");'
+    +   'var emptyEl=document.getElementById("rk-empty");'
+    +   'var pgEl=document.getElementById("rk-pg");'
+    +   'if(arr.length===0){tbody.innerHTML="";emptyEl.style.display="flex";pgEl.style.display="none";return;}'
+    +   'emptyEl.style.display="none";'
+    +   'var total=arr.length;'
+    +   'var pages=Math.max(1,Math.ceil(total/RK_PAGE_SIZE));'
+    +   'if(rkPage>pages)rkPage=pages;'
+    +   'var start=(rkPage-1)*RK_PAGE_SIZE;'
+    +   'var pageData=arr.slice(start,start+RK_PAGE_SIZE);'
+    +   'var html=pageData.map(function(r){'
+    +     'var badge=rkAksiBadge(r.aksi);'
+    +     // Desktop row
+    +     'var desk="<div class=\\"rk-row\\">"+'
+    +       '"<div class=\\"rk-tgl\\">"+rkEsc(r.tgl)+"</div>"+'
+    +       '"<div><div class=\\"rk-mb-nm\\">"+rkEsc(r.nama)+"</div><div class=\\"rk-mb-kd\\">"+rkEsc(r.kode)+"</div></div>"+'
+    +       '"<div>"+badge+"</div>"+'
+    +       '"<div class=\\"rk-detail\\">"+rkEsc(r.detail||"—")+"</div>"+'
+    +     '"</div>";'
+    +     // Mobile row
+    +     'var mob="<div class=\\"rk-row-mob\\">"+'
+    +       '"<div class=\\"rk-mob-top\\"><div><div class=\\"rk-mb-nm\\">"+rkEsc(r.nama)+"</div><div class=\\"rk-mb-kd\\">"+rkEsc(r.kode)+"</div></div>"+badge+"</div>"+'
+    +       '"<div class=\\"rk-detail\\">"+rkEsc(r.detail||"—")+"</div>"+'
+    +       '"<div class=\\"rk-mob-bot\\"><span><i class=\\"ti ti-clock\\" style=\\"font-size:12px;vertical-align:-1px\\"></i> "+rkEsc(r.tgl)+"</span></div>"+'
+    +     '"</div>";'
+    +     'return desk+mob;'
+    +   '}).join("");'
+    +   'tbody.innerHTML=html;'
+    +   // Pagination
+    +   'if(pages>1){'
+    +     'pgEl.style.display="flex";'
+    +     'var pgHtml="<button class=\\"tbl-pg-btn\\" "+(rkPage<=1?"disabled":"")+" onclick=\\"rkGoPage("+(rkPage-1)+")\\"><i class=\\"ti ti-chevron-left\\"></i></button>";'
+    +     'pgHtml+="<span class=\\"tbl-pg-info\\">Hal "+rkPage+" / "+pages+" · "+total+" entri</span>";'
+    +     'pgHtml+="<button class=\\"tbl-pg-btn\\" "+(rkPage>=pages?"disabled":"")+" onclick=\\"rkGoPage("+(rkPage+1)+")\\"><i class=\\"ti ti-chevron-right\\"></i></button>";'
+    +     'pgEl.innerHTML=pgHtml;'
+    +   '}else{pgEl.style.display="none";}'
+    + '}'
+    + 'function rkGoPage(n){rkPage=n;rkFilter();window.scrollTo({top:0,behavior:"smooth"});}'
+    + 'rkFilter();'
+    + '</script>'
+    + '</body></html>';
+}

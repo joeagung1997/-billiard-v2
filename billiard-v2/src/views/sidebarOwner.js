@@ -60,8 +60,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       emoji: "👥",
       label: "Member",
       items: [
-        { id: "members",           href: "/admin/members?tk=" + token, icon: "ti ti-user-circle", label: "Kelola Member" },
-        { id: "riwayat-kunjungan", href: soon("Riwayat Kunjungan"),    icon: "ti ti-history",     label: "Riwayat Kunjungan", soon: true },
+        { id: "members",           href: "/admin/members?tk=" + token,           icon: "ti ti-user-circle", label: "Kelola Member" },
+        { id: "riwayat-kunjungan", href: "/admin/riwayat-kunjungan?tk=" + token, icon: "ti ti-history",     label: "Riwayat Kunjungan" },
       ],
     },
     {

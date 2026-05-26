@@ -19,7 +19,7 @@ import {
 } from "../utils/format.js";
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
 import { uploadQrToCloudinary } from "./share.js";
-import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess } from "../views/admin.js";
+import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, riwayatKunjunganPage } from "../views/admin.js";
 import { segeraHadirPage } from "../views/segeraHadir.js";
 
 const router = Router();
@@ -128,6 +128,23 @@ router.get("/members", requireAdmin, async (req, res) => {
     res.send(memberPage({ db, log, token, req, user }));
   } catch (err) {
     console.error("[ADMIN] members error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
+// ── GET /admin/riwayat-kunjungan — log scan member ────────────
+router.get("/riwayat-kunjungan", requireAdmin, async (req, res) => {
+  try {
+    const log   = await readLog();
+    const token = res.locals.tk;
+    const user  = {
+      username:    res.locals.adminUser,
+      role:        res.locals.adminRole,
+      displayName: res.locals.adminDisplay,
+    };
+    res.send(riwayatKunjunganPage({ log, token, req, user }));
+  } catch (err) {
+    console.error("[ADMIN] riwayat-kunjungan error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
   }
 });
