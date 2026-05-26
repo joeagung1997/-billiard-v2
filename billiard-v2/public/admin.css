@@ -2716,11 +2716,25 @@ td          { padding:10px 16px; vertical-align:middle; }
 .plan-prog-low { background:linear-gradient(90deg,#fbbf24,#f59e0b); }
 .plan-prog-mid { background:linear-gradient(90deg,#3b82f6,#2563eb); }
 .plan-prog-done { background:linear-gradient(90deg,#22c55e,#16a34a); }
-.plan-row-prog-txt { font-size:11px; color:var(--txt2); font-family:var(--ff-mono);
-  display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
-.plan-row-prog-txt b { color:var(--txt); font-weight:700; }
-.plan-row-prog-sep { color:var(--txt3); opacity:.6; }
-.plan-row-prog-rem { color:var(--txt3); font-weight:500; }
+.plan-row-prog-txt { font-size:12px; color:var(--txt2); font-family:var(--ff-mono);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap; line-height:1.6; }
+.plan-row-prog-txt b { display:inline-flex; align-items:center;
+  padding:2px 8px; border-radius:5px; font-family:var(--ff);
+  font-size:12.5px; font-weight:800; letter-spacing:-.01em;
+  background:rgba(45,102,36,.1); color:var(--accent); }
+.plan-row-prog-sep { color:var(--txt3); opacity:.5; padding:0 2px; }
+.plan-row-prog-rem { display:inline-flex; align-items:center;
+  padding:2px 8px; border-radius:5px;
+  background:rgba(239,68,68,.1); color:#b91c1c;
+  font-weight:700; font-size:11.5px; font-family:var(--ff-mono);
+  border:1px solid rgba(239,68,68,.18); }
+/* Percentage variants berdasarkan progress */
+.plan-row-progress[data-progress="done"] .plan-row-prog-txt b {
+  background:rgba(34,197,94,.14); color:#15803d; }
+.plan-row-progress[data-progress="mid"] .plan-row-prog-txt b {
+  background:rgba(59,130,246,.12); color:#1d4ed8; }
+.plan-row-progress[data-progress="low"] .plan-row-prog-txt b {
+  background:rgba(245,158,11,.14); color:#b45309; }
 
 /* Status done — kartu ke-strike */
 .plan-row-done { opacity:.72; }

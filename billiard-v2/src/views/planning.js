@@ -224,9 +224,9 @@ function renderWishlistTab(items) {
           ${warn ? `<span class="plan-meta-item plan-warn-${warn.lvl}" title="H-${warn.daysLeft} & progress ${pct}%"><i class="ti ${warn.icon}"></i> ${warn.lbl}</span>` : ''}
         </div>
         ${estimasi > 0 ? `
-        <div class="plan-row-progress" title="Sudah terkumpul ${rp(saved)} dari target ${rp(estimasi)}">
+        <div class="plan-row-progress" data-progress="${pct >= 100 ? 'done' : (pct >= 50 ? 'mid' : 'low')}" title="Sudah terkumpul ${rp(saved)} dari target ${rp(estimasi)}">
           <div class="plan-row-prog-bar"><div class="plan-row-prog-fill plan-prog-${pct >= 100 ? 'done' : (pct >= 50 ? 'mid' : 'low')}" style="width:${pct}%"></div></div>
-          <div class="plan-row-prog-txt">${rp(saved)} <span class="plan-row-prog-sep">/</span> ${rp(estimasi)} <b>(${pct}%)</b>${remaining > 0 ? ` <span class="plan-row-prog-rem">· sisa ${rp(remaining)}</span>` : ''}</div>
+          <div class="plan-row-prog-txt">${rp(saved)} <span class="plan-row-prog-sep">/</span> ${rp(estimasi)} <b>${pct}%</b>${remaining > 0 ? `<span class="plan-row-prog-rem">Sisa ${rp(remaining)}</span>` : ''}</div>
         </div>` : ''}
         ${cashflow ? `<div class="plan-row-cashflow"><i class="ti ti-cash-banknote"></i> <b>Dampak cashflow:</b> ${cashflow.execBulan} <span class="plan-cf-out">−${rp(cashflow.outflow)}</span>${cashflow.monthlyROI > 0 ? `, mulai ${cashflow.nextBulan} <span class="plan-cf-in">+${rp(cashflow.monthlyROI)}/bln</span>` : ''}</div>` : ''}
         ${attachments.length > 0 ? `<div class="plan-row-attachments">${attachments.map((u) => {
@@ -1054,7 +1054,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=79\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=80\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1658,7 +1658,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "}"
     +   "if(w)h+='<span class=\"plan-meta-item plan-warn-'+w.lvl+'\" title=\"H-'+w.daysLeft+' & progress '+pct+'%\"><i class=\"ti '+w.icon+'\"></i> '+w.lbl+'</span>';"
     +   "h+='</div>';"
-    +   "if(est>0){var pcls=pct>=100?'done':(pct>=50?'mid':'low');h+='<div class=\"plan-row-progress\" title=\"Terkumpul '+_planRpStr(saved)+' dari '+_planRpStr(est)+'\"><div class=\"plan-row-prog-bar\"><div class=\"plan-row-prog-fill plan-prog-'+pcls+'\" style=\"width:'+pct+'%\"></div></div><div class=\"plan-row-prog-txt\">'+_planRpStr(saved)+' <span class=\"plan-row-prog-sep\">/</span> '+_planRpStr(est)+' <b>('+pct+'%)</b>'+(rem>0?' <span class=\"plan-row-prog-rem\">· sisa '+_planRpStr(rem)+'</span>':'')+'</div></div>';}"
+    +   "if(est>0){var pcls=pct>=100?'done':(pct>=50?'mid':'low');h+='<div class=\"plan-row-progress\" data-progress=\"'+pcls+'\" title=\"Terkumpul '+_planRpStr(saved)+' dari '+_planRpStr(est)+'\"><div class=\"plan-row-prog-bar\"><div class=\"plan-row-prog-fill plan-prog-'+pcls+'\" style=\"width:'+pct+'%\"></div></div><div class=\"plan-row-prog-txt\">'+_planRpStr(saved)+' <span class=\"plan-row-prog-sep\">/</span> '+_planRpStr(est)+' <b>'+pct+'%</b>'+(rem>0?'<span class=\"plan-row-prog-rem\">Sisa '+_planRpStr(rem)+'</span>':'')+'</div></div>';}"
     +   "if(cf)h+='<div class=\"plan-row-cashflow\"><i class=\"ti ti-cash-banknote\"></i> <b>Dampak cashflow:</b> '+cf.execBulan+' <span class=\"plan-cf-out\">−'+_planRpStr(cf.outflow)+'</span>'+(cf.monthlyROI>0?', mulai '+cf.nextBulan+' <span class=\"plan-cf-in\">+'+_planRpStr(cf.monthlyROI)+'/bln</span>':'')+'</div>';"
     +   "if(atts.length>0){h+='<div class=\"plan-row-attachments\">';"
     +     "atts.forEach(function(u){var isPdf=/\\.pdf$/i.test(u);h+=isPdf?('<a href=\"'+_planRpEsc(u)+'\" target=\"_blank\" rel=\"noopener\" class=\"plan-att plan-att-pdf\" title=\"Lihat PDF\"><i class=\"ti ti-file-text\"></i> PDF</a>'):('<a href=\"'+_planRpEsc(u)+'\" target=\"_blank\" rel=\"noopener\" class=\"plan-att plan-att-img\"><img src=\"'+_planRpEsc(u)+'\" alt=\"\" loading=\"lazy\"></a>');});"
