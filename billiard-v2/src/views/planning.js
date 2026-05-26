@@ -1330,7 +1330,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var endLbl=schedule.length>0?schedule[schedule.length-1].bulan:'-';"
     +   "var html=hdrHtml;"
     +   "html+=presetsHtml;"
-    +   // Banner Rencana Dipilih — prominent, jelasin user wajib bayar segini perbulan
+    // Banner Rencana Dipilih — prominent, jelasin user wajib bayar segini perbulan
     +   "html+='<div class=\"plan-proj-chosen\">"
     +     "<div class=\"plan-proj-chosen-ic\"><i class=\"ti ti-circle-check-filled\"></i></div>"
     +     "<div class=\"plan-proj-chosen-txt\">"
