@@ -407,6 +407,8 @@ export const runMigrations = async () => {
     )
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_planning_payments_item ON planning_payments (item_id)`);
+  // Status paid/unpaid utk track rencana cicilan: default TRUE (rows lama dianggap paid)
+  await query(`ALTER TABLE planning_payments ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT TRUE`);
 
   // ── Planning Goals — tabungan target (Anggaran) ─────────────
   await query(`

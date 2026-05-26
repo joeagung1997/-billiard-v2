@@ -970,7 +970,8 @@ function renderItemModal() {
           </div>
           <div class="plan-form-actions">
             <button type="button" class="btn-outline" onclick="closePaymentModal()">Batal</button>
-            <button type="submit" class="btn-primary"><i class="ti ti-cash-banknote"></i> Simpan Pembayaran</button>
+            <button type="button" id="paymentScheduleBtn" class="btn-outline plan-pay-sch-btn" onclick="submitPaymentSchedule()" style="display:none"><i class="ti ti-calendar-plus"></i> Buat Rencana</button>
+            <button type="submit" class="btn-primary"><i class="ti ti-cash-banknote"></i> Simpan (Bayar Sekarang)</button>
           </div>
         </form>
       </div>
@@ -985,7 +986,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=69\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=70\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1248,16 +1249,22 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "else{sumHtml+='<div class=\"plan-payment-stat\"><span>Estimasi lunas</span><b><small>Tambah pembayaran utk hitung</small></b></div>';}"
     +   "sum.innerHTML=sumHtml;"
     +   "if(ps.length===0){list.innerHTML='<div class=\"plan-payment-empty\"><i class=\"ti ti-receipt-off\"></i> Belum ada riwayat pembayaran. Klik <b>Bayar Cicilan</b> untuk mulai catat.</div>';return;}"
-    +   "ps.sort(function(a,b){if(a.bulan!==b.bulan)return a.bulan<b.bulan?1:-1;return a.paidAt<b.paidAt?1:-1;});"
+    +   "ps.sort(function(a,b){if(a.bulan!==b.bulan)return a.bulan<b.bulan?-1:1;if(a.paidAt&&b.paidAt)return a.paidAt<b.paidAt?-1:1;return 0;});"
     +   "var html='';"
     +   "ps.forEach(function(p){"
-    +     "html+='<div class=\"plan-payment-item\">"
+    +     "var paid=p.paid!==false;"
+    +     "var idEsc=_planRpEsc(p.id);"
+    +     "html+='<div class=\"plan-payment-item'+(paid?'':' plan-payment-item-unpaid')+'\">"
+    +       "<label class=\"plan-pay-check\" title=\"'+(paid?'Sudah dibayar — klik utk batalkan':'Belum dibayar — klik utk tandai sudah bayar')+'\">"
+    +         "<input type=\"checkbox\" '+(paid?'checked':'')+' onchange=\"togglePayment(\\''+idEsc+'\\',this.checked)\">"
+    +         "<span class=\"plan-pay-check-mark\"></span>"
+    +       "</label>"
     +       "<div class=\"plan-payment-item-main\">"
-    +         "<div class=\"plan-payment-item-bulan\"><i class=\"ti ti-calendar-month\"></i> '+_planFmtBulanID(p.bulan)+'</div>"
+    +         "<div class=\"plan-payment-item-bulan\"><i class=\"ti ti-calendar-month\"></i> '+_planFmtBulanID(p.bulan)+(paid?'':' <span class=\"plan-pay-sch-tag\">Jadwal</span>')+'</div>"
     +         "<div class=\"plan-payment-item-amount\">'+_planRpStr(p.amount)+'</div>"
     +         "'+(p.catatan?'<div class=\"plan-payment-item-catatan\">'+_planRpEsc(p.catatan)+'</div>':'')+'"
     +       "</div>"
-    +       "<button type=\"button\" class=\"plan-payment-item-rm\" title=\"Hapus pembayaran\" onclick=\"deletePayment(\\''+_planRpEsc(p.id)+'\\')\"><i class=\"ti ti-trash\"></i></button>"
+    +       "<button type=\"button\" class=\"plan-payment-item-rm\" title=\"Hapus pembayaran\" onclick=\"deletePayment(\\''+idEsc+'\\')\"><i class=\"ti ti-trash\"></i></button>"
     +     "</div>';"
     +   "});"
     +   "list.innerHTML=html;"
@@ -1316,7 +1323,9 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(amt<=0){"
     +     "box.innerHTML=hdrHtml+"
     +       "'<div class=\"plan-proj-empty\">Isi <b>Jumlah</b> per bulan, atau klik preset di bawah untuk bagi otomatis.</div>'+presetsHtml;"
-    +     "box.style.display='';return;"
+    +     "box.style.display='';"
+    +     "var schBtn0=document.getElementById('paymentScheduleBtn');if(schBtn0)schBtn0.style.display='none';"
+    +     "return;"
     +   "}"
     +   "var bulanInpVal=document.getElementById('paymentFBulan').value;"
     +   "var startDate=bulanInpVal?new Date(parseInt(bulanInpVal.slice(0,4)),parseInt(bulanInpVal.slice(5,7))-1,1):new Date();"
@@ -1356,6 +1365,9 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "html+='</div>';"
     +   "if(mo>=60)html+='<div class=\"plan-proj-note plan-proj-warn\"><i class=\"ti ti-alert-triangle\"></i> List dipotong di 60 bulan. Cicilan terlalu kecil utk sisa segini — naikkan jumlah/bln.</div>';"
     +   "box.innerHTML=html;box.style.display='';"
+    // Update tombol Buat Rencana: visible kalau >1 bulan, label sesuai count
+    +   "var schBtn=document.getElementById('paymentScheduleBtn');"
+    +   "if(schBtn){if(schedule.length>1){schBtn.style.display='';schBtn.innerHTML='<i class=\"ti ti-calendar-plus\"></i> Buat Rencana '+schedule.length+' Bulan';}else{schBtn.style.display='none';}}"
     + "}"
     + "function _planSplitBy(n){"
     +   "var id=document.getElementById('paymentItemId').value;"
@@ -1370,6 +1382,25 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "document.getElementById('paymentFAmount').value='';"
     +   "_planUpdatePaymentProjection();"
     +   "document.getElementById('paymentFAmount').focus();"
+    + "}"
+    // Bulk-create N pembayaran scheduled (unpaid) dari rencana cicilan
+    + "function submitPaymentSchedule(){"
+    +   "var id=document.getElementById('paymentItemId').value;"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "var amt=parseInt((document.getElementById('paymentFAmount').value||'').replace(/\\./g,''))||0;"
+    +   "var bln=document.getElementById('paymentFBulan').value;"
+    +   "var rem=Math.max(0,(+it.estimasi||0)-(+it.savedAmount||0));"
+    +   "if(amt<=0||!bln||rem<=0){alert('Isi Jumlah & Bulan dulu.');return;}"
+    +   "var count=Math.ceil(rem/amt);"
+    +   "if(count>60){alert('Cicilan terlalu kecil — max 60 bulan/rencana.');return;}"
+    +   "if(!confirm('Buat rencana '+count+' bulan?\\n\\nSemua bulan akan masuk sebagai jadwal di Riwayat (belum dibayar). Centang checklist saat sudah bayar tiap bulan.'))return;"
+    +   "fetch('/operasional/planning/payment/schedule',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({item_id:id,amount:String(amt),start_bulan:bln,count:String(count),remaining:String(rem)})})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal buat rencana');});"
+    + "}"
+    // Toggle status paid/unpaid utk row pembayaran
+    + "function togglePayment(id,paid){"
+    +   "fetch('/operasional/planning/payment/toggle',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({id:id,paid:String(paid)})})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal update status');});"
     + "}"
     + "function submitPaymentForm(e){"
     +   "e.preventDefault();"

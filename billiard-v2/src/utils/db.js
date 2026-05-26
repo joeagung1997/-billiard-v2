@@ -653,14 +653,15 @@ const rowToPayment = (row) => ({
   amount:   parseInt(row.amount) || 0,
   bulan:    row.bulan ?? "",
   catatan:  row.catatan ?? "",
+  paid:     row.paid !== false,
   paidAt:   row.paid_at,
 });
 
 // Read all payments untuk satu item, atau semua kalau itemId null
 export const readPlanningPayments = async (itemId = null) => {
   const res = itemId
-    ? await query("SELECT * FROM planning_payments WHERE item_id = $1 ORDER BY bulan DESC, paid_at DESC", [itemId])
-    : await query("SELECT * FROM planning_payments ORDER BY bulan DESC, paid_at DESC");
+    ? await query("SELECT * FROM planning_payments WHERE item_id = $1 ORDER BY bulan ASC, paid_at ASC", [itemId])
+    : await query("SELECT * FROM planning_payments ORDER BY bulan ASC, paid_at ASC");
   return res.rows.map(rowToPayment);
 };
 
@@ -669,33 +670,62 @@ export const addPlanningPayment = async (p) => {
   const amt = Math.max(0, parseInt(p.amount) || 0);
   const itemId = (p.itemId || "").trim();
   if (!itemId || amt <= 0) throw new Error("itemId & amount > 0 wajib");
+  const isPaid = p.paid !== false; // default true utk backward compat
   await query(
-    `INSERT INTO planning_payments (id, item_id, amount, bulan, catatan)
-     VALUES ($1, $2, $3, $4, $5)`,
+    `INSERT INTO planning_payments (id, item_id, amount, bulan, catatan, paid)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       id, itemId, amt,
       (p.bulan || "").slice(0, 7),
       (p.catatan || "").trim().slice(0, 300),
+      isPaid,
     ]
   );
-  // Bump saved_amount di parent item — biar progress bar tetap akurat
-  await query(
-    `UPDATE planning_items SET saved_amount = saved_amount + $1, updated_at = NOW() WHERE id = $2`,
-    [amt, itemId]
-  );
+  // Bump saved_amount hanya kalau status paid=true
+  if (isPaid) {
+    await query(
+      `UPDATE planning_items SET saved_amount = saved_amount + $1, updated_at = NOW() WHERE id = $2`,
+      [amt, itemId]
+    );
+  }
   return id;
 };
 
-export const deletePlanningPayment = async (id) => {
-  const r = await query("SELECT item_id, amount FROM planning_payments WHERE id = $1", [id]);
+// Toggle status paid/unpaid sebuah pembayaran; sesuaikan saved_amount parent item
+export const togglePlanningPayment = async (id, newPaid) => {
+  const r = await query("SELECT item_id, amount, paid FROM planning_payments WHERE id = $1", [id]);
   if (!r.rows.length) return;
-  const { item_id, amount } = r.rows[0];
+  const { item_id, amount, paid } = r.rows[0];
+  const wasPaid = paid !== false;
+  const want = !!newPaid;
+  if (wasPaid === want) return; // no-op kalau status sama
+  await query("UPDATE planning_payments SET paid = $2, paid_at = CASE WHEN $2 THEN NOW() ELSE paid_at END WHERE id = $1", [id, want]);
+  const amt = parseInt(amount) || 0;
+  if (want && !wasPaid) {
+    await query(
+      `UPDATE planning_items SET saved_amount = saved_amount + $1, updated_at = NOW() WHERE id = $2`,
+      [amt, item_id]
+    );
+  } else if (!want && wasPaid) {
+    await query(
+      `UPDATE planning_items SET saved_amount = GREATEST(0, saved_amount - $1), updated_at = NOW() WHERE id = $2`,
+      [amt, item_id]
+    );
+  }
+};
+
+export const deletePlanningPayment = async (id) => {
+  const r = await query("SELECT item_id, amount, paid FROM planning_payments WHERE id = $1", [id]);
+  if (!r.rows.length) return;
+  const { item_id, amount, paid } = r.rows[0];
   await query("DELETE FROM planning_payments WHERE id = $1", [id]);
-  // Kurangi saved_amount tapi clamp ke 0
-  await query(
-    `UPDATE planning_items SET saved_amount = GREATEST(0, saved_amount - $1), updated_at = NOW() WHERE id = $2`,
-    [parseInt(amount) || 0, item_id]
-  );
+  // Kurangi saved_amount cuma kalau row yg dihapus statusnya paid
+  if (paid !== false) {
+    await query(
+      `UPDATE planning_items SET saved_amount = GREATEST(0, saved_amount - $1), updated_at = NOW() WHERE id = $2`,
+      [parseInt(amount) || 0, item_id]
+    );
+  }
 };
 
 // ── Planning Goals (Anggaran / Tabungan) ──────────────────────

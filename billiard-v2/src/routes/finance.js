@@ -21,7 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
-  readPlanningPayments, addPlanningPayment, deletePlanningPayment,
+  readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
@@ -686,6 +686,55 @@ router.post("/planning/payment/delete", requireOwner, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("[PLANNING] payment delete error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Toggle status paid/unpaid utk row pembayaran (checkbox di Riwayat)
+router.post("/planning/payment/toggle", requireOwner, async (req, res) => {
+  try {
+    const id = (req.body?.id || "").trim();
+    const raw = req.body?.paid;
+    const paid = (raw === true) || (raw === "true") || (raw === "1") || (raw === 1);
+    if (!id) return res.status(400).json({ ok: false, error: "ID payment wajib." });
+    await togglePlanningPayment(id, paid);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] payment toggle error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Bulk-create N entries scheduled (paid=false) berdasarkan rencana cicilan
+router.post("/planning/payment/schedule", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const itemId = (body.item_id || "").trim();
+    const amount = parseInt(body.amount) || 0;
+    const startBulan = (body.start_bulan || "").slice(0, 7);
+    const count = parseInt(body.count) || 0;
+    const remaining = parseInt(body.remaining) || 0;
+    if (!itemId || amount <= 0 || !startBulan || count <= 0) {
+      return res.status(400).json({ ok: false, error: "item_id, amount, start_bulan, count wajib." });
+    }
+    if (count > 60) {
+      return res.status(400).json({ ok: false, error: "Max 60 bulan per rencana." });
+    }
+    const [yy, mm] = startBulan.split("-").map((s) => parseInt(s));
+    if (!yy || !mm) return res.status(400).json({ ok: false, error: "Format bulan invalid." });
+    let rem = remaining > 0 ? remaining : amount * count;
+    let added = 0;
+    for (let i = 0; i < count && rem > 0; i++) {
+      const pay = Math.min(amount, rem);
+      const d = new Date(yy, mm - 1 + i, 1);
+      const bulan = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      await addPlanningPayment({ itemId, amount: pay, bulan, paid: false, catatan: "Rencana cicilan" });
+      rem -= pay;
+      added++;
+    }
+    res.json({ ok: true, added });
+  } catch (err) {
+    console.error("[PLANNING] payment schedule error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

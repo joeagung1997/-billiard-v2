@@ -2436,6 +2436,31 @@ td          { padding:10px 16px; vertical-align:middle; }
   font-size:13px; transition:all .15s; flex-shrink:0; }
 .plan-payment-item-rm:hover { border-color:#dc2626; color:#dc2626; background:#fef2f2; }
 
+/* Checkbox paid/unpaid + Jadwal tag */
+.plan-pay-check { position:relative; width:22px; height:22px; flex-shrink:0;
+  cursor:pointer; display:inline-block; }
+.plan-pay-check input { position:absolute; opacity:0; cursor:pointer;
+  width:0; height:0; }
+.plan-pay-check-mark { position:absolute; inset:0; border-radius:6px;
+  border:2px solid var(--border2); background:var(--surface);
+  transition:all .15s; display:flex; align-items:center; justify-content:center; }
+.plan-pay-check-mark::after { content:""; width:6px; height:11px;
+  border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg) translate(-1px,-1px);
+  opacity:0; transition:opacity .12s; }
+.plan-pay-check input:checked ~ .plan-pay-check-mark { background:#16a34a;
+  border-color:#16a34a; }
+.plan-pay-check input:checked ~ .plan-pay-check-mark::after { opacity:1; }
+.plan-pay-check:hover .plan-pay-check-mark { border-color:#16a34a; }
+.plan-payment-item-unpaid { opacity:.7; background:var(--surface2); }
+.plan-payment-item-unpaid .plan-payment-item-amount { color:var(--txt2); }
+.plan-pay-sch-tag { font-size:9.5px; padding:1px 6px; border-radius:99px;
+  background:rgba(245,158,11,.15); color:#b45309; font-weight:700;
+  text-transform:uppercase; letter-spacing:.04em; margin-left:4px; }
+
+/* Tombol Buat Rencana di footer modal */
+.plan-pay-sch-btn { border-color:rgba(45,102,36,.4); color:var(--accent); }
+.plan-pay-sch-btn:hover { border-color:var(--accent); background:rgba(45,102,36,.06); }
+
 /* Proyeksi cicilan real-time di sub-modal Bayar Cicilan */
 .plan-payment-projection { background:linear-gradient(135deg,rgba(45,102,36,.06),rgba(59,130,246,.05));
   border:1px solid rgba(45,102,36,.18); border-radius:9px;
