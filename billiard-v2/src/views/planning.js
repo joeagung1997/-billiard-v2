@@ -985,7 +985,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=67\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=68\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1303,11 +1303,13 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var activeN=null;"
     +   "if(amt>0){for(var pi=0;pi<presets.length;pi++){if(amt===Math.ceil(rem/presets[pi])){activeN=presets[pi];break;}}}"
     +   "var presetsHtml='<div class=\"plan-proj-presets-wrap\">"
-    +     "<span class=\"plan-proj-presets-lbl\">Bagi otomatis:</span>"
-    +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===3?' active':'')+'\" onclick=\"_planSplitBy(3)\">3 bln</button>"
-    +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===6?' active':'')+'\" onclick=\"_planSplitBy(6)\">6 bln</button>"
-    +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===12?' active':'')+'\" onclick=\"_planSplitBy(12)\">12 bln</button>"
-    +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===24?' active':'')+'\" onclick=\"_planSplitBy(24)\">24 bln</button>"
+    +     "<span class=\"plan-proj-presets-lbl\">Bagi otomatis</span>"
+    +     "<div class=\"plan-proj-presets-grid\">"
+    +       "<button type=\"button\" class=\"plan-proj-preset'+(activeN===3?' active':'')+'\" onclick=\"_planSplitBy(3)\">3 bln</button>"
+    +       "<button type=\"button\" class=\"plan-proj-preset'+(activeN===6?' active':'')+'\" onclick=\"_planSplitBy(6)\">6 bln</button>"
+    +       "<button type=\"button\" class=\"plan-proj-preset'+(activeN===12?' active':'')+'\" onclick=\"_planSplitBy(12)\">12 bln</button>"
+    +       "<button type=\"button\" class=\"plan-proj-preset'+(activeN===24?' active':'')+'\" onclick=\"_planSplitBy(24)\">24 bln</button>"
+    +     "</div>"
     +   "</div>';"
     +   "var resetBtn=amt>0?'<button type=\"button\" class=\"plan-proj-reset\" onclick=\"_planResetSplit()\" title=\"Kosongin jumlah\"><i class=\"ti ti-refresh\"></i> Reset</button>':'';"
     +   "var hdrHtml='<div class=\"plan-proj-hdr-row\"><div class=\"plan-proj-hdr\"><i class=\"ti ti-calculator\"></i> Rencana Cicilan</div>'+resetBtn+'</div>';"
