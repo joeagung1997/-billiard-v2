@@ -985,7 +985,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=66\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=67\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1308,11 +1308,12 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===6?' active':'')+'\" onclick=\"_planSplitBy(6)\">6 bln</button>"
     +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===12?' active':'')+'\" onclick=\"_planSplitBy(12)\">12 bln</button>"
     +     "<button type=\"button\" class=\"plan-proj-preset'+(activeN===24?' active':'')+'\" onclick=\"_planSplitBy(24)\">24 bln</button>"
-    +     "'+(amt>0?'<button type=\"button\" class=\"plan-proj-preset plan-proj-reset\" onclick=\"_planResetSplit()\" title=\"Reset jumlah\"><i class=\"ti ti-refresh\"></i> Reset</button>':'')+'"
     +   "</div>';"
+    +   "var resetBtn=amt>0?'<button type=\"button\" class=\"plan-proj-reset\" onclick=\"_planResetSplit()\" title=\"Kosongin jumlah\"><i class=\"ti ti-refresh\"></i> Reset</button>':'';"
+    +   "var hdrHtml='<div class=\"plan-proj-hdr-row\"><div class=\"plan-proj-hdr\"><i class=\"ti ti-calculator\"></i> Rencana Cicilan</div>'+resetBtn+'</div>';"
     +   "if(amt<=0){"
-    +     "box.innerHTML='<div class=\"plan-proj-hdr\"><i class=\"ti ti-calculator\"></i> Rencana Cicilan</div>"
-    +       "<div class=\"plan-proj-empty\">Isi <b>Jumlah</b> per bulan, atau klik preset di bawah untuk bagi otomatis.</div>'+presetsHtml;"
+    +     "box.innerHTML=hdrHtml+"
+    +       "'<div class=\"plan-proj-empty\">Isi <b>Jumlah</b> per bulan, atau klik preset di bawah untuk bagi otomatis.</div>'+presetsHtml;"
     +     "box.style.display='';return;"
     +   "}"
     +   "var bulanInpVal=document.getElementById('paymentFBulan').value;"
@@ -1325,7 +1326,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "remaining-=pay;mo++;"
     +   "}"
     +   "var endLbl=schedule.length>0?schedule[schedule.length-1].bulan:'-';"
-    +   "var html='<div class=\"plan-proj-hdr\"><i class=\"ti ti-calculator\"></i> Rencana Cicilan</div>';"
+    +   "var html=hdrHtml;"
     +   "html+=presetsHtml;"
     +   "html+='<div class=\"plan-proj-grid\">';"
     +   "html+='<div class=\"plan-proj-stat\"><span>Cicilan/bln</span><b>'+_planRpStr(amt)+'</b></div>';"
