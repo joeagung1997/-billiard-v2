@@ -851,7 +851,7 @@ function renderItemModal() {
               </select>
             </div>
             <div class="plan-form-row">
-              <label class="plan-form-lbl">Estimasi Biaya (Rp)</label>
+              <label class="plan-form-lbl"><span id="planFEstimasiLbl">Estimasi Biaya (Rp)</span></label>
               <input type="text" inputmode="numeric" id="planFEstimasi" name="estimasi" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
             </div>
           </div>
@@ -882,7 +882,7 @@ function renderItemModal() {
               <input type="date" id="planFDate" name="target_date" class="plan-form-inp">
             </div>
             <div class="plan-form-row plan-only-investasi">
-              <label class="plan-form-lbl">Estimasi ROI (Rp/bulan)</label>
+              <label class="plan-form-lbl"><span id="planFRoiLbl">Estimasi ROI (Rp/bulan)</span></label>
               <input type="text" inputmode="numeric" id="planFRoi" name="roi_estimate" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
             </div>
           </div>
@@ -891,7 +891,7 @@ function renderItemModal() {
           <details class="plan-details-extra">
             <summary><i class="ti ti-chevron-right"></i> Detail Lainnya <span class="plan-details-hint">(vendor, catatan, lampiran)</span></summary>
             <div class="plan-form-row plan-only-investasi">
-              <label class="plan-form-lbl">Vendor / Supplier <span class="opt">opsional</span></label>
+              <label class="plan-form-lbl"><span id="planFVendorLbl">Vendor / Supplier</span> <span class="opt">opsional</span></label>
               <input type="text" id="planFVendor" name="vendor" class="plan-form-inp" maxlength="150" placeholder="contoh: Pak Budi 081xxxxxxxxx">
             </div>
             <div class="plan-form-row">
@@ -994,7 +994,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=71\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=72\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1071,8 +1071,16 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var form=document.getElementById('planForm');if(!form)return;"
     +   "form.classList.remove('plan-tipe-investasi','plan-tipe-hutang','plan-tipe-tabungan');"
     +   "form.classList.add('plan-tipe-'+(t||'investasi'));"
-    +   "var lbl=document.getElementById('planFDateLbl');"
-    +   "if(lbl)lbl.textContent=(t==='hutang'?'Target Lunas':(t==='tabungan'?'Target Tercapai':'Target Tanggal Eksekusi'));"
+    +   "var labels={"
+    +     "investasi:{date:'Target Tanggal Eksekusi',estimasi:'Estimasi Biaya (Rp)',roi:'Estimasi ROI (Rp/bulan)',vendor:'Vendor / Supplier'},"
+    +     "hutang:   {date:'Target Lunas',           estimasi:'Total Tagihan (Rp)',  roi:'Cicilan Wajib (Rp/bulan)', vendor:'Pihak / Kreditur'},"
+    +     "tabungan: {date:'Target Tercapai',        estimasi:'Target Tabungan (Rp)',roi:'Setoran Rutin (Rp/bulan)', vendor:'Bank / Pihak'}"
+    +   "};"
+    +   "var L=labels[t]||labels.investasi;"
+    +   "var dl=document.getElementById('planFDateLbl');if(dl)dl.textContent=L.date;"
+    +   "var el=document.getElementById('planFEstimasiLbl');if(el)el.textContent=L.estimasi;"
+    +   "var rl=document.getElementById('planFRoiLbl');if(rl)rl.textContent=L.roi;"
+    +   "var vl=document.getElementById('planFVendorLbl');if(vl)vl.textContent=L.vendor;"
     + "}"
     + "function openPlanModal(id){"
     +   "var ov=document.getElementById('planModalOv');"

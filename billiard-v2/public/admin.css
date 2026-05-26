@@ -2594,9 +2594,8 @@ td          { padding:10px 16px; vertical-align:middle; }
   .plan-tipe-opt > span i { font-size:13px; }
 }
 
-/* Conditional fields by tipe — sembunyikan ROI/Vendor/Impact saat bukan investasi */
-.plan-tipe-hutang .plan-only-investasi,
-.plan-tipe-tabungan .plan-only-investasi { display:none !important; }
+/* Note: .plan-only-investasi class TIDAK auto-hide field utk tipe lain.
+   Semua field tetap visible regardless dari tipe. Label adapt via JS. */
 
 /* Detail Lainnya collapsible (vendor + catatan + lampiran) */
 .plan-details-extra { border:1px solid var(--border); border-radius:9px;
