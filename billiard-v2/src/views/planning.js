@@ -199,10 +199,7 @@ function renderWishlistTab(items) {
         <div class="plan-row-estimasi">${rp(it.estimasi)}</div>
         ${it.roiEstimate > 0 ? `<div class="plan-row-roi">+ROI ${rp(it.roiEstimate)}/bln</div>` : ''}
         <div class="plan-row-actions">
-          ${!isDone ? `<button type="button" class="plan-btn-icon plan-btn-done" title="Tandai Selesai" onclick="markPlanDone('${escHtml(it.id)}')"><i class="ti ti-check"></i></button>` : ''}
-          <button type="button" class="plan-btn-icon" title="Kirim ke Anggaran" onclick="sendToAnggaran('${escHtml(it.id)}')"><i class="ti ti-piggy-bank"></i></button>
-          <button type="button" class="plan-btn-icon" title="Duplikat" onclick="duplicatePlanItem('${escHtml(it.id)}')"><i class="ti ti-copy"></i></button>
-          <button type="button" class="plan-btn-icon" title="Edit" onclick="openPlanModal('${escHtml(it.id)}')"><i class="ti ti-edit"></i></button>
+          <button type="button" class="plan-btn-icon" title="Edit (aksi lain di dalam detail)" onclick="openPlanModal('${escHtml(it.id)}')"><i class="ti ti-edit"></i></button>
           <button type="button" class="plan-btn-icon danger" title="Hapus" onclick="deletePlanItem('${escHtml(it.id)}')"><i class="ti ti-trash"></i></button>
         </div>
       </div>
@@ -816,6 +813,17 @@ function renderItemModal() {
         </div>
         <form id="planForm" class="plan-modal-form" onsubmit="submitPlanForm(event)">
           <input type="hidden" id="planFId" name="id">
+
+          <!-- Aksi Cepat — visible saat editing item existing -->
+          <div id="planQuickActions" class="plan-quick-actions" style="display:none">
+            <div class="plan-quick-actions-lbl"><i class="ti ti-bolt"></i> Aksi Cepat</div>
+            <div class="plan-quick-actions-row">
+              <button type="button" class="plan-quick-btn plan-quick-done" id="planQaDone" onclick="markPlanDoneFromModal()"><i class="ti ti-check"></i> Tandai Selesai</button>
+              <button type="button" class="plan-quick-btn" onclick="sendToAnggaranFromModal()"><i class="ti ti-piggy-bank"></i> Kirim ke Anggaran</button>
+              <button type="button" class="plan-quick-btn" onclick="duplicatePlanItemFromModal()"><i class="ti ti-copy"></i> Duplikat</button>
+            </div>
+          </div>
+
           <div class="plan-form-row">
             <label class="plan-form-lbl">Nama Item <span class="req">*</span></label>
             <input type="text" id="planFNama" name="nama" class="plan-form-inp" required maxlength="200" placeholder="contoh: Tambah meja billiard ke-4">
@@ -917,7 +925,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=60\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=61\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -996,6 +1004,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "document.getElementById('planFId').value='';"
     +   "document.getElementById('planModalTitle').textContent='Tambah Item';"
     +   "_planKeptAtts=[];_planNewAtts=[];"
+    +   "var qa=document.getElementById('planQuickActions');if(qa)qa.style.display='none';"
     +   "if(id){"
     +     "var it=PLAN_ITEMS.find(function(x){return x.id===id;});"
     +     "if(it){"
@@ -1012,6 +1021,9 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +       "document.getElementById('planFVendor').value=it.vendor||'';"
     +       "document.getElementById('planFCatatan').value=it.catatan||'';"
     +       "_planKeptAtts=Array.isArray(it.attachments)?it.attachments.slice():[];"
+    +       "if(qa){qa.style.display='';"
+    +         "var dn=document.getElementById('planQaDone');"
+    +         "if(dn)dn.style.display=(it.status==='done')?'none':'';}"
     +     "}"
     +   "}"
     +   "_planRenderAttList();"
@@ -1020,6 +1032,11 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "setTimeout(function(){document.getElementById('planFNama').focus();},150);"
     + "}"
     + "function closePlanModal(){document.getElementById('planModalOv').classList.remove('open');_planKeptAtts=[];_planNewAtts=[];}"
+
+    // Wrapper supaya tombol di modal bisa pakai id dari planFId
+    + "function markPlanDoneFromModal(){var id=document.getElementById('planFId').value;if(id)markPlanDone(id);}"
+    + "function duplicatePlanItemFromModal(){var id=document.getElementById('planFId').value;if(id)duplicatePlanItem(id);}"
+    + "function sendToAnggaranFromModal(){var id=document.getElementById('planFId').value;if(!id)return;closePlanModal();setTimeout(function(){sendToAnggaran(id);},200);}"
 
     // ── Upload lampiran (dropzone + file picker + base64 preview) ──
     + "function planDzOver(e){e.preventDefault();e.currentTarget.classList.add('drag');}"
@@ -1232,10 +1249,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "h+='</div><div class=\"plan-row-side\"><div class=\"plan-row-estimasi\">'+_planRpStr(it.estimasi)+'</div>';"
     +   "if(it.roiEstimate>0)h+='<div class=\"plan-row-roi\">+ROI '+_planRpStr(it.roiEstimate)+'/bln</div>';"
     +   "h+='<div class=\"plan-row-actions\">';"
-    +   "if(!done)h+='<button type=\"button\" class=\"plan-btn-icon plan-btn-done\" title=\"Tandai Selesai\" onclick=\"markPlanDone(\\''+idEsc+'\\')\"><i class=\"ti ti-check\"></i></button>';"
-    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Kirim ke Anggaran\" onclick=\"sendToAnggaran(\\''+idEsc+'\\')\"><i class=\"ti ti-piggy-bank\"></i></button>';"
-    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Duplikat\" onclick=\"duplicatePlanItem(\\''+idEsc+'\\')\"><i class=\"ti ti-copy\"></i></button>';"
-    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Edit\" onclick=\"openPlanModal(\\''+idEsc+'\\')\"><i class=\"ti ti-edit\"></i></button>';"
+    +   "h+='<button type=\"button\" class=\"plan-btn-icon\" title=\"Edit (aksi lain di dalam detail)\" onclick=\"openPlanModal(\\''+idEsc+'\\')\"><i class=\"ti ti-edit\"></i></button>';"
     +   "h+='<button type=\"button\" class=\"plan-btn-icon danger\" title=\"Hapus\" onclick=\"deletePlanItem(\\''+idEsc+'\\')\"><i class=\"ti ti-trash\"></i></button>';"
     +   "h+='</div></div></div>';"
     +   "return h;"
