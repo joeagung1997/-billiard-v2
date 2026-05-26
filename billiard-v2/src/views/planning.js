@@ -881,9 +881,10 @@ function renderItemModal() {
               <label class="plan-form-lbl"><span id="planFDateLbl">Target Tanggal Eksekusi</span></label>
               <input type="date" id="planFDate" name="target_date" class="plan-form-inp">
             </div>
-            <div class="plan-form-row plan-only-investasi">
+            <div class="plan-form-row plan-only-investasi plan-hide-roi">
               <label class="plan-form-lbl"><span id="planFRoiLbl">Estimasi ROI (Rp/bulan)</span></label>
               <input type="text" inputmode="numeric" id="planFRoi" name="roi_estimate" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
+              <small class="plan-form-hint" id="planFRoiHint">Income proyeksi pasca eksekusi (utk hitung balik modal &amp; skor prioritas)</small>
             </div>
           </div>
 
@@ -994,7 +995,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=72\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=73\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)

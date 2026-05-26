@@ -2597,6 +2597,16 @@ td          { padding:10px 16px; vertical-align:middle; }
 /* Note: .plan-only-investasi class TIDAK auto-hide field utk tipe lain.
    Semua field tetap visible regardless dari tipe. Label adapt via JS. */
 
+/* Khusus ROI field — hide utk Hutang/Tabungan krn redundant dgn Riwayat
+   Pembayaran (cicilan/setoran derived dari payment plan). Investasi tetap
+   pakai ROI sbg projeksi income pasca eksekusi (beda concept). */
+.plan-tipe-hutang .plan-hide-roi,
+.plan-tipe-tabungan .plan-hide-roi { display:none !important; }
+
+/* Helper hint kecil di bawah label */
+.plan-form-hint { font-size:11px; color:var(--txt3); margin-top:3px;
+  display:block; line-height:1.4; }
+
 /* Detail Lainnya collapsible (vendor + catatan + lampiran) */
 .plan-details-extra { border:1px solid var(--border); border-radius:9px;
   background:var(--surface); margin-bottom:14px; overflow:hidden; }
