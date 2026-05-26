@@ -738,6 +738,14 @@ export const deletePlanningPayment = async (id) => {
   }
 };
 
+// Hapus semua entries unpaid (scheduled) utk satu item — dipakai saat
+// regenerate rencana cicilan supaya gak duplicate. Entries paid tetap aman.
+// Gak perlu adjust saved_amount karena rows unpaid memang gak nyumbang.
+export const deleteUnpaidPlanningPayments = async (itemId) => {
+  if (!itemId) return;
+  await query("DELETE FROM planning_payments WHERE item_id = $1 AND paid = FALSE", [itemId]);
+};
+
 // ── Planning Goals (Anggaran / Tabungan) ──────────────────────
 
 const rowToGoal = (row) => ({

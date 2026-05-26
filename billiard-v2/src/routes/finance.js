@@ -22,6 +22,7 @@ import {
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
   readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
+  deleteUnpaidPlanningPayments,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
@@ -706,7 +707,10 @@ router.post("/planning/payment/toggle", requireOwner, async (req, res) => {
   }
 });
 
-// Bulk-create N entries scheduled (paid=false) berdasarkan rencana cicilan
+// Bulk-create N entries scheduled (paid=false) berdasarkan rencana cicilan.
+// Sebelum create, hapus existing unpaid entries utk item ini supaya gak dupe
+// kalau user re-generate plan (mis. dari 3 bulan → 6 bulan).
+// Entries yg sudah paid TIDAK diganggu — itu real payment history.
 router.post("/planning/payment/schedule", requireOwner, async (req, res) => {
   try {
     const body = req.body ?? {};
@@ -723,6 +727,8 @@ router.post("/planning/payment/schedule", requireOwner, async (req, res) => {
     }
     const [yy, mm] = startBulan.split("-").map((s) => parseInt(s));
     if (!yy || !mm) return res.status(400).json({ ok: false, error: "Format bulan invalid." });
+    // Cleanup: hapus existing unpaid scheduled entries dulu utk hindari dupe
+    await deleteUnpaidPlanningPayments(itemId);
     let rem = remaining > 0 ? remaining : amount * count;
     let added = 0;
     for (let i = 0; i < count && rem > 0; i++) {
