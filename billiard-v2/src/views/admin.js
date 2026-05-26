@@ -1468,9 +1468,10 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
 
     + '<div class="main-wrap">'
 
-    // Owner Header (desktop only) — breadcrumb + search + bell
+    // Owner Header (desktop only) — breadcrumb + search + bell + actions
     + (user.role === 'owner' ? buildOwnerHeader({
         breadcrumb: [{ label: 'Member', href: '/admin/members?tk=' + token }, { label: 'Kelola Member' }],
+        actionsHtml: '<a href="/admin/tambah?tk=' + token + '" class="own-header-btn own-header-btn-primary"><i class="ti ti-user-plus"></i> Tambah Member</a>',
       }) : '')
 
     + '<header class="topbar">'
@@ -1496,8 +1497,9 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '</div>'
     + '<div class="topbar-actions">'
     + '<span id="member-badge" class="filter-badge" style="display:none"></span>'
-    + '<a href="/admin/tambah?tk=' + token + '" class="btn-primary">'
-    + '<i class="ti ti-plus" style="font-size:14px"></i> Tambah Member</a>'
+    + (user.role === 'owner' ? '' :
+        '<a href="/admin/tambah?tk=' + token + '" class="btn-primary">'
+        + '<i class="ti ti-plus" style="font-size:14px"></i> Tambah Member</a>')
     + '</div>'
     + '</div>'
 
