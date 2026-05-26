@@ -101,14 +101,22 @@ router.post("/login", async (req, res) => {
 
   // Auto-set cookie _frt utk semua role (owner & karyawan) — supaya akses
   // /operasional/* tdk perlu input PIN lagi setelah login di /admin.
+  // Path=/ (bukan /operasional) supaya cookie juga dikirim ke /admin/*; tanpa
+  // ini owner yg pindah dari /operasional balik ke /admin akan dimintai PIN
+  // ulang karena fallback _frt di middleware/auth.js gak bisa baca cookie.
   const frt = jwt.sign(
     { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );
-  res.setHeader("Set-Cookie",
-    `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/operasional; Max-Age=${24 * 3600}; SameSite=Lax`
-  );
+  // Clear cookie lama Path=/operasional (legacy dari deploy sebelumnya) +
+  // set cookie baru Path=/. Tanpa clear, browser bs simpan 2 cookie _frt
+  // dgn path berbeda, dan parser kita ambil yg pertama match → bisa ambil
+  // cookie expired.
+  res.setHeader("Set-Cookie", [
+    `_frt=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`,
+    `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/; Max-Age=${24 * 3600}; SameSite=Lax`,
+  ]);
 
   res.redirect(`/admin?tk=${token}`);
 });

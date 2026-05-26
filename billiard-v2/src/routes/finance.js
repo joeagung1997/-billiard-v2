@@ -47,15 +47,20 @@ function getCookie(req, name) {
 function setRoleCookie(res, role, username = "", displayName = "", shift = "siang") {
   const token = jwt.sign({ role, username, displayName, shift }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
+  // Path=/ supaya cookie juga dikirim ke /admin/* — fallback _frt di
+  // middleware/auth.js bisa baca cookie ini saat owner pindah menu.
   res.setHeader("Set-Cookie",
-    `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/operasional; Max-Age=${maxAge}; SameSite=Lax`
+    `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax`
   );
 }
 
 function clearRoleCookie(res) {
-  res.setHeader("Set-Cookie",
-    `${COOKIE_NAME}=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`
-  );
+  // Clear 2 cookie sekaligus: Path=/ (baru) DAN Path=/operasional (legacy,
+  // utk user yg msh punya cookie lama dari deploy sebelumnya).
+  res.setHeader("Set-Cookie", [
+    `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`,
+    `${COOKIE_NAME}=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`,
+  ]);
 }
 
 // ── Auth helpers ──────────────────────────────────────────────────
