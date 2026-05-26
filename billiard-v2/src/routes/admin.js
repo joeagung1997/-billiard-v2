@@ -34,6 +34,18 @@ router.get("/segera-hadir", (req, res) => {
   res.send(segeraHadirPage({ title, token: tk, user }));
 });
 
+// ── GET /admin/logout — clear cookie _frt + redirect ke login ────
+// Tanpa endpoint ini, klik "Keluar" hanya menghapus localStorage tapi cookie
+// _frt masih valid → fallback di middleware/auth.js & GET /admin auto-login
+// balik → owner gak bisa logout.
+router.get("/logout", (_req, res) => {
+  res.setHeader("Set-Cookie", [
+    `_frt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`,
+    `_frt=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`,
+  ]);
+  res.redirect("/admin");
+});
+
 // ── GET /admin — login atau dashboard ────────────────────────
 router.get("/", async (req, res) => {
   const tk   = req.query.tk ?? "";

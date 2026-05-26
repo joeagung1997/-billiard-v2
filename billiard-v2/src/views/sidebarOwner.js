@@ -212,7 +212,9 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     function ownerLogout() {
       if (!confirm("Keluar dari sesi owner?")) return;
       try { localStorage.removeItem("warpat_atk"); } catch (_) {}
-      window.location.href = "/admin";
+      // Pakai /admin/logout supaya cookie _frt juga ke-clear di server.
+      // Tanpa ini, fallback _frt di middleware auto-login balik.
+      window.location.href = "/admin/logout";
     }
     function openNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.add("open");}
     function closeNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.remove("open");}
