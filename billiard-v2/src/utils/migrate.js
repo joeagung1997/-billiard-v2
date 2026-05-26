@@ -394,6 +394,8 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS saved_amount BIGINT DEFAULT 0`);
   // Lampiran foto/file — JSON array of URLs relatif ke public/
   await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS attachments TEXT DEFAULT '[]'`);
+  // Tipe item: investasi (default) / hutang / tabungan — gating conditional fields di UI
+  await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS tipe TEXT DEFAULT 'investasi'`);
 
   // Riwayat pembayaran bulanan per item — utk track cicilan/tanggungan
   await query(`

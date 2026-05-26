@@ -2574,6 +2574,49 @@ td          { padding:10px 16px; vertical-align:middle; }
   .plan-proj-row-lunas { grid-column:1 / -1; justify-self:end; }
 }
 
+/* TIPE selector (segmented) — Investasi / Hutang / Tabungan */
+.plan-tipe-seg { display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+  padding:4px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:9px; }
+.plan-tipe-opt { position:relative; cursor:pointer; }
+.plan-tipe-opt input { position:absolute; opacity:0; pointer-events:none; }
+.plan-tipe-opt > span { display:flex; align-items:center; justify-content:center;
+  gap:6px; padding:8px 6px; border-radius:6px;
+  font-size:12.5px; font-weight:600; color:var(--txt2);
+  transition:all .15s; white-space:nowrap; }
+.plan-tipe-opt > span i { font-size:14px; }
+.plan-tipe-opt:hover > span { color:var(--accent); background:rgba(45,102,36,.05); }
+.plan-tipe-opt input:checked ~ span { background:var(--accent); color:#fff;
+  box-shadow:0 1px 3px rgba(45,102,36,.2); font-weight:700; }
+.plan-tipe-opt input:checked ~ span i { color:#fff; }
+@media (max-width:480px) {
+  .plan-tipe-opt > span { font-size:11px; padding:7px 4px; gap:3px; }
+  .plan-tipe-opt > span i { font-size:13px; }
+}
+
+/* Conditional fields by tipe — sembunyikan ROI/Vendor/Impact saat bukan investasi */
+.plan-tipe-hutang .plan-only-investasi,
+.plan-tipe-tabungan .plan-only-investasi { display:none !important; }
+
+/* Detail Lainnya collapsible (vendor + catatan + lampiran) */
+.plan-details-extra { border:1px solid var(--border); border-radius:9px;
+  background:var(--surface); margin-bottom:14px; overflow:hidden; }
+.plan-details-extra > summary { padding:11px 14px; cursor:pointer; font-size:12.5px;
+  font-weight:700; color:var(--txt2); list-style:none;
+  display:flex; align-items:center; gap:6px;
+  transition:background .15s; user-select:none; }
+.plan-details-extra > summary::-webkit-details-marker { display:none; }
+.plan-details-extra > summary:hover { background:var(--surface2); color:var(--accent); }
+.plan-details-extra > summary > i { transition:transform .2s; font-size:14px; }
+.plan-details-extra[open] > summary > i { transform:rotate(90deg); color:var(--accent); }
+.plan-details-extra[open] > summary { border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(45,102,36,.03),transparent); }
+.plan-details-hint { font-size:11px; color:var(--txt3); font-weight:500;
+  margin-left:4px; }
+.plan-details-extra > .plan-form-row { padding:0 14px; margin-top:14px; }
+.plan-details-extra > .plan-form-row:last-child { padding-bottom:14px; }
+.plan-details-extra > .plan-form-row:first-of-type { margin-top:14px; }
+
 /* Aksi cepat panel di modal — gantikan tombol2 di kartu */
 .plan-quick-actions { background:linear-gradient(135deg,rgba(45,102,36,.04),rgba(59,130,246,.03));
   border:1px solid var(--border); border-radius:10px; padding:12px 14px;

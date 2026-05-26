@@ -612,6 +612,7 @@ router.post("/planning/add", requireOwner, async (req, res) => {
       roiEstimate:  body.roi_estimate,
       savedAmount:  body.saved_amount,
       attachments,
+      tipe:         body.tipe,
     });
     res.json({ ok: true });
   } catch (err) {
@@ -638,8 +639,8 @@ router.post("/planning/edit", requireOwner, async (req, res) => {
       vendor:       body.vendor,
       catatan:      body.catatan,
       roiEstimate:  body.roi_estimate,
-      savedAmount:  body.saved_amount,
       attachments,
+      tipe:         body.tipe,
     });
     res.json({ ok: true });
   } catch (err) {

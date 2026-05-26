@@ -818,9 +818,18 @@ function renderItemModal() {
           <div id="planQuickActions" class="plan-quick-actions" style="display:none">
             <div class="plan-quick-actions-lbl"><i class="ti ti-bolt"></i> Aksi Cepat</div>
             <div class="plan-quick-actions-row">
-              <button type="button" class="plan-quick-btn plan-quick-done" id="planQaDone" onclick="markPlanDoneFromModal()"><i class="ti ti-check"></i> Tandai Selesai</button>
               <button type="button" class="plan-quick-btn" onclick="sendToAnggaranFromModal()"><i class="ti ti-piggy-bank"></i> Kirim ke Anggaran</button>
               <button type="button" class="plan-quick-btn" onclick="duplicatePlanItemFromModal()"><i class="ti ti-copy"></i> Duplikat</button>
+            </div>
+          </div>
+
+          <!-- TIPE selector — gating conditional fields (ROI, Vendor, dll) -->
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Tipe Item</label>
+            <div class="plan-tipe-seg" role="radiogroup">
+              <label class="plan-tipe-opt"><input type="radio" name="tipe" value="investasi" checked><span><i class="ti ti-trending-up"></i> Investasi</span></label>
+              <label class="plan-tipe-opt"><input type="radio" name="tipe" value="hutang"><span><i class="ti ti-credit-card"></i> Hutang / Tagihan</span></label>
+              <label class="plan-tipe-opt"><input type="radio" name="tipe" value="tabungan"><span><i class="ti ti-building-bank"></i> Tabungan</span></label>
             </div>
           </div>
 
@@ -869,41 +878,40 @@ function renderItemModal() {
           </div>
           <div class="plan-form-grid">
             <div class="plan-form-row">
-              <label class="plan-form-lbl">Target Tanggal Eksekusi</label>
+              <label class="plan-form-lbl"><span id="planFDateLbl">Target Tanggal Eksekusi</span></label>
               <input type="date" id="planFDate" name="target_date" class="plan-form-inp">
             </div>
-            <div class="plan-form-row">
+            <div class="plan-form-row plan-only-investasi">
               <label class="plan-form-lbl">Estimasi ROI (Rp/bulan)</label>
               <input type="text" inputmode="numeric" id="planFRoi" name="roi_estimate" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
             </div>
           </div>
-          <div class="plan-form-row">
-            <label class="plan-form-lbl">Sudah Terkumpul (Rp) <span class="opt">tabungan saat ini</span></label>
-            <input type="text" inputmode="numeric" id="planFSaved" name="saved_amount" class="plan-form-inp" placeholder="0" oninput="planFmtNum(this)">
-          </div>
-          <div class="plan-form-row">
-            <label class="plan-form-lbl">Vendor / Supplier <span class="opt">opsional</span></label>
-            <input type="text" id="planFVendor" name="vendor" class="plan-form-inp" maxlength="150" placeholder="contoh: Pak Budi 081xxxxxxxxx">
-          </div>
-          <div class="plan-form-row">
-            <label class="plan-form-lbl">Catatan / Link Referensi <span class="opt">opsional</span></label>
-            <textarea id="planFCatatan" name="catatan" class="plan-form-inp" rows="3" maxlength="500" placeholder="Link Tokopedia, spec produk, dll..."></textarea>
-          </div>
 
-          <!-- Upload lampiran: foto produk / brosur PDF supplier -->
-          <div class="plan-form-row">
-            <label class="plan-form-lbl">Lampiran <span class="opt">foto produk, brosur PDF (max 5MB/file, total 10 file)</span></label>
-            <div id="planDropzone" class="plan-dropzone" onclick="document.getElementById('planFileInp').click()" ondragover="planDzOver(event)" ondragleave="planDzLeave(event)" ondrop="planDzDrop(event)">
-              <i class="ti ti-cloud-upload"></i>
-              <div class="plan-dz-lbl">Klik atau drag file foto / PDF ke sini</div>
-              <div class="plan-dz-sub">JPG, PNG, WEBP, PDF — max 5MB per file</div>
+          <!-- Detail tambahan — collapse by default supaya modal gak panjang -->
+          <details class="plan-details-extra">
+            <summary><i class="ti ti-chevron-right"></i> Detail Lainnya <span class="plan-details-hint">(vendor, catatan, lampiran)</span></summary>
+            <div class="plan-form-row plan-only-investasi">
+              <label class="plan-form-lbl">Vendor / Supplier <span class="opt">opsional</span></label>
+              <input type="text" id="planFVendor" name="vendor" class="plan-form-inp" maxlength="150" placeholder="contoh: Pak Budi 081xxxxxxxxx">
             </div>
-            <input type="file" id="planFileInp" accept="image/jpeg,image/png,image/webp,application/pdf" multiple style="display:none" onchange="planDzPickFiles(event)">
-            <div id="planAttList" class="plan-att-list"></div>
-          </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Catatan / Link Referensi <span class="opt">opsional</span></label>
+              <textarea id="planFCatatan" name="catatan" class="plan-form-inp" rows="3" maxlength="500" placeholder="Link Tokopedia, spec produk, dll..."></textarea>
+            </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Lampiran <span class="opt">foto, brosur PDF (max 5MB/file, total 10 file)</span></label>
+              <div id="planDropzone" class="plan-dropzone" onclick="document.getElementById('planFileInp').click()" ondragover="planDzOver(event)" ondragleave="planDzLeave(event)" ondrop="planDzDrop(event)">
+                <i class="ti ti-cloud-upload"></i>
+                <div class="plan-dz-lbl">Klik atau drag file foto / PDF ke sini</div>
+                <div class="plan-dz-sub">JPG, PNG, WEBP, PDF — max 5MB per file</div>
+              </div>
+              <input type="file" id="planFileInp" accept="image/jpeg,image/png,image/webp,application/pdf" multiple style="display:none" onchange="planDzPickFiles(event)">
+              <div id="planAttList" class="plan-att-list"></div>
+            </div>
+          </details>
 
-          <!-- Dampak cashflow preview -->
-          <div class="plan-form-row" id="planImpactRow" style="display:none">
+          <!-- Dampak cashflow preview — cuma utk investasi -->
+          <div class="plan-form-row plan-only-investasi" id="planImpactRow" style="display:none">
             <label class="plan-form-lbl">Dampak Cashflow</label>
             <div id="planImpactBox" class="plan-impact-box"></div>
           </div>
@@ -986,7 +994,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=70\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=71\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1059,6 +1067,13 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     + "}"
     + "var _planKeptAtts=[];" // existing URLs to preserve
     + "var _planNewAtts=[];"  // new files {name,type,data(base64)}
+    + "function _planApplyTipe(t){"
+    +   "var form=document.getElementById('planForm');if(!form)return;"
+    +   "form.classList.remove('plan-tipe-investasi','plan-tipe-hutang','plan-tipe-tabungan');"
+    +   "form.classList.add('plan-tipe-'+(t||'investasi'));"
+    +   "var lbl=document.getElementById('planFDateLbl');"
+    +   "if(lbl)lbl.textContent=(t==='hutang'?'Target Lunas':(t==='tabungan'?'Target Tercapai':'Target Tanggal Eksekusi'));"
+    + "}"
     + "function openPlanModal(id){"
     +   "var ov=document.getElementById('planModalOv');"
     +   "document.getElementById('planForm').reset();"
@@ -1066,6 +1081,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "document.getElementById('planModalTitle').textContent='Tambah Item';"
     +   "_planKeptAtts=[];_planNewAtts=[];"
     +   "var qa=document.getElementById('planQuickActions');if(qa)qa.style.display='none';"
+    +   "var tipeDefault='investasi';"
     +   "if(id){"
     +     "var it=PLAN_ITEMS.find(function(x){return x.id===id;});"
     +     "if(it){"
@@ -1078,18 +1094,20 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +       "document.getElementById('planFStatus').value=it.status||'idea';"
     +       "document.getElementById('planFDate').value=it.targetDate||'';"
     +       "document.getElementById('planFRoi').value=it.roiEstimate?_planRpFmt(it.roiEstimate):'';"
-    +       "document.getElementById('planFSaved').value=it.savedAmount?_planRpFmt(it.savedAmount):'';"
     +       "document.getElementById('planFVendor').value=it.vendor||'';"
     +       "document.getElementById('planFCatatan').value=it.catatan||'';"
     +       "_planKeptAtts=Array.isArray(it.attachments)?it.attachments.slice():[];"
-    +       "if(qa){qa.style.display='';"
-    +         "var dn=document.getElementById('planQaDone');"
-    +         "if(dn)dn.style.display=(it.status==='done')?'none':'';}"
+    +       "tipeDefault=it.tipe||'investasi';"
+    +       "if(qa)qa.style.display='';"
     +       "_planRenderPayments(it);"
     +     "}"
     +   "}else{"
     +     "var sec=document.getElementById('planPaymentSection');if(sec)sec.style.display='none';"
     +   "}"
+    // Set radio tipe + apply class ke form
+    +   "var rTipe=document.querySelector('input[name=tipe][value=\"'+tipeDefault+'\"]');"
+    +   "if(rTipe)rTipe.checked=true;"
+    +   "_planApplyTipe(tipeDefault);"
     +   "_planRenderAttList();"
     +   "_planUpdateImpact();"
     +   "ov.classList.add('open');"
@@ -1165,6 +1183,11 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "el.addEventListener('input',_planUpdateImpact);el.addEventListener('change',_planUpdateImpact);"
     +     "el._planImpactWired=true;"
     +   "});"
+    +   "document.querySelectorAll('input[name=tipe]').forEach(function(r){"
+    +     "if(r._planTipeWired)return;"
+    +     "r.addEventListener('change',function(){_planApplyTipe(r.value);_planUpdateImpact();});"
+    +     "r._planTipeWired=true;"
+    +   "});"
     + "}"
     + "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_planWireImpact);}else{_planWireImpact();}"
 
@@ -1201,7 +1224,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "prioritas:fd.get('prioritas'),status:fd.get('status'),"
     +     "target_date:fd.get('target_date'),"
     +     "roi_estimate:(fd.get('roi_estimate')||'').replace(/\\./g,''),"
-    +     "saved_amount:(fd.get('saved_amount')||'').replace(/\\./g,''),"
+    +     "tipe:fd.get('tipe')||'investasi',"
     +     "vendor:fd.get('vendor'),catatan:fd.get('catatan'),"
     +     "attachments_kept:JSON.stringify(_planKeptAtts),"
     +     "attachments_new:JSON.stringify(_planNewAtts)};"
@@ -1244,7 +1267,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var sumHtml='<div class=\"plan-payment-stat\"><span>Sudah dibayar</span><b class=\"plan-cf-in\">'+_planRpStr(saved)+(est>0?' <small>/ '+_planRpStr(est)+'</small>':'')+'</b></div>';"
     +   "sumHtml+='<div class=\"plan-payment-stat\"><span>Sisa</span><b class=\"plan-cf-out\">'+_planRpStr(lr.remaining)+'</b></div>';"
     +   "if(lr.lunas){sumHtml+='<div class=\"plan-payment-stat plan-pay-lunas\"><span>Status</span><b>🎉 Lunas!</b></div>';}"
-    +   "else if(lr.monthsLeft!=null){sumHtml+='<div class=\"plan-payment-stat\"><span>Rata-rata/bulan</span><b>'+_planRpStr(lr.avgPerMonth)+'<small> (dari '+lr.sourceMonths+' bln)</small></b></div>';"
+    +   "else if(lr.monthsLeft!=null){sumHtml+='<div class=\"plan-payment-stat\"><span>Rata-rata/bulan</span><b>'+_planRpStr(lr.avgPerMonth)+'<small> avg '+lr.sourceMonths+' bln terakhir</small></b></div>';"
     +     "sumHtml+='<div class=\"plan-payment-stat plan-pay-est\"><span>Estimasi lunas</span><b>'+lr.monthsLeft+' bulan lagi<small> (~'+lr.projectedDate+')</small></b></div>';}"
     +   "else{sumHtml+='<div class=\"plan-payment-stat\"><span>Estimasi lunas</span><b><small>Tambah pembayaran utk hitung</small></b></div>';}"
     +   "sum.innerHTML=sumHtml;"
