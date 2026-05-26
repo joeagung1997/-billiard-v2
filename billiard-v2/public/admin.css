@@ -2419,6 +2419,9 @@ td          { padding:10px 16px; vertical-align:middle; }
   border:1px dashed var(--border2); line-height:1.5; }
 .plan-payment-empty i { font-size:22px; color:var(--txt3); display:block; margin-bottom:6px; }
 .plan-payment-empty b { color:var(--accent); font-weight:700; }
+.plan-pay-seed-btn { display:inline-flex; align-items:center; gap:6px;
+  margin-top:8px; padding:7px 14px; font-size:12px; font-weight:600; }
+.plan-pay-seed-btn i { font-size:14px; }
 .plan-payment-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
   background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 .plan-payment-item:hover { border-color:var(--border2); }

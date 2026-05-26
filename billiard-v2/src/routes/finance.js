@@ -707,6 +707,48 @@ router.post("/planning/payment/toggle", requireOwner, async (req, res) => {
   }
 });
 
+// Seed entry dari saved_amount lama (legacy data) — bikin 1 payment "Saldo Awal"
+// dgn paid=true, total = saved_amount sekarang. Reset saved_amount dulu spy gak
+// double (addPlanningPayment akan bump balik). Hanya jalan kalau item belum
+// punya payment entries sama sekali.
+router.post("/planning/payment/seed-saldo-awal", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const itemId = (body.item_id || "").trim();
+    const bulan = (body.bulan || "").slice(0, 7);
+    if (!itemId || !bulan) {
+      return res.status(400).json({ ok: false, error: "item_id & bulan wajib." });
+    }
+    // Cek payments existing
+    const existing = await readPlanningPayments(itemId);
+    if (existing.length > 0) {
+      return res.status(400).json({ ok: false, error: "Item sudah punya riwayat pembayaran." });
+    }
+    // Ambil saved_amount sekarang sbg jumlah seed
+    const items = await readPlanningItems();
+    const it = items.find((x) => x.id === itemId);
+    if (!it) return res.status(404).json({ ok: false, error: "Item tidak ditemukan." });
+    const seedAmount = parseInt(it.savedAmount) || 0;
+    if (seedAmount <= 0) {
+      return res.status(400).json({ ok: false, error: "Saldo awal 0, tidak ada yg di-seed." });
+    }
+    // Reset saved_amount dulu (biar addPlanningPayment bump balik ke nilai yg sama)
+    await wipeAllPlanningPayments(itemId);
+    // Lalu add 1 entry paid=true sbg saldo awal
+    await addPlanningPayment({
+      itemId,
+      amount: seedAmount,
+      bulan,
+      paid: true,
+      catatan: "Saldo awal (data sebelum tracking per-bulan diaktifkan)",
+    });
+    res.json({ ok: true, amount: seedAmount });
+  } catch (err) {
+    console.error("[PLANNING] seed saldo awal error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Bulk-create N entries scheduled (paid=false) berdasarkan rencana cicilan.
 // Sebelum create, hapus existing unpaid entries utk item ini supaya gak dupe
 // kalau user re-generate plan (mis. dari 3 bulan → 6 bulan).

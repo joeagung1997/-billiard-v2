@@ -1054,7 +1054,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=78\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=79\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1338,7 +1338,13 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +     "sumHtml+='<div class=\"plan-payment-stat plan-pay-est\"><span>Estimasi lunas</span><b>'+lr.monthsLeft+' bulan lagi<small> (~'+lr.projectedDate+')</small></b></div>';}"
     +   "else{sumHtml+='<div class=\"plan-payment-stat\"><span>Estimasi lunas</span><b><small>Tambah pembayaran utk hitung</small></b></div>';}"
     +   "sum.innerHTML=sumHtml;"
-    +   "if(ps.length===0){list.innerHTML='<div class=\"plan-payment-empty\"><i class=\"ti ti-receipt-off\"></i> Belum ada riwayat pembayaran. Klik <b>Bayar Cicilan</b> untuk mulai catat.</div>';return;}"
+    +   "if(ps.length===0){"
+    +     "if(saved>0){"
+    +       "list.innerHTML='<div class=\"plan-payment-empty\"><i class=\"ti ti-database-import\"></i><div style=\"margin:6px 0\">Item ini punya <b>saldo awal '+_planRpStr(saved)+'</b> (data lama, sebelum tracking per-bulan aktif).</div><button type=\"button\" class=\"btn-primary plan-pay-seed-btn\" onclick=\"seedSaldoAwal()\"><i class=\"ti ti-plus\"></i> Generate Entry Saldo Awal</button><div style=\"margin-top:8px;font-size:11px\">Atau klik <b>Bayar Cicilan</b> untuk reset & mulai catat per bulan.</div></div>';"
+    +     "}else{"
+    +       "list.innerHTML='<div class=\"plan-payment-empty\"><i class=\"ti ti-receipt-off\"></i> Belum ada riwayat pembayaran. Klik <b>Bayar Cicilan</b> untuk mulai catat.</div>';"
+    +     "}return;"
+    +   "}"
     +   "ps.sort(function(a,b){if(a.bulan!==b.bulan)return a.bulan<b.bulan?-1:1;if(a.paidAt&&b.paidAt)return a.paidAt<b.paidAt?-1:1;return 0;});"
     +   "var html='';"
     +   "ps.forEach(function(p){"
@@ -1487,6 +1493,17 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "fetch('/operasional/planning/payment/schedule',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({item_id:id,amount:String(amt),start_bulan:bln,count:String(count),remaining:String(rem)})})"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal buat rencana');});"
     + "}"
+    // Generate 1 payment entry dari saldo awal legacy (savedAmount > 0, no payments)
+    + "function seedSaldoAwal(){"
+    +   "var id=document.getElementById('planFId').value;if(!id)return;"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "var saved=+it.savedAmount||0;if(saved<=0){alert('Tidak ada saldo awal');return;}"
+    +   "var now=new Date();var bln=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');"
+    +   "if(!confirm('Buat 1 entry pembayaran \"Saldo Awal\" sebesar '+_planRpStr(saved)+' di bulan '+bln+'?\\n\\nSetelah ini saldo terbayar tetap sama, tapi sekarang punya 1 entry di Riwayat Pembayaran yg bisa di-toggle paid/unpaid.'))return;"
+    +   "fetch('/operasional/planning/payment/seed-saldo-awal',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({item_id:id,bulan:bln})})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal generate saldo awal');});"
+    + "}"
+
     // Toggle status paid/unpaid utk row pembayaran — update local + re-render
     // tanpa reload, biar modal tetap open & user bisa centang banyak entry.
     + "function togglePayment(id,paid){"
