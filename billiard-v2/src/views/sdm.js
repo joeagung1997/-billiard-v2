@@ -455,6 +455,22 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
   const trxBulan = allTrx.filter((t) => t.bulan === bulan);
   const r        = hitungRingkasan(karyawan, trxBulan);
 
+  // ── Riwayat bulanan: 12 bulan terakhir, skip bulan sebelum tgl mulai ──
+  const HISTORY_MONTHS = 12;
+  const tglMulaiObj = karyawan.tgl_mulai ? new Date(karyawan.tgl_mulai) : null;
+  const tglMulaiMo = tglMulaiObj ? tglMulaiObj.getFullYear() * 12 + tglMulaiObj.getMonth() : -Infinity;
+  const nowD = new Date();
+  const historyData = [];
+  for (let i = 0; i < HISTORY_MONTHS; i++) {
+    const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
+    const monKey = d.getFullYear() * 12 + d.getMonth();
+    if (monKey < tglMulaiMo) break;
+    const bulanKey = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const trxMo = allTrx.filter((t) => t.bulan === bulanKey);
+    const sum = hitungRingkasan(karyawan, trxMo);
+    historyData.push({ bulan: bulanKey, summary: sum });
+  }
+
   const HARI = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 
   // Bulan selector
@@ -528,6 +544,22 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     ".det-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}",
     ".det-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:10px;margin-top:2px}",
     ".det-row span:last-child{font-family:var(--ff-mono);font-size:12px}",
+    // Riwayat Bulanan
+    ".sdm-hist-list{display:flex;flex-direction:column;gap:4px}",
+    ".sdm-hist-row{display:grid;grid-template-columns:110px 1fr auto auto;gap:12px;align-items:center;padding:10px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background .15s,border-color .15s;border:1px solid transparent}",
+    ".sdm-hist-row:hover{background:var(--surface2);border-color:var(--border)}",
+    ".sdm-hist-row-active{background:rgba(45,102,36,.06);border-color:var(--accent)}",
+    ".sdm-hist-bulan{font-size:13px;font-weight:600;color:var(--txt)}",
+    ".sdm-hist-bar-wrap{display:flex;align-items:center;gap:8px;min-width:0}",
+    ".sdm-hist-bar{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;min-width:60px}",
+    ".sdm-hist-bar-fill{height:100%;transition:width .3s;border-radius:99px}",
+    ".sdm-hist-bar-lunas{background:#16a34a}",
+    ".sdm-hist-bar-sebagian{background:#f59e0b}",
+    ".sdm-hist-bar-belum{background:transparent}",
+    ".sdm-hist-pct{font-size:10.5px;color:var(--txt3);font-weight:600;font-family:var(--ff-mono);min-width:32px;text-align:right}",
+    ".sdm-hist-amt{font-family:var(--ff-mono);font-size:12px;color:var(--txt2);text-align:right;white-space:nowrap}",
+    ".sdm-hist-amt small{color:var(--txt3);display:block;font-size:10px;margin-top:1px}",
+    "@media(max-width:640px){.sdm-hist-row{grid-template-columns:90px 1fr auto;font-size:12px}.sdm-hist-amt{display:none}}",
   ].join("");
 
   return docHeadV4("SDM — " + karyawan.nama)
@@ -623,6 +655,27 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     + "</form></div>"
 
     + "</div>" // end det-grid
+
+    // ── Riwayat Bulanan (12 bulan terakhir) ─────────────────────
+    + (historyData.length > 0
+        ? "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px\">"
+          + "<div class=\"det-card-title\"><i class=\"ti ti-calendar-stats\"></i> Riwayat Bulanan <span style=\"margin-left:auto;font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:20px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3)\">" + historyData.length + " bulan</span></div>"
+          + "<div class=\"sdm-hist-list\">"
+          + historyData.map((h) => {
+              const sm = h.summary;
+              const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round(sm.totalDibayarkan / sm.gajiPokok * 100)) : 0;
+              const isActive = h.bulan === bulan;
+              const url = "/operasional/sdm/" + karyawan.id + "?bulan=" + h.bulan;
+              return "<a href=\"" + url + "\" class=\"sdm-hist-row" + (isActive ? " sdm-hist-row-active" : "") + "\">"
+                + "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + "</div>"
+                + "<div class=\"sdm-hist-bar-wrap\"><div class=\"sdm-hist-bar\"><div class=\"sdm-hist-bar-fill sdm-hist-bar-" + sm.status + "\" style=\"width:" + pct + "%\"></div></div><div class=\"sdm-hist-pct\">" + pct + "%</div></div>"
+                + "<div class=\"sdm-hist-amt\">" + rp(sm.totalDibayarkan) + "<small>/ " + rp(sm.gajiPokok) + "</small></div>"
+                + statusBadge(sm.status)
+                + "</a>";
+            }).join("")
+          + "</div>"
+          + "</div>"
+        : "")
 
     // ── Timeline riwayat ────────────────────────────────────────
     + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px\">"
