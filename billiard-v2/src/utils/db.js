@@ -565,7 +565,7 @@ const parseAttachments = (raw) => {
   }
 };
 
-const VALID_TIPE = ["investasi", "hutang", "tabungan"];
+const VALID_TIPE = ["investasi", "hutang"];
 const normalizeTipe = (t) => {
   const v = String(t || "").toLowerCase().trim();
   return VALID_TIPE.includes(v) ? v : "investasi";

@@ -2574,8 +2574,8 @@ td          { padding:10px 16px; vertical-align:middle; }
   .plan-proj-row-lunas { grid-column:1 / -1; justify-self:end; }
 }
 
-/* TIPE selector (segmented) — Investasi / Hutang / Tabungan */
-.plan-tipe-seg { display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+/* TIPE selector (segmented) — Investasi / Hutang */
+.plan-tipe-seg { display:grid; grid-template-columns:repeat(2,1fr); gap:6px;
   padding:4px; background:var(--surface2); border:1px solid var(--border);
   border-radius:9px; }
 .plan-tipe-opt { position:relative; cursor:pointer; }
@@ -2600,13 +2600,11 @@ td          { padding:10px 16px; vertical-align:middle; }
 /* Khusus ROI field — hide utk Hutang/Tabungan krn redundant dgn Riwayat
    Pembayaran (cicilan/setoran derived dari payment plan). Investasi tetap
    pakai ROI sbg projeksi income pasca eksekusi (beda concept). */
-.plan-tipe-hutang .plan-hide-roi,
-.plan-tipe-tabungan .plan-hide-roi { display:none !important; }
+.plan-tipe-hutang .plan-hide-roi { display:none !important; }
 
-/* Riwayat Pembayaran section — HANYA utk Hutang. Investasi & Tabungan
+/* Riwayat Pembayaran section — HANYA utk Hutang. Investasi
    gak butuh tracking cicilan bulanan (asumsi bayar lump-sum / single shot). */
-.plan-tipe-investasi #planPaymentSection,
-.plan-tipe-tabungan #planPaymentSection { display:none !important; }
+.plan-tipe-investasi #planPaymentSection { display:none !important; }
 
 /* Helper hint kecil di bawah label */
 .plan-form-hint { font-size:11px; color:var(--txt3); margin-top:3px;

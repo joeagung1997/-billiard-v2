@@ -829,7 +829,6 @@ function renderItemModal() {
             <div class="plan-tipe-seg" role="radiogroup">
               <label class="plan-tipe-opt"><input type="radio" name="tipe" value="investasi" checked><span><i class="ti ti-trending-up"></i> Investasi</span></label>
               <label class="plan-tipe-opt"><input type="radio" name="tipe" value="hutang"><span><i class="ti ti-credit-card"></i> Hutang / Tagihan</span></label>
-              <label class="plan-tipe-opt"><input type="radio" name="tipe" value="tabungan"><span><i class="ti ti-building-bank"></i> Tabungan</span></label>
             </div>
           </div>
 
@@ -995,7 +994,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=74\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=75\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1074,8 +1073,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "form.classList.add('plan-tipe-'+(t||'investasi'));"
     +   "var labels={"
     +     "investasi:{date:'Target Tanggal Eksekusi',estimasi:'Estimasi Biaya (Rp)',roi:'Estimasi ROI (Rp/bulan)',vendor:'Vendor / Supplier'},"
-    +     "hutang:   {date:'Target Lunas',           estimasi:'Total Tagihan (Rp)',  roi:'Cicilan Wajib (Rp/bulan)', vendor:'Pihak / Kreditur'},"
-    +     "tabungan: {date:'Target Tercapai',        estimasi:'Target Tabungan (Rp)',roi:'Setoran Rutin (Rp/bulan)', vendor:'Bank / Pihak'}"
+    +     "hutang:   {date:'Target Lunas',           estimasi:'Total Tagihan (Rp)',  roi:'Cicilan Wajib (Rp/bulan)', vendor:'Pihak / Kreditur'}"
     +   "};"
     +   "var L=labels[t]||labels.investasi;"
     +   "var dl=document.getElementById('planFDateLbl');if(dl)dl.textContent=L.date;"
