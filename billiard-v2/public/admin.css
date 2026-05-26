@@ -2473,9 +2473,16 @@ td          { padding:10px 16px; vertical-align:middle; }
 .plan-proj-preset { padding:6px 11px; font-size:11.5px; font-weight:600;
   border:1px solid var(--border2); border-radius:6px; background:var(--surface);
   color:var(--txt); cursor:pointer; font-family:var(--ff);
-  transition:all .15s; }
+  transition:all .15s; display:inline-flex; align-items:center; gap:4px; }
 .plan-proj-preset:hover { border-color:var(--accent); background:rgba(45,102,36,.06);
   color:var(--accent); }
+.plan-proj-preset.active { border-color:var(--accent); background:var(--accent);
+  color:#fff; box-shadow:0 1px 3px rgba(45,102,36,.2); }
+.plan-proj-preset.active:hover { background:var(--accent); color:#fff; opacity:.92; }
+.plan-proj-reset { border-color:rgba(122,140,120,.4); color:var(--txt3);
+  margin-left:auto; font-size:11px; }
+.plan-proj-reset:hover { border-color:#dc2626; color:#dc2626; background:#fef2f2; }
+.plan-proj-reset i { font-size:12px; }
 
 /* List bulanan (schedule) */
 .plan-proj-list-hdr { font-size:11px; font-weight:700; color:var(--txt3);
