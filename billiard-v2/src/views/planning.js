@@ -1298,7 +1298,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var saved=+it.savedAmount||0,est=+it.estimasi||0;"
     +   "var rem=Math.max(0,est-saved);"
     +   "if(rem<=0||est<=0){box.style.display='none';return;}"
-    +   // Detect preset aktif (kalau amount === ceil(sisa/N))
+    // Detect preset aktif (kalau amount === ceil(sisa/N))
     +   "var presets=[3,6,12,24];"
     +   "var activeN=null;"
     +   "if(amt>0){for(var pi=0;pi<presets.length;pi++){if(amt===Math.ceil(rem/presets[pi])){activeN=presets[pi];break;}}}"
