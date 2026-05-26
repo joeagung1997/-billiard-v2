@@ -10,7 +10,7 @@ import {
   resetQrMember, appendLog, checkBonusExpiry,
   readAdminAccounts,
 } from "../utils/db.js";
-import { requireAdmin } from "../middleware/auth.js";
+import { requireAdmin, readFrtCookie } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
 import {
@@ -40,6 +40,18 @@ router.get("/", async (req, res) => {
   const user = verifyToken(tk);
 
   if (!user) {
+    // Fallback: owner/karyawan yg sudah punya cookie _frt valid (mis. baru
+    // navigasi balik dari /operasional) gak perlu input PIN lagi — auto-issue
+    // session token & redirect ke /admin?tk=... biar URL konsisten.
+    const frt = readFrtCookie(req);
+    if (frt?.role && frt?.username) {
+      const newTk = createToken({
+        username:    frt.username,
+        role:        frt.role,
+        displayName: frt.displayName || frt.username,
+      });
+      return res.redirect(`/admin?tk=${newTk}`);
+    }
     return res.send(adminLoginPage(!!req.query.err));
   }
 

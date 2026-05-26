@@ -1,14 +1,42 @@
 // src/middleware/auth.js
 // ── Middleware: validasi session token admin ──────────────────
 
-import { verifyToken } from "../utils/session.js";
+import jwt from "jsonwebtoken";
+import { verifyToken, createToken } from "../utils/session.js";
+import { CONFIG } from "../config.js";
 
-// Cek token ?tk= dari query atau body. Set res.locals.tk, adminUser, adminRole.
+// Helper: baca cookie _frt (JWT finance role) dari header. Return payload
+// atau null kalau cookie tidak ada / invalid / expired.
+export function readFrtCookie(req) {
+  const raw = req.headers.cookie || "";
+  const entry = raw.split(";").map((s) => s.trim()).find((s) => s.startsWith("_frt="));
+  if (!entry) return null;
+  try {
+    return jwt.verify(decodeURIComponent(entry.slice(5)), CONFIG.JWT_SECRET);
+  } catch { return null; }
+}
+
+// Cek token ?tk= dari query/body. Kalau invalid, fallback ke cookie _frt
+// (owner/karyawan yang sudah login di /admin atau /operasional) — auto-issue
+// session token baru lalu redirect ke URL yg sama dengan ?tk=... supaya
+// navigasi sidebar berikutnya tetap konsisten. Tujuannya: owner yang sudah
+// login tidak perlu input PIN lagi tiap masuk menu /admin/*.
 export const requireAdmin = (req, res, next) => {
   const tk   = req.query.tk ?? req.body.tk ?? "";
   const user = verifyToken(tk);
 
   if (!user) {
+    const frt = readFrtCookie(req);
+    if (frt?.role && frt?.username) {
+      const newTk = createToken({
+        username:    frt.username,
+        role:        frt.role,
+        displayName: frt.displayName || frt.username,
+      });
+      const u = new URL(req.originalUrl, "http://x");
+      u.searchParams.set("tk", newTk);
+      return res.redirect(u.pathname + u.search);
+    }
     return res.redirect("/admin");
   }
 
