@@ -615,26 +615,36 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     ".det-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}",
     ".det-row:last-child{border-bottom:none;font-weight:700;font-size:14px;padding-top:10px;margin-top:2px}",
     ".det-row span:last-child{font-family:var(--ff-mono);font-size:12px}",
-    // Riwayat Bulanan
-    ".sdm-hist-list{display:flex;flex-direction:column;gap:4px}",
-    ".sdm-hist-row{display:grid;grid-template-columns:110px 1fr auto auto;gap:12px;align-items:center;padding:10px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background .15s,border-color .15s;border:1px solid transparent}",
-    ".sdm-hist-row:hover{background:var(--surface2);border-color:var(--border)}",
-    ".sdm-hist-row-active{background:rgba(45,102,36,.06);border-color:var(--accent)}",
-    ".sdm-hist-bulan{font-size:13px;font-weight:600;color:var(--txt)}",
-    ".sdm-hist-bar-wrap{display:flex;align-items:center;gap:8px;min-width:0}",
-    ".sdm-hist-bar{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;min-width:60px}",
+    // Riwayat Bulanan — redesigned
+    ".sdm-hist-list{display:flex;flex-direction:column;gap:10px}",
+    ".sdm-hist-row{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:10px;text-decoration:none;color:inherit;transition:background .15s,border-color .15s,box-shadow .15s;border:1px solid var(--border);background:var(--surface)}",
+    ".sdm-hist-row:hover{background:var(--surface2);box-shadow:0 2px 8px rgba(15,32,16,.05)}",
+    ".sdm-hist-row-active{background:rgba(45,102,36,.06);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}",
+    ".sdm-hist-row-future{background:linear-gradient(180deg,rgba(99,102,241,.06),rgba(99,102,241,.02));border-color:rgba(99,102,241,.3);border-left:3px solid #6366f1;padding-left:14px}",
+    // Head row (bulan + amount)
+    ".sdm-hist-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}",
+    ".sdm-hist-bulan{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.01em}",
+    ".sdm-hist-amt{font-family:var(--ff-mono);text-align:right;white-space:nowrap;line-height:1.2}",
+    ".sdm-hist-amt b{font-size:15px;font-weight:700;color:#16a34a}",
+    ".sdm-hist-amt .sdm-hist-of{font-size:11.5px;color:var(--txt3);margin-left:3px;font-weight:500}",
+    // Chips row (carry-in / excess / future)
+    ".sdm-hist-chips{display:flex;flex-wrap:wrap;gap:6px}",
+    ".sdm-hist-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11.5px;font-weight:600;line-height:1.2}",
+    ".sdm-hist-chip i{font-size:13px}",
+    ".sdm-hist-chip-carry{background:rgba(99,102,241,.12);color:#4338ca}",
+    ".sdm-hist-chip-excess{background:rgba(34,197,94,.14);color:#15803d}",
+    ".sdm-hist-chip-future{background:rgba(99,102,241,.16);color:#4f46e5;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}",
+    // Foot row (progress bar + status badge)
+    ".sdm-hist-foot{display:flex;align-items:center;gap:12px}",
+    ".sdm-hist-bar-wrap{flex:1;display:flex;align-items:center;gap:10px;min-width:0}",
+    ".sdm-hist-bar{flex:1;height:8px;background:var(--border);border-radius:99px;overflow:hidden;min-width:60px}",
     ".sdm-hist-bar-fill{height:100%;transition:width .3s;border-radius:99px}",
-    ".sdm-hist-bar-lunas{background:#16a34a}",
-    ".sdm-hist-bar-sebagian{background:#f59e0b}",
+    ".sdm-hist-bar-lunas{background:linear-gradient(90deg,#22c55e,#16a34a)}",
+    ".sdm-hist-bar-sebagian{background:linear-gradient(90deg,#fbbf24,#f59e0b)}",
     ".sdm-hist-bar-belum{background:transparent}",
-    ".sdm-hist-pct{font-size:10.5px;color:var(--txt3);font-weight:600;font-family:var(--ff-mono);min-width:32px;text-align:right}",
-    ".sdm-hist-amt{font-family:var(--ff-mono);font-size:12px;color:var(--txt2);text-align:right;white-space:nowrap}",
-    ".sdm-hist-amt small{color:var(--txt3);display:block;font-size:10px;margin-top:1px}",
-    ".sdm-hist-carry{color:#6366f1;font-weight:500;font-size:10px;display:block;margin-top:2px;font-family:var(--ff-mono)}",
-    ".sdm-hist-excess{color:#16a34a;font-weight:600;font-size:9.5px;display:block;margin-top:2px;font-family:var(--ff-mono)}",
-    ".sdm-hist-row-future{background:linear-gradient(180deg,rgba(99,102,241,.04),transparent);border-style:dashed}",
-    ".sdm-hist-future-tag{display:inline-block;font-size:9px;font-weight:700;color:#6366f1;background:rgba(99,102,241,.12);padding:1px 6px;border-radius:99px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em;vertical-align:1px}",
-    "@media(max-width:640px){.sdm-hist-row{grid-template-columns:90px 1fr auto;font-size:12px}.sdm-hist-amt{display:none}}",
+    ".sdm-hist-pct{font-size:12px;color:var(--txt2);font-weight:700;font-family:var(--ff-mono);min-width:42px;text-align:right}",
+    ".sdm-hist-status{flex-shrink:0}",
+    "@media(max-width:640px){.sdm-hist-row{padding:12px 14px;gap:8px}.sdm-hist-bulan{font-size:14px}.sdm-hist-amt b{font-size:14px}}",
   ].join("");
 
   return docHeadV4("SDM — " + karyawan.nama)
@@ -743,20 +753,29 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
               const pct = sm.gajiPokok > 0 ? Math.min(100, Math.round((sm.totalDibayarkan + ci.carryIn) / sm.gajiPokok * 100)) : 0;
               const isActive = h.bulan === bulan;
               const url = "/operasional/sdm/" + karyawan.id + "?bulan=" + h.bulan;
-              const futureBadge = h.isFuture
-                ? "<small class=\"sdm-hist-future-tag\">Bulan depan</small>"
-                : "";
-              const carryInLbl = ci.carryIn > 0
-                ? (h.isFuture
-                    ? "<small class=\"sdm-hist-carry\">sudah diambil " + rp(ci.carryIn) + " (kasbon dari bulan lalu)</small>"
-                    : "<small class=\"sdm-hist-carry\">+ kasbon lalu " + rp(ci.carryIn) + "</small>")
-                : "";
-              const excessLbl  = ci.excess > 0  ? "<small class=\"sdm-hist-excess\">excess → bln depan " + rp(ci.excess) + "</small>" : "";
+              const chips = [];
+              if (h.isFuture) {
+                chips.push("<span class=\"sdm-hist-chip sdm-hist-chip-future\"><i class=\"ti ti-calendar-plus\"></i> Bulan Depan</span>");
+              }
+              if (ci.carryIn > 0) {
+                chips.push(h.isFuture
+                  ? "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Sudah diambil " + rp(ci.carryIn) + " (kasbon)</span>"
+                  : "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Kasbon lalu " + rp(ci.carryIn) + "</span>");
+              }
+              if (ci.excess > 0) {
+                chips.push("<span class=\"sdm-hist-chip sdm-hist-chip-excess\"><i class=\"ti ti-arrow-up-right\"></i> Excess " + rp(ci.excess) + " ke bulan depan</span>");
+              }
+              const chipsHtml = chips.length > 0 ? "<div class=\"sdm-hist-chips\">" + chips.join("") + "</div>" : "";
               return "<a href=\"" + url + "\" class=\"sdm-hist-row" + (isActive ? " sdm-hist-row-active" : "") + (h.isFuture ? " sdm-hist-row-future" : "") + "\">"
-                + "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + futureBadge + carryInLbl + "</div>"
-                + "<div class=\"sdm-hist-bar-wrap\"><div class=\"sdm-hist-bar\"><div class=\"sdm-hist-bar-fill sdm-hist-bar-" + statusE + "\" style=\"width:" + pct + "%\"></div></div><div class=\"sdm-hist-pct\">" + pct + "%</div></div>"
-                + "<div class=\"sdm-hist-amt\">" + rp(sm.totalDibayarkan) + "<small>/ " + rp(sm.gajiPokok) + "</small>" + excessLbl + "</div>"
-                + statusBadge(statusE)
+                + "<div class=\"sdm-hist-head\">"
+                +   "<div class=\"sdm-hist-bulan\">" + bulanLabel(h.bulan) + "</div>"
+                +   "<div class=\"sdm-hist-amt\"><b>" + rp(sm.totalDibayarkan) + "</b><span class=\"sdm-hist-of\">/ " + rp(sm.gajiPokok) + "</span></div>"
+                + "</div>"
+                + chipsHtml
+                + "<div class=\"sdm-hist-foot\">"
+                +   "<div class=\"sdm-hist-bar-wrap\"><div class=\"sdm-hist-bar\"><div class=\"sdm-hist-bar-fill sdm-hist-bar-" + statusE + "\" style=\"width:" + pct + "%\"></div></div><div class=\"sdm-hist-pct\">" + pct + "%</div></div>"
+                +   "<div class=\"sdm-hist-status\">" + statusBadge(statusE) + "</div>"
+                + "</div>"
                 + "</a>";
             }).join("")
           + "</div>"
