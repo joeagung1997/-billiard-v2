@@ -985,7 +985,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=68\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=69\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1330,6 +1330,14 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "var endLbl=schedule.length>0?schedule[schedule.length-1].bulan:'-';"
     +   "var html=hdrHtml;"
     +   "html+=presetsHtml;"
+    +   // Banner Rencana Dipilih — prominent, jelasin user wajib bayar segini perbulan
+    +   "html+='<div class=\"plan-proj-chosen\">"
+    +     "<div class=\"plan-proj-chosen-ic\"><i class=\"ti ti-circle-check-filled\"></i></div>"
+    +     "<div class=\"plan-proj-chosen-txt\">"
+    +       "<div class=\"plan-proj-chosen-ttl\">Rencana Dipilih'+(activeN?' <span class=\"plan-proj-chosen-tag\">Bagi '+activeN+' bln</span>':'')+'</div>"
+    +       "<div class=\"plan-proj-chosen-body\">Wajib bayar <b>'+_planRpStr(amt)+'/bulan</b> selama <b>'+schedule.length+' bulan</b> &middot; lunas <b>'+endLbl+'</b></div>"
+    +     "</div>"
+    +   "</div>';"
     +   "html+='<div class=\"plan-proj-grid\">';"
     +   "html+='<div class=\"plan-proj-stat\"><span>Cicilan/bln</span><b>'+_planRpStr(amt)+'</b></div>';"
     +   "html+='<div class=\"plan-proj-stat\"><span>Total bulan</span><b>'+schedule.length+' bulan</b></div>';"
