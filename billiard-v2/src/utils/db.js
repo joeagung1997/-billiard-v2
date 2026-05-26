@@ -640,7 +640,62 @@ export const updatePlanningItem = async (id, item) => {
 };
 
 export const deletePlanningItem = async (id) => {
+  // Cascade delete payments terlebih dulu
+  await query("DELETE FROM planning_payments WHERE item_id = $1", [id]);
   await query("DELETE FROM planning_items WHERE id = $1", [id]);
+};
+
+// ── Planning Payments (cicilan/tanggungan history) ────────────
+
+const rowToPayment = (row) => ({
+  id:       row.id,
+  itemId:   row.item_id,
+  amount:   parseInt(row.amount) || 0,
+  bulan:    row.bulan ?? "",
+  catatan:  row.catatan ?? "",
+  paidAt:   row.paid_at,
+});
+
+// Read all payments untuk satu item, atau semua kalau itemId null
+export const readPlanningPayments = async (itemId = null) => {
+  const res = itemId
+    ? await query("SELECT * FROM planning_payments WHERE item_id = $1 ORDER BY bulan DESC, paid_at DESC", [itemId])
+    : await query("SELECT * FROM planning_payments ORDER BY bulan DESC, paid_at DESC");
+  return res.rows.map(rowToPayment);
+};
+
+export const addPlanningPayment = async (p) => {
+  const id = p.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
+  const amt = Math.max(0, parseInt(p.amount) || 0);
+  const itemId = (p.itemId || "").trim();
+  if (!itemId || amt <= 0) throw new Error("itemId & amount > 0 wajib");
+  await query(
+    `INSERT INTO planning_payments (id, item_id, amount, bulan, catatan)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [
+      id, itemId, amt,
+      (p.bulan || "").slice(0, 7),
+      (p.catatan || "").trim().slice(0, 300),
+    ]
+  );
+  // Bump saved_amount di parent item — biar progress bar tetap akurat
+  await query(
+    `UPDATE planning_items SET saved_amount = saved_amount + $1, updated_at = NOW() WHERE id = $2`,
+    [amt, itemId]
+  );
+  return id;
+};
+
+export const deletePlanningPayment = async (id) => {
+  const r = await query("SELECT item_id, amount FROM planning_payments WHERE id = $1", [id]);
+  if (!r.rows.length) return;
+  const { item_id, amount } = r.rows[0];
+  await query("DELETE FROM planning_payments WHERE id = $1", [id]);
+  // Kurangi saved_amount tapi clamp ke 0
+  await query(
+    `UPDATE planning_items SET saved_amount = GREATEST(0, saved_amount - $1), updated_at = NOW() WHERE id = $2`,
+    [parseInt(amount) || 0, item_id]
+  );
 };
 
 // ── Planning Goals (Anggaran / Tabungan) ──────────────────────

@@ -21,6 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
+  readPlanningPayments, addPlanningPayment, deletePlanningPayment,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
@@ -548,10 +549,17 @@ function savePlanningAttachments(rawList, keptUrls = []) {
 // ── Planning & Roadmap (owner only) ─────────────────────────────
 router.get("/planning", requireOwner, async (req, res) => {
   try {
-    const [items, goals] = await Promise.all([
+    const [items, goals, allPayments] = await Promise.all([
       readPlanningItems(),
       readPlanningGoals(),
+      readPlanningPayments(),
     ]);
+    // Group payments by itemId & attach ke masing-masing item
+    const paymentsByItem = {};
+    allPayments.forEach((p) => {
+      (paymentsByItem[p.itemId] = paymentsByItem[p.itemId] || []).push(p);
+    });
+    items.forEach((it) => { it.payments = paymentsByItem[it.id] || []; });
     res.send(planningPage({
       items,
       goals,
@@ -648,6 +656,36 @@ router.post("/planning/delete", requireOwner, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("[PLANNING] delete error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── Payments / cicilan bulanan ──────────────────────────────────
+router.post("/planning/payment/add", requireOwner, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const itemId = (body.item_id || "").trim();
+    const amount = parseInt(body.amount) || 0;
+    const bulan = (body.bulan || "").slice(0, 7);
+    if (!itemId || amount <= 0 || !bulan) {
+      return res.status(400).json({ ok: false, error: "item_id, amount (>0), dan bulan (YYYY-MM) wajib." });
+    }
+    await addPlanningPayment({ itemId, amount, bulan, catatan: body.catatan });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] payment add error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/planning/payment/delete", requireOwner, async (req, res) => {
+  try {
+    const id = (req.body?.id || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "ID payment wajib." });
+    await deletePlanningPayment(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PLANNING] payment delete error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

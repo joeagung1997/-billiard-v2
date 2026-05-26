@@ -908,9 +908,65 @@ function renderItemModal() {
             <div id="planImpactBox" class="plan-impact-box"></div>
           </div>
 
+          <!-- Riwayat Pembayaran — visible saat editing item existing -->
+          <div class="plan-payment-section" id="planPaymentSection" style="display:none">
+            <div class="plan-payment-header">
+              <div class="plan-payment-title"><i class="ti ti-history"></i> Riwayat Pembayaran</div>
+              <button type="button" class="plan-payment-add-btn" onclick="openPaymentModal()"><i class="ti ti-plus"></i> Bayar Cicilan</button>
+            </div>
+            <div id="planPaymentSummary" class="plan-payment-summary"></div>
+            <div id="planPaymentList" class="plan-payment-list"></div>
+          </div>
+
           <div class="plan-form-actions">
             <button type="button" class="btn-outline" onclick="closePlanModal()">Batal</button>
             <button type="submit" class="btn-primary"><i class="ti ti-device-floppy"></i> Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sub-modal: Bayar Cicilan -->
+    <div class="overlay" id="paymentModalOv" onclick="if(event.target===this)closePaymentModal()">
+      <div class="over-modal plan-modal" style="max-width:440px">
+        <div class="plan-modal-hdr">
+          <div>
+            <h3 class="plan-modal-title">💰 Bayar Cicilan</h3>
+            <p class="plan-modal-sub" id="paymentItemName">—</p>
+          </div>
+          <button type="button" class="plan-modal-close" onclick="closePaymentModal()"><i class="ti ti-x"></i></button>
+        </div>
+        <form id="paymentForm" class="plan-modal-form" onsubmit="submitPaymentForm(event)">
+          <input type="hidden" id="paymentItemId" name="item_id">
+          <div class="plan-deposit-info" id="paymentInfo">
+            <div class="plan-deposit-row"><span>Sudah dibayar</span><b id="paymentCurrent">Rp 0</b></div>
+            <div class="plan-deposit-row"><span>Total tagihan</span><b id="paymentTarget">Rp 0</b></div>
+            <div class="plan-deposit-row"><span>Sisa</span><b id="paymentRemain" class="out">Rp 0</b></div>
+          </div>
+          <div class="plan-form-grid">
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Bulan <span class="req">*</span></label>
+              <input type="month" id="paymentFBulan" name="bulan" class="plan-form-inp" required>
+            </div>
+            <div class="plan-form-row">
+              <label class="plan-form-lbl">Jumlah (Rp) <span class="req">*</span></label>
+              <input type="text" inputmode="numeric" id="paymentFAmount" name="amount" class="plan-form-inp" required placeholder="0" oninput="planFmtNum(this)">
+            </div>
+          </div>
+          <div class="plan-deposit-quick">
+            <span class="plan-deposit-quick-lbl">Cepat:</span>
+            <button type="button" onclick="setPaymentAmount(500000)">+Rp 500k</button>
+            <button type="button" onclick="setPaymentAmount(1000000)">+Rp 1jt</button>
+            <button type="button" onclick="setPaymentAmount(2000000)">+Rp 2jt</button>
+            <button type="button" onclick="setPaymentAmount('sisa')">Lunasi Sisa</button>
+          </div>
+          <div class="plan-form-row">
+            <label class="plan-form-lbl">Catatan <span class="opt">opsional</span></label>
+            <input type="text" id="paymentFCatatan" name="catatan" class="plan-form-inp" maxlength="300" placeholder="contoh: Bayar via Gopay">
+          </div>
+          <div class="plan-form-actions">
+            <button type="button" class="btn-outline" onclick="closePaymentModal()">Batal</button>
+            <button type="submit" class="btn-primary"><i class="ti ti-cash-banknote"></i> Simpan Pembayaran</button>
           </div>
         </form>
       </div>
@@ -925,7 +981,7 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
   const goalsJson = JSON.stringify(goals).replace(/</g, "\\u003c");
 
   return docHeadV4("Planning & Roadmap")
-    + "<link rel=\"stylesheet\" href=\"/admin.css?v=61\">"
+    + "<link rel=\"stylesheet\" href=\"/admin.css?v=62\">"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar(token, "planning", role, displayName)
@@ -1024,7 +1080,10 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +       "if(qa){qa.style.display='';"
     +         "var dn=document.getElementById('planQaDone');"
     +         "if(dn)dn.style.display=(it.status==='done')?'none':'';}"
+    +       "_planRenderPayments(it);"
     +     "}"
+    +   "}else{"
+    +     "var sec=document.getElementById('planPaymentSection');if(sec)sec.style.display='none';"
     +   "}"
     +   "_planRenderAttList();"
     +   "_planUpdateImpact();"
@@ -1151,6 +1210,92 @@ export function planningPage({ items = [], goals = [], token = "", role = "owner
     +   "if(!confirm('Hapus item ini permanen? Tidak bisa di-undo.'))return;"
     +   "fetch('/operasional/planning/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)})"
     +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal hapus');});"
+    + "}"
+
+    // ── Riwayat Pembayaran (tracking cicilan/tanggungan bulanan) ──
+    + "function _planFmtBulanID(b){if(!b)return '';var p=b.split('-');if(p.length<2)return b;var d=new Date(parseInt(p[0]),parseInt(p[1])-1,1);return d.toLocaleDateString('id-ID',{month:'long',year:'numeric'});}"
+    + "function _planCalcLunas(it){"
+    +   "var ps=Array.isArray(it.payments)?it.payments:[];"
+    +   "var est=+it.estimasi||0,saved=+it.savedAmount||0;"
+    +   "var rem=Math.max(0,est-saved);"
+    +   "if(rem<=0)return{lunas:true,monthsLeft:0,avgPerMonth:0,projectedDate:null,sourceMonths:0,remaining:0};"
+    +   "if(ps.length===0)return{lunas:false,monthsLeft:null,avgPerMonth:0,projectedDate:null,sourceMonths:0,remaining:rem};"
+    +   "var byMonth={};ps.forEach(function(p){byMonth[p.bulan]=(byMonth[p.bulan]||0)+(+p.amount||0);});"
+    +   "var bulans=Object.keys(byMonth).sort().reverse().slice(0,3);"
+    +   "if(bulans.length===0)return{lunas:false,monthsLeft:null,avgPerMonth:0,projectedDate:null,sourceMonths:0,remaining:rem};"
+    +   "var total=bulans.reduce(function(s,b){return s+byMonth[b];},0);"
+    +   "var avg=total/bulans.length;"
+    +   "var ml=avg>0?Math.ceil(rem/avg):null;"
+    +   "var pd=null;if(ml!=null){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+ml);pd=d.toLocaleDateString('id-ID',{month:'long',year:'numeric'});}"
+    +   "return{lunas:false,monthsLeft:ml,avgPerMonth:avg,projectedDate:pd,sourceMonths:bulans.length,remaining:rem};"
+    + "}"
+    + "function _planRenderPayments(it){"
+    +   "var sec=document.getElementById('planPaymentSection');var sum=document.getElementById('planPaymentSummary');var list=document.getElementById('planPaymentList');"
+    +   "if(!sec||!sum||!list)return;"
+    +   "sec.style.display='';"
+    +   "var ps=Array.isArray(it.payments)?it.payments.slice():[];"
+    +   "var est=+it.estimasi||0,saved=+it.savedAmount||0;"
+    +   "var lr=_planCalcLunas(it);"
+    +   "var sumHtml='<div class=\"plan-payment-stat\"><span>Sudah dibayar</span><b class=\"plan-cf-in\">'+_planRpStr(saved)+(est>0?' <small>/ '+_planRpStr(est)+'</small>':'')+'</b></div>';"
+    +   "sumHtml+='<div class=\"plan-payment-stat\"><span>Sisa</span><b class=\"plan-cf-out\">'+_planRpStr(lr.remaining)+'</b></div>';"
+    +   "if(lr.lunas){sumHtml+='<div class=\"plan-payment-stat plan-pay-lunas\"><span>Status</span><b>🎉 Lunas!</b></div>';}"
+    +   "else if(lr.monthsLeft!=null){sumHtml+='<div class=\"plan-payment-stat\"><span>Rata-rata/bulan</span><b>'+_planRpStr(lr.avgPerMonth)+'<small> (dari '+lr.sourceMonths+' bln)</small></b></div>';"
+    +     "sumHtml+='<div class=\"plan-payment-stat plan-pay-est\"><span>Estimasi lunas</span><b>'+lr.monthsLeft+' bulan lagi<small> (~'+lr.projectedDate+')</small></b></div>';}"
+    +   "else{sumHtml+='<div class=\"plan-payment-stat\"><span>Estimasi lunas</span><b><small>Tambah pembayaran utk hitung</small></b></div>';}"
+    +   "sum.innerHTML=sumHtml;"
+    +   "if(ps.length===0){list.innerHTML='<div class=\"plan-payment-empty\"><i class=\"ti ti-receipt-off\"></i> Belum ada riwayat pembayaran. Klik <b>Bayar Cicilan</b> untuk mulai catat.</div>';return;}"
+    +   "ps.sort(function(a,b){if(a.bulan!==b.bulan)return a.bulan<b.bulan?1:-1;return a.paidAt<b.paidAt?1:-1;});"
+    +   "var html='';"
+    +   "ps.forEach(function(p){"
+    +     "html+='<div class=\"plan-payment-item\">"
+    +       "<div class=\"plan-payment-item-main\">"
+    +         "<div class=\"plan-payment-item-bulan\"><i class=\"ti ti-calendar-month\"></i> '+_planFmtBulanID(p.bulan)+'</div>"
+    +         "<div class=\"plan-payment-item-amount\">'+_planRpStr(p.amount)+'</div>"
+    +         "'+(p.catatan?'<div class=\"plan-payment-item-catatan\">'+_planRpEsc(p.catatan)+'</div>':'')+'"
+    +       "</div>"
+    +       "<button type=\"button\" class=\"plan-payment-item-rm\" title=\"Hapus pembayaran\" onclick=\"deletePayment(\\''+_planRpEsc(p.id)+'\\')\"><i class=\"ti ti-trash\"></i></button>"
+    +     "</div>';"
+    +   "});"
+    +   "list.innerHTML=html;"
+    + "}"
+
+    + "function openPaymentModal(){"
+    +   "var id=document.getElementById('planFId').value;if(!id){alert('Simpan item dulu sebelum catat pembayaran.');return;}"
+    +   "var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;"
+    +   "document.getElementById('paymentItemId').value=id;"
+    +   "document.getElementById('paymentItemName').textContent=it.nama||'';"
+    +   "document.getElementById('paymentFAmount').value='';"
+    +   "document.getElementById('paymentFCatatan').value='';"
+    +   "var now=new Date();var bln=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');"
+    +   "document.getElementById('paymentFBulan').value=bln;"
+    +   "var saved=+it.savedAmount||0,est=+it.estimasi||0;"
+    +   "document.getElementById('paymentCurrent').textContent=_planRpStr(saved);"
+    +   "document.getElementById('paymentTarget').textContent=_planRpStr(est);"
+    +   "document.getElementById('paymentRemain').textContent=_planRpStr(Math.max(0,est-saved));"
+    +   "document.getElementById('paymentModalOv').classList.add('open');"
+    +   "setTimeout(function(){document.getElementById('paymentFAmount').focus();},150);"
+    + "}"
+    + "function closePaymentModal(){document.getElementById('paymentModalOv').classList.remove('open');}"
+    + "function setPaymentAmount(v){"
+    +   "var inp=document.getElementById('paymentFAmount');"
+    +   "if(v==='sisa'){var id=document.getElementById('paymentItemId').value;var it=PLAN_ITEMS.find(function(x){return x.id===id;});if(!it)return;var rem=Math.max(0,(+it.estimasi||0)-(+it.savedAmount||0));inp.value=rem>0?_planRpFmt(rem):'';}"
+    +   "else{inp.value=_planRpFmt(v);}"
+    + "}"
+    + "function submitPaymentForm(e){"
+    +   "e.preventDefault();"
+    +   "var data={item_id:document.getElementById('paymentItemId').value,"
+    +     "amount:(document.getElementById('paymentFAmount').value||'').replace(/\\./g,''),"
+    +     "bulan:document.getElementById('paymentFBulan').value,"
+    +     "catatan:document.getElementById('paymentFCatatan').value};"
+    +   "if(!data.amount||parseInt(data.amount)<=0){alert('Jumlah pembayaran harus > 0');return;}"
+    +   "if(!data.bulan){alert('Bulan wajib diisi');return;}"
+    +   "fetch('/operasional/planning/payment/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal simpan pembayaran');});"
+    + "}"
+    + "function deletePayment(id){"
+    +   "if(!confirm('Hapus catatan pembayaran ini? Saldo terbayar akan dikurangi.'))return;"
+    +   "fetch('/operasional/planning/payment/delete',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'id='+encodeURIComponent(id)})"
+    +     ".then(function(r){if(r.ok)location.reload();else alert('Gagal hapus pembayaran');});"
     + "}"
 
     // ── Quick actions: Tandai Selesai / Duplikat / Kirim ke Anggaran ──

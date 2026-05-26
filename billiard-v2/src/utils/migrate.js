@@ -395,6 +395,19 @@ export const runMigrations = async () => {
   // Lampiran foto/file — JSON array of URLs relatif ke public/
   await query(`ALTER TABLE planning_items ADD COLUMN IF NOT EXISTS attachments TEXT DEFAULT '[]'`);
 
+  // Riwayat pembayaran bulanan per item — utk track cicilan/tanggungan
+  await query(`
+    CREATE TABLE IF NOT EXISTS planning_payments (
+      id        TEXT PRIMARY KEY,
+      item_id   TEXT NOT NULL,
+      amount    BIGINT NOT NULL DEFAULT 0,
+      bulan     TEXT NOT NULL,
+      catatan   TEXT DEFAULT '',
+      paid_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_planning_payments_item ON planning_payments (item_id)`);
+
   // ── Planning Goals — tabungan target (Anggaran) ─────────────
   await query(`
     CREATE TABLE IF NOT EXISTS planning_goals (
