@@ -242,7 +242,9 @@ export const runMigrations = async () => {
   // ── Tabel bahan baku (untuk HPP otomatis per menu) ───────────────
   // satuan: gram/ml/pcs/butir/sendok/sachet/dll (free-text, dropdown di UI).
   // harga_per_satuan: harga 1 unit satuan dalam Rupiah (mis. Rp 100/gram).
-  // HPP per menu = SUM(qty × harga_per_satuan) dari semua row menu_resep.
+  // qty_per_porsi: konversi "1 porsi = X satuan" (mis. 1 cup es = 0.2 kg).
+  // porsi_label: label porsi (mis. "cup", "sdt"). Kosong = pakai satuan.
+  // HPP per menu = SUM(qty × qty_per_porsi × harga_per_satuan).
   await query(`
     CREATE TABLE IF NOT EXISTS bahan_baku (
       id                SERIAL      PRIMARY KEY,
@@ -253,6 +255,9 @@ export const runMigrations = async () => {
       updated_at        TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Kolom konversi porsi (idempotent — untuk deployment lama yg belum punya).
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS qty_per_porsi NUMERIC(12,4) NOT NULL DEFAULT 1.0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS porsi_label   TEXT          NOT NULL DEFAULT ''`);
 
   // ── Tabel menu_resep (link menu_items ↔ bahan_baku, M:N + qty) ───
   // qty NUMERIC bisa decimal (mis. 2.5 gram, 0.25 sachet). ON DELETE CASCADE:

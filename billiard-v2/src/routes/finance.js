@@ -986,14 +986,22 @@ router.get("/menu", requireOwner, async (req, res) => {
   }
 });
 
+// Helper: parse qty_per_porsi (terima koma atau titik). Default 1 jika kosong.
+function parseQtyPerPorsi(raw) {
+  const v = parseFloat((raw ?? "").toString().replace(",", ".")) || 0;
+  return v > 0 ? v : 1;
+}
+
 // ── POST /operasional/menu/bahan/tambah ─────────────────────────
 router.post("/menu/bahan/tambah", requireOwner, async (req, res) => {
   const nama   = (req.body.nama   ?? "").trim();
   const satuan = (req.body.satuan ?? "pcs").trim();
   const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  const qtyPP  = parseQtyPerPorsi(req.body.qty_per_porsi);
+  const label  = (req.body.porsi_label ?? "").trim();
   if (!nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
   try {
-    await addBahan(nama, satuan, harga);
+    await addBahan(nama, satuan, harga, qtyPP, label);
     res.redirect("/operasional/menu?tab=bahan");
   } catch (err) {
     console.error("[FINANCE] bahan tambah error:", err.message);
@@ -1007,9 +1015,11 @@ router.post("/menu/bahan/edit", requireOwner, async (req, res) => {
   const nama   = (req.body.nama   ?? "").trim();
   const satuan = (req.body.satuan ?? "pcs").trim();
   const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  const qtyPP  = parseQtyPerPorsi(req.body.qty_per_porsi);
+  const label  = (req.body.porsi_label ?? "").trim();
   if (!id || !nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
   try {
-    await updateBahan(id, nama, satuan, harga);
+    await updateBahan(id, nama, satuan, harga, qtyPP, label);
     res.redirect("/operasional/menu?tab=bahan");
   } catch (err) {
     console.error("[FINANCE] bahan edit error:", err.message);

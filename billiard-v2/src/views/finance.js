@@ -3308,25 +3308,49 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
   // ── Bahan Baku tab block ────────────────────────────────────────
   // Predefined satuan untuk dropdown — sering dipake di F&B.
   const SATUAN_OPTS = ["gram", "kg", "ml", "liter", "pcs", "sendok", "butir", "sachet", "lembar", "porsi", "tetes"];
+
+  // Helper: harga effective per porsi = harga_per_satuan × qty_per_porsi.
+  // Kalau qty_per_porsi=1 & porsi_label kosong → "porsi = satuan" (tampil sama).
+  const hargaPorsi = (b) => Math.round((Number(b.harga_per_satuan) || 0) * (Number(b.qty_per_porsi) || 1));
+  const labelPorsi = (b) => (b.porsi_label && b.porsi_label.trim()) ? b.porsi_label.trim() : b.satuan;
+
   const renderBahanRow = (b) => {
     if (editBahan && editBahan.id === b.id) {
-      // Inline edit row
-      return "<tr class=\"mp-bb-edit-row\"><td colspan=\"4\">"
-        + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" class=\"mp-bb-form\" style=\"margin:0;background:transparent;border:none;padding:0\">"
+      // Inline edit — 2 baris: identitas + konversi porsi
+      return "<tr class=\"mp-bb-edit-row\"><td colspan=\"5\">"
+        + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" style=\"display:flex;flex-direction:column;gap:8px;margin:0\">"
         + "<input type=\"hidden\" name=\"id\" value=\"" + b.id + "\">"
-        + "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(b.nama) + "\" required placeholder=\"Nama bahan\">"
-        + "<select class=\"mp-input\" name=\"satuan\">"
-        +   SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === b.satuan ? " selected" : "") + ">" + s + "</option>").join("")
-        + "</select>"
-        + "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" value=\"" + b.harga_per_satuan + "\" required oninput=\"fmtH(this)\" placeholder=\"Harga / satuan\"></div>"
-        + "<div style=\"display:flex;gap:6px\"><button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
-        + "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a></div>"
+        + "<div class=\"mp-bb-form\" style=\"margin:0;background:transparent;border:none;padding:0\">"
+        +   "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(b.nama) + "\" required placeholder=\"Nama bahan\">"
+        +   "<select class=\"mp-input\" name=\"satuan\">"
+        +     SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === b.satuan ? " selected" : "") + ">" + s + "</option>").join("")
+        +   "</select>"
+        +   "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" value=\"" + b.harga_per_satuan + "\" required oninput=\"fmtH(this)\" placeholder=\"Harga / satuan\"></div>"
+        +   "<div></div>"
+        + "</div>"
+        + "<div class=\"mp-bb-form\" style=\"margin:0;background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto\">"
+        +   "<div style=\"display:flex;align-items:center;font-size:12px;color:#7c2dc4;font-weight:600;padding-left:4px\">Per 1 porsi =</div>"
+        +   "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"" + (b.qty_per_porsi || 1) + "\" placeholder=\"Jumlah (mis. 0.2)\">"
+        +   "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" value=\"" + escHtml(b.porsi_label || "") + "\" placeholder=\"Label porsi (cup, sdt, dll) — opsional\" maxlength=\"20\">"
+        +   "<div style=\"display:flex;gap:6px\"><button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
+        +   "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a></div>"
+        + "</div>"
         + "</form></td></tr>";
     }
+    const hpp     = hargaPorsi(b);
+    const lp      = labelPorsi(b);
+    const isPorsi = Number(b.qty_per_porsi || 1) !== 1 || (b.porsi_label && b.porsi_label.trim());
     return "<tr>"
       + "<td><strong>" + escHtml(b.nama) + "</strong></td>"
       + "<td><span class=\"mp-bb-satuan\">" + escHtml(b.satuan) + "</span></td>"
       + "<td><span class=\"mp-bb-harga\">" + rpFmt(b.harga_per_satuan) + " <span style=\"color:#7a8c78;font-weight:400\">/ " + escHtml(b.satuan) + "</span></span></td>"
+      + "<td>" + (isPorsi
+          ? "<div style=\"display:flex;flex-direction:column;gap:1px\">"
+            + "<span class=\"mp-bb-harga\" style=\"color:#7c2dc4\">" + rpFmt(hpp) + " / " + escHtml(lp) + "</span>"
+            + "<span style=\"font-size:10.5px;color:#7a8c78\">1 " + escHtml(lp) + " = " + Number(b.qty_per_porsi) + " " + escHtml(b.satuan) + "</span>"
+            + "</div>"
+          : "<span style=\"font-size:11px;color:#b0bfae;font-style:italic\">= harga / satuan</span>")
+      + "</td>"
       + "<td><div class=\"mp-bb-act\">"
       +   "<a href=\"/operasional/menu?tab=bahan&editbahan=" + b.id + "\" class=\"mp-bb-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
       +   "<a href=\"/operasional/menu/bahan/hapus?id=" + b.id + "\" class=\"mp-bb-del\" onclick=\"return confirm('Hapus bahan \\'" + escHtml(b.nama) + "\\'? Resep menu yang pakai bahan ini juga akan kebawa hapus.')\"><i class=\"ti ti-trash\"></i></a>"
@@ -3337,23 +3361,37 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "<div class=\"mp-bb-hdr\">"
     +   "<div>"
     +   "<div class=\"mp-bb-title\"><i class=\"ti ti-flask\"></i> Bahan Baku</div>"
-    +   "<div class=\"mp-bb-sub\">Master harga bahan — dipakai utk hitung HPP otomatis per menu</div>"
+    +   "<div class=\"mp-bb-sub\">Master harga bahan + konversi porsi — biar di resep tinggal input qty 1, 2, 3 saja.</div>"
     +   "</div>"
     + "</div>"
-    // Add form (di atas table)
-    + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" class=\"mp-bb-form\">"
-    +   "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama bahan (contoh: Bubuk Kopi)\" required>"
-    +   "<select class=\"mp-input\" name=\"satuan\">"
-    +     SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === "gram" ? " selected" : "") + ">" + s + "</option>").join("")
-    +   "</select>"
-    +   "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" placeholder=\"Harga / satuan\" required oninput=\"fmtH(this)\"></div>"
-    +   "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+    // Add form — 2 baris: identitas (atas) + konversi porsi (bawah, opsional)
+    + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" style=\"margin-bottom:14px\">"
+    +   "<div class=\"mp-bb-form\" style=\"margin-bottom:8px\">"
+    +     "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama bahan (contoh: Es Batu)\" required>"
+    +     "<select class=\"mp-input\" name=\"satuan\">"
+    +       SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === "gram" ? " selected" : "") + ">" + s + "</option>").join("")
+    +     "</select>"
+    +     "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" placeholder=\"Harga / satuan\" required oninput=\"fmtH(this)\"></div>"
+    +     "<div></div>"
+    +   "</div>"
+    +   "<div class=\"mp-bb-form\" style=\"background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto\">"
+    +     "<div style=\"display:flex;align-items:center;font-size:12px;color:#7c2dc4;font-weight:600;padding-left:4px\">Per 1 porsi =</div>"
+    +     "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"1\" placeholder=\"Jumlah (mis. 0.2)\">"
+    +     "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" placeholder=\"Label porsi (cup, sdt, dll) — opsional\" maxlength=\"20\">"
+    +     "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+    +   "</div>"
     + "</form>"
+    // Hint
+    + "<div style=\"font-size:11.5px;color:#7a8c78;margin-bottom:10px;padding:8px 12px;background:#f9fbf8;border-left:3px solid #c19ee6;border-radius:4px\">"
+    +   "<i class=\"ti ti-bulb\" style=\"font-size:13px;color:#7c2dc4\"></i> "
+    +   "<strong>Contoh:</strong> Es Batu beli Rp 1.100/kg, 1 cup ~ 200 gram → isi <code>0.2</code> & label <code>cup</code>. "
+    +   "Di resep nanti tinggal input <code>1</code>, <code>2</code> dst (whole numbers, gak perlu mikir kg)."
+    + "</div>"
     // Table
     + (bahanList.length === 0
       ? "<div class=\"mp-bb-empty\"><i class=\"ti ti-package-off\"></i>Belum ada bahan baku. Tambahkan di atas untuk mulai hitung HPP.</div>"
       : "<table class=\"mp-bb-table\"><thead><tr>"
-        + "<th>Nama Bahan</th><th>Satuan</th><th>Harga / Satuan</th><th style=\"text-align:right\">Aksi</th>"
+        + "<th>Nama Bahan</th><th>Satuan Beli</th><th>Harga Beli</th><th>Per Porsi</th><th style=\"text-align:right\">Aksi</th>"
         + "</tr></thead><tbody>"
         + bahanList.map(renderBahanRow).join("")
         + "</tbody></table>")
@@ -3365,25 +3403,30 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     const existing = resepByMenu[resepMenu.id] || [];
     const currentHpp = hppMap.get(resepMenu.id) || 0;
     const mr = marginOf(resepMenu.harga, currentHpp);
-    const bahanOpts = bahanList.map((b) =>
-      "<option value=\"" + b.id + "\" data-harga=\"" + b.harga_per_satuan + "\" data-satuan=\"" + escHtml(b.satuan) + "\">"
-      + escHtml(b.nama) + " (" + rpFmt(b.harga_per_satuan) + "/" + escHtml(b.satuan) + ")</option>"
-    ).join("");
+    // Build dropdown options: tampilkan harga per porsi (bukan per satuan).
+    // Dataset menyimpan harga & qty_per_porsi biar JS bisa recompute.
     const renderResepRow = (r, idx) => {
       const selectedId = r ? r.bahan_id : 0;
       const qty        = r ? r.qty      : "";
       const subtotal   = r ? r.subtotal : 0;
+      const labelInit  = r ? (r.porsi_label && r.porsi_label.trim() ? r.porsi_label.trim() : r.satuan) : "—";
       return "<tr class=\"mp-rs-trow\" data-idx=\"" + idx + "\">"
         + "<td><select name=\"bahan_id\" class=\"mp-rs-bahan\" onchange=\"rsRowChange(this)\" required>"
         +   "<option value=\"\">— Pilih bahan —</option>"
-        +   bahanList.map((b) =>
-              "<option value=\"" + b.id + "\" data-harga=\"" + b.harga_per_satuan + "\" data-satuan=\"" + escHtml(b.satuan) + "\""
-              + (b.id === selectedId ? " selected" : "") + ">"
-              + escHtml(b.nama) + " (" + rpFmt(b.harga_per_satuan) + "/" + escHtml(b.satuan) + ")</option>"
-            ).join("")
+        +   bahanList.map((b) => {
+              const hp = hargaPorsi(b);
+              const lp = labelPorsi(b);
+              return "<option value=\"" + b.id + "\""
+                + " data-harga=\"" + b.harga_per_satuan + "\""
+                + " data-qpp=\"" + (b.qty_per_porsi || 1) + "\""
+                + " data-label=\"" + escHtml(lp) + "\""
+                + " data-hpporsi=\"" + hp + "\""
+                + (b.id === selectedId ? " selected" : "") + ">"
+                + escHtml(b.nama) + " (" + rpFmt(hp) + "/" + escHtml(lp) + ")</option>";
+            }).join("")
         + "</select></td>"
-        + "<td style=\"width:130px\"><input type=\"number\" name=\"qty\" class=\"mp-rs-qty\" step=\"0.001\" min=\"0\" value=\"" + qty + "\" oninput=\"rsRowChange(this)\" placeholder=\"0\"></td>"
-        + "<td style=\"width:80px\" class=\"mp-rs-satuan\">" + (r ? escHtml(r.satuan) : "—") + "</td>"
+        + "<td style=\"width:130px\"><input type=\"number\" name=\"qty\" class=\"mp-rs-qty\" step=\"1\" min=\"0\" value=\"" + qty + "\" oninput=\"rsRowChange(this)\" placeholder=\"0\"></td>"
+        + "<td style=\"width:80px\" class=\"mp-rs-satuan\">" + escHtml(labelInit) + "</td>"
         + "<td style=\"width:130px\" class=\"mp-rs-sub-val\" data-sub=\"" + subtotal + "\">" + rpFmt(subtotal) + "</td>"
         + "<td style=\"width:40px;text-align:center\"><button type=\"button\" class=\"mp-rs-del\" onclick=\"rsDelRow(this)\" title=\"Hapus baris\"><i class=\"ti ti-x\"></i></button></td>"
         + "</tr>";
@@ -3415,7 +3458,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
       +   "<input type=\"hidden\" name=\"menu_id\" value=\"" + resepMenu.id + "\">"
       +   "<input type=\"hidden\" name=\"harga\" id=\"rsHarga\" value=\"" + resepMenu.harga + "\">"
       +   "<table class=\"mp-rs-table\"><thead><tr>"
-      +     "<th>Bahan</th><th style=\"text-align:right\">Qty</th><th>Satuan</th><th style=\"text-align:right\">Subtotal</th><th></th>"
+      +     "<th>Bahan</th><th style=\"text-align:right\">Qty</th><th>Porsi</th><th style=\"text-align:right\">Subtotal</th><th></th>"
       +   "</tr></thead><tbody id=\"resepRows\">" + rows + "</tbody></table>"
       +   "<div class=\"mp-rs-add-row\">"
       +     "<button type=\"button\" class=\"mp-rs-add-btn\" onclick=\"rsAddRow()\"><i class=\"ti ti-plus\"></i> Tambah Bahan</button>"
@@ -3705,12 +3748,14 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +     "var sub=tr.querySelector('.mp-rs-sub-val');"
     +     "var sat=tr.querySelector('.mp-rs-satuan');"
     +     "var opt=sel.options[sel.selectedIndex];"
-    +     "var harga=opt?parseInt(opt.dataset.harga||0):0;"
-    +     "var satuan=opt?(opt.dataset.satuan||''):'';"
+    +     // Pakai harga PORSI (sudah dihitung di server = harga × qty_per_porsi).
+    +     // Subtotal = qty (porsi count) × harga_per_porsi.
+    +     "var hp=opt?parseInt(opt.dataset.hpporsi||0):0;"
+    +     "var label=opt?(opt.dataset.label||''):'';"
     +     "var q=parseFloat((qin.value||'').replace(',','.'))||0;"
-    +     "var s=Math.round(harga*q);"
+    +     "var s=Math.round(hp*q);"
     +     "sub.textContent=rpFmt(s);sub.dataset.sub=s;"
-    +     "if(sat)sat.textContent=satuan||'—';"
+    +     "if(sat)sat.textContent=label||'\\u2014';"
     +     "total+=s;"
     +   "});"
     +   "var harga=parseInt(document.getElementById('rsHarga').value)||0;"

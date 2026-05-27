@@ -347,24 +347,33 @@ export const deleteMenuTopping = async (id) => {
 // (mis. 1 gram = Rp 100). HPP menu = SUM(qty × harga_per_satuan) dari resep.
 
 export const readBahan = async () => {
-  const res = await query("SELECT id, nama, satuan, harga_per_satuan FROM bahan_baku ORDER BY nama ASC");
+  const res = await query(
+    `SELECT id, nama, satuan, harga_per_satuan,
+            qty_per_porsi::float AS qty_per_porsi, porsi_label
+     FROM bahan_baku ORDER BY nama ASC`
+  );
   return res.rows;
 };
 
-export const addBahan = async (nama, satuan, hargaPerSatuan) => {
+export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "") => {
+  const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
   const res = await query(
-    `INSERT INTO bahan_baku (nama, satuan, harga_per_satuan) VALUES ($1, $2, $3)
+    `INSERT INTO bahan_baku (nama, satuan, harga_per_satuan, qty_per_porsi, porsi_label)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (nama) DO NOTHING
      RETURNING id`,
-    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0]
+    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp, (porsiLabel || "").trim().slice(0, 20)]
   );
   return res.rows[0]?.id ?? null;
 };
 
-export const updateBahan = async (id, nama, satuan, hargaPerSatuan) => {
+export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "") => {
+  const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
   await query(
-    `UPDATE bahan_baku SET nama=$1, satuan=$2, harga_per_satuan=$3, updated_at=NOW() WHERE id=$4`,
-    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, id]
+    `UPDATE bahan_baku
+       SET nama=$1, satuan=$2, harga_per_satuan=$3, qty_per_porsi=$4, porsi_label=$5, updated_at=NOW()
+     WHERE id=$6`,
+    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp, (porsiLabel || "").trim().slice(0, 20), id]
   );
 };
 
@@ -375,12 +384,16 @@ export const deleteBahan = async (id) => {
 // ── Resep menu (M:N menu_items ↔ bahan_baku) ──────────────────
 
 // Baca semua row resep + join data bahan (untuk hitung HPP & UI editor).
-// Return: [{ menu_item_id, bahan_id, qty, catatan, nama, satuan, harga_per_satuan, subtotal }]
+// qty = jumlah PORSI (integer). Subtotal = qty × qty_per_porsi × harga_per_satuan.
+// Return: [{ menu_item_id, bahan_id, qty, catatan, nama, satuan, harga_per_satuan,
+//            qty_per_porsi, porsi_label, harga_per_porsi, subtotal }]
 export const readResepAll = async () => {
   const res = await query(`
     SELECT r.menu_item_id, r.bahan_id, r.qty::float AS qty, r.catatan,
            b.nama, b.satuan, b.harga_per_satuan,
-           (r.qty * b.harga_per_satuan)::int AS subtotal
+           b.qty_per_porsi::float AS qty_per_porsi, b.porsi_label,
+           (b.qty_per_porsi * b.harga_per_satuan)::int AS harga_per_porsi,
+           (r.qty * b.qty_per_porsi * b.harga_per_satuan)::int AS subtotal
     FROM menu_resep r
     JOIN bahan_baku b ON b.id = r.bahan_id
     ORDER BY r.menu_item_id, b.nama
@@ -411,9 +424,10 @@ export const setResep = async (menuItemId, items = []) => {
 
 // Hitung HPP per menu item → Map<menu_item_id, hpp_int>. Dipakai di view
 // untuk display HPP & margin di tiap card menu.
+// qty = jumlah porsi → kalikan qty_per_porsi (konversi ke satuan dasar) × harga.
 export const computeHppMap = async () => {
   const res = await query(`
-    SELECT r.menu_item_id, SUM(r.qty * b.harga_per_satuan)::int AS hpp
+    SELECT r.menu_item_id, SUM(r.qty * b.qty_per_porsi * b.harga_per_satuan)::int AS hpp
     FROM menu_resep r
     JOIN bahan_baku b ON b.id = r.bahan_id
     GROUP BY r.menu_item_id
