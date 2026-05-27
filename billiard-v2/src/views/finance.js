@@ -3313,11 +3313,77 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
   // Kalau qty_per_porsi=1 & porsi_label kosong → "porsi = satuan" (tampil sama).
   const hargaPorsi = (b) => Math.round((Number(b.harga_per_satuan) || 0) * (Number(b.qty_per_porsi) || 1));
   const labelPorsi = (b) => (b.porsi_label && b.porsi_label.trim()) ? b.porsi_label.trim() : b.satuan;
+  // Format relative time (server-side). ISO string in → "2 hari lalu" out.
+  const relTimeServer = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    const diff = Date.now() - d.getTime();
+    const sec = Math.max(0, Math.floor(diff / 1000));
+    if (sec < 60)       return "baru saja";
+    const min  = Math.floor(sec / 60);
+    if (min < 60)       return min + " menit lalu";
+    const hour = Math.floor(min / 60);
+    if (hour < 24)      return hour + " jam lalu";
+    const day  = Math.floor(hour / 24);
+    if (day < 30)       return day + " hari lalu";
+    const month = Math.floor(day / 30);
+    if (month < 12)     return month + " bulan lalu";
+    return Math.floor(month / 12) + " tahun lalu";
+  };
+  // Format full date (Indonesian, short): "25 Mei 2026"
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  // Renders the "Info Lebih" collapsible section (harga bulk, supplier, catatan).
+  // Dipakai di add form & edit row. `b` = existing bahan (untuk edit) atau null (add).
+  const renderInfoLebih = (b) => {
+    const hd  = (b && b.harga_dus)       ? b.harga_dus       : "";
+    const ipd = (b && b.isi_per_dus)     ? b.isi_per_dus     : "";
+    const hr  = (b && b.harga_renteng)   ? b.harga_renteng   : "";
+    const ipr = (b && b.isi_per_renteng) ? b.isi_per_renteng : "";
+    const sup = b ? (b.supplier || "") : "";
+    const cat = b ? (b.catatan  || "") : "";
+    const isOpen = b && (hd || hr || sup || cat);
+    return "<details class=\"mp-bb-more\"" + (isOpen ? " open" : "") + ">"
+      + "<summary><i class=\"ti ti-chevron-down\"></i> Info lebih (harga bulk, supplier, catatan)</summary>"
+      + "<div class=\"mp-bb-more-body\">"
+      // Harga Bulk (dus)
+      +   "<div class=\"mp-bb-more-sec\">"
+      +     "<div class=\"mp-bb-more-lbl\"><i class=\"ti ti-package\"></i> Harga 1 Dus</div>"
+      +     "<div class=\"mp-bb-more-grid\">"
+      +       "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_dus\" value=\"" + hd + "\" oninput=\"fmtH(this)\" placeholder=\"Harga 1 dus\"></div>"
+      +       "<input class=\"mp-input\" type=\"number\" step=\"0.001\" min=\"0\" name=\"isi_per_dus\" value=\"" + ipd + "\" placeholder=\"Isi per dus (mis. 10)\">"
+      +     "</div>"
+      +   "</div>"
+      // Harga Renteng
+      +   "<div class=\"mp-bb-more-sec\">"
+      +     "<div class=\"mp-bb-more-lbl\"><i class=\"ti ti-stack-2\"></i> Harga 1 Renteng</div>"
+      +     "<div class=\"mp-bb-more-grid\">"
+      +       "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_renteng\" value=\"" + hr + "\" oninput=\"fmtH(this)\" placeholder=\"Harga 1 renteng\"></div>"
+      +       "<input class=\"mp-input\" type=\"number\" step=\"0.001\" min=\"0\" name=\"isi_per_renteng\" value=\"" + ipr + "\" placeholder=\"Isi per renteng (mis. 10)\">"
+      +     "</div>"
+      +   "</div>"
+      // Supplier + Catatan
+      +   "<div class=\"mp-bb-more-sec\">"
+      +     "<div class=\"mp-bb-more-lbl\"><i class=\"ti ti-truck\"></i> Supplier &amp; Catatan</div>"
+      +     "<div class=\"mp-bb-more-grid\">"
+      +       "<input class=\"mp-input\" type=\"text\" name=\"supplier\" value=\"" + escHtml(sup) + "\" placeholder=\"Toko / supplier (opsional)\" maxlength=\"120\">"
+      +       "<input class=\"mp-input\" type=\"text\" name=\"catatan\" value=\"" + escHtml(cat) + "\" placeholder=\"Catatan bebas (opsional)\" maxlength=\"500\">"
+      +     "</div>"
+      +   "</div>"
+      + "</div>"
+      + "</details>";
+  };
 
   const renderBahanRow = (b) => {
     if (editBahan && editBahan.id === b.id) {
-      // Inline edit — 2 baris: identitas + konversi porsi
-      return "<tr class=\"mp-bb-edit-row\"><td colspan=\"5\">"
+      // Inline edit — identitas + konversi porsi + info lebih
+      return "<tr class=\"mp-bb-edit-row\"><td colspan=\"6\">"
         + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" style=\"display:flex;flex-direction:column;gap:8px;margin:0\" data-bb-form>"
         + "<input type=\"hidden\" name=\"id\" value=\"" + b.id + "\">"
         + "<div class=\"mp-bb-form\" style=\"margin:0;background:transparent;border:none;padding:0\">"
@@ -3335,17 +3401,24 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
         +     "<span class=\"mp-bb-qpp-sfx\" data-bb-sfx>" + escHtml(b.satuan) + "</span>"
         +   "</div>"
         +   "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" value=\"" + escHtml(b.porsi_label || "") + "\" placeholder=\"Label porsi (cup, sdt, dll)\" maxlength=\"20\">"
-        +   "<div style=\"display:flex;gap:6px\"><button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
-        +   "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a></div>"
+        +   "<div></div>"
         + "</div>"
         + "<div class=\"mp-bb-preview\" data-bb-preview></div>"
+        + renderInfoLebih(b)
+        + "<div style=\"display:flex;gap:8px;justify-content:flex-end;margin-top:6px\">"
+        +   "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a>"
+        +   "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-check\"></i> Simpan Perubahan</button>"
+        + "</div>"
         + "</form></td></tr>";
     }
     const hpp     = hargaPorsi(b);
     const lp      = labelPorsi(b);
     const isPorsi = Number(b.qty_per_porsi || 1) !== 1 || (b.porsi_label && b.porsi_label.trim());
+    const updateLbl = relTimeServer(b.tanggal_update_harga);
     return "<tr>"
-      + "<td><strong>" + escHtml(b.nama) + "</strong></td>"
+      + "<td><strong>" + escHtml(b.nama) + "</strong>"
+      +   (b.supplier ? "<div style=\"font-size:10.5px;color:#7a8c78;margin-top:2px\"><i class=\"ti ti-truck\" style=\"font-size:11px\"></i> " + escHtml(b.supplier) + "</div>" : "")
+      + "</td>"
       + "<td><span class=\"mp-bb-satuan\">" + escHtml(b.satuan) + "</span></td>"
       + "<td><span class=\"mp-bb-harga\">" + rpFmt(b.harga_per_satuan) + " <span style=\"color:#7a8c78;font-weight:400\">/ " + escHtml(b.satuan) + "</span></span></td>"
       + "<td>" + (isPorsi
@@ -3355,8 +3428,13 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
             + "</div>"
           : "<span style=\"font-size:11px;color:#b0bfae;font-style:italic\">= harga / satuan</span>")
       + "</td>"
+      + "<td><div style=\"display:flex;flex-direction:column;gap:1px\">"
+      +   "<span style=\"font-size:11.5px;color:#1a2318;font-weight:500\">" + escHtml(updateLbl) + "</span>"
+      +   "<span style=\"font-size:10px;color:#b0bfae\">" + fmtDate(b.tanggal_update_harga) + "</span>"
+      + "</div></td>"
       + "<td><div class=\"mp-bb-act\">"
-      +   "<a href=\"/operasional/menu?tab=bahan&editbahan=" + b.id + "\" class=\"mp-bb-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
+      +   "<button type=\"button\" class=\"mp-bb-detail\" onclick=\"bbShowDetail(" + b.id + ")\" title=\"Lihat detail & history harga\"><i class=\"ti ti-eye\"></i></button>"
+      +   "<a href=\"/operasional/menu?tab=bahan&editbahan=" + b.id + "\" class=\"mp-bb-edit\"><i class=\"ti ti-edit\"></i></a>"
       +   "<a href=\"/operasional/menu/bahan/hapus?id=" + b.id + "\" class=\"mp-bb-del\" onclick=\"return confirm('Hapus bahan \\'" + escHtml(b.nama) + "\\'? Resep menu yang pakai bahan ini juga akan kebawa hapus.')\"><i class=\"ti ti-trash\"></i></a>"
       + "</div></td>"
       + "</tr>";
@@ -3368,7 +3446,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "<div class=\"mp-bb-sub\">Master harga bahan + konversi porsi — biar di resep tinggal input qty 1, 2, 3 saja.</div>"
     +   "</div>"
     + "</div>"
-    // Add form — 2 baris: identitas (atas) + konversi porsi (bawah, opsional)
+    // Add form — sections: identitas + konversi porsi + info lebih (collapsible)
     + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" style=\"margin-bottom:14px\" data-bb-form>"
     +   "<div class=\"mp-bb-form\" style=\"margin-bottom:8px\">"
     +     "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama bahan (contoh: Es Batu)\" required>"
@@ -3378,16 +3456,20 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +     "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" placeholder=\"Harga / satuan\" required oninput=\"fmtH(this)\"></div>"
     +     "<div></div>"
     +   "</div>"
-    +   "<div class=\"mp-bb-form\" style=\"background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto\">"
+    +   "<div class=\"mp-bb-form\" style=\"background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto;margin-bottom:8px\">"
     +     "<div style=\"display:flex;align-items:center;font-size:12px;color:#7c2dc4;font-weight:600;padding-left:4px\">Per 1 porsi =</div>"
     +     "<div class=\"mp-bb-qpp\">"
     +       "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"1\" placeholder=\"contoh: 0.2\">"
     +       "<span class=\"mp-bb-qpp-sfx\" data-bb-sfx>gram</span>"
     +     "</div>"
     +     "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" placeholder=\"Label porsi (cup, sdt, dll)\" maxlength=\"20\">"
-    +     "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+    +     "<div></div>"
     +   "</div>"
     +   "<div class=\"mp-bb-preview\" data-bb-preview></div>"
+    +   renderInfoLebih(null)
+    +   "<div style=\"display:flex;justify-content:flex-end;margin-top:8px\">"
+    +     "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah Bahan</button>"
+    +   "</div>"
     + "</form>"
     // Hint
     + "<div style=\"font-size:11.5px;color:#7a8c78;margin-bottom:10px;padding:8px 12px;background:#f9fbf8;border-left:3px solid #c19ee6;border-radius:4px\">"
@@ -3399,10 +3481,33 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + (bahanList.length === 0
       ? "<div class=\"mp-bb-empty\"><i class=\"ti ti-package-off\"></i>Belum ada bahan baku. Tambahkan di atas untuk mulai hitung HPP.</div>"
       : "<table class=\"mp-bb-table\"><thead><tr>"
-        + "<th>Nama Bahan</th><th>Satuan Beli</th><th>Harga Beli</th><th>Per Porsi</th><th style=\"text-align:right\">Aksi</th>"
+        + "<th>Nama Bahan</th><th>Satuan Beli</th><th>Harga Beli</th><th>Per Porsi</th><th>Update</th><th style=\"text-align:right\">Aksi</th>"
         + "</tr></thead><tbody>"
         + bahanList.map(renderBahanRow).join("")
         + "</tbody></table>")
+    + "</div>";
+
+  // ── Detail modal (hidden by default, dibuka via bbShowDetail) ───
+  // JSON map dipakai oleh JS utk render detail tanpa fetch ulang data dasar.
+  const bahanMapJson = JSON.stringify(
+    Object.fromEntries(bahanList.map((b) => [b.id, {
+      nama: b.nama, satuan: b.satuan, harga: b.harga_per_satuan,
+      qpp: b.qty_per_porsi, label: b.porsi_label,
+      harga_dus: b.harga_dus, isi_dus: b.isi_per_dus,
+      harga_renteng: b.harga_renteng, isi_renteng: b.isi_per_renteng,
+      supplier: b.supplier, catatan: b.catatan,
+      tgl_input: b.tanggal_input, tgl_update: b.tanggal_update_harga,
+    }]))
+  );
+  const bahanDetailModal = "<div class=\"bb-modal-overlay\" id=\"bbDetailModal\" onclick=\"if(event.target===this)bbCloseDetail()\">"
+    + "<div class=\"bb-modal\">"
+    +   "<div class=\"bb-modal-hdr\">"
+    +     "<div><div class=\"bb-modal-hdr-title\" id=\"bbModalTitle\">Detail Bahan</div>"
+    +     "<div class=\"bb-modal-hdr-sub\" id=\"bbModalSub\"></div></div>"
+    +     "<button type=\"button\" class=\"bb-modal-close\" onclick=\"bbCloseDetail()\"><i class=\"ti ti-x\"></i></button>"
+    +   "</div>"
+    +   "<div class=\"bb-modal-body\" id=\"bbModalBody\"></div>"
+    + "</div>"
     + "</div>";
 
   // ── Resep editor block (full-width, hanya saat ?resep=<id>) ─────
@@ -3653,6 +3758,57 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     ".mp-bb-act .mp-bb-del:hover{background:#fcdede}",
     ".mp-bb-satuan{background:#e6f1fb;color:#2660a4;padding:2px 8px;border-radius:8px;font-size:10.5px;font-weight:600;display:inline-block}",
     ".mp-bb-harga{font-family:'DM Mono',monospace;font-weight:700;color:#2d6624}",
+    // Detail button (icon-only)
+    ".mp-bb-act .mp-bb-detail{background:#fff;border:1px solid #d4ddd2;color:#1a2318;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}",
+    ".mp-bb-act .mp-bb-detail:hover{background:#eef1ed}",
+    ".mp-bb-act .mp-bb-detail i{font-size:13px}",
+    // Info Lebih collapsible (di form add/edit)
+    ".mp-bb-more{background:#f9fbf8;border:1px solid #e2e8e0;border-radius:8px;margin-top:8px;overflow:hidden}",
+    ".mp-bb-more[open]{border-color:#c19ee6;background:#fcfaff}",
+    ".mp-bb-more summary{padding:10px 14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#7a8c78;display:flex;align-items:center;gap:6px;user-select:none;list-style:none}",
+    ".mp-bb-more summary::-webkit-details-marker{display:none}",
+    ".mp-bb-more summary i{transition:transform .2s}",
+    ".mp-bb-more[open] summary i{transform:rotate(180deg)}",
+    ".mp-bb-more[open] summary{color:#7c2dc4;border-bottom:1px solid #e6d3f8}",
+    ".mp-bb-more-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}",
+    ".mp-bb-more-sec{display:flex;flex-direction:column;gap:5px}",
+    ".mp-bb-more-lbl{font-size:10.5px;font-weight:700;color:#7a8c78;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:5px}",
+    ".mp-bb-more-lbl i{font-size:12px;color:#7c2dc4}",
+    ".mp-bb-more-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}",
+    "@media(max-width:600px){.mp-bb-more-grid{grid-template-columns:1fr}}",
+    // Detail modal (full-screen overlay)
+    ".bb-modal-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,30,15,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:16px;overflow-y:auto}",
+    ".bb-modal-overlay.open{display:flex}",
+    ".bb-modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.25)}",
+    ".bb-modal-hdr{padding:18px 22px;border-bottom:1px solid #f0f3ef;display:flex;align-items:center;justify-content:space-between;gap:14px}",
+    ".bb-modal-hdr-title{font-size:17px;font-weight:700;color:#1a2318}",
+    ".bb-modal-hdr-sub{font-size:11.5px;color:#7a8c78;margin-top:3px}",
+    ".bb-modal-close{background:transparent;border:none;color:#7a8c78;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:6px}",
+    ".bb-modal-close:hover{background:#f4f6f3;color:#1a2318}",
+    ".bb-modal-body{padding:18px 22px;display:flex;flex-direction:column;gap:16px}",
+    ".bb-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
+    "@media(max-width:520px){.bb-info-grid{grid-template-columns:1fr}}",
+    ".bb-info-card{background:#f9fbf8;border:1px solid #e2e8e0;border-radius:9px;padding:11px 13px}",
+    ".bb-info-card.hl{background:#fcfaff;border-color:#e6d3f8}",
+    ".bb-info-lbl{font-size:10.5px;font-weight:700;color:#7a8c78;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;align-items:center;gap:5px}",
+    ".bb-info-lbl i{font-size:12px;color:#7c2dc4}",
+    ".bb-info-val{font-size:14px;font-weight:600;color:#1a2318;font-family:'DM Mono',monospace}",
+    ".bb-info-sub{font-size:11px;color:#7a8c78;margin-top:2px;font-family:'DM Sans',sans-serif;font-weight:400}",
+    ".bb-info-empty{font-size:13px;color:#b0bfae;font-style:italic;font-weight:400;font-family:'DM Sans',sans-serif}",
+    ".bb-sec-title{font-size:12px;font-weight:700;color:#7c2dc4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px;padding-bottom:5px;border-bottom:1px solid #f0e6fa}",
+    ".bb-sec-title i{font-size:14px}",
+    ".bb-history{background:#f9fbf8;border:1px solid #e2e8e0;border-radius:9px;padding:11px 14px;max-height:240px;overflow-y:auto}",
+    ".bb-history-empty{font-size:12px;color:#b0bfae;font-style:italic;text-align:center;padding:14px}",
+    ".bb-history-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e2e8e0;gap:10px}",
+    ".bb-history-row:last-child{border-bottom:none}",
+    ".bb-history-when{font-size:11.5px;color:#7a8c78;font-family:'DM Sans',sans-serif;flex:1;min-width:0}",
+    ".bb-history-when strong{color:#1a2318;font-weight:600}",
+    ".bb-history-change{font-size:12.5px;font-family:'DM Mono',monospace;font-weight:700;color:#1a2318;white-space:nowrap}",
+    ".bb-history-change .old{color:#7a8c78;text-decoration:line-through;font-weight:500}",
+    ".bb-history-change .new{color:#2d6624}",
+    ".bb-history-change .new.up{color:#a32d2d}",
+    ".bb-history-change .delta{font-size:10.5px;color:#7a8c78;font-weight:500;margin-left:4px}",
+    ".bb-history-by{font-size:10px;color:#b0bfae;margin-top:1px}",
     // qty_per_porsi input dgn suffix (satuan beli)
     ".mp-bb-qpp{position:relative;display:flex;align-items:stretch}",
     ".mp-bb-qpp input{padding-right:48px;flex:1}",
@@ -3808,6 +3964,74 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "rsRecompute();"
     + "}"
     + "if(document.getElementById('resepEditor')){rsRecompute();}"
+    // ── Bahan detail modal — show/close + load history async ──────
+    + "var BAHAN_MAP=" + bahanMapJson + ";"
+    + "function bbFmtDateTime(iso){if(!iso)return'—';var d=new Date(iso);if(isNaN(d.getTime()))return'—';return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});}"
+    + "function bbRelTime(iso){if(!iso)return'—';var d=new Date(iso);if(isNaN(d.getTime()))return'—';var diff=Date.now()-d.getTime();var sec=Math.max(0,Math.floor(diff/1000));if(sec<60)return'baru saja';var min=Math.floor(sec/60);if(min<60)return min+' menit lalu';var hour=Math.floor(min/60);if(hour<24)return hour+' jam lalu';var day=Math.floor(hour/24);if(day<30)return day+' hari lalu';var month=Math.floor(day/30);if(month<12)return month+' bulan lalu';return Math.floor(month/12)+' tahun lalu';}"
+    + "function bbShowDetail(id){"
+    +   "var b=BAHAN_MAP[id];if(!b)return;"
+    +   "var modal=document.getElementById('bbDetailModal');"
+    +   "var title=document.getElementById('bbModalTitle');"
+    +   "var sub=document.getElementById('bbModalSub');"
+    +   "var body=document.getElementById('bbModalBody');"
+    +   "title.textContent=b.nama;"
+    +   "sub.innerHTML='<i class=\"ti ti-coin\" style=\"font-size:11px\"></i> '+rpFmt(b.harga)+' / '+b.satuan+'  ·  ditambahkan '+bbFmtDateTime(b.tgl_input);"
+    +   // Effective harga porsi
+    +   "var hp=Math.round((b.harga||0)*(b.qpp||1));"
+    +   "var lbl=(b.label&&b.label.trim())?b.label.trim():b.satuan;"
+    +   // Build info cards HTML
+    +   "var dusInfo=(b.harga_dus&&b.isi_dus)?"
+    +     "(rpFmt(b.harga_dus)+'<span class=\"bb-info-sub\"> / dus (isi '+b.isi_dus+' '+b.satuan+', ≈ '+rpFmt(Math.round(b.harga_dus/b.isi_dus))+' /'+b.satuan+')</span>')"
+    +     ":'<span class=\"bb-info-empty\">belum diisi</span>';"
+    +   "var rentengInfo=(b.harga_renteng&&b.isi_renteng)?"
+    +     "(rpFmt(b.harga_renteng)+'<span class=\"bb-info-sub\"> / renteng (isi '+b.isi_renteng+' '+b.satuan+', ≈ '+rpFmt(Math.round(b.harga_renteng/b.isi_renteng))+' /'+b.satuan+')</span>')"
+    +     ":'<span class=\"bb-info-empty\">belum diisi</span>';"
+    +   "var html='';"
+    +   // Section: Harga
+    +   "html+='<div>';"
+    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-cash\"></i> Harga</div>';"
+    +   "html+='<div class=\"bb-info-grid\">';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-coin\"></i> Harga/Satuan</div><div class=\"bb-info-val\">'+rpFmt(b.harga)+'<span class=\"bb-info-sub\"> / '+b.satuan+'</span></div></div>';"
+    +   "html+='<div class=\"bb-info-card hl\"><div class=\"bb-info-lbl\"><i class=\"ti ti-flask\"></i> Harga/Porsi</div><div class=\"bb-info-val\">'+rpFmt(hp)+'<span class=\"bb-info-sub\"> / '+lbl+'</span></div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-package\"></i> Harga Dus</div><div class=\"bb-info-val\">'+dusInfo+'</div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-stack-2\"></i> Harga Renteng</div><div class=\"bb-info-val\">'+rentengInfo+'</div></div>';"
+    +   "html+='</div></div>';"
+    +   // Section: Info Lain
+    +   "html+='<div>';"
+    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-info-circle\"></i> Info Lain</div>';"
+    +   "html+='<div class=\"bb-info-grid\">';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-truck\"></i> Supplier</div><div class=\"bb-info-val\">'+(b.supplier?b.supplier:'<span class=\"bb-info-empty\">—</span>')+'</div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-clock\"></i> Update Harga Terakhir</div><div class=\"bb-info-val\">'+bbRelTime(b.tgl_update)+'<span class=\"bb-info-sub\"> ('+bbFmtDateTime(b.tgl_update)+')</span></div></div>';"
+    +   "if(b.catatan){html+='<div class=\"bb-info-card\" style=\"grid-column:1/-1\"><div class=\"bb-info-lbl\"><i class=\"ti ti-notes\"></i> Catatan</div><div class=\"bb-info-val\" style=\"font-family:DM Sans,sans-serif;font-weight:500\">'+b.catatan+'</div></div>';}"
+    +   "html+='</div></div>';"
+    +   // Section: History
+    +   "html+='<div>';"
+    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-history\"></i> History Perubahan Harga</div>';"
+    +   "html+='<div class=\"bb-history\" id=\"bbHistoryList\"><div class=\"bb-history-empty\"><i class=\"ti ti-loader-2\"></i> Memuat…</div></div>';"
+    +   "html+='</div>';"
+    +   "body.innerHTML=html;"
+    +   "modal.classList.add('open');"
+    +   // Fetch history
+    +   "fetch('/operasional/menu/bahan/history?id='+id).then(function(r){return r.json();}).then(function(data){"
+    +     "var el=document.getElementById('bbHistoryList');if(!el)return;"
+    +     "if(!data.ok||!data.rows||data.rows.length===0){el.innerHTML='<div class=\"bb-history-empty\">Belum ada perubahan harga tercatat</div>';return;}"
+    +     "var rows='';"
+    +     "data.rows.forEach(function(r){"
+    +       "var delta=r.harga_baru-r.harga_lama;"
+    +       "var pct=r.harga_lama>0?Math.round((delta/r.harga_lama)*100):0;"
+    +       "var up=delta>0;"
+    +       "rows+='<div class=\"bb-history-row\">';"
+    +       "rows+='<div class=\"bb-history-when\"><strong>'+bbFmtDateTime(r.changed_at)+'</strong>'+(r.changed_by?'<div class=\"bb-history-by\">oleh '+r.changed_by+'</div>':'')+'</div>';"
+    +       "rows+='<div class=\"bb-history-change\"><span class=\"old\">'+rpFmt(r.harga_lama)+'</span> → <span class=\"new'+(up?' up':'')+'\">'+rpFmt(r.harga_baru)+'</span><span class=\"delta\">('+(up?'+':'')+pct+'%)</span></div>';"
+    +       "rows+='</div>';"
+    +     "});"
+    +     "el.innerHTML=rows;"
+    +   "}).catch(function(err){"
+    +     "var el=document.getElementById('bbHistoryList');if(el)el.innerHTML='<div class=\"bb-history-empty\">Gagal memuat: '+err.message+'</div>';"
+    +   "});"
+    + "}"
+    + "function bbCloseDetail(){var m=document.getElementById('bbDetailModal');if(m)m.classList.remove('open');}"
+    + "document.addEventListener('keydown',function(ev){if(ev.key==='Escape')bbCloseDetail();});"
     // ── Bahan Baku form live preview ───────────────────────────
     // Update suffix satuan + preview "Rp X / label" tiap user ketik di field manapun.
     + "function bbBindForm(form){"
@@ -3899,6 +4123,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "<div id=\"bahanTabContent\"" + ((activeTab === "bahan" && !resepMenu) ? "" : " style=\"display:none\"") + ">"
     + bahanTabBlock
     + "</div>"
+    + bahanDetailModal
     + "</div></div></div>"
     + "<script>" + js + "</script>"
     + buildFinanceBottomNav("owner")

@@ -19,7 +19,7 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
-  readBahan, addBahan, updateBahan, deleteBahan,
+  readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
@@ -991,17 +991,37 @@ function parseQtyPerPorsi(raw) {
   const v = parseFloat((raw ?? "").toString().replace(",", ".")) || 0;
   return v > 0 ? v : 1;
 }
+// Helper: parse number bahan (decimal, koma/titik OK, fallback 0).
+function parseNum(raw) {
+  return Math.max(0, parseFloat((raw ?? "").toString().replace(",", ".")) || 0);
+}
+// Helper: parse Rupiah input (strip non-digit, return integer).
+function parseRupiah(raw) {
+  return Math.max(0, parseInt((raw ?? "").toString().replace(/\D/g, "")) || 0);
+}
+// Helper: extract extras dari body utk bahan_baku.
+function parseBahanExtras(body) {
+  return {
+    hargaDus:        parseRupiah(body.harga_dus),
+    isiPerDus:       parseNum(body.isi_per_dus),
+    hargaRenteng:    parseRupiah(body.harga_renteng),
+    isiPerRenteng:   parseNum(body.isi_per_renteng),
+    supplier:        (body.supplier ?? "").trim(),
+    catatan:         (body.catatan  ?? "").trim(),
+  };
+}
 
 // ── POST /operasional/menu/bahan/tambah ─────────────────────────
 router.post("/menu/bahan/tambah", requireOwner, async (req, res) => {
   const nama   = (req.body.nama   ?? "").trim();
   const satuan = (req.body.satuan ?? "pcs").trim();
-  const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  const harga  = parseRupiah(req.body.harga_per_satuan);
   const qtyPP  = parseQtyPerPorsi(req.body.qty_per_porsi);
   const label  = (req.body.porsi_label ?? "").trim();
+  const extras = parseBahanExtras(req.body);
   if (!nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
   try {
-    await addBahan(nama, satuan, harga, qtyPP, label);
+    await addBahan(nama, satuan, harga, qtyPP, label, extras);
     res.redirect("/operasional/menu?tab=bahan");
   } catch (err) {
     console.error("[FINANCE] bahan tambah error:", err.message);
@@ -1010,20 +1030,38 @@ router.post("/menu/bahan/tambah", requireOwner, async (req, res) => {
 });
 
 // ── POST /operasional/menu/bahan/edit ───────────────────────────
+// changedBy diisi otomatis dari user yg login (utk audit history harga).
 router.post("/menu/bahan/edit", requireOwner, async (req, res) => {
   const id     = parseInt(req.body.id) || 0;
   const nama   = (req.body.nama   ?? "").trim();
   const satuan = (req.body.satuan ?? "pcs").trim();
-  const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  const harga  = parseRupiah(req.body.harga_per_satuan);
   const qtyPP  = parseQtyPerPorsi(req.body.qty_per_porsi);
   const label  = (req.body.porsi_label ?? "").trim();
+  const extras = parseBahanExtras(req.body);
+  const who    = res.locals.financeDisplay || res.locals.financeUser || "owner";
   if (!id || !nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
   try {
-    await updateBahan(id, nama, satuan, harga, qtyPP, label);
+    await updateBahan(id, nama, satuan, harga, qtyPP, label, extras, who);
     res.redirect("/operasional/menu?tab=bahan");
   } catch (err) {
     console.error("[FINANCE] bahan edit error:", err.message);
     res.redirect("/operasional/menu?tab=bahan&err=1");
+  }
+});
+
+// ── GET /operasional/menu/bahan/history?id=X ────────────────────
+// Return JSON history perubahan harga utk 1 bahan. Dipake oleh modal
+// detail di view (fetch async).
+router.get("/menu/bahan/history", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (!id) return res.json({ ok: false, rows: [] });
+  try {
+    const rows = await readBahanHistory(id);
+    res.json({ ok: true, rows });
+  } catch (err) {
+    console.error("[FINANCE] bahan history error:", err.message);
+    res.json({ ok: false, rows: [], error: err.message });
   }
 });
 

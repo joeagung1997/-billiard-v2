@@ -259,6 +259,38 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS qty_per_porsi NUMERIC(12,4) NOT NULL DEFAULT 1.0`);
   await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS porsi_label   TEXT          NOT NULL DEFAULT ''`);
 
+  // Kolom info detail (tracking harga + bulk pricing + supplier + catatan).
+  // tanggal_input: kapan bahan ditambahkan (auto-set saat insert).
+  // tanggal_update_harga: kapan harga terakhir diubah (auto-update saat
+  //   harga_per_satuan berubah, via logic di db.js updateBahan).
+  // harga_dus + isi_per_dus: tier harga bulk (mis. 1 dus = 10 sachet @ Rp 13.000).
+  // harga_renteng + isi_per_renteng: tier harga renteng (mis. rokok 1 renteng = 10 batang).
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS tanggal_input        TIMESTAMPTZ   DEFAULT NOW()`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS tanggal_update_harga TIMESTAMPTZ   DEFAULT NOW()`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS harga_dus            INTEGER       NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS isi_per_dus          NUMERIC(12,4) NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS harga_renteng        INTEGER       NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS isi_per_renteng      NUMERIC(12,4) NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS supplier             TEXT          NOT NULL DEFAULT ''`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS catatan              TEXT          NOT NULL DEFAULT ''`);
+
+  // ── Tabel history perubahan harga bahan ──────────────────────────
+  // Audit trail: tiap kali harga_per_satuan diubah di updateBahan,
+  // insert row dgn harga lama → harga baru. Berguna utk tracking
+  // inflasi & trend kenaikan harga over time.
+  await query(`
+    CREATE TABLE IF NOT EXISTS bahan_harga_history (
+      id          SERIAL      PRIMARY KEY,
+      bahan_id    INTEGER     NOT NULL REFERENCES bahan_baku(id) ON DELETE CASCADE,
+      harga_lama  INTEGER     NOT NULL DEFAULT 0,
+      harga_baru  INTEGER     NOT NULL DEFAULT 0,
+      changed_at  TIMESTAMPTZ DEFAULT NOW(),
+      changed_by  TEXT        DEFAULT ''
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_bahan_history_bahan ON bahan_harga_history (bahan_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_bahan_history_when  ON bahan_harga_history (changed_at DESC)`);
+
   // ── Tabel menu_resep (link menu_items ↔ bahan_baku, M:N + qty) ───
   // qty NUMERIC bisa decimal (mis. 2.5 gram, 0.25 sachet). ON DELETE CASCADE:
   // hapus menu_item atau bahan_baku akan otomatis hapus row resep yg

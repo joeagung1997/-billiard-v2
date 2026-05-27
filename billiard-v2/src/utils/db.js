@@ -346,39 +346,110 @@ export const deleteMenuTopping = async (id) => {
 // Schema lihat migrate.js. harga_per_satuan = Rupiah per unit satuan
 // (mis. 1 gram = Rp 100). HPP menu = SUM(qty × harga_per_satuan) dari resep.
 
+// Helper: normalize extras object — terima { hargaDus, isiPerDus, hargaRenteng,
+// isiPerRenteng, supplier, catatan } dgn default aman.
+function normalizeBahanExtras(extras = {}) {
+  return {
+    hargaDus:        Math.max(0, parseInt(extras.hargaDus || 0) || 0),
+    isiPerDus:       Math.max(0, Number(extras.isiPerDus || 0) || 0),
+    hargaRenteng:    Math.max(0, parseInt(extras.hargaRenteng || 0) || 0),
+    isiPerRenteng:   Math.max(0, Number(extras.isiPerRenteng || 0) || 0),
+    supplier:        (extras.supplier || "").toString().trim().slice(0, 120),
+    catatan:         (extras.catatan  || "").toString().trim().slice(0, 500),
+  };
+}
+
 export const readBahan = async () => {
   const res = await query(
     `SELECT id, nama, satuan, harga_per_satuan,
-            qty_per_porsi::float AS qty_per_porsi, porsi_label
+            qty_per_porsi::float AS qty_per_porsi, porsi_label,
+            tanggal_input, tanggal_update_harga,
+            harga_dus, isi_per_dus::float AS isi_per_dus,
+            harga_renteng, isi_per_renteng::float AS isi_per_renteng,
+            supplier, catatan
      FROM bahan_baku ORDER BY nama ASC`
   );
   return res.rows;
 };
 
-export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "") => {
+export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}) => {
   const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
+  const e = normalizeBahanExtras(extras);
   const res = await query(
-    `INSERT INTO bahan_baku (nama, satuan, harga_per_satuan, qty_per_porsi, porsi_label)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO bahan_baku
+       (nama, satuan, harga_per_satuan, qty_per_porsi, porsi_label,
+        harga_dus, isi_per_dus, harga_renteng, isi_per_renteng, supplier, catatan)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      ON CONFLICT (nama) DO NOTHING
      RETURNING id`,
-    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp, (porsiLabel || "").trim().slice(0, 20)]
+    [
+      nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp,
+      (porsiLabel || "").trim().slice(0, 20),
+      e.hargaDus, e.isiPerDus, e.hargaRenteng, e.isiPerRenteng, e.supplier, e.catatan,
+    ]
   );
   return res.rows[0]?.id ?? null;
 };
 
-export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "") => {
+// Update bahan. Kalau harga_per_satuan berubah → log ke bahan_harga_history
+// + update tanggal_update_harga. Pakai transaction utk atomicity.
+export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}, changedBy = "") => {
   const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
-  await query(
-    `UPDATE bahan_baku
-       SET nama=$1, satuan=$2, harga_per_satuan=$3, qty_per_porsi=$4, porsi_label=$5, updated_at=NOW()
-     WHERE id=$6`,
-    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp, (porsiLabel || "").trim().slice(0, 20), id]
-  );
+  const e   = normalizeBahanExtras(extras);
+  const newHarga = hargaPerSatuan | 0;
+
+  await query("BEGIN");
+  try {
+    // Cek harga lama dulu — kalau beda, log history & update timestamp.
+    const cur = await query(`SELECT harga_per_satuan FROM bahan_baku WHERE id=$1 FOR UPDATE`, [id]);
+    const oldHarga = cur.rows[0]?.harga_per_satuan ?? 0;
+    const hargaChanged = oldHarga !== newHarga;
+
+    await query(
+      `UPDATE bahan_baku
+         SET nama=$1, satuan=$2, harga_per_satuan=$3, qty_per_porsi=$4, porsi_label=$5,
+             harga_dus=$6, isi_per_dus=$7, harga_renteng=$8, isi_per_renteng=$9,
+             supplier=$10, catatan=$11,
+             tanggal_update_harga = CASE WHEN $12 THEN NOW() ELSE tanggal_update_harga END,
+             updated_at=NOW()
+       WHERE id=$13`,
+      [
+        nama.trim(), satuan.trim() || "pcs", newHarga, qpp,
+        (porsiLabel || "").trim().slice(0, 20),
+        e.hargaDus, e.isiPerDus, e.hargaRenteng, e.isiPerRenteng, e.supplier, e.catatan,
+        hargaChanged, id,
+      ]
+    );
+
+    if (hargaChanged) {
+      await query(
+        `INSERT INTO bahan_harga_history (bahan_id, harga_lama, harga_baru, changed_by)
+         VALUES ($1, $2, $3, $4)`,
+        [id, oldHarga, newHarga, (changedBy || "").toString().trim().slice(0, 60)]
+      );
+    }
+    await query("COMMIT");
+  } catch (err) {
+    await query("ROLLBACK");
+    throw err;
+  }
 };
 
 export const deleteBahan = async (id) => {
   await query("DELETE FROM bahan_baku WHERE id=$1", [id]);
+};
+
+// Read history harga perubahan utk 1 bahan, urut terbaru duluan.
+export const readBahanHistory = async (bahanId) => {
+  const res = await query(
+    `SELECT id, harga_lama, harga_baru, changed_at, changed_by
+     FROM bahan_harga_history
+     WHERE bahan_id=$1
+     ORDER BY changed_at DESC
+     LIMIT 50`,
+    [bahanId]
+  );
+  return res.rows;
 };
 
 // ── Resep menu (M:N menu_items ↔ bahan_baku) ──────────────────
