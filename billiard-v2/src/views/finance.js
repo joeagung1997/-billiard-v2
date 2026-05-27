@@ -3307,7 +3307,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
 
   // ── Bahan Baku tab block ────────────────────────────────────────
   // Predefined satuan untuk dropdown — sering dipake di F&B.
-  const SATUAN_OPTS = ["gram", "kg", "ml", "liter", "pcs", "sendok", "butir", "sachet", "lembar", "porsi", "tetes"];
+  const SATUAN_OPTS = ["gram", "kg", "ml", "liter", "pcs", "sendok", "butir", "sachet", "lembar", "plastik", "porsi", "tetes"];
 
   // Helper: harga effective per porsi = harga_per_satuan × qty_per_porsi.
   // Kalau qty_per_porsi=1 & porsi_label kosong → "porsi = satuan" (tampil sama).
