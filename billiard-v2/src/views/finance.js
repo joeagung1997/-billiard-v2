@@ -592,12 +592,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
           + "Detail Analisis <i class=\"ti ti-arrow-right\" style=\"font-size:13px\"></i></a>"
         : "<div class=\"an-target-badge\"><i class=\"ti ti-target\"></i> Target <strong>" + rp(an.targets.hari) + "</strong> / hari</div>")
       + "</div>"
-      // Karyawan: cuma Hari ini + Minggu ini (Bulan ini disembunyikan).
-      // Grid default 3 cols → override jadi 2 cols supaya gak ada gap.
-      + "<div class=\"an-mini-grid\"" + (isOwner ? "" : " style=\"grid-template-columns:repeat(2,1fr)\"") + ">"
+      // Karyawan: cuma Hari ini (Minggu ini & Bulan ini disembunyikan —
+      // info finansial periodik sensitif). Grid default 3 cols → override
+      // jadi 1 col untuk karyawan supaya card full-width tanpa gap.
+      + "<div class=\"an-mini-grid\"" + (isOwner ? "" : " style=\"grid-template-columns:1fr\"") + ">"
       +   miniCard("Hari ini",   an.hari)
-      +   miniCard("Minggu ini", an.minggu)
-      +   (isOwner ? miniCard("Bulan ini", an.bulan) : "")
+      +   (isOwner ? miniCard("Minggu ini", an.minggu) : "")
+      +   (isOwner ? miniCard("Bulan ini",  an.bulan)  : "")
       + "</div>"
       + "<div class=\"an-note\"><i class=\"ti ti-info-circle\"></i>"
       +   "<span><strong>Catatan:</strong> ini data biaya rutin yang terlihat — "
