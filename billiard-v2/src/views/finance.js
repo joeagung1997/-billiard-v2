@@ -592,11 +592,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
           + "Detail Analisis <i class=\"ti ti-arrow-right\" style=\"font-size:13px\"></i></a>"
         : "<div class=\"an-target-badge\"><i class=\"ti ti-target\"></i> Target <strong>" + rp(an.targets.hari) + "</strong> / hari</div>")
       + "</div>"
-      // Karyawan: cuma Hari ini (Minggu ini & Bulan ini disembunyikan —
-      // info finansial periodik sensitif). Grid default 3 cols → override
-      // jadi 1 col untuk karyawan supaya card full-width tanpa gap.
+      // Karyawan: cuma 1 card (Minggu ini & Bulan ini disembunyikan — info
+      // finansial periodik sensitif). Label & data ngikut filter day chip
+      // (Kemarin/Hari ini) via an.hariLabel + scopeDay di route.
+      // Grid default 3 cols → override jadi 1 col untuk karyawan.
       + "<div class=\"an-mini-grid\"" + (isOwner ? "" : " style=\"grid-template-columns:1fr\"") + ">"
-      +   miniCard("Hari ini",   an.hari)
+      +   miniCard(an.hariLabel || "Hari ini", an.hari)
       +   (isOwner ? miniCard("Minggu ini", an.minggu) : "")
       +   (isOwner ? miniCard("Bulan ini",  an.bulan)  : "")
       + "</div>"

@@ -205,7 +205,14 @@ async function buildDashboardData(req, res) {
   // Plus filter lunas: transaksi "belum bayar" (piutang) belum boleh dihitung
   // sebagai revenue cash-basis sampai customer benar-benar bayar.
   const isRevPem = (t) => t.jenis === "pemasukan" && !t.voidedAt && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
-  const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === today).reduce((s, t) => s + (t.jumlah || 0), 0);
+  // Karyawan: scope "Hari ini" mengikuti filter day chip (Kemarin / Hari ini),
+  // bukan today fixed. Tanpa ini, switch ke "Kemarin" bikin Pemasukan card
+  // update tapi Status Target tetep tampilkan today → inkonsisten.
+  const scopeDay      = role === "karyawan" ? tglDari : today;
+  const hariLabel     = scopeDay === today ? "Hari ini"
+                      : scopeDay === yesterday ? "Kemarin"
+                      : new Date(scopeDay + "T00:00:00Z").toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  const inHari   = transaksi.filter((t) => isRevPem(t) && t.tanggal === scopeDay).reduce((s, t) => s + (t.jumlah || 0), 0);
   const inMinggu = transaksi.filter((t) => isRevPem(t) && t.tanggal >= mondayStr && t.tanggal <= today).reduce((s, t) => s + (t.jumlah || 0), 0);
   const inBulan  = transaksi.filter((t) => isRevPem(t) && (t.tanggal || "").startsWith(today.slice(0, 7))).reduce((s, t) => s + (t.jumlah || 0), 0);
 
@@ -217,6 +224,7 @@ async function buildDashboardData(req, res) {
   const analisis = {
     targets,
     costBreakdown,
+    hariLabel,
     hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
     minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
     bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
