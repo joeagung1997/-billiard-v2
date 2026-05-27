@@ -811,6 +811,7 @@ function buildModal() {
 
 export function adminDashboard({ db, log, transaksi = [], token, req, user = {} }) {
   const { members } = db;
+  const isOwner = user.role === 'owner';
 
   const nowWib   = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   const curBulan = nowWib.getFullYear() + '-' + String(nowWib.getMonth() + 1).padStart(2, '0');
@@ -1079,7 +1080,9 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '</div>'
 
     // ── Stat grid ───────────────────────────────────────────────
-    + '<div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">'
+    // Owner: 5 cols (termasuk Pendapatan Bulan Ini). Karyawan: 4 cols, tanpa
+    // Pendapatan Bulan Ini (info finansial bulanan disembunyikan).
+    + '<div class="stat-grid" style="grid-template-columns:repeat(' + (isOwner ? 5 : 4) + ',1fr)">'
 
     + '<div class="stat-card">'
     + '<div class="stat-label">Total Member'
@@ -1101,11 +1104,13 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<div class="stat-value">' + stats.reward + '</div>'
     + '<div class="stat-footer">Menunggu klaim</div></div>'
 
-    + '<div class="stat-card">'
-    + '<div class="stat-label">Pendapatan Bulan Ini'
-    + '<div class="stat-icon green"><i class="ti ti-trending-up"></i></div></div>'
-    + '<div class="stat-value" style="font-size:22px">' + rpFmt(pemasukanBulan) + '</div>'
-    + '<div class="stat-footer">' + bulanLabel + '</div></div>'
+    + (isOwner
+      ? '<div class="stat-card">'
+        + '<div class="stat-label">Pendapatan Bulan Ini'
+        + '<div class="stat-icon green"><i class="ti ti-trending-up"></i></div></div>'
+        + '<div class="stat-value" style="font-size:22px">' + rpFmt(pemasukanBulan) + '</div>'
+        + '<div class="stat-footer">' + bulanLabel + '</div></div>'
+      : '')
 
     + '<div class="stat-card blue">'
     + '<div class="stat-label">Member Baru'
@@ -1116,21 +1121,25 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '</div>'
 
     // ── Summary bar ─────────────────────────────────────────────
-    + '<div class="summary-bar">'
-    + '<div><div class="sum-label">Pemasukan ' + bulanLabel + '</div>'
-    + '<div class="sum-val green">' + rpFmt(pemasukanBulan) + '</div></div>'
-    + '<div class="divider-v"></div>'
-    + '<div><div class="sum-label">Pengeluaran</div>'
-    + '<div class="sum-val red">' + rpFmt(pengeluaranBulan) + '</div></div>'
-    + '<div class="divider-v"></div>'
-    + '<div><div class="sum-label">Saldo Bersih</div>'
-    + '<div class="sum-val' + (saldoBulan < 0 ? ' red' : '') + '">' + rpFmt(saldoBulan) + '</div></div>'
-    + '<div class="divider-v"></div>'
-    + '<div><div class="sum-label">Pemasukan Hari Ini</div>'
-    + '<div class="sum-val">' + rpFmt(pemasukanHariIni) + '</div></div>'
-    + '<a href="/operasional" class="sum-btn"'
-    + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-arrow-right" style="font-size:14px"></i> Lihat Detail Keuangan</a>'
-    + '</div>'
+    // Owner-only: ringkasan finansial bulanan (Pemasukan, Pengeluaran, Saldo
+    // Bersih). Karyawan tidak boleh lihat → bar disembunyikan total.
+    + (isOwner
+      ? '<div class="summary-bar">'
+        + '<div><div class="sum-label">Pemasukan ' + bulanLabel + '</div>'
+        + '<div class="sum-val green">' + rpFmt(pemasukanBulan) + '</div></div>'
+        + '<div class="divider-v"></div>'
+        + '<div><div class="sum-label">Pengeluaran</div>'
+        + '<div class="sum-val red">' + rpFmt(pengeluaranBulan) + '</div></div>'
+        + '<div class="divider-v"></div>'
+        + '<div><div class="sum-label">Saldo Bersih</div>'
+        + '<div class="sum-val' + (saldoBulan < 0 ? ' red' : '') + '">' + rpFmt(saldoBulan) + '</div></div>'
+        + '<div class="divider-v"></div>'
+        + '<div><div class="sum-label">Pemasukan Hari Ini</div>'
+        + '<div class="sum-val">' + rpFmt(pemasukanHariIni) + '</div></div>'
+        + '<a href="/operasional" class="sum-btn"'
+        + ' onclick="try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}"><i class="ti ti-arrow-right" style="font-size:14px"></i> Lihat Detail Keuangan</a>'
+        + '</div>'
+      : '')
 
     // ── Content grid ────────────────────────────────────────────
     + '<div class="content-grid">'
@@ -1243,14 +1252,16 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<div class="fin-month">' + bulanLabel + '</div>'
     + '<div class="fin-list">' + recentTrxHtml + '</div>'
     + '</div>'
-    + '<div class="saldo-box">'
-    + '<div>'
-    + '<div class="saldo-label">Saldo bersih</div>'
-    + '<div class="saldo-val' + (saldoBulan < 0 ? ' neg' : '') + '">' + (saldoBulan < 0 ? '−' : '') + rpFmt(Math.abs(saldoBulan)) + '</div>'
-    + '<div class="saldo-period">' + bulanLabel + ' · ' + recentTrx.length + ' transaksi terbaru</div>'
-    + '</div>'
-    + '<div class="saldo-icon"><i class="ti ti-trending-' + (saldoBulan >= 0 ? 'up' : 'down') + '"></i></div>'
-    + '</div>'
+    + (isOwner
+      ? '<div class="saldo-box">'
+        + '<div>'
+        + '<div class="saldo-label">Saldo bersih</div>'
+        + '<div class="saldo-val' + (saldoBulan < 0 ? ' neg' : '') + '">' + (saldoBulan < 0 ? '−' : '') + rpFmt(Math.abs(saldoBulan)) + '</div>'
+        + '<div class="saldo-period">' + bulanLabel + ' · ' + recentTrx.length + ' transaksi terbaru</div>'
+        + '</div>'
+        + '<div class="saldo-icon"><i class="ti ti-trending-' + (saldoBulan >= 0 ? 'up' : 'down') + '"></i></div>'
+        + '</div>'
+      : '')
     + '</div>'
 
     + '</div>'

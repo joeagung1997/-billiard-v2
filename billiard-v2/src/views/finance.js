@@ -1428,8 +1428,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "</div>"
 
-    // ── Stat grid (4 cards dengan colored top border) ───────────
-    + "<div class=\"fin-stat-grid\">"
+    // ── Stat grid (4 cards untuk owner, 3 untuk karyawan tanpa Saldo) ─
+    // Karyawan: Saldo Bersih disembunyikan (info finansial sensitif) → grid
+    // jadi 3 cols via inline override; CSS class default 4 cols.
+    + "<div class=\"fin-stat-grid\"" + (isOwner ? "" : " style=\"grid-template-columns:repeat(3,1fr)\"") + ">"
 
     + "<div class=\"fin-stat-card income\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Pemasukan</div>"
@@ -1455,14 +1457,16 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div style=\"font-size:10px\">" + escHtml(periodeLabel) + "</div>"
     + "</div></div>"
 
-    + "<div class=\"fin-stat-card saldo\">"
-    + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Saldo Bersih</div>"
-    + "<div class=\"fin-stat-icon saldo\"><i class=\"ti ti-scale\"></i></div></div>"
-    + "<div class=\"fin-stat-val\" style=\"" + (chartSaldo < 0 ? "color:#a32d2d" : "") + "\">" + (chartSaldo < 0 ? "−" : "") + rp(Math.abs(chartSaldo)) + "</div>"
-    + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
-    + "<div>" + (chartSaldo >= 0 ? "<span style=\"color:#16a34a;font-weight:700\">Untung</span>" : "<span style=\"color:#a32d2d;font-weight:700\">Rugi</span>") + " · Margin " + chartMargin + "%</div>"
-    + "<div style=\"font-size:10px\">Pemasukan − Pengeluaran · " + escHtml(periodeLabel) + "</div>"
-    + "</div></div>"
+    + (isOwner
+      ? "<div class=\"fin-stat-card saldo\">"
+        + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Saldo Bersih</div>"
+        + "<div class=\"fin-stat-icon saldo\"><i class=\"ti ti-scale\"></i></div></div>"
+        + "<div class=\"fin-stat-val\" style=\"" + (chartSaldo < 0 ? "color:#a32d2d" : "") + "\">" + (chartSaldo < 0 ? "−" : "") + rp(Math.abs(chartSaldo)) + "</div>"
+        + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
+        + "<div>" + (chartSaldo >= 0 ? "<span style=\"color:#16a34a;font-weight:700\">Untung</span>" : "<span style=\"color:#a32d2d;font-weight:700\">Rugi</span>") + " · Margin " + chartMargin + "%</div>"
+        + "<div style=\"font-size:10px\">Pemasukan − Pengeluaran · " + escHtml(periodeLabel) + "</div>"
+        + "</div></div>"
+      : "")
 
     + "<div class=\"fin-stat-card trx\">"
     + "<div class=\"fin-stat-top\"><div class=\"fin-stat-lbl\">Transaksi</div>"
