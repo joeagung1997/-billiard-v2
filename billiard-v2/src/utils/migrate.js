@@ -307,6 +307,27 @@ export const runMigrations = async () => {
   await query(`CREATE INDEX IF NOT EXISTS idx_menu_resep_menu  ON menu_resep (menu_item_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_menu_resep_bahan ON menu_resep (bahan_id)`);
 
+  // ── Tabel catatan fitur (note pengembangan aplikasi) ─────────────
+  // Owner pakai utk catat ide/bug/improvement aplikasi. Punya status
+  // (ide/planning/coding/done), priority (low/medium/high/urgent),
+  // kategori (free text). done_at di-set saat status = 'done'.
+  await query(`
+    CREATE TABLE IF NOT EXISTS feature_notes (
+      id          SERIAL      PRIMARY KEY,
+      title       TEXT        NOT NULL,
+      deskripsi   TEXT        NOT NULL DEFAULT '',
+      priority    TEXT        NOT NULL DEFAULT 'medium',
+      status      TEXT        NOT NULL DEFAULT 'ide',
+      kategori    TEXT        NOT NULL DEFAULT '',
+      created_by  TEXT        NOT NULL DEFAULT '',
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW(),
+      done_at     TIMESTAMPTZ
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_feature_notes_status   ON feature_notes (status)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_feature_notes_priority ON feature_notes (priority)`);
+
   // ── Insert default menu items hanya jika tabel masih kosong ─
   const menuCount = await query("SELECT COUNT(*) FROM menu_items");
   if (parseInt(menuCount.rows[0].count) === 0) {

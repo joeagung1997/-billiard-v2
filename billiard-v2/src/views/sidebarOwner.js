@@ -111,6 +111,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       emoji: "⚙️",
       label: "Pengaturan",
       items: [
+        { id: "catatan-fitur", href: "/operasional/catatan-fitur", icon: "ti ti-notes",         label: "Catatan Fitur",         tk: true },
         { id: "profil",   href: soon("Profil"),               icon: "ti ti-user-cog",        label: "Profil",                soon: true },
         { id: "pengguna", href: soon("Pengguna & Hak Akses"), icon: "ti ti-shield-lock",     label: "Pengguna & Hak Akses",  soon: true },
         { id: "backup",   href: soon("Backup Data"),          icon: "ti ti-database-export", label: "Backup Data",           soon: true },

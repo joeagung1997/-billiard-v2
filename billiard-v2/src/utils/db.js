@@ -439,6 +439,87 @@ export const deleteBahan = async (id) => {
   await query("DELETE FROM bahan_baku WHERE id=$1", [id]);
 };
 
+// ── Catatan Fitur (note pengembangan aplikasi) ─────────────────
+// Helper: validate enum values (jaga2 dari input invalid).
+const VALID_PRIORITY = ["low", "medium", "high", "urgent"];
+const VALID_STATUS   = ["ide", "planning", "coding", "done"];
+const cleanPrio = (p) => VALID_PRIORITY.includes(p) ? p : "medium";
+const cleanStat = (s) => VALID_STATUS.includes(s) ? s : "ide";
+
+export const readFeatureNotes = async (filters = {}) => {
+  // Urutan: priority urgent > high > medium > low, lalu status non-done dulu, lalu updated_at terbaru.
+  const where = [];
+  const params = [];
+  if (filters.status   && VALID_STATUS.includes(filters.status))     { where.push("status=$"   + (params.length + 1)); params.push(filters.status); }
+  if (filters.priority && VALID_PRIORITY.includes(filters.priority)) { where.push("priority=$" + (params.length + 1)); params.push(filters.priority); }
+  if (filters.kategori) { where.push("kategori ILIKE $" + (params.length + 1)); params.push("%" + filters.kategori + "%"); }
+  const whereSql = where.length ? ("WHERE " + where.join(" AND ")) : "";
+  const sql = `
+    SELECT id, title, deskripsi, priority, status, kategori, created_by, created_at, updated_at, done_at,
+           CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END AS _prio_rank,
+           CASE WHEN status='done' THEN 1 ELSE 0 END AS _done_rank
+    FROM feature_notes
+    ${whereSql}
+    ORDER BY _done_rank ASC, _prio_rank ASC, updated_at DESC
+  `;
+  const res = await query(sql, params);
+  return res.rows;
+};
+
+export const addFeatureNote = async ({ title, deskripsi, priority, status, kategori, createdBy }) => {
+  const res = await query(
+    `INSERT INTO feature_notes (title, deskripsi, priority, status, kategori, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [
+      (title || "").trim().slice(0, 200),
+      (deskripsi || "").toString().slice(0, 4000),
+      cleanPrio(priority),
+      cleanStat(status),
+      (kategori || "").trim().slice(0, 60),
+      (createdBy || "").trim().slice(0, 60),
+    ]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const updateFeatureNote = async (id, { title, deskripsi, priority, status, kategori }) => {
+  const stat = cleanStat(status);
+  await query(
+    `UPDATE feature_notes
+       SET title=$1, deskripsi=$2, priority=$3, status=$4, kategori=$5,
+           updated_at=NOW(),
+           done_at = CASE WHEN $4='done' AND done_at IS NULL THEN NOW()
+                          WHEN $4<>'done' THEN NULL
+                          ELSE done_at END
+     WHERE id=$6`,
+    [
+      (title || "").trim().slice(0, 200),
+      (deskripsi || "").toString().slice(0, 4000),
+      cleanPrio(priority),
+      stat,
+      (kategori || "").trim().slice(0, 60),
+      id,
+    ]
+  );
+};
+
+export const setFeatureNoteStatus = async (id, status) => {
+  const stat = cleanStat(status);
+  await query(
+    `UPDATE feature_notes
+       SET status=$1, updated_at=NOW(),
+           done_at = CASE WHEN $1='done' AND done_at IS NULL THEN NOW()
+                          WHEN $1<>'done' THEN NULL
+                          ELSE done_at END
+     WHERE id=$2`,
+    [stat, id]
+  );
+};
+
+export const deleteFeatureNote = async (id) => {
+  await query("DELETE FROM feature_notes WHERE id=$1", [id]);
+};
+
 // Read history harga perubahan utk 1 bahan, urut terbaru duluan.
 export const readBahanHistory = async (bahanId) => {
   const res = await query(

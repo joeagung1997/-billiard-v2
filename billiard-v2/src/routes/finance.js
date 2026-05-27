@@ -21,6 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
+  readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
   readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
@@ -38,6 +39,7 @@ import {
   financeAnalisisPage,
 } from "../views/finance.js";
 import { planningPage } from "../views/planning.js";
+import { catatanFiturPage } from "../views/catatan.js";
 
 const router = Router();
 
@@ -1170,6 +1172,94 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
     }
   }
   res.redirect("/operasional/menu");
+});
+
+// ── /operasional/catatan-fitur — note pengembangan aplikasi (owner only) ───
+// Halaman utk owner catat ide, bug, atau rencana feature aplikasi. Punya
+// title, deskripsi, priority, status, kategori. Status auto-track done_at.
+router.get("/catatan-fitur", requireOwner, async (req, res) => {
+  try {
+    const filters = {
+      status:   (req.query.status   ?? "").trim(),
+      priority: (req.query.priority ?? "").trim(),
+      kategori: (req.query.kategori ?? "").trim().slice(0, 60),
+    };
+    const editId   = parseInt(req.query.edit) || 0;
+    const notes    = await readFeatureNotes(filters);
+    const editNote = editId ? notes.find((n) => n.id === editId) || null : null;
+    res.send(catatanFiturPage({
+      notes, filters,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      editNote,
+      hasErr: !!req.query.err,
+      msg: req.query.msg || "",
+    }));
+  } catch (err) {
+    console.error("[FINANCE] catatan-fitur GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+router.post("/catatan-fitur/tambah", requireOwner, async (req, res) => {
+  const title = (req.body.title ?? "").trim();
+  if (!title) return res.redirect("/operasional/catatan-fitur?err=1");
+  try {
+    await addFeatureNote({
+      title,
+      deskripsi: req.body.deskripsi ?? "",
+      priority:  req.body.priority  ?? "medium",
+      status:    req.body.status    ?? "ide",
+      kategori:  req.body.kategori  ?? "",
+      createdBy: res.locals.financeDisplay || res.locals.financeUser || "owner",
+    });
+    res.redirect("/operasional/catatan-fitur?msg=added");
+  } catch (err) {
+    console.error("[FINANCE] catatan-fitur tambah error:", err.message);
+    res.redirect("/operasional/catatan-fitur?err=1");
+  }
+});
+
+router.post("/catatan-fitur/edit", requireOwner, async (req, res) => {
+  const id    = parseInt(req.body.id) || 0;
+  const title = (req.body.title ?? "").trim();
+  if (!id || !title) return res.redirect("/operasional/catatan-fitur?err=1");
+  try {
+    await updateFeatureNote(id, {
+      title,
+      deskripsi: req.body.deskripsi ?? "",
+      priority:  req.body.priority  ?? "medium",
+      status:    req.body.status    ?? "ide",
+      kategori:  req.body.kategori  ?? "",
+    });
+    res.redirect("/operasional/catatan-fitur?msg=edited");
+  } catch (err) {
+    console.error("[FINANCE] catatan-fitur edit error:", err.message);
+    res.redirect("/operasional/catatan-fitur?err=1");
+  }
+});
+
+router.post("/catatan-fitur/status", requireOwner, async (req, res) => {
+  const id = parseInt(req.body.id) || 0;
+  const status = req.body.status ?? "ide";
+  if (!id) return res.redirect("/operasional/catatan-fitur");
+  try {
+    await setFeatureNoteStatus(id, status);
+    res.redirect("/operasional/catatan-fitur?msg=stat");
+  } catch (err) {
+    console.error("[FINANCE] catatan-fitur status error:", err.message);
+    res.redirect("/operasional/catatan-fitur");
+  }
+});
+
+router.get("/catatan-fitur/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteFeatureNote(id); } catch (err) {
+      console.error("[FINANCE] catatan-fitur hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/catatan-fitur?msg=deleted");
 });
 
 export { requireFinanceAuth, requireOwner };

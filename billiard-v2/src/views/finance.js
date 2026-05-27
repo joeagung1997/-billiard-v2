@@ -54,7 +54,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   if (role === "owner") {
     const activeMap = { keuangan: "keuangan", transaksi: "transaksi", kategori: "kategori",
                         menu: "menu", sdm: "kru", monitoring: "aktivitas-kru",
-                        analisis: "analisis", planning: "planning" };
+                        analisis: "analisis", planning: "planning",
+                        catatan: "catatan-fitur" };
     return buildOwnerSidebar({ token: ftk, activePage: activeMap[page] || page, displayName });
   }
 
