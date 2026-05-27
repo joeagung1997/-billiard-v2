@@ -19,6 +19,8 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
+  readBahan, addBahan, updateBahan, deleteBahan,
+  readResepAll, setResep, computeHppMap,
   readAdminAccounts, readKaryawan,
   readPlanningItems, addPlanningItem, updatePlanningItem, deletePlanningItem,
   readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
@@ -952,15 +954,101 @@ router.post("/kategori/urutan", requireOwner, async (req, res) => {
 });
 
 // ── GET /operasional/menu — kelola menu item (owner only) ────────
+// Sekarang juga load bahan baku + resep + compute HPP map per menu utk
+// display HPP & margin di tiap card. Query param:
+//   ?edit=<id>      → buka edit mode utk menu item id
+//   ?resep=<id>     → buka resep editor utk menu item id
+//   ?tab=bahan      → tampilan tab Bahan Baku (default: tab Item Menu)
+//   ?editbahan=<id> → buka edit mode utk bahan id (di tab bahan)
+//   ?err=1          → flash error
 router.get("/menu", requireOwner, async (req, res) => {
   try {
-    const [items, toppings] = await Promise.all([readMenuItems(), readMenuToppings()]);
-    const editId  = parseInt(req.query.edit) || 0;
-    const editItem = editId ? items.find((m) => m.id === editId) || null : null;
-    res.send(financeMenuPage(res.locals.financeRole, items, toppings, !!req.query.err, editItem));
+    const [items, toppings, bahanList, resepAll, hppMap] = await Promise.all([
+      readMenuItems(),
+      readMenuToppings(),
+      readBahan(),
+      readResepAll(),
+      computeHppMap(),
+    ]);
+    const editId       = parseInt(req.query.edit)      || 0;
+    const editBahanId  = parseInt(req.query.editbahan) || 0;
+    const resepMenuId  = parseInt(req.query.resep)     || 0;
+    const editItem     = editId      ? items.find((m) => m.id === editId)        || null : null;
+    const editBahan    = editBahanId ? bahanList.find((b) => b.id === editBahanId) || null : null;
+    const resepMenu    = resepMenuId ? items.find((m) => m.id === resepMenuId)   || null : null;
+    const activeTab    = req.query.tab === "bahan" ? "bahan" : "menu";
+    res.send(financeMenuPage(res.locals.financeRole, items, toppings, !!req.query.err, editItem, {
+      bahanList, resepAll, hppMap, editBahan, resepMenu, activeTab,
+    }));
   } catch (err) {
     console.error("[FINANCE] menu GET error:", err.message);
     res.status(500).send("Kesalahan server.");
+  }
+});
+
+// ── POST /operasional/menu/bahan/tambah ─────────────────────────
+router.post("/menu/bahan/tambah", requireOwner, async (req, res) => {
+  const nama   = (req.body.nama   ?? "").trim();
+  const satuan = (req.body.satuan ?? "pcs").trim();
+  const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  if (!nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
+  try {
+    await addBahan(nama, satuan, harga);
+    res.redirect("/operasional/menu?tab=bahan");
+  } catch (err) {
+    console.error("[FINANCE] bahan tambah error:", err.message);
+    res.redirect("/operasional/menu?tab=bahan&err=1");
+  }
+});
+
+// ── POST /operasional/menu/bahan/edit ───────────────────────────
+router.post("/menu/bahan/edit", requireOwner, async (req, res) => {
+  const id     = parseInt(req.body.id) || 0;
+  const nama   = (req.body.nama   ?? "").trim();
+  const satuan = (req.body.satuan ?? "pcs").trim();
+  const harga  = parseInt((req.body.harga_per_satuan ?? "").replace(/\D/g, "")) || 0;
+  if (!id || !nama || harga <= 0) return res.redirect("/operasional/menu?tab=bahan&err=1");
+  try {
+    await updateBahan(id, nama, satuan, harga);
+    res.redirect("/operasional/menu?tab=bahan");
+  } catch (err) {
+    console.error("[FINANCE] bahan edit error:", err.message);
+    res.redirect("/operasional/menu?tab=bahan&err=1");
+  }
+});
+
+// ── GET /operasional/menu/bahan/hapus ───────────────────────────
+// ON DELETE CASCADE di FK menu_resep → row resep yg refer ke bahan ini
+// otomatis kebawa hapus, jadi gak perlu manual cleanup.
+router.get("/menu/bahan/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteBahan(id); } catch (err) {
+      console.error("[FINANCE] bahan hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/menu?tab=bahan");
+});
+
+// ── POST /operasional/menu/resep/set ────────────────────────────
+// Bulk replace resep untuk 1 menu. Body: menu_id, bahan_id[] (array),
+// qty[] (array, paired index). Row dgn qty<=0 di-skip → klik Simpan tanpa
+// isi = clear semua resep.
+router.post("/menu/resep/set", requireOwner, async (req, res) => {
+  const menuId   = parseInt(req.body.menu_id) || 0;
+  if (!menuId) return res.redirect("/operasional/menu?err=1");
+  const bahanIds = [].concat(req.body.bahan_id ?? []);
+  const qtys     = [].concat(req.body.qty      ?? []);
+  const items    = bahanIds.map((bid, i) => ({
+    bahan_id: parseInt(bid) || 0,
+    qty:      parseFloat((qtys[i] ?? "").toString().replace(",", ".")) || 0,
+  }));
+  try {
+    await setResep(menuId, items);
+    res.redirect("/operasional/menu");
+  } catch (err) {
+    console.error("[FINANCE] resep set error:", err.message);
+    res.redirect("/operasional/menu?resep=" + menuId + "&err=1");
   }
 });
 

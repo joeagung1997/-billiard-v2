@@ -239,6 +239,37 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Tabel bahan baku (untuk HPP otomatis per menu) ───────────────
+  // satuan: gram/ml/pcs/butir/sendok/sachet/dll (free-text, dropdown di UI).
+  // harga_per_satuan: harga 1 unit satuan dalam Rupiah (mis. Rp 100/gram).
+  // HPP per menu = SUM(qty × harga_per_satuan) dari semua row menu_resep.
+  await query(`
+    CREATE TABLE IF NOT EXISTS bahan_baku (
+      id                SERIAL      PRIMARY KEY,
+      nama              TEXT        NOT NULL UNIQUE,
+      satuan            TEXT        NOT NULL DEFAULT 'pcs',
+      harga_per_satuan  INTEGER     NOT NULL DEFAULT 0,
+      created_at        TIMESTAMPTZ DEFAULT NOW(),
+      updated_at        TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  // ── Tabel menu_resep (link menu_items ↔ bahan_baku, M:N + qty) ───
+  // qty NUMERIC bisa decimal (mis. 2.5 gram, 0.25 sachet). ON DELETE CASCADE:
+  // hapus menu_item atau bahan_baku akan otomatis hapus row resep yg
+  // refer ke-nya — gak perlu manual cleanup.
+  await query(`
+    CREATE TABLE IF NOT EXISTS menu_resep (
+      id            SERIAL        PRIMARY KEY,
+      menu_item_id  INTEGER       NOT NULL REFERENCES menu_items(id)  ON DELETE CASCADE,
+      bahan_id      INTEGER       NOT NULL REFERENCES bahan_baku(id)  ON DELETE CASCADE,
+      qty           NUMERIC(12,3) NOT NULL DEFAULT 0,
+      catatan       TEXT          DEFAULT ''
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_menu_resep_menu  ON menu_resep (menu_item_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_menu_resep_bahan ON menu_resep (bahan_id)`);
+
   // ── Insert default menu items hanya jika tabel masih kosong ─
   const menuCount = await query("SELECT COUNT(*) FROM menu_items");
   if (parseInt(menuCount.rows[0].count) === 0) {

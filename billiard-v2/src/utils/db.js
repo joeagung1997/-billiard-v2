@@ -342,6 +342,87 @@ export const deleteMenuTopping = async (id) => {
   await query("DELETE FROM menu_toppings WHERE id=$1", [id]);
 };
 
+// ── Bahan Baku (HPP — komponen biaya per menu) ────────────────
+// Schema lihat migrate.js. harga_per_satuan = Rupiah per unit satuan
+// (mis. 1 gram = Rp 100). HPP menu = SUM(qty × harga_per_satuan) dari resep.
+
+export const readBahan = async () => {
+  const res = await query("SELECT id, nama, satuan, harga_per_satuan FROM bahan_baku ORDER BY nama ASC");
+  return res.rows;
+};
+
+export const addBahan = async (nama, satuan, hargaPerSatuan) => {
+  const res = await query(
+    `INSERT INTO bahan_baku (nama, satuan, harga_per_satuan) VALUES ($1, $2, $3)
+     ON CONFLICT (nama) DO NOTHING
+     RETURNING id`,
+    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const updateBahan = async (id, nama, satuan, hargaPerSatuan) => {
+  await query(
+    `UPDATE bahan_baku SET nama=$1, satuan=$2, harga_per_satuan=$3, updated_at=NOW() WHERE id=$4`,
+    [nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, id]
+  );
+};
+
+export const deleteBahan = async (id) => {
+  await query("DELETE FROM bahan_baku WHERE id=$1", [id]);
+};
+
+// ── Resep menu (M:N menu_items ↔ bahan_baku) ──────────────────
+
+// Baca semua row resep + join data bahan (untuk hitung HPP & UI editor).
+// Return: [{ menu_item_id, bahan_id, qty, catatan, nama, satuan, harga_per_satuan, subtotal }]
+export const readResepAll = async () => {
+  const res = await query(`
+    SELECT r.menu_item_id, r.bahan_id, r.qty::float AS qty, r.catatan,
+           b.nama, b.satuan, b.harga_per_satuan,
+           (r.qty * b.harga_per_satuan)::int AS subtotal
+    FROM menu_resep r
+    JOIN bahan_baku b ON b.id = r.bahan_id
+    ORDER BY r.menu_item_id, b.nama
+  `);
+  return res.rows;
+};
+
+// Replace semua resep utk 1 menu (atomic via transaction). items = [{ bahan_id, qty, catatan? }].
+// Row dengan qty<=0 atau bahan_id invalid di-skip — jadi simpan resep "kosong"
+// (hapus semua) tetap aman.
+export const setResep = async (menuItemId, items = []) => {
+  const valid = items.filter((x) => x && x.bahan_id && Number(x.qty) > 0);
+  await query("BEGIN");
+  try {
+    await query("DELETE FROM menu_resep WHERE menu_item_id=$1", [menuItemId]);
+    for (const it of valid) {
+      await query(
+        `INSERT INTO menu_resep (menu_item_id, bahan_id, qty, catatan) VALUES ($1, $2, $3, $4)`,
+        [menuItemId, it.bahan_id | 0, Number(it.qty), (it.catatan || "").slice(0, 200)]
+      );
+    }
+    await query("COMMIT");
+  } catch (err) {
+    await query("ROLLBACK");
+    throw err;
+  }
+};
+
+// Hitung HPP per menu item → Map<menu_item_id, hpp_int>. Dipakai di view
+// untuk display HPP & margin di tiap card menu.
+export const computeHppMap = async () => {
+  const res = await query(`
+    SELECT r.menu_item_id, SUM(r.qty * b.harga_per_satuan)::int AS hpp
+    FROM menu_resep r
+    JOIN bahan_baku b ON b.id = r.bahan_id
+    GROUP BY r.menu_item_id
+  `);
+  const map = new Map();
+  for (const row of res.rows) map.set(row.menu_item_id, row.hpp);
+  return map;
+};
+
 // ── Karyawan ──────────────────────────────────────────────────
 
 export const readKaryawan = async (includeNonaktif = false) => {

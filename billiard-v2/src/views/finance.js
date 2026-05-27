@@ -3140,8 +3140,31 @@ function katSelect(name, selected = "minuman", extraStyle = "") {
     + "</select>";
 }
 
-export function financeMenuPage(role = "owner", items = [], toppings = [], hasErr = false, editItem = null) {
+export function financeMenuPage(role = "owner", items = [], toppings = [], hasErr = false, editItem = null, extras = {}) {
   const rpFmt = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+
+  // ── HPP extras (bahan baku & resep) ─────────────────────────────
+  // hppMap: Map<menu_id, hpp_int> hasil JOIN menu_resep × bahan_baku.
+  // resepAll: flat rows [{menu_item_id, bahan_id, qty, nama, satuan, harga_per_satuan, subtotal}].
+  // activeTab: "menu" (default) atau "bahan" — toggle tab di toolbar.
+  // resepMenu: kalau set, render full-width editor di atas sections.
+  const {
+    bahanList = [], resepAll = [], hppMap = new Map(),
+    editBahan = null, resepMenu = null, activeTab = "menu",
+  } = extras;
+  const resepByMenu = {};
+  for (const r of resepAll) {
+    if (!resepByMenu[r.menu_item_id]) resepByMenu[r.menu_item_id] = [];
+    resepByMenu[r.menu_item_id].push(r);
+  }
+  // Margin: gunakan harga normal (bukan harga_hot) sebagai basis. Negatif=rugi.
+  const marginOf = (harga, hpp) => {
+    if (!harga || harga <= 0) return { rp: 0, pct: 0, color: "#7a8c78" };
+    const rp  = harga - hpp;
+    const pct = Math.round((rp / harga) * 1000) / 10; // 1 decimal
+    const color = rp < 0 ? "#a32d2d" : pct < 30 ? "#c47f1a" : "#2d6624";
+    return { rp, pct, color };
+  };
 
   // Build topping map by item_id
   const toppingMap = {};
@@ -3226,11 +3249,26 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
         + "<div class=\"mp-pv-row\"><span class=\"mp-pv-lbl\"><i class=\"ti ti-flame\"></i> Hot</span><span class=\"mp-pv-val\" style=\"color:#c47f1a\">" + rpFmt(m.harga_hot) + "</span></div>"
         + "</div>"
       : "<div class=\"mp-price-normal\">" + rpFmt(m.harga) + "</div>";
+    // HPP & margin per card (basis = harga normal, bukan harga_hot)
+    const hpp = hppMap.get(m.id) || 0;
+    const mr  = marginOf(m.harga, hpp);
+    const resepCount = (resepByMenu[m.id] || []).length;
+    const hppHtml = hpp > 0
+      ? "<div class=\"mp-hpp-row\">"
+        + "<div class=\"mp-hpp-line\"><span class=\"mp-hpp-lbl\">HPP</span><span class=\"mp-hpp-val\">" + rpFmt(hpp) + "</span></div>"
+        + "<div class=\"mp-hpp-line\"><span class=\"mp-hpp-lbl\">Margin</span>"
+        + "<span class=\"mp-hpp-val\" style=\"color:" + mr.color + "\">" + (mr.rp < 0 ? "−" : "") + rpFmt(Math.abs(mr.rp))
+        + " <span style=\"font-size:10px;font-weight:500\">(" + mr.pct + "%)</span></span></div>"
+        + "</div>"
+      : "<div class=\"mp-hpp-row mp-hpp-empty\">"
+        + "<i class=\"ti ti-flask-off\" style=\"font-size:13px\"></i> Resep belum diset</div>";
     return "<div class=\"menu-card\" data-cat=\"" + escHtml(m.kategori || "minuman") + "\" data-bs=\"" + (m.best_seller ? "1" : "0") + "\" data-harga=\"" + m.harga + "\" data-idx=\"" + idx + "\" data-nama=\"" + escHtml(m.nama.toLowerCase()) + "\">"
       + bsRibbon
       + "<div class=\"mp-card-name\">" + escHtml(m.nama) + topBadge + "</div>"
       + "<div class=\"mp-price-wrap\">" + priceHtml + "</div>"
+      + hppHtml
       + "<div class=\"mp-card-actions\">"
+      + "<a href=\"/operasional/menu?resep=" + m.id + "\" class=\"mp-btn-resep\" title=\"Atur resep & HPP\"><i class=\"ti ti-flask\"></i> Resep" + (resepCount > 0 ? " <span class=\"mp-rs-cnt\">" + resepCount + "</span>" : "") + "</a>"
       + "<a href=\"/operasional/menu?edit=" + m.id + "\" class=\"mp-btn-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
       + "<a href=\"/operasional/menu/hapus?id=" + m.id + "\" class=\"mp-btn-del\" onclick=\"return confirm('Hapus " + escHtml(m.nama) + "?')\"><i class=\"ti ti-trash\"></i></a>"
       + "</div>"
@@ -3256,6 +3294,139 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
       + "<div class=\"mp-pagination\" id=\"pag-" + k.value + "\" style=\"display:none\"></div>"
       + "</div>";
   }).join("");
+
+  // ── Tab toggle UI (Item Menu | Bahan Baku) ──────────────────────
+  const tabToggle = "<div class=\"mp-toptabs\">"
+    + "<a href=\"/operasional/menu\" class=\"mp-toptab" + (activeTab === "menu" ? " active" : "") + "\">"
+    +   "<i class=\"ti ti-coffee\"></i> Item Menu <span class=\"mp-toptab-cnt\">" + items.length + "</span>"
+    + "</a>"
+    + "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-toptab" + (activeTab === "bahan" ? " active" : "") + "\">"
+    +   "<i class=\"ti ti-flask\"></i> Bahan Baku <span class=\"mp-toptab-cnt\">" + bahanList.length + "</span>"
+    + "</a>"
+    + "</div>";
+
+  // ── Bahan Baku tab block ────────────────────────────────────────
+  // Predefined satuan untuk dropdown — sering dipake di F&B.
+  const SATUAN_OPTS = ["gram", "kg", "ml", "liter", "pcs", "sendok", "butir", "sachet", "lembar", "porsi", "tetes"];
+  const renderBahanRow = (b) => {
+    if (editBahan && editBahan.id === b.id) {
+      // Inline edit row
+      return "<tr class=\"mp-bb-edit-row\"><td colspan=\"4\">"
+        + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" class=\"mp-bb-form\" style=\"margin:0;background:transparent;border:none;padding:0\">"
+        + "<input type=\"hidden\" name=\"id\" value=\"" + b.id + "\">"
+        + "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(b.nama) + "\" required placeholder=\"Nama bahan\">"
+        + "<select class=\"mp-input\" name=\"satuan\">"
+        +   SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === b.satuan ? " selected" : "") + ">" + s + "</option>").join("")
+        + "</select>"
+        + "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" value=\"" + b.harga_per_satuan + "\" required oninput=\"fmtH(this)\" placeholder=\"Harga / satuan\"></div>"
+        + "<div style=\"display:flex;gap:6px\"><button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
+        + "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a></div>"
+        + "</form></td></tr>";
+    }
+    return "<tr>"
+      + "<td><strong>" + escHtml(b.nama) + "</strong></td>"
+      + "<td><span class=\"mp-bb-satuan\">" + escHtml(b.satuan) + "</span></td>"
+      + "<td><span class=\"mp-bb-harga\">" + rpFmt(b.harga_per_satuan) + " <span style=\"color:#7a8c78;font-weight:400\">/ " + escHtml(b.satuan) + "</span></span></td>"
+      + "<td><div class=\"mp-bb-act\">"
+      +   "<a href=\"/operasional/menu?tab=bahan&editbahan=" + b.id + "\" class=\"mp-bb-edit\"><i class=\"ti ti-edit\"></i> Edit</a>"
+      +   "<a href=\"/operasional/menu/bahan/hapus?id=" + b.id + "\" class=\"mp-bb-del\" onclick=\"return confirm('Hapus bahan \\'" + escHtml(b.nama) + "\\'? Resep menu yang pakai bahan ini juga akan kebawa hapus.')\"><i class=\"ti ti-trash\"></i></a>"
+      + "</div></td>"
+      + "</tr>";
+  };
+  const bahanTabBlock = "<div class=\"mp-bb-wrap\">"
+    + "<div class=\"mp-bb-hdr\">"
+    +   "<div>"
+    +   "<div class=\"mp-bb-title\"><i class=\"ti ti-flask\"></i> Bahan Baku</div>"
+    +   "<div class=\"mp-bb-sub\">Master harga bahan — dipakai utk hitung HPP otomatis per menu</div>"
+    +   "</div>"
+    + "</div>"
+    // Add form (di atas table)
+    + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" class=\"mp-bb-form\">"
+    +   "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama bahan (contoh: Bubuk Kopi)\" required>"
+    +   "<select class=\"mp-input\" name=\"satuan\">"
+    +     SATUAN_OPTS.map((s) => "<option value=\"" + s + "\"" + (s === "gram" ? " selected" : "") + ">" + s + "</option>").join("")
+    +   "</select>"
+    +   "<div class=\"mp-pfield\"><span class=\"mp-pfx\">Rp</span><input class=\"mp-pinp\" type=\"text\" name=\"harga_per_satuan\" placeholder=\"Harga / satuan\" required oninput=\"fmtH(this)\"></div>"
+    +   "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
+    + "</form>"
+    // Table
+    + (bahanList.length === 0
+      ? "<div class=\"mp-bb-empty\"><i class=\"ti ti-package-off\"></i>Belum ada bahan baku. Tambahkan di atas untuk mulai hitung HPP.</div>"
+      : "<table class=\"mp-bb-table\"><thead><tr>"
+        + "<th>Nama Bahan</th><th>Satuan</th><th>Harga / Satuan</th><th style=\"text-align:right\">Aksi</th>"
+        + "</tr></thead><tbody>"
+        + bahanList.map(renderBahanRow).join("")
+        + "</tbody></table>")
+    + "</div>";
+
+  // ── Resep editor block (full-width, hanya saat ?resep=<id>) ─────
+  const resepEditorBlock = (() => {
+    if (!resepMenu) return "";
+    const existing = resepByMenu[resepMenu.id] || [];
+    const currentHpp = hppMap.get(resepMenu.id) || 0;
+    const mr = marginOf(resepMenu.harga, currentHpp);
+    const bahanOpts = bahanList.map((b) =>
+      "<option value=\"" + b.id + "\" data-harga=\"" + b.harga_per_satuan + "\" data-satuan=\"" + escHtml(b.satuan) + "\">"
+      + escHtml(b.nama) + " (" + rpFmt(b.harga_per_satuan) + "/" + escHtml(b.satuan) + ")</option>"
+    ).join("");
+    const renderResepRow = (r, idx) => {
+      const selectedId = r ? r.bahan_id : 0;
+      const qty        = r ? r.qty      : "";
+      const subtotal   = r ? r.subtotal : 0;
+      return "<tr class=\"mp-rs-trow\" data-idx=\"" + idx + "\">"
+        + "<td><select name=\"bahan_id\" class=\"mp-rs-bahan\" onchange=\"rsRowChange(this)\" required>"
+        +   "<option value=\"\">— Pilih bahan —</option>"
+        +   bahanList.map((b) =>
+              "<option value=\"" + b.id + "\" data-harga=\"" + b.harga_per_satuan + "\" data-satuan=\"" + escHtml(b.satuan) + "\""
+              + (b.id === selectedId ? " selected" : "") + ">"
+              + escHtml(b.nama) + " (" + rpFmt(b.harga_per_satuan) + "/" + escHtml(b.satuan) + ")</option>"
+            ).join("")
+        + "</select></td>"
+        + "<td style=\"width:130px\"><input type=\"number\" name=\"qty\" class=\"mp-rs-qty\" step=\"0.001\" min=\"0\" value=\"" + qty + "\" oninput=\"rsRowChange(this)\" placeholder=\"0\"></td>"
+        + "<td style=\"width:80px\" class=\"mp-rs-satuan\">" + (r ? escHtml(r.satuan) : "—") + "</td>"
+        + "<td style=\"width:130px\" class=\"mp-rs-sub-val\" data-sub=\"" + subtotal + "\">" + rpFmt(subtotal) + "</td>"
+        + "<td style=\"width:40px;text-align:center\"><button type=\"button\" class=\"mp-rs-del\" onclick=\"rsDelRow(this)\" title=\"Hapus baris\"><i class=\"ti ti-x\"></i></button></td>"
+        + "</tr>";
+    };
+    const rows = existing.length
+      ? existing.map((r, i) => renderResepRow(r, i)).join("")
+      : renderResepRow(null, 0);
+    return "<div class=\"mp-rs-wrap\" id=\"resepEditor\">"
+      + "<div class=\"mp-rs-hdr\">"
+      +   "<div class=\"mp-rs-titlewrap\">"
+      +     "<div class=\"mp-rs-icon\"><i class=\"ti ti-flask\"></i></div>"
+      +     "<div>"
+      +       "<div class=\"mp-rs-title\">Atur Resep: " + escHtml(resepMenu.nama) + "</div>"
+      +       "<div class=\"mp-rs-sub\">Harga jual <strong>" + rpFmt(resepMenu.harga) + "</strong>"
+      +       (resepMenu.harga_hot ? " · Hot <strong>" + rpFmt(resepMenu.harga_hot) + "</strong>" : "")
+      +       " · Resep saat ini: " + existing.length + " bahan</div>"
+      +     "</div>"
+      +   "</div>"
+      +   "<div class=\"mp-rs-summary\">"
+      +     "<div class=\"mp-rs-sumitem\"><div class=\"mp-rs-sumlbl\">HPP Total</div><div class=\"mp-rs-sumval\" id=\"rsHppTotal\">" + rpFmt(currentHpp) + "</div></div>"
+      +     "<div class=\"mp-rs-sumitem\"><div class=\"mp-rs-sumlbl\">Margin</div><div class=\"mp-rs-sumval\" id=\"rsMargin\" style=\"color:" + mr.color + "\">" + (mr.rp < 0 ? "−" : "") + rpFmt(Math.abs(mr.rp)) + "</div></div>"
+      +     "<div class=\"mp-rs-sumitem\"><div class=\"mp-rs-sumlbl\">Margin %</div><div class=\"mp-rs-sumval\" id=\"rsMarginPct\" style=\"color:" + mr.color + "\">" + mr.pct + "%</div></div>"
+      +   "</div>"
+      + "</div>"
+      + (bahanList.length === 0
+        ? "<div class=\"mp-rs-warn\"><i class=\"ti ti-alert-triangle\"></i><div>Belum ada bahan baku. Tambahkan dulu di <a href=\"/operasional/menu?tab=bahan\" style=\"color:#7c2dc4;font-weight:600\">tab Bahan Baku</a> sebelum bikin resep.</div></div>"
+        : "")
+      + "<form action=\"/operasional/menu/resep/set\" method=\"post\" id=\"resepForm\">"
+      +   "<input type=\"hidden\" name=\"menu_id\" value=\"" + resepMenu.id + "\">"
+      +   "<input type=\"hidden\" name=\"harga\" id=\"rsHarga\" value=\"" + resepMenu.harga + "\">"
+      +   "<table class=\"mp-rs-table\"><thead><tr>"
+      +     "<th>Bahan</th><th style=\"text-align:right\">Qty</th><th>Satuan</th><th style=\"text-align:right\">Subtotal</th><th></th>"
+      +   "</tr></thead><tbody id=\"resepRows\">" + rows + "</tbody></table>"
+      +   "<div class=\"mp-rs-add-row\">"
+      +     "<button type=\"button\" class=\"mp-rs-add-btn\" onclick=\"rsAddRow()\"><i class=\"ti ti-plus\"></i> Tambah Bahan</button>"
+      +   "</div>"
+      +   "<div class=\"mp-rs-actions\">"
+      +     "<a href=\"/operasional/menu\" class=\"mp-rs-cancel\"><i class=\"ti ti-x\"></i> Batal</a>"
+      +     "<button type=\"submit\" class=\"mp-rs-save\"><i class=\"ti ti-check\"></i> Simpan Resep</button>"
+      +   "</div>"
+      + "</form>"
+      + "</div>";
+  })();
 
   const addPanel = "<div class=\"mp-add-panel\">"
     + "<div class=\"mp-add-hdr\">"
@@ -3390,6 +3561,79 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     ".mp-pag-btn:hover:not([disabled]){background:#2d6624;color:#fff;border-color:#2d6624}",
     ".mp-pag-btn[disabled]{opacity:.35;cursor:default}.mp-pag-btn.active{background:#2d6624;color:#fff;border-color:#2d6624}",
     ".mp-err{background:#fef5f5;color:#a32d2d;border:1px solid #f7c1c1;border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}",
+    // HPP block in menu card
+    ".mp-hpp-row{background:#fff;border:1px dashed #d4ddd2;border-radius:7px;padding:6px 9px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px}",
+    ".mp-hpp-row.mp-hpp-empty{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#7a8c78;font-style:italic;border-style:dashed;justify-content:center}",
+    ".mp-hpp-line{display:flex;align-items:center;justify-content:space-between;font-size:11px}",
+    ".mp-hpp-lbl{color:#7a8c78;font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px}",
+    ".mp-hpp-val{font-family:'DM Mono',monospace;font-weight:700;color:#1a2318}",
+    // Resep button
+    ".mp-btn-resep{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px;background:#f3e9fc;border:1px solid #d6bff0;border-radius:7px;font-size:11px;font-weight:500;color:#7c2dc4;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-decoration:none}",
+    ".mp-btn-resep:hover{background:#e6d3f8;border-color:#b48de6}.mp-btn-resep i{font-size:12px}",
+    ".mp-rs-cnt{background:#7c2dc4;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:600}",
+    // Tab toggle (Item Menu / Bahan Baku)
+    ".mp-toptabs{display:flex;background:#fff;border:1px solid #e2e8e0;border-radius:10px;padding:4px;margin-bottom:18px;gap:4px;width:fit-content}",
+    ".mp-toptab{display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#7a8c78;text-decoration:none;transition:all .15s;cursor:pointer}",
+    ".mp-toptab:hover{background:#f4f6f3;color:#1a2318}",
+    ".mp-toptab.active{background:#2d6624;color:#fff}",
+    ".mp-toptab i{font-size:15px}",
+    ".mp-toptab-cnt{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(0,0,0,.08);font-weight:600}",
+    ".mp-toptab.active .mp-toptab-cnt{background:rgba(255,255,255,.2)}",
+    // Bahan Baku tab
+    ".mp-bb-wrap{background:#fff;border:1px solid #e2e8e0;border-radius:12px;padding:18px;margin-bottom:20px}",
+    ".mp-bb-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f0f3ef}",
+    ".mp-bb-title{font-size:15px;font-weight:700;color:#1a2318;display:flex;align-items:center;gap:7px}",
+    ".mp-bb-title i{font-size:18px;color:#7c2dc4}",
+    ".mp-bb-sub{font-size:11.5px;color:#7a8c78;margin-top:3px}",
+    ".mp-bb-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;background:#f9fbf8;border:1px solid #e2e8e0;border-radius:9px;padding:12px;margin-bottom:14px}",
+    "@media(max-width:700px){.mp-bb-form{grid-template-columns:1fr 1fr;}.mp-bb-form>*:nth-child(1){grid-column:1/-1}}",
+    ".mp-bb-table{width:100%;border-collapse:collapse;font-size:12.5px}",
+    ".mp-bb-table th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;color:#7a8c78;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8e0;background:#f9fbf8}",
+    ".mp-bb-table td{padding:11px 12px;border-bottom:1px solid #f0f3ef;color:#1a2318;vertical-align:middle}",
+    ".mp-bb-table tr:hover td{background:#f9fbf8}",
+    ".mp-bb-table tr.mp-bb-edit-row td{background:#fff8e6;border-color:#f0d99a}",
+    ".mp-bb-empty{text-align:center;padding:30px 16px;color:#7a8c78;font-size:13px;background:#f9fbf8;border-radius:9px}",
+    ".mp-bb-empty i{font-size:28px;display:block;margin-bottom:8px;color:#b0bfae}",
+    ".mp-bb-act{display:flex;gap:5px;justify-content:flex-end}",
+    ".mp-bb-act a{display:inline-flex;align-items:center;justify-content:center;padding:5px 9px;border-radius:6px;font-size:11px;font-weight:500;text-decoration:none;border:1px solid;gap:4px}",
+    ".mp-bb-act .mp-bb-edit{background:#fff;border-color:#d4ddd2;color:#1a2318}",
+    ".mp-bb-act .mp-bb-edit:hover{background:#eef1ed}",
+    ".mp-bb-act .mp-bb-del{background:#fef5f5;border-color:#f7c1c1;color:#a32d2d}",
+    ".mp-bb-act .mp-bb-del:hover{background:#fcdede}",
+    ".mp-bb-satuan{background:#e6f1fb;color:#2660a4;padding:2px 8px;border-radius:8px;font-size:10.5px;font-weight:600;display:inline-block}",
+    ".mp-bb-harga{font-family:'DM Mono',monospace;font-weight:700;color:#2d6624}",
+    // Resep editor (full-width block)
+    ".mp-rs-wrap{background:#fff;border:2px solid #c19ee6;border-radius:12px;padding:22px;margin-bottom:22px;box-shadow:0 4px 16px rgba(124,45,196,.08)}",
+    ".mp-rs-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0e6fa;flex-wrap:wrap}",
+    ".mp-rs-titlewrap{display:flex;align-items:center;gap:11px}",
+    ".mp-rs-icon{width:42px;height:42px;border-radius:11px;background:#f3e9fc;color:#7c2dc4;display:flex;align-items:center;justify-content:center;font-size:22px}",
+    ".mp-rs-title{font-size:17px;font-weight:700;color:#1a2318;margin-bottom:3px}",
+    ".mp-rs-sub{font-size:12px;color:#7a8c78;display:flex;align-items:center;gap:6px;flex-wrap:wrap}",
+    ".mp-rs-sub strong{color:#2d6624;font-family:'DM Mono',monospace}",
+    ".mp-rs-summary{background:#f9f4ff;border:1px solid #e6d3f8;border-radius:10px;padding:14px 18px;display:flex;gap:24px;flex-wrap:wrap;min-width:280px}",
+    ".mp-rs-sumitem{display:flex;flex-direction:column;gap:2px}",
+    ".mp-rs-sumlbl{font-size:9.5px;font-weight:700;color:#7c2dc4;text-transform:uppercase;letter-spacing:.06em}",
+    ".mp-rs-sumval{font-size:17px;font-weight:700;color:#1a2318;font-family:'DM Mono',monospace}",
+    ".mp-rs-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px}",
+    ".mp-rs-table th{text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;color:#7a8c78;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8e0;background:#f9fbf8}",
+    ".mp-rs-table td{padding:9px 8px;border-bottom:1px solid #f0f3ef;vertical-align:middle}",
+    ".mp-rs-table tr:last-child td{border-bottom:none}",
+    ".mp-rs-table select,.mp-rs-table input{width:100%;padding:8px 10px;border:1px solid #e2e8e0;border-radius:7px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:#1a2318;background:#f9fbf8;outline:none}",
+    ".mp-rs-table select:focus,.mp-rs-table input:focus{border-color:#7c2dc4;background:#fff}",
+    ".mp-rs-table input[type=number]{font-family:'DM Mono',monospace;text-align:right}",
+    ".mp-rs-sub-val{font-family:'DM Mono',monospace;font-weight:700;color:#2d6624;text-align:right;white-space:nowrap}",
+    ".mp-rs-del{background:#fef5f5;border:1px solid #f7c1c1;color:#a32d2d;border-radius:7px;width:30px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}",
+    ".mp-rs-del:hover{background:#fcdede}",
+    ".mp-rs-add-row{display:flex;justify-content:flex-end;margin-bottom:14px}",
+    ".mp-rs-add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f3e9fc;border:1px dashed #c19ee6;border-radius:8px;font-size:12.5px;color:#7c2dc4;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}",
+    ".mp-rs-add-btn:hover{background:#e6d3f8;border-style:solid}",
+    ".mp-rs-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid #f0e6fa}",
+    ".mp-rs-save{padding:10px 22px;background:#7c2dc4;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:6px}",
+    ".mp-rs-save:hover{background:#651d9e}",
+    ".mp-rs-cancel{padding:10px 18px;background:#f4f6f3;border:1px solid #e2e8e0;border-radius:9px;color:#7a8c78;font-size:12.5px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}",
+    ".mp-rs-cancel:hover{background:#eef1ed}",
+    ".mp-rs-warn{background:#fef9e6;border:1px solid #f0d99a;border-radius:9px;padding:11px 14px;font-size:12px;color:#7a4d12;margin-bottom:14px;display:flex;align-items:flex-start;gap:8px}",
+    ".mp-rs-warn i{font-size:15px;color:#c47f1a;flex-shrink:0;margin-top:1px}",
   ].join("");
 
   const js = ""
@@ -3449,7 +3693,51 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "el=document.getElementById('cntMin');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='minuman';}).length;"
     + "el=document.getElementById('cntMak');if(el)el.textContent=[].filter.call(all,function(c){return c.dataset.cat==='makanan';}).length;"
     + "}"
-    + "(function(){onAddKatChange();applyMenuFilter();})();";
+    + "(function(){onAddKatChange();applyMenuFilter();})();"
+    // ── Resep editor JS ────────────────────────────────────────
+    + "function rpFmt(n){n=Math.round(n||0);var sign=n<0?'-':'';n=Math.abs(n);return sign+'Rp '+String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.');}"
+    + "function rsRecomputeTotals(){"
+    +   "var rows=document.querySelectorAll('#resepRows .mp-rs-trow');"
+    +   "var total=0;"
+    +   "rows.forEach(function(tr){"
+    +     "var sel=tr.querySelector('select.mp-rs-bahan');"
+    +     "var qin=tr.querySelector('input.mp-rs-qty');"
+    +     "var sub=tr.querySelector('.mp-rs-sub-val');"
+    +     "var sat=tr.querySelector('.mp-rs-satuan');"
+    +     "var opt=sel.options[sel.selectedIndex];"
+    +     "var harga=opt?parseInt(opt.dataset.harga||0):0;"
+    +     "var satuan=opt?(opt.dataset.satuan||''):'';"
+    +     "var q=parseFloat((qin.value||'').replace(',','.'))||0;"
+    +     "var s=Math.round(harga*q);"
+    +     "sub.textContent=rpFmt(s);sub.dataset.sub=s;"
+    +     "if(sat)sat.textContent=satuan||'—';"
+    +     "total+=s;"
+    +   "});"
+    +   "var harga=parseInt(document.getElementById('rsHarga').value)||0;"
+    +   "var margin=harga-total;var pct=harga>0?Math.round((margin/harga)*1000)/10:0;"
+    +   "var col=margin<0?'#a32d2d':(pct<30?'#c47f1a':'#2d6624');"
+    +   "var elH=document.getElementById('rsHppTotal');if(elH)elH.textContent=rpFmt(total);"
+    +   "var elM=document.getElementById('rsMargin');if(elM){elM.textContent=(margin<0?'\\u2212':'')+rpFmt(Math.abs(margin));elM.style.color=col;}"
+    +   "var elP=document.getElementById('rsMarginPct');if(elP){elP.textContent=pct+'%';elP.style.color=col;}"
+    + "}"
+    + "function rsRowChange(_el){rsRecomputeTotals();}"
+    + "function rsAddRow(){"
+    +   "var tbody=document.getElementById('resepRows');if(!tbody)return;"
+    +   "var first=tbody.querySelector('.mp-rs-trow');if(!first){return;}"
+    +   "var clone=first.cloneNode(true);"
+    +   "var sel=clone.querySelector('select.mp-rs-bahan');if(sel)sel.value='';"
+    +   "var qin=clone.querySelector('input.mp-rs-qty');if(qin)qin.value='';"
+    +   "var sub=clone.querySelector('.mp-rs-sub-val');if(sub){sub.textContent='Rp 0';sub.dataset.sub='0';}"
+    +   "var sat=clone.querySelector('.mp-rs-satuan');if(sat)sat.textContent='\\u2014';"
+    +   "tbody.appendChild(clone);"
+    + "}"
+    + "function rsDelRow(btn){"
+    +   "var tr=btn.closest('tr');var tbody=document.getElementById('resepRows');"
+    +   "if(tbody.querySelectorAll('.mp-rs-trow').length>1){tr.remove();}"
+    +   "else{var sel=tr.querySelector('select');var q=tr.querySelector('input');if(sel)sel.value='';if(q)q.value='';}"
+    +   "rsRecomputeTotals();"
+    + "}"
+    + "if(document.getElementById('resepEditor')){rsRecomputeTotals();}";
 
   return docHeadV4("Kelola Menu")
     + "<style>" + css + "</style>"
@@ -3470,6 +3758,12 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "<div style=\"font-size:20px;font-weight:700;color:#1a2318;margin-bottom:4px\">Menu Kopi / Snack</div>"
     + "<div style=\"font-size:13px;color:#6b7c69;margin-bottom:22px\">Kelola item menu dan harga yang tersedia di kasir</div>"
     + (hasErr ? "<div class=\"mp-err\"><i class=\"ti ti-alert-circle\"></i> Nama sudah ada atau data tidak valid.</div>" : "")
+    // Resep editor (full-width, hanya saat ?resep=<id>)
+    + resepEditorBlock
+    // Tab toggle (sembunyiin kalau lagi di resep editor — fokus ke task)
+    + (resepMenu ? "" : tabToggle)
+    // Item Menu tab content (default) — sembunyiin saat tab=bahan / resep mode
+    + "<div id=\"menuTabContent\"" + ((activeTab === "menu" && !resepMenu) ? "" : " style=\"display:none\"") + ">"
     // Stats
     + "<div class=\"mp-stats\">"
     + "<div class=\"mp-stat\"><div class=\"mp-stat-icon green\"><i class=\"ti ti-list\"></i></div>"
@@ -3501,6 +3795,11 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     + "<div class=\"mp-content\">"
     + "<div class=\"mp-sections\">" + sections + "</div>"
     + addPanel
+    + "</div>"
+    + "</div>"  // /menuTabContent
+    // Bahan Baku tab content
+    + "<div id=\"bahanTabContent\"" + ((activeTab === "bahan" && !resepMenu) ? "" : " style=\"display:none\"") + ">"
+    + bahanTabBlock
     + "</div>"
     + "</div></div></div>"
     + "<script>" + js + "</script>"
