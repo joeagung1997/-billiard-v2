@@ -3318,7 +3318,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     if (editBahan && editBahan.id === b.id) {
       // Inline edit — 2 baris: identitas + konversi porsi
       return "<tr class=\"mp-bb-edit-row\"><td colspan=\"5\">"
-        + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" style=\"display:flex;flex-direction:column;gap:8px;margin:0\">"
+        + "<form action=\"/operasional/menu/bahan/edit\" method=\"post\" style=\"display:flex;flex-direction:column;gap:8px;margin:0\" data-bb-form>"
         + "<input type=\"hidden\" name=\"id\" value=\"" + b.id + "\">"
         + "<div class=\"mp-bb-form\" style=\"margin:0;background:transparent;border:none;padding:0\">"
         +   "<input class=\"mp-input\" type=\"text\" name=\"nama\" value=\"" + escHtml(b.nama) + "\" required placeholder=\"Nama bahan\">"
@@ -3330,11 +3330,15 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
         + "</div>"
         + "<div class=\"mp-bb-form\" style=\"margin:0;background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto\">"
         +   "<div style=\"display:flex;align-items:center;font-size:12px;color:#7c2dc4;font-weight:600;padding-left:4px\">Per 1 porsi =</div>"
-        +   "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"" + (b.qty_per_porsi || 1) + "\" placeholder=\"Jumlah (mis. 0.2)\">"
-        +   "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" value=\"" + escHtml(b.porsi_label || "") + "\" placeholder=\"Label porsi (cup, sdt, dll) — opsional\" maxlength=\"20\">"
+        +   "<div class=\"mp-bb-qpp\">"
+        +     "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"" + (b.qty_per_porsi || 1) + "\" placeholder=\"contoh: 0.2\">"
+        +     "<span class=\"mp-bb-qpp-sfx\" data-bb-sfx>" + escHtml(b.satuan) + "</span>"
+        +   "</div>"
+        +   "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" value=\"" + escHtml(b.porsi_label || "") + "\" placeholder=\"Label porsi (cup, sdt, dll)\" maxlength=\"20\">"
         +   "<div style=\"display:flex;gap:6px\"><button type=\"submit\" class=\"mp-btn-save\">Simpan</button>"
         +   "<a href=\"/operasional/menu?tab=bahan\" class=\"mp-btn-cancel\">Batal</a></div>"
         + "</div>"
+        + "<div class=\"mp-bb-preview\" data-bb-preview></div>"
         + "</form></td></tr>";
     }
     const hpp     = hargaPorsi(b);
@@ -3365,7 +3369,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "</div>"
     + "</div>"
     // Add form — 2 baris: identitas (atas) + konversi porsi (bawah, opsional)
-    + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" style=\"margin-bottom:14px\">"
+    + "<form action=\"/operasional/menu/bahan/tambah\" method=\"post\" style=\"margin-bottom:14px\" data-bb-form>"
     +   "<div class=\"mp-bb-form\" style=\"margin-bottom:8px\">"
     +     "<input class=\"mp-input\" type=\"text\" name=\"nama\" placeholder=\"Nama bahan (contoh: Es Batu)\" required>"
     +     "<select class=\"mp-input\" name=\"satuan\">"
@@ -3376,10 +3380,14 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "</div>"
     +   "<div class=\"mp-bb-form\" style=\"background:#f9f4ff;border:1px dashed #c19ee6;border-radius:8px;padding:10px;grid-template-columns:140px 1fr 1fr auto\">"
     +     "<div style=\"display:flex;align-items:center;font-size:12px;color:#7c2dc4;font-weight:600;padding-left:4px\">Per 1 porsi =</div>"
-    +     "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"1\" placeholder=\"Jumlah (mis. 0.2)\">"
-    +     "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" placeholder=\"Label porsi (cup, sdt, dll) — opsional\" maxlength=\"20\">"
+    +     "<div class=\"mp-bb-qpp\">"
+    +       "<input class=\"mp-input\" type=\"number\" step=\"0.0001\" min=\"0\" name=\"qty_per_porsi\" value=\"1\" placeholder=\"contoh: 0.2\">"
+    +       "<span class=\"mp-bb-qpp-sfx\" data-bb-sfx>gram</span>"
+    +     "</div>"
+    +     "<input class=\"mp-input\" type=\"text\" name=\"porsi_label\" placeholder=\"Label porsi (cup, sdt, dll)\" maxlength=\"20\">"
     +     "<button type=\"submit\" class=\"mp-btn-save\"><i class=\"ti ti-plus\"></i> Tambah</button>"
     +   "</div>"
+    +   "<div class=\"mp-bb-preview\" data-bb-preview></div>"
     + "</form>"
     // Hint
     + "<div style=\"font-size:11.5px;color:#7a8c78;margin-bottom:10px;padding:8px 12px;background:#f9fbf8;border-left:3px solid #c19ee6;border-radius:4px\">"
@@ -3645,6 +3653,13 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     ".mp-bb-act .mp-bb-del:hover{background:#fcdede}",
     ".mp-bb-satuan{background:#e6f1fb;color:#2660a4;padding:2px 8px;border-radius:8px;font-size:10.5px;font-weight:600;display:inline-block}",
     ".mp-bb-harga{font-family:'DM Mono',monospace;font-weight:700;color:#2d6624}",
+    // qty_per_porsi input dgn suffix (satuan beli)
+    ".mp-bb-qpp{position:relative;display:flex;align-items:stretch}",
+    ".mp-bb-qpp input{padding-right:48px;flex:1}",
+    ".mp-bb-qpp-sfx{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11.5px;color:#7c2dc4;font-weight:700;background:#fff;padding:2px 7px;border-radius:5px;pointer-events:none;letter-spacing:.02em}",
+    // Live preview hasil konversi
+    ".mp-bb-preview{grid-column:1/-1;font-size:12px;color:#7a8c78;padding:8px 14px;margin-top:8px;background:#fff;border:1px dashed #d4ddd2;border-radius:7px;text-align:center}",
+    ".mp-bb-preview strong{color:#7c2dc4;font-family:'DM Mono',monospace}",
     // Resep editor (full-width block)
     ".mp-rs-wrap{background:#fff;border:2px solid #c19ee6;border-radius:12px;padding:22px;margin-bottom:22px;box-shadow:0 4px 16px rgba(124,45,196,.08)}",
     ".mp-rs-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0e6fa;flex-wrap:wrap}",
@@ -3782,7 +3797,35 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "else{var sel=tr.querySelector('select');var q=tr.querySelector('input');if(sel)sel.value='';if(q)q.value='';}"
     +   "rsRecomputeTotals();"
     + "}"
-    + "if(document.getElementById('resepEditor')){rsRecomputeTotals();}";
+    + "if(document.getElementById('resepEditor')){rsRecomputeTotals();}"
+    // ── Bahan Baku form live preview ───────────────────────────
+    // Update suffix satuan + preview "Rp X / label" tiap user ketik di field manapun.
+    + "function bbBindForm(form){"
+    +   "var sel=form.querySelector('[name=satuan]');"
+    +   "var hin=form.querySelector('[name=harga_per_satuan]');"
+    +   "var qin=form.querySelector('[name=qty_per_porsi]');"
+    +   "var lin=form.querySelector('[name=porsi_label]');"
+    +   "var sfx=form.querySelector('[data-bb-sfx]');"
+    +   "var prev=form.querySelector('[data-bb-preview]');"
+    +   "function upd(){"
+    +     "var satuan=sel?sel.value:'';"
+    +     "var harga=hin?(parseInt((hin.value||'').replace(/\\D/g,''))||0):0;"
+    +     "var qpp=qin?(parseFloat((qin.value||'').replace(',','.'))||0):0;"
+    +     "var label=(lin?(lin.value||'').trim():'')||satuan;"
+    +     "if(sfx)sfx.textContent=satuan;"
+    +     "if(prev){"
+    +       "if(harga>0&&qpp>0){"
+    +         "var hp=Math.round(harga*qpp);"
+    +         "prev.innerHTML='Harga per porsi: <strong>'+rpFmt(hp)+' / '+label+'</strong> <span style=\\\"color:#b0bfae\\\">(1 '+label+' = '+qpp+' '+satuan+')</span>';"
+    +       "}else{"
+    +         "prev.innerHTML='<span style=\\\"color:#b0bfae;font-style:italic\\\">Isi harga & jumlah per porsi untuk lihat preview</span>';"
+    +       "}"
+    +     "}"
+    +   "}"
+    +   "[sel,hin,qin,lin].forEach(function(el){if(el){el.addEventListener('input',upd);el.addEventListener('change',upd);}});"
+    +   "upd();"
+    + "}"
+    + "document.querySelectorAll('[data-bb-form]').forEach(bbBindForm);";
 
   return docHeadV4("Kelola Menu")
     + "<style>" + css + "</style>"
