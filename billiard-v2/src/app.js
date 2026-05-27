@@ -93,6 +93,7 @@ if (!process.env.VERCEL) {
         console.log(` Port    : ${CONFIG.PORT}`);
         console.log(` DB      : PostgreSQL`);
         console.log(` Limit   : ${CONFIG.BATAS_MAIN}× / ${CONFIG.BATAS_HARI} hari`);
+        console.log(` Deploy  : ${CONFIG.DEPLOY_ID.slice(0, 16)}${CONFIG.DEPLOY_ID.length > 16 ? "…" : ""}`);
         console.log(`${"=".repeat(44)}\n`);
       });
     })

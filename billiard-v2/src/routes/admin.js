@@ -117,7 +117,7 @@ router.post("/login", async (req, res) => {
   // ini owner yg pindah dari /operasional balik ke /admin akan dimintai PIN
   // ulang karena fallback _frt di middleware/auth.js gak bisa baca cookie.
   const frt = jwt.sign(
-    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift },
+    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, boot: CONFIG.DEPLOY_ID },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );

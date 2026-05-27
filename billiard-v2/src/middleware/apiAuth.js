@@ -10,7 +10,7 @@ import { CONFIG } from "../config.js";
  * @returns {string}
  */
 export const signToken = (payload) =>
-  jwt.sign(payload, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+  jwt.sign({ ...payload, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
 
 /**
  * Middleware: validasi Bearer JWT
@@ -30,6 +30,12 @@ export const requireApiAuth = (roles = ["admin"]) =>
     const token = auth.slice(7);
     try {
       const payload = jwt.verify(token, CONFIG.JWT_SECRET);
+      if (payload.boot !== CONFIG.DEPLOY_ID) {
+        return res.status(401).json({
+          success: false,
+          message: "Token sudah tidak berlaku (server di-update). Silakan login ulang.",
+        });
+      }
       if (!roles.includes(payload.role)) {
         return res.status(403).json({
           success: false,

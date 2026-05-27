@@ -49,7 +49,7 @@ function getCookie(req, name) {
 }
 
 function setRoleCookie(res, role, username = "", displayName = "", shift = "siang") {
-  const token = jwt.sign({ role, username, displayName, shift }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+  const token = jwt.sign({ role, username, displayName, shift, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
   // Path=/ supaya cookie juga dikirim ke /admin/* — fallback _frt di
   // middleware/auth.js bisa baca cookie ini saat owner pindah menu.
@@ -73,6 +73,8 @@ function getFinanceUser(req) {
   if (!raw) return null;
   try {
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
+    // DEPLOY_ID mismatch = token dari deploy sebelumnya → invalid (force re-login).
+    if (decoded.boot !== CONFIG.DEPLOY_ID) return null;
     return {
       role:        decoded.role        || null,
       username:    decoded.username    || "",

@@ -35,9 +35,11 @@ function getCookie(req, name) {
   return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
 }
 
+// DEPLOY_ID di-include ke HMAC input — tiap deploy baru, DEPLOY_ID berubah,
+// signature lama gak match lagi → token SDM lama invalid → user re-login.
 function makeToken() {
   const ts  = Date.now().toString(36);
-  const sig = createHmac("sha256", SDM_SECRET).update(ts).digest("hex").slice(0, 20);
+  const sig = createHmac("sha256", SDM_SECRET).update(ts + "." + CONFIG.DEPLOY_ID).digest("hex").slice(0, 20);
   return ts + "." + sig;
 }
 
@@ -47,7 +49,7 @@ function verifyToken(token) {
   if (dot < 0) return false;
   const ts       = token.slice(0, dot);
   const sig      = token.slice(dot + 1);
-  const expected = createHmac("sha256", SDM_SECRET).update(ts).digest("hex").slice(0, 20);
+  const expected = createHmac("sha256", SDM_SECRET).update(ts + "." + CONFIG.DEPLOY_ID).digest("hex").slice(0, 20);
   if (sig !== expected) return false;
   const ms = parseInt(ts, 36);
   return !isNaN(ms) && Date.now() - ms < SDM_TTL_MS;
@@ -72,6 +74,7 @@ function getFinanceRole(req) {
   try {
     const raw = decodeURIComponent(entry.slice(FIN_COOKIE.length + 1));
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
+    if (decoded.boot !== CONFIG.DEPLOY_ID) return null;
     return decoded.role || null;
   } catch { return null; }
 }

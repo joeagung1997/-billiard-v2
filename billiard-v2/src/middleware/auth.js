@@ -6,13 +6,16 @@ import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG } from "../config.js";
 
 // Helper: baca cookie _frt (JWT finance role) dari header. Return payload
-// atau null kalau cookie tidak ada / invalid / expired.
+// atau null kalau cookie tidak ada / invalid / expired / DEPLOY_ID mismatch
+// (token dari deploy sebelumnya → force re-login setelah update).
 export function readFrtCookie(req) {
   const raw = req.headers.cookie || "";
   const entry = raw.split(";").map((s) => s.trim()).find((s) => s.startsWith("_frt="));
   if (!entry) return null;
   try {
-    return jwt.verify(decodeURIComponent(entry.slice(5)), CONFIG.JWT_SECRET);
+    const payload = jwt.verify(decodeURIComponent(entry.slice(5)), CONFIG.JWT_SECRET);
+    if (payload.boot !== CONFIG.DEPLOY_ID) return null;
+    return payload;
   } catch { return null; }
 }
 

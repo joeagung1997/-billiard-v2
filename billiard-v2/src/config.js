@@ -23,6 +23,7 @@
 
 import { existsSync } from "fs";
 import { join } from "path";
+import { randomBytes } from "crypto";
 
 // Fail-loud: kalau env var sensitif ga di-set, throw error daripada pakai
 // default yang vulnerable (kasus sebelumnya: PIN '2024' & JWT_SECRET predictable
@@ -74,6 +75,19 @@ export const CONFIG = Object.freeze({
 
   JWT_SECRET:  requireSecret("JWT_SECRET"),
   JWT_EXPIRES: process.env.JWT_EXPIRES ?? "24h",
+
+  // DEPLOY_ID — stamped ke semua token (JWT _frt, REST API Bearer, SDM HMAC).
+  // Tiap deploy baru → DEPLOY_ID berubah → semua token lama invalid → user
+  // dipaksa login ulang. Prioritas: env var dari platform (Railway/Vercel) yg
+  // stabil per-deploy (lambda warm-start tetep share ID yg sama), fallback ke
+  // random per-process buat local dev.
+  DEPLOY_ID:
+    process.env.RAILWAY_DEPLOYMENT_ID ||
+    process.env.VERCEL_DEPLOYMENT_ID ||
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GIT_COMMIT ||
+    `local-${randomBytes(8).toString("hex")}`,
 
   // Nomor WA Warpat Jombang — dipakai untuk tombol booking di kartu member.
   // Bukan rahasia (publish utk customer); default aman karena warpat tunggal.
