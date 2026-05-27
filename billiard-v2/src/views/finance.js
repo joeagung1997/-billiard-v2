@@ -3489,16 +3489,26 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
 
   // ── Detail modal (hidden by default, dibuka via bbShowDetail) ───
   // JSON map dipakai oleh JS utk render detail tanpa fetch ulang data dasar.
+  // Coerce semua value ke type yg konsisten (Number/String) supaya JSON.stringify
+  // gak hasilkan null/undefined yang bisa crash JS. Plus escape </ buat protect
+  // dari </script> hijack via field user.
   const bahanMapJson = JSON.stringify(
     Object.fromEntries(bahanList.map((b) => [b.id, {
-      nama: b.nama, satuan: b.satuan, harga: b.harga_per_satuan,
-      qpp: b.qty_per_porsi, label: b.porsi_label,
-      harga_dus: b.harga_dus, isi_dus: b.isi_per_dus,
-      harga_renteng: b.harga_renteng, isi_renteng: b.isi_per_renteng,
-      supplier: b.supplier, catatan: b.catatan,
-      tgl_input: b.tanggal_input, tgl_update: b.tanggal_update_harga,
+      nama: String(b.nama || ""),
+      satuan: String(b.satuan || ""),
+      harga: Number(b.harga_per_satuan) || 0,
+      qpp: Number(b.qty_per_porsi) || 1,
+      label: String(b.porsi_label || ""),
+      harga_dus: Number(b.harga_dus) || 0,
+      isi_dus: Number(b.isi_per_dus) || 0,
+      harga_renteng: Number(b.harga_renteng) || 0,
+      isi_renteng: Number(b.isi_per_renteng) || 0,
+      supplier: String(b.supplier || ""),
+      catatan: String(b.catatan || ""),
+      tgl_input:  b.tanggal_input  ? new Date(b.tanggal_input).toISOString() : "",
+      tgl_update: b.tanggal_update_harga ? new Date(b.tanggal_update_harga).toISOString() : "",
     }]))
-  );
+  ).replace(/<\//g, "<\\/");
   const bahanDetailModal = "<div class=\"bb-modal-overlay\" id=\"bbDetailModal\" onclick=\"if(event.target===this)bbCloseDetail()\">"
     + "<div class=\"bb-modal\">"
     +   "<div class=\"bb-modal-hdr\">"
@@ -3975,39 +3985,36 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "var sub=document.getElementById('bbModalSub');"
     +   "var body=document.getElementById('bbModalBody');"
     +   "title.textContent=b.nama;"
-    +   "sub.innerHTML='<i class=\"ti ti-coin\" style=\"font-size:11px\"></i> '+rpFmt(b.harga)+' / '+b.satuan+'  ·  ditambahkan '+bbFmtDateTime(b.tgl_input);"
-    +   // Effective harga porsi
-    +   "var hp=Math.round((b.harga||0)*(b.qpp||1));"
-    +   "var lbl=(b.label&&b.label.trim())?b.label.trim():b.satuan;"
-    +   // Build info cards HTML
-    +   "var dusInfo=(b.harga_dus&&b.isi_dus)?"
-    +     "(rpFmt(b.harga_dus)+'<span class=\"bb-info-sub\"> / dus (isi '+b.isi_dus+' '+b.satuan+', ≈ '+rpFmt(Math.round(b.harga_dus/b.isi_dus))+' /'+b.satuan+')</span>')"
-    +     ":'<span class=\"bb-info-empty\">belum diisi</span>';"
-    +   "var rentengInfo=(b.harga_renteng&&b.isi_renteng)?"
-    +     "(rpFmt(b.harga_renteng)+'<span class=\"bb-info-sub\"> / renteng (isi '+b.isi_renteng+' '+b.satuan+', ≈ '+rpFmt(Math.round(b.harga_renteng/b.isi_renteng))+' /'+b.satuan+')</span>')"
-    +     ":'<span class=\"bb-info-empty\">belum diisi</span>';"
+    +   "sub.innerHTML=rpFmt(b.harga)+' / '+b.satuan+' &middot; ditambahkan '+bbFmtDateTime(b.tgl_input);"
+    +   "var hp=Math.round(b.harga*b.qpp);"
+    +   "var lbl=b.label||b.satuan;"
+    +   "var dusInfo='<span class=\"bb-info-empty\">belum diisi</span>';"
+    +   "if(b.harga_dus>0&&b.isi_dus>0){"
+    +     "var pd=Math.round(b.harga_dus/b.isi_dus);"
+    +     "dusInfo=rpFmt(b.harga_dus)+'<span class=\"bb-info-sub\"> / dus (isi '+b.isi_dus+' '+b.satuan+', ~ '+rpFmt(pd)+'/'+b.satuan+')</span>';"
+    +   "}"
+    +   "var rentengInfo='<span class=\"bb-info-empty\">belum diisi</span>';"
+    +   "if(b.harga_renteng>0&&b.isi_renteng>0){"
+    +     "var pr=Math.round(b.harga_renteng/b.isi_renteng);"
+    +     "rentengInfo=rpFmt(b.harga_renteng)+'<span class=\"bb-info-sub\"> / renteng (isi '+b.isi_renteng+' '+b.satuan+', ~ '+rpFmt(pr)+'/'+b.satuan+')</span>';"
+    +   "}"
+    +   "var supText=b.supplier?b.supplier:'<span class=\"bb-info-empty\">-</span>';"
     +   "var html='';"
-    +   // Section: Harga
-    +   "html+='<div>';"
-    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-cash\"></i> Harga</div>';"
+    +   "html+='<div><div class=\"bb-sec-title\">Harga</div>';"
     +   "html+='<div class=\"bb-info-grid\">';"
-    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-coin\"></i> Harga/Satuan</div><div class=\"bb-info-val\">'+rpFmt(b.harga)+'<span class=\"bb-info-sub\"> / '+b.satuan+'</span></div></div>';"
-    +   "html+='<div class=\"bb-info-card hl\"><div class=\"bb-info-lbl\"><i class=\"ti ti-flask\"></i> Harga/Porsi</div><div class=\"bb-info-val\">'+rpFmt(hp)+'<span class=\"bb-info-sub\"> / '+lbl+'</span></div></div>';"
-    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-package\"></i> Harga Dus</div><div class=\"bb-info-val\">'+dusInfo+'</div></div>';"
-    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-stack-2\"></i> Harga Renteng</div><div class=\"bb-info-val\">'+rentengInfo+'</div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\">Harga/Satuan</div><div class=\"bb-info-val\">'+rpFmt(b.harga)+'<span class=\"bb-info-sub\"> / '+b.satuan+'</span></div></div>';"
+    +   "html+='<div class=\"bb-info-card hl\"><div class=\"bb-info-lbl\">Harga/Porsi</div><div class=\"bb-info-val\">'+rpFmt(hp)+'<span class=\"bb-info-sub\"> / '+lbl+'</span></div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\">Harga Dus</div><div class=\"bb-info-val\">'+dusInfo+'</div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\">Harga Renteng</div><div class=\"bb-info-val\">'+rentengInfo+'</div></div>';"
     +   "html+='</div></div>';"
-    +   // Section: Info Lain
-    +   "html+='<div>';"
-    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-info-circle\"></i> Info Lain</div>';"
+    +   "html+='<div><div class=\"bb-sec-title\">Info Lain</div>';"
     +   "html+='<div class=\"bb-info-grid\">';"
-    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-truck\"></i> Supplier</div><div class=\"bb-info-val\">'+(b.supplier?b.supplier:'<span class=\"bb-info-empty\">—</span>')+'</div></div>';"
-    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\"><i class=\"ti ti-clock\"></i> Update Harga Terakhir</div><div class=\"bb-info-val\">'+bbRelTime(b.tgl_update)+'<span class=\"bb-info-sub\"> ('+bbFmtDateTime(b.tgl_update)+')</span></div></div>';"
-    +   "if(b.catatan){html+='<div class=\"bb-info-card\" style=\"grid-column:1/-1\"><div class=\"bb-info-lbl\"><i class=\"ti ti-notes\"></i> Catatan</div><div class=\"bb-info-val\" style=\"font-family:DM Sans,sans-serif;font-weight:500\">'+b.catatan+'</div></div>';}"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\">Supplier</div><div class=\"bb-info-val\">'+supText+'</div></div>';"
+    +   "html+='<div class=\"bb-info-card\"><div class=\"bb-info-lbl\">Update Harga Terakhir</div><div class=\"bb-info-val\">'+bbRelTime(b.tgl_update)+'<span class=\"bb-info-sub\"> ('+bbFmtDateTime(b.tgl_update)+')</span></div></div>';"
+    +   "if(b.catatan){html+='<div class=\"bb-info-card\" style=\"grid-column:1/-1\"><div class=\"bb-info-lbl\">Catatan</div><div class=\"bb-info-val\" style=\"font-weight:500\">'+b.catatan+'</div></div>';}"
     +   "html+='</div></div>';"
-    +   // Section: History
-    +   "html+='<div>';"
-    +   "html+='<div class=\"bb-sec-title\"><i class=\"ti ti-history\"></i> History Perubahan Harga</div>';"
-    +   "html+='<div class=\"bb-history\" id=\"bbHistoryList\"><div class=\"bb-history-empty\"><i class=\"ti ti-loader-2\"></i> Memuat…</div></div>';"
+    +   "html+='<div><div class=\"bb-sec-title\">History Perubahan Harga</div>';"
+    +   "html+='<div class=\"bb-history\" id=\"bbHistoryList\"><div class=\"bb-history-empty\">Memuat...</div></div>';"
     +   "html+='</div>';"
     +   "body.innerHTML=html;"
     +   "modal.classList.add('open');"
