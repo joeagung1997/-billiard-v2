@@ -3419,7 +3419,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
       const subtotal   = r ? r.subtotal : 0;
       const labelInit  = r ? (r.porsi_label && r.porsi_label.trim() ? r.porsi_label.trim() : r.satuan) : "—";
       return "<tr class=\"mp-rs-trow\" data-idx=\"" + idx + "\">"
-        + "<td><select name=\"bahan_id\" class=\"mp-rs-bahan\" onchange=\"rsRowChange(this)\" required>"
+        + "<td><select name=\"bahan_id\" class=\"mp-rs-bahan\" required>"
         +   "<option value=\"\">— Pilih bahan —</option>"
         +   bahanList.map((b) => {
               const hp = hargaPorsi(b);
@@ -3433,7 +3433,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
                 + escHtml(b.nama) + " (" + rpFmt(hp) + "/" + escHtml(lp) + ")</option>";
             }).join("")
         + "</select></td>"
-        + "<td style=\"width:130px\"><input type=\"number\" name=\"qty\" class=\"mp-rs-qty\" step=\"1\" min=\"0\" value=\"" + qty + "\" oninput=\"rsRowChange(this)\" placeholder=\"0\"></td>"
+        + "<td style=\"width:130px\"><input type=\"number\" name=\"qty\" class=\"mp-rs-qty\" step=\"1\" min=\"0\" value=\"" + qty + "\" placeholder=\"0\"></td>"
         + "<td style=\"width:80px\" class=\"mp-rs-satuan\">" + escHtml(labelInit) + "</td>"
         + "<td style=\"width:130px\" class=\"mp-rs-sub-val\" data-sub=\"" + subtotal + "\">" + rpFmt(subtotal) + "</td>"
         + "<td style=\"width:40px;text-align:center\"><button type=\"button\" class=\"mp-rs-del\" onclick=\"rsDelRow(this)\" title=\"Hapus baris\"><i class=\"ti ti-x\"></i></button></td>"
@@ -3780,7 +3780,26 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "var elM=document.getElementById('rsMargin');if(elM){elM.textContent=(margin<0?'\\u2212':'')+rpFmt(Math.abs(margin));elM.style.color=col;}"
     +   "var elP=document.getElementById('rsMarginPct');if(elP){elP.textContent=pct+'%';elP.style.color=col;}"
     + "}"
-    + "function rsRowChange(_el){rsRecomputeTotals();}"
+    + "function rsRowChange(el){"
+    +   // Saat user pilih bahan & qty masih kosong/0, auto-set qty=1
+    +   // biar subtotal langsung kelihatan (UX: 'pilih bahan = pakai 1 porsi').
+    +   "if(el&&el.tagName==='SELECT'&&el.value){"
+    +     "var tr=el.closest('tr');"
+    +     "if(tr){"
+    +       "var qin=tr.querySelector('input.mp-rs-qty');"
+    +       "if(qin&&(!qin.value||parseFloat(qin.value)===0)){qin.value='1';}"
+    +     "}"
+    +   "}"
+    +   "rsRecomputeTotals();"
+    + "}"
+    // Bind listener pakai addEventListener (lebih reliable dari inline onchange).
+    // Dipanggil ulang setiap kali ada row baru ditambahkan.
+    + "function rsBindRow(tr){"
+    +   "var sel=tr.querySelector('select.mp-rs-bahan');"
+    +   "var qin=tr.querySelector('input.mp-rs-qty');"
+    +   "if(sel){sel.addEventListener('change',function(){rsRowChange(sel);});}"
+    +   "if(qin){qin.addEventListener('input',function(){rsRowChange(qin);});}"
+    + "}"
     + "function rsAddRow(){"
     +   "var tbody=document.getElementById('resepRows');if(!tbody)return;"
     +   "var first=tbody.querySelector('.mp-rs-trow');if(!first){return;}"
@@ -3790,6 +3809,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "var sub=clone.querySelector('.mp-rs-sub-val');if(sub){sub.textContent='Rp 0';sub.dataset.sub='0';}"
     +   "var sat=clone.querySelector('.mp-rs-satuan');if(sat)sat.textContent='\\u2014';"
     +   "tbody.appendChild(clone);"
+    +   "rsBindRow(clone);"
     + "}"
     + "function rsDelRow(btn){"
     +   "var tr=btn.closest('tr');var tbody=document.getElementById('resepRows');"
@@ -3797,7 +3817,10 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     +   "else{var sel=tr.querySelector('select');var q=tr.querySelector('input');if(sel)sel.value='';if(q)q.value='';}"
     +   "rsRecomputeTotals();"
     + "}"
-    + "if(document.getElementById('resepEditor')){rsRecomputeTotals();}"
+    + "if(document.getElementById('resepEditor')){"
+    +   "document.querySelectorAll('#resepRows .mp-rs-trow').forEach(rsBindRow);"
+    +   "rsRecomputeTotals();"
+    + "}"
     // ── Bahan Baku form live preview ───────────────────────────
     // Update suffix satuan + preview "Rp X / label" tiap user ketik di field manapun.
     + "function bbBindForm(form){"
