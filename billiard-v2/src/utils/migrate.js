@@ -373,6 +373,34 @@ export const runMigrations = async () => {
   await query(`CREATE INDEX IF NOT EXISTS idx_feature_notes_status   ON feature_notes (status)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_feature_notes_priority ON feature_notes (priority)`);
 
+  // ── Tabel notifikasi (in-app bell sidebar) ───────────────────────
+  // tipe: 'stok_low', 'stok_out', 'target_harian', 'target_mingguan',
+  //   'target_bulanan', 'daily_summary' (extensible).
+  // meta: JSON arbitrary — utk stok: {bahan_id, stok, threshold}; utk target:
+  //   {scope:'hari'|'minggu'|'bulan', pemasukan, target}; daily: {date, summary}.
+  // dedup_key: optional unique-per-window key. addNotifikasi gunakan ini utk
+  //   skip duplikat dalam window 24 jam (mis. "stok_low:bahan_id=12").
+  // prioritas: 'info' | 'warning' | 'danger' — untuk styling badge.
+  // read_at: NULL = unread, timestamp = read.
+  await query(`
+    CREATE TABLE IF NOT EXISTS notifikasi (
+      id          SERIAL      PRIMARY KEY,
+      tipe        TEXT        NOT NULL,
+      title       TEXT        NOT NULL,
+      pesan       TEXT        NOT NULL DEFAULT '',
+      link        TEXT        NOT NULL DEFAULT '',
+      meta        JSONB       NOT NULL DEFAULT '{}'::jsonb,
+      prioritas   TEXT        NOT NULL DEFAULT 'info',
+      dedup_key   TEXT        NOT NULL DEFAULT '',
+      read_at     TIMESTAMPTZ,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notif_unread   ON notifikasi (created_at DESC) WHERE read_at IS NULL`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notif_created  ON notifikasi (created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notif_tipe     ON notifikasi (tipe)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notif_dedup    ON notifikasi (dedup_key, created_at DESC) WHERE dedup_key <> ''`);
+
   // ── Insert default menu items hanya jika tabel masih kosong ─
   const menuCount = await query("SELECT COUNT(*) FROM menu_items");
   if (parseInt(menuCount.rows[0].count) === 0) {

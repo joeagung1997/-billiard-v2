@@ -8,7 +8,8 @@ import cron           from "node-cron";
 import swaggerUi      from "swagger-ui-express";
 
 import { CONFIG }     from "./config.js";
-import { initDB, resetScanHarian } from "./utils/db.js";
+import { initDB, resetScanHarian, cleanupOldNotifikasi } from "./utils/db.js";
+import { createDailySummaryNotif } from "./utils/notifTrigger.js";
 import scanRouter     from "./routes/scan.js";
 import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
@@ -83,6 +84,26 @@ if (!process.env.VERCEL) {
       console.error("[CRON] Reset harian gagal:", err.message);
     }
   }, { timezone: "UTC" });
+
+  // Daily summary notif: jam 06:00 WIB tiap hari.
+  cron.schedule("0 6 * * *", async () => {
+    try {
+      await createDailySummaryNotif();
+      console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Daily summary notif dibuat.`);
+    } catch (err) {
+      console.error("[CRON] Daily summary gagal:", err.message);
+    }
+  }, { timezone: "Asia/Jakarta" });
+
+  // Cleanup notif lama (> 30 hari): jam 03:00 WIB tiap hari.
+  cron.schedule("0 3 * * *", async () => {
+    try {
+      const n = await cleanupOldNotifikasi(30);
+      console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Cleanup notif: ${n} entry dihapus.`);
+    } catch (err) {
+      console.error("[CRON] Cleanup notif gagal:", err.message);
+    }
+  }, { timezone: "Asia/Jakarta" });
 
   initDB()
     .then(() => {

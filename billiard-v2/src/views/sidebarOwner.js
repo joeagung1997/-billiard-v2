@@ -12,6 +12,7 @@
 //   profil, pengguna, backup
 
 import { CONFIG } from "../config.js";
+import { notifSheetCss } from "./notif.js";
 
 // Helper: initials nama (mis. "Agung Setiawan" → "AS")
 function initials(name) {
@@ -160,29 +161,34 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       </div>
       <button type="button" class="sidebar-bell" onclick="openNotifSheet()" aria-label="Notifikasi" title="Notifikasi">
         <i class="ti ti-bell"></i>
-        <span class="sidebar-bell-dot" style="display:none"></span>
+        <span class="sidebar-bell-cnt" id="sidebarBellCnt" style="display:none"></span>
       </button>
       <button type="button" class="sidebar-close" onclick="closeSidebar()" aria-label="Tutup menu" title="Tutup">
         <i class="ti ti-x"></i>
       </button>
     </div>
 
-    <!-- Notif sheet (rendered once per page) -->
+    <!-- Notif sheet (rendered once per page; body di-load lazy via JS fetch) -->
     <div class="notif-sheet-overlay" id="notifSheetOv" onclick="if(event.target===this)closeNotifSheet()">
       <div class="notif-sheet">
         <div class="notif-sheet-hdr">
           <div class="notif-sheet-title"><i class="ti ti-bell"></i> Notifikasi</div>
           <button type="button" class="notif-sheet-close" onclick="closeNotifSheet()"><i class="ti ti-x"></i></button>
         </div>
-        <div class="notif-sheet-body">
-          <div class="notif-empty">
-            <i class="ti ti-bell-off" style="font-size:32px;color:#94a3b8"></i>
-            <div style="margin-top:12px;font-size:13px;color:#7a8c78">Belum ada notifikasi.</div>
-            <div style="margin-top:4px;font-size:11px;color:#94a3b8">Fitur notif sedang dalam pengembangan.</div>
+        <div class="notif-sheet-body" id="notifSheetBody">
+          <div class="ns-loading">
+            <i class="ti ti-loader-2"></i>
+            <div>Memuat notifikasi...</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Inline CSS utk sheet body (di-share antar halaman owner) -->
+    <style id="notifSheetStyle">${notifSheetCss}
+    .sidebar-bell-cnt{position:absolute;top:-3px;right:-3px;background:#a32d2d;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:9px;font-family:'DM Mono',monospace;min-width:16px;text-align:center;line-height:1.4}
+    .sidebar-bell{position:relative}
+    </style>
 
     <div class="own-nav-scroll">
       ${navHtml}
@@ -217,8 +223,157 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       // Tanpa ini, fallback _frt di middleware auto-login balik.
       window.location.href = "/admin/logout";
     }
-    function openNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.add("open");}
+    // ── Notif bell — auto-fetch unread count + lazy load sheet ──
+    (function(){
+      function updateBellBadge(count) {
+        var cnt = document.getElementById("sidebarBellCnt");
+        var topDot = document.getElementById("topbarBellDot");
+        var show = count > 0;
+        if (cnt) {
+          cnt.style.display = show ? "inline-block" : "none";
+          cnt.textContent = count > 99 ? "99+" : count;
+        }
+        if (topDot) topDot.style.display = show ? "inline-block" : "none";
+      }
+      function fetchUnreadCount() {
+        fetch("/operasional/notif/unread-count", { credentials: "same-origin" })
+          .then(function(r){ return r.json(); })
+          .then(function(d){ updateBellBadge(d.count || 0); })
+          .catch(function(){});
+      }
+      // Initial fetch saat page load
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fetchUnreadCount);
+      } else {
+        fetchUnreadCount();
+      }
+      // Poll tiap 60 detik (ringan: 1 SELECT COUNT)
+      setInterval(fetchUnreadCount, 60000);
+      window.__notifUpdateBadge = updateBellBadge;
+      window.__notifRefreshBadge = fetchUnreadCount;
+    })();
+
+    function openNotifSheet(){
+      var o=document.getElementById("notifSheetOv");
+      if(o) o.classList.add("open");
+      // Lazy load sheet body
+      var body = document.getElementById("notifSheetBody");
+      if (body) {
+        body.innerHTML = '<div class="ns-loading"><i class="ti ti-loader-2"></i><div>Memuat notifikasi...</div></div>';
+        fetch("/operasional/notif/sheet", { credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){ body.innerHTML = html; })
+          .catch(function(){ body.innerHTML = '<div class="ns-loading">Gagal memuat notifikasi.</div>'; });
+      }
+    }
     function closeNotifSheet(){var o=document.getElementById("notifSheetOv");if(o)o.classList.remove("open");}
+
+    // ── Notif actions ───────────────────────────────────────
+    function notifMarkRead(id) {
+      fetch("/operasional/notif/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "id=" + encodeURIComponent(id),
+        credentials: "same-origin",
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.ok) {
+          var item = document.querySelector('.ns-item[data-id="' + id + '"]');
+          if (item) {
+            item.classList.add("is-read");
+            var dot = item.querySelector(".ns-unread-dot");
+            if (dot) dot.remove();
+            var btn = item.querySelector(".ns-act-read");
+            if (btn) btn.remove();
+          }
+          if (window.__notifUpdateBadge) window.__notifUpdateBadge(d.unreadCount || 0);
+        }
+      }).catch(function(){});
+    }
+    function notifMarkAllRead() {
+      fetch("/operasional/notif/mark-all-read", { method: "POST", credentials: "same-origin" })
+        .then(function(r){ return r.json(); }).then(function(d){
+          if (d.ok) {
+            // Re-fetch sheet for clean state
+            var body = document.getElementById("notifSheetBody");
+            if (body) {
+              fetch("/operasional/notif/sheet", { credentials: "same-origin" })
+                .then(function(r){ return r.text(); })
+                .then(function(html){ body.innerHTML = html; });
+            }
+            if (window.__notifUpdateBadge) window.__notifUpdateBadge(0);
+          }
+        }).catch(function(){});
+    }
+    function notifDelete(id) {
+      fetch("/operasional/notif/hapus", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "id=" + encodeURIComponent(id),
+        credentials: "same-origin",
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.ok) {
+          var item = document.querySelector('.ns-item[data-id="' + id + '"]');
+          if (item) item.remove();
+          if (window.__notifUpdateBadge) window.__notifUpdateBadge(d.unreadCount || 0);
+          // Kalau list jadi kosong, re-render sheet (empty state)
+          var list = document.getElementById("nsList");
+          if (list && list.children.length === 0) {
+            var body = document.getElementById("notifSheetBody");
+            if (body) {
+              fetch("/operasional/notif/sheet", { credentials: "same-origin" })
+                .then(function(r){ return r.text(); })
+                .then(function(html){ body.innerHTML = html; });
+            }
+          }
+        }
+      }).catch(function(){});
+    }
+    function notifClearAll() {
+      if (!confirm("Hapus semua notifikasi? Aksi ini tidak bisa dibatalkan.")) return;
+      fetch("/operasional/notif/hapus-semua", { method: "POST", credentials: "same-origin" })
+        .then(function(r){ return r.json(); }).then(function(d){
+          if (d.ok) {
+            var body = document.getElementById("notifSheetBody");
+            if (body) {
+              fetch("/operasional/notif/sheet", { credentials: "same-origin" })
+                .then(function(r){ return r.text(); })
+                .then(function(html){ body.innerHTML = html; });
+            }
+            if (window.__notifUpdateBadge) window.__notifUpdateBadge(0);
+          }
+        }).catch(function(){});
+    }
+    function notifSetFilter(btn) {
+      // Toggle active pill + filter visibility ns-item by data-tipe
+      var pills = document.querySelectorAll(".ns-pill");
+      pills.forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      var key = btn.dataset.filter;
+      var items = document.querySelectorAll(".ns-item");
+      items.forEach(function(it){
+        it.style.display = (!key || it.dataset.tipe === key) ? "" : "none";
+      });
+    }
+    function notifOnClickLink(id) {
+      // Silent mark-read sebelum navigate. Pakai sendBeacon biar gak block navigasi.
+      try {
+        if (navigator.sendBeacon) {
+          var fd = new FormData();
+          fd.append("id", id);
+          navigator.sendBeacon("/operasional/notif/mark-read", fd);
+        } else {
+          fetch("/operasional/notif/mark-read", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "id=" + encodeURIComponent(id),
+            credentials: "same-origin",
+            keepalive: true,
+          });
+        }
+      } catch (_) {}
+      // Biarkan default navigate berlanjut (return true)
+      return true;
+    }
     // Mobile drawer: hamburger toggle sidebar + backdrop. Body lock scroll saat open.
     function toggleSidebar(){
       var s=document.getElementById("ownSidebar"),b=document.getElementById("sidebarBackdrop");

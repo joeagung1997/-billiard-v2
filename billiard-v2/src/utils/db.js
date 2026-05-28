@@ -528,13 +528,19 @@ export const deleteSupplier = async (id) => {
 export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", changedBy = "", newStok = null } = {}) => {
   const jn = ["in", "out", "adjust"].includes(jenis) ? jenis : "adjust";
   await query("BEGIN");
+  let stokLama, stokBaru, delta, stokMin, bahanNama, bahanSatuan;
   try {
-    const cur = await query(`SELECT stok::float AS stok FROM bahan_baku WHERE id=$1 FOR UPDATE`, [bahanId]);
+    const cur = await query(
+      `SELECT stok::float AS stok, stok_min::float AS stok_min, nama, satuan
+       FROM bahan_baku WHERE id=$1 FOR UPDATE`,
+      [bahanId]
+    );
     if (!cur.rows[0]) throw new Error("Bahan tidak ditemukan");
-    const stokLama = Number(cur.rows[0].stok) || 0;
+    stokLama    = Number(cur.rows[0].stok) || 0;
+    stokMin     = Number(cur.rows[0].stok_min) || 0;
+    bahanNama   = cur.rows[0].nama;
+    bahanSatuan = cur.rows[0].satuan || "pcs";
 
-    let stokBaru;
-    let delta;
     if (jn === "adjust") {
       stokBaru = Math.max(0, Number(newStok) || 0);
       delta    = stokBaru - stokLama;
@@ -555,11 +561,44 @@ export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", chan
       ]
     );
     await query("COMMIT");
-    return { stokLama, stokBaru, delta };
   } catch (err) {
     await query("ROLLBACK");
     throw err;
   }
+
+  // ── Notifikasi: trigger setelah COMMIT, gagal tidak boleh rollback stok ──
+  // Hanya trigger kalo status memburuk (transition ke low/out). Restock yang
+  // bikin stok kembali OK gak perlu notif. Dedup window 24 jam (default).
+  try {
+    const statusOf = (s, m) => (s <= 0 ? "out" : (m > 0 && s <= m ? "low" : "ok"));
+    const stOld = statusOf(stokLama, stokMin);
+    const stNew = statusOf(stokBaru, stokMin);
+    if (stNew === "out" && stOld !== "out") {
+      await addNotifikasi({
+        tipe: "stok_out",
+        prioritas: "danger",
+        title: "Stok habis: " + bahanNama,
+        pesan: "Stok " + bahanNama + " sudah 0 " + bahanSatuan + ". Perlu restok segera.",
+        link: "/operasional/stok?filter=out",
+        meta: { bahan_id: bahanId, stok: stokBaru, threshold: stokMin },
+        dedupKey: "stok_out:" + bahanId,
+      });
+    } else if (stNew === "low" && stOld === "ok") {
+      await addNotifikasi({
+        tipe: "stok_low",
+        prioritas: "warning",
+        title: "Stok tipis: " + bahanNama,
+        pesan: "Sisa " + stokBaru + " " + bahanSatuan + " (threshold " + stokMin + "). Perlu restok.",
+        link: "/operasional/stok?filter=low",
+        meta: { bahan_id: bahanId, stok: stokBaru, threshold: stokMin },
+        dedupKey: "stok_low:" + bahanId,
+      });
+    }
+  } catch (notifErr) {
+    console.error("[adjustStok] notif trigger error:", notifErr.message);
+  }
+
+  return { stokLama, stokBaru, delta };
 };
 
 // Set threshold low-stock utk bahan. Bypass updateBahan biar gak trigger
@@ -602,6 +641,114 @@ export const readStokMovementsAll = async (limit = 10) => {
     [lim]
   );
   return res.rows;
+};
+
+// ── Notifikasi (in-app bell sidebar) ───────────────────────────
+// Window dedup default 24 jam — skip insert kalau dedup_key sama sudah ada
+// dalam window. Return id baru atau null kalau di-skip.
+const VALID_NOTIF_TIPE = [
+  "stok_low", "stok_out",
+  "target_harian", "target_mingguan", "target_bulanan",
+  "daily_summary",
+];
+const VALID_PRIORITAS = ["info", "warning", "danger"];
+
+export const addNotifikasi = async ({
+  tipe, title, pesan = "", link = "", meta = {}, prioritas = "info",
+  dedupKey = "", dedupWindowHours = 24,
+}) => {
+  const tp = VALID_NOTIF_TIPE.includes(tipe) ? tipe : "info";
+  const pr = VALID_PRIORITAS.includes(prioritas) ? prioritas : "info";
+  // Dedup: kalau dedupKey kosong, skip cek (selalu insert).
+  if (dedupKey) {
+    const winH = Math.max(1, parseInt(dedupWindowHours) || 24);
+    const existing = await query(
+      `SELECT id FROM notifikasi
+       WHERE dedup_key = $1
+         AND created_at >= NOW() - INTERVAL '1 hour' * $2
+       LIMIT 1`,
+      [dedupKey, winH]
+    );
+    if (existing.rows.length > 0) return null;
+  }
+  const res = await query(
+    `INSERT INTO notifikasi (tipe, title, pesan, link, meta, prioritas, dedup_key)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id`,
+    [
+      tp,
+      (title || "").toString().trim().slice(0, 200),
+      (pesan || "").toString().trim().slice(0, 500),
+      (link  || "").toString().trim().slice(0, 250),
+      JSON.stringify(meta || {}),
+      pr,
+      (dedupKey || "").toString().trim().slice(0, 120),
+    ]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+// Read notifikasi terbaru. opts: { limit, tipe, unreadOnly }.
+export const readNotifikasi = async ({ limit = 30, tipe = "", unreadOnly = false } = {}) => {
+  const lim = Math.min(Math.max(parseInt(limit) || 30, 1), 200);
+  const where = [];
+  const params = [];
+  if (tipe && VALID_NOTIF_TIPE.includes(tipe)) {
+    where.push("tipe = $" + (params.length + 1));
+    params.push(tipe);
+  }
+  if (unreadOnly) where.push("read_at IS NULL");
+  const whereSql = where.length ? ("WHERE " + where.join(" AND ")) : "";
+  params.push(lim);
+  const res = await query(
+    `SELECT id, tipe, title, pesan, link, meta, prioritas, read_at, created_at
+     FROM notifikasi
+     ${whereSql}
+     ORDER BY created_at DESC
+     LIMIT $${params.length}`,
+    params
+  );
+  return res.rows;
+};
+
+export const countUnreadNotifikasi = async () => {
+  const res = await query(`SELECT COUNT(*)::int AS c FROM notifikasi WHERE read_at IS NULL`);
+  return res.rows[0]?.c || 0;
+};
+
+// Count per tipe — untuk filter dropdown badge ("Stok 3, Target 1...").
+export const countNotifikasiByTipe = async () => {
+  const res = await query(
+    `SELECT tipe, COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread
+     FROM notifikasi GROUP BY tipe`
+  );
+  return res.rows;
+};
+
+export const markNotifikasiRead = async (id) => {
+  await query(`UPDATE notifikasi SET read_at = NOW() WHERE id = $1 AND read_at IS NULL`, [id]);
+};
+
+export const markAllNotifikasiRead = async () => {
+  await query(`UPDATE notifikasi SET read_at = NOW() WHERE read_at IS NULL`);
+};
+
+export const deleteNotifikasi = async (id) => {
+  await query(`DELETE FROM notifikasi WHERE id = $1`, [id]);
+};
+
+export const deleteAllNotifikasi = async () => {
+  await query(`DELETE FROM notifikasi`);
+};
+
+// Cleanup notif lebih lama dari N hari. Default 30. Untuk cron daily.
+export const cleanupOldNotifikasi = async (days = 30) => {
+  const d = Math.max(1, parseInt(days) || 30);
+  const res = await query(
+    `DELETE FROM notifikasi WHERE created_at < NOW() - INTERVAL '1 day' * $1 RETURNING id`,
+    [d]
+  );
+  return res.rows.length;
 };
 
 // ── Catatan Fitur (note pengembangan aplikasi) ─────────────────

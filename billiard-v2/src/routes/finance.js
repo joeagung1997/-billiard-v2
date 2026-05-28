@@ -29,9 +29,13 @@ import {
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
   readSuppliers, addSupplier, updateSupplier, deleteSupplier,
   adjustStok, readStokMovements, readStokMovementsAll, setStokMin,
+  readNotifikasi, countUnreadNotifikasi,
+  markNotifikasiRead, markAllNotifikasiRead,
+  deleteNotifikasi, deleteAllNotifikasi,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
+import { checkAndNotifyTarget } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
 import {
@@ -44,6 +48,7 @@ import { planningPage } from "../views/planning.js";
 import { catatanFiturPage } from "../views/catatan.js";
 import { stokPage } from "../views/stok.js";
 import { supplierPage } from "../views/supplier.js";
+import { renderNotifSheetBody } from "../views/notif.js";
 
 const router = Router();
 
@@ -394,6 +399,14 @@ router.post("/tambah", async (req, res) => {
         dicatatOleh: userId,
         lunas,
       });
+    }
+
+    // Trigger notif target tercapai (fire-and-forget, non-blocking response).
+    // Hanya untuk pemasukan beneran (lunas, kategori revenue).
+    if (jenis === "pemasukan" && lunas) {
+      checkAndNotifyTarget(tanggalBiz).catch((err) =>
+        console.error("[FINANCE] target notif trigger error:", err.message)
+      );
     }
 
     res.redirect("/operasional?msg=created");
@@ -1452,6 +1465,80 @@ router.get("/supplier/hapus", requireOwner, async (req, res) => {
     }
   }
   res.redirect("/operasional/supplier?msg=deleted");
+});
+
+// ── /operasional/notif — endpoint utk bell sidebar (owner only) ───
+// GET unread-count → JSON { count } utk badge dot.
+// GET sheet → HTML partial yg di-inject ke .notif-sheet-body via JS fetch.
+// POST mark-read / mark-all-read / hapus / hapus-semua → JSON { ok }.
+router.get("/notif/unread-count", requireOwner, async (_req, res) => {
+  try {
+    const count = await countUnreadNotifikasi();
+    res.json({ count });
+  } catch (err) {
+    console.error("[FINANCE] notif unread-count error:", err.message);
+    res.json({ count: 0, error: err.message });
+  }
+});
+
+router.get("/notif/sheet", requireOwner, async (_req, res) => {
+  try {
+    const [notifs, unreadCount] = await Promise.all([
+      readNotifikasi({ limit: 50 }),
+      countUnreadNotifikasi(),
+    ]);
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send(renderNotifSheetBody({ notifs, unreadCount }));
+  } catch (err) {
+    console.error("[FINANCE] notif sheet error:", err.message);
+    res.status(500).send("<div class=\"ns-loading\">Gagal memuat notifikasi.</div>");
+  }
+});
+
+router.post("/notif/mark-read", requireOwner, async (req, res) => {
+  const id = parseInt(req.body.id) || 0;
+  if (!id) return res.json({ ok: false, error: "missing id" });
+  try {
+    await markNotifikasiRead(id);
+    const count = await countUnreadNotifikasi();
+    res.json({ ok: true, unreadCount: count });
+  } catch (err) {
+    console.error("[FINANCE] notif mark-read error:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/notif/mark-all-read", requireOwner, async (_req, res) => {
+  try {
+    await markAllNotifikasiRead();
+    res.json({ ok: true, unreadCount: 0 });
+  } catch (err) {
+    console.error("[FINANCE] notif mark-all-read error:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/notif/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.body.id) || 0;
+  if (!id) return res.json({ ok: false, error: "missing id" });
+  try {
+    await deleteNotifikasi(id);
+    const count = await countUnreadNotifikasi();
+    res.json({ ok: true, unreadCount: count });
+  } catch (err) {
+    console.error("[FINANCE] notif hapus error:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/notif/hapus-semua", requireOwner, async (_req, res) => {
+  try {
+    await deleteAllNotifikasi();
+    res.json({ ok: true, unreadCount: 0 });
+  } catch (err) {
+    console.error("[FINANCE] notif hapus-semua error:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
 });
 
 export { requireFinanceAuth, requireOwner };
