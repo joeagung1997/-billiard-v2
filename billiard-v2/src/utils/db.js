@@ -1069,7 +1069,10 @@ export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, li
   if (username)  { params.push(username);  sql += ` AND dicatat_oleh = $${params.length}`; }
   if (jenis)     { params.push(jenis);     sql += ` AND jenis = $${params.length}`; }
   params.push(limit);
-  sql += ` ORDER BY tanggal DESC, jam DESC, created_at DESC LIMIT $${params.length}`;
+  // Urut per hari pakai created_at (waktu nyata pencatatan), bukan jam (string jam-menit).
+  // Kalau pakai jam, transaksi after-midnight (mis. 03:06) ke-sortir di BAWAH 23:49 padahal
+  // tanggal bisnisnya sama — bikin seolah "hilang". Samakan dgn urutan Riwayat (createdAt desc).
+  sql += ` ORDER BY tanggal DESC, created_at DESC NULLS LAST LIMIT $${params.length}`;
   const res = await query(sql, params);
   return res.rows.map((r) => ({
     id:          r.id,

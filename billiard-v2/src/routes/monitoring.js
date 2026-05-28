@@ -15,6 +15,7 @@ import {
   monitoringSelisih,
   monitoringMember,
 } from "../views/monitoring.js";
+import { todayBusinessDayISO } from "../utils/format.js";
 import { requireFinanceAuth, requireOwner } from "./finance.js";
 
 const router = Router();
@@ -29,8 +30,7 @@ router.get("/monitoring", (_req, res) => res.redirect("/operasional/monitoring/a
 // ── Aktivitas Log ──────────────────────────────────────────────
 router.get("/monitoring/aktivitas", async (req, res) => {
   try {
-    const now    = new Date();
-    const today  = now.toISOString().slice(0, 10);
+    const today     = todayBusinessDayISO();
     const tglDari   = (req.query.dari   ?? today).slice(0, 10);
     const tglSampai = (req.query.sampai ?? today).slice(0, 10);
     const username  = req.query.user  ?? "";
