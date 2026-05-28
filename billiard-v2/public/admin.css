@@ -735,12 +735,83 @@ body.sidebar-lock { overflow:hidden; }
 .fin-type-tab.fin-type-out.active .trx-tab-count  { background:#dc2626; color:#fff; }
 .fin-type-tab.fin-type-void.active { color:#7a8c78; border-bottom-color:#7a8c78; }
 .fin-type-tab.fin-type-void.active .trx-tab-count { background:#7a8c78; color:#fff; }
+.fin-type-tab.fin-type-tukar.active { color:#6366f1; border-bottom-color:#6366f1; }
+.fin-type-tab.fin-type-tukar.active .trx-tab-count { background:#6366f1; color:#fff; }
 
 @media (max-width:640px) {
   .fin-tbl-type-tabs { padding:6px 8px 0; }
   .fin-type-tab { padding:9px 11px; font-size:12px; gap:5px; }
   .fin-type-tab i { font-size:14px; }
   .fin-type-tab .trx-tab-count { font-size:9px; min-width:16px; height:16px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRX REKAP GRID — Posisi Kas (Cash vs QRIS) + Rekap per Sumber
+   ═══════════════════════════════════════════════════════════════════ */
+.trx-rekap-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+.trx-rekap-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px 18px; display:flex; flex-direction:column; gap:14px;
+  box-shadow:0 1px 2px rgba(15,32,16,0.03); }
+.trx-rekap-hdr { display:flex; align-items:center; gap:10px; }
+.trx-rekap-ic { width:32px; height:32px; border-radius:9px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:16px; }
+.trx-rekap-ic.kas { background:rgba(59,130,246,0.12); color:#2563eb; }
+.trx-rekap-ic.src { background:rgba(168,85,247,0.12); color:#9333ea; }
+.trx-rekap-ttl { font-size:10.5px; font-weight:700; color:var(--txt3);
+  text-transform:uppercase; letter-spacing:.08em; line-height:1.3;
+  display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
+.trx-rekap-ctx { font-size:9.5px; font-weight:700; color:#2660a4; background:#e6f1fb;
+  padding:2px 7px; border-radius:10px; letter-spacing:.04em; text-transform:none;
+  display:none; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.trx-rekap-ctx.on { display:inline-block; }
+/* Posisi Kas columns */
+.kas-cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.kas-col { border:1px solid var(--border); border-radius:10px; padding:12px;
+  display:flex; flex-direction:column; gap:7px; }
+.kas-col.cash { background:rgba(34,197,94,0.04); }
+.kas-col.qris { background:rgba(59,130,246,0.04); }
+.kas-col-hd { font-size:11px; font-weight:700; color:var(--txt2);
+  display:flex; align-items:center; gap:6px; }
+.kas-col-big { font-size:20px; font-weight:800; color:var(--txt);
+  font-family:var(--ff-mono); letter-spacing:-.01em; line-height:1.1; }
+.kas-col.cash .kas-col-big { color:#16a34a; }
+.kas-col.qris .kas-col-big { color:#2563eb; }
+.kas-col-row { display:flex; align-items:center; justify-content:space-between;
+  font-size:11.5px; color:var(--txt3); }
+.kas-col-row b { font-weight:700; color:var(--txt2); font-family:var(--ff-mono); }
+.kas-note { font-size:10.5px; color:var(--txt3); line-height:1.4; font-style:italic; }
+/* Rekap per sumber */
+.src-list { display:flex; flex-direction:column; gap:12px; }
+.src-row { display:flex; flex-direction:column; gap:5px; }
+.src-row-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.src-name { font-size:12.5px; font-weight:600; color:var(--txt2);
+  display:flex; align-items:center; gap:6px; }
+.src-dot { width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.src-dot.bil { background:#2d6624; }
+.src-dot.war { background:#d97706; }
+.src-dot.lain { background:#94a3b8; }
+.src-amt { font-size:13.5px; font-weight:800; color:var(--txt); font-family:var(--ff-mono); }
+.src-bar { height:7px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+.src-bar-fill { height:100%; border-radius:4px; width:0; transition:width .3s ease; }
+.src-bar-fill.bil { background:#2d6624; }
+.src-bar-fill.war { background:#d97706; }
+.src-bar-fill.lain { background:#94a3b8; }
+.src-sub { font-size:10.5px; color:var(--txt3); }
+.src-total { font-size:12px; color:var(--txt3); padding-top:8px; border-top:1px solid var(--border); }
+.src-total b { color:var(--txt); font-family:var(--ff-mono); font-weight:800; }
+
+@media (max-width:900px) {
+  .trx-rekap-grid { grid-template-columns:1fr; }
+}
+@media (max-width:640px) {
+  .trx-rekap-grid { gap:10px; margin-bottom:12px; }
+  .trx-rekap-card { padding:13px 14px; gap:11px; }
+  .kas-cols { gap:8px; }
+  .kas-col { padding:10px; }
+  .kas-col-big { font-size:17px; }
+}
+@media (max-width:380px) {
+  .kas-cols { grid-template-columns:1fr; }
 }
 
 /* ── Bottom nav (mobile) — Revamp v2 ─────────────────────────────── */

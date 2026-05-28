@@ -592,5 +592,14 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── App settings (KV sederhana) — mis. dana cadangan bulanan ──
+  await query(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key        TEXT PRIMARY KEY,
+      value      TEXT,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };

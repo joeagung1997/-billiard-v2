@@ -36,8 +36,8 @@ import {
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
 import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
-import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
-import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
+import { loadAnalisisData, computeStatus, evaluateAddKaryawan, SETTING_DANA_CADANGAN } from "../utils/analisis.js";
+import { addFixedCost, updateFixedCost, deleteFixedCost, writeSetting } from "../utils/db.js";
 import {
   financeDashboard,
   financeLoginPage,
@@ -532,7 +532,7 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const today     = todayBusinessDayISO();
     const todayD    = new Date(today + "T00:00:00Z");
 
-    const { breakdown: costBreakdown, targets } = await loadAnalisisData();
+    const { breakdown: costBreakdown, targets, danaCadangan, monthlyIdeal, targetsIdeal } = await loadAnalisisData();
 
     const dow       = todayD.getUTCDay() === 0 ? 6 : todayD.getUTCDay() - 1;
     const mondayD   = new Date(todayD.getTime() - dow * 86400000);
@@ -556,15 +556,85 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const last30In  = trend30.reduce((s, d) => s + d.pemasukan, 0);
     const last30Avg = Math.round(last30In / 30);
 
+    // Item 2 — rata-rata hari aktif (hari yg ada pemasukan) vs 30 hari kalender
+    const activeDays = trend30.filter((d) => d.pemasukan > 0).length;
+    const rataAktif  = activeDays > 0 ? Math.round(last30In / activeDays) : 0;
+
+    // Fitur 1 — Pola hari ramai vs sepi: rata-rata pemasukan per hari dalam
+    // seminggu, basis SEMUA riwayat & hanya hari aktif (ada pemasukan) supaya
+    // rata-rata tidak ketarik turun oleh hari tutup. Weekday dgn < 2 kejadian
+    // ditandai "data belum cukup" (jangan tampilkan angka menyesatkan).
+    const dailyTotals = new Map();
+    for (const t of transaksi) {
+      if (!isRevPem(t) || !t.tanggal) continue;
+      dailyTotals.set(t.tanggal, (dailyTotals.get(t.tanggal) || 0) + (t.jumlah || 0));
+    }
+    const dowSum = [0, 0, 0, 0, 0, 0, 0];
+    const dowCnt = [0, 0, 0, 0, 0, 0, 0];
+    for (const [iso, total] of dailyTotals) {
+      if (total <= 0) continue;
+      const wd  = new Date(iso + "T00:00:00Z").getUTCDay(); // 0=Min..6=Sab
+      const idx = wd === 0 ? 6 : wd - 1;                     // 0=Sen..6=Min
+      dowSum[idx] += total;
+      dowCnt[idx] += 1;
+    }
+    const namaHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+    const polaHari = namaHari.map((nama, idx) => {
+      const count  = dowCnt[idx];
+      const enough = count >= 2;
+      const avg    = count > 0 ? Math.round(dowSum[idx] / count) : 0;
+      return { hari: nama, count, avg, enough, aboveTarget: enough && avg >= targets.hari };
+    });
+
+    // Tanggal mulai pencatatan = transaksi non-void paling awal
+    let recordStart = null;
+    for (const t of transaksi) {
+      if (t.voidedAt || !t.tanggal) continue;
+      if (!recordStart || t.tanggal < recordStart) recordStart = t.tanggal;
+    }
+    const calendarDaysSinceStart = recordStart
+      ? Math.floor((todayD.getTime() - new Date(recordStart + "T00:00:00Z").getTime()) / 86400000) + 1
+      : 0;
+    // Data masih muda (<14 hari kalender) → default simulasi pakai basis hari aktif
+    const defaultBasis = (calendarDaysSinceStart > 0 && calendarDaysSinceStart < 14) ? "aktif" : "kalender";
+
+    // Item 3 — proyeksi pemasukan sampai akhir bulan
+    const y             = parseInt(today.slice(0, 4), 10);
+    const m             = parseInt(today.slice(5, 7), 10);
+    const daysInMonth   = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const daysElapsed   = parseInt(today.slice(8, 10), 10);
+    const daysRemaining = Math.max(0, daysInMonth - daysElapsed);
+    const proyeksiBulan = daysElapsed > 0 ? Math.round(inBulan / daysElapsed * daysInMonth) : inBulan;
+    const sisaTarget    = Math.max(0, targets.bulan - inBulan);
+
+    // Item 1+2 — simulasi tambah karyawan utk kedua basis
+    const simKalender = evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000);
+    const simAktif    = evaluateAddKaryawan(rataAktif,  costBreakdown.totalMonthly, 900000);
+
     const analisis = {
       targets,
       costBreakdown,
+      danaCadangan,
+      monthlyIdeal,
+      targetsIdeal,
+      recordStart,
+      rataKalender: last30Avg,
+      rataAktif,
+      activeDays,
+      calendarDaysSinceStart,
+      defaultBasis,
+      polaHari,
       hari:   { pemasukan: inHari,   target: targets.hari,   status: computeStatus(inHari,   targets.hari) },
       minggu: { pemasukan: inMinggu, target: targets.minggu, status: computeStatus(inMinggu, targets.minggu) },
-      bulan:  { pemasukan: inBulan,  target: targets.bulan,  status: computeStatus(inBulan,  targets.bulan) },
+      bulan:  {
+        pemasukan: inBulan, target: targets.bulan, status: computeStatus(inBulan, targets.bulan),
+        proyeksi: proyeksiBulan, daysElapsed, daysInMonth, daysRemaining, sisaTarget,
+      },
       simulasi: {
-        rataPemasukan: last30Avg,
-        ...evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000),
+        defaultBasis,
+        targetHarian: Math.round(costBreakdown.totalMonthly / 30),
+        kalender: { rataPemasukan: last30Avg, ...simKalender },
+        aktif:    { rataPemasukan: rataAktif,  ...simAktif },
       },
     };
 
@@ -618,6 +688,18 @@ router.get("/analisis/biaya/hapus", requireOwner, async (req, res) => {
     res.redirect("/operasional/analisis?msg=deleted");
   } catch (err) {
     console.error("[FINANCE] hapus biaya error:", err.message);
+    res.redirect("/operasional/analisis?msg=err");
+  }
+});
+
+// ── Dana cadangan bulanan (owner-only) — input terpisah dari biaya wajib ──
+router.post("/analisis/cadangan", requireOwner, async (req, res) => {
+  try {
+    const nominal = parseInt((req.body.nominal ?? "").replace(/\D/g, ""), 10) || 0;
+    await writeSetting(SETTING_DANA_CADANGAN, nominal);
+    res.redirect("/operasional/analisis?msg=cadangan");
+  } catch (err) {
+    console.error("[FINANCE] cadangan error:", err.message);
     res.redirect("/operasional/analisis?msg=err");
   }
 });

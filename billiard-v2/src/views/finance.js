@@ -14,6 +14,21 @@ const rp = (n) => {
   return "Rp " + parts.join(".");
 };
 
+// Rupiah dgn tanda eksplisit: − utk negatif, + opsional utk positif.
+// rp() selalu mengembalikan nilai absolut, jadi tanda harus ditambah di sini.
+const rpSigned = (n, plusForPos = true) => {
+  const v = Math.round(Number(n) || 0);
+  if (v < 0) return "−" + rp(v);
+  return (plusForPos ? "+" : "") + rp(v);
+};
+
+// Format tanggal ISO (YYYY-MM-DD) → "29 Mei 2026"
+const fmtTglID = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+};
+
 export const escHtml = (s) =>
   String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -1099,6 +1114,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-kas-inp{width:170px;padding:8px 12px;border:1.5px solid var(--border2);border-radius:9px;font-size:16px;font-weight:700;font-family:var(--ff-mono);color:var(--txt);outline:none;background:var(--surface2);text-align:right}",
     ".fin-kas-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(38,96,164,.12);background:var(--surface)}",
     ".fin-kas-inp::placeholder{font-weight:600;font-size:15px;color:var(--txt3);opacity:.55;letter-spacing:0}",
+    ".fin-kas-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background .15s,transform .1s}",
+    ".fin-kas-btn:hover{filter:brightness(.93)}",
+    ".fin-kas-btn:active{transform:scale(.96)}",
+    ".fin-kas-btn.ok{background:var(--green)}",
     ".fin-bayar-card{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:14px;background:var(--surface)}",
     ".fin-bayar-item{padding:14px 18px}",
     ".fin-bayar-item+.fin-bayar-item{border-left:1px solid var(--border)}",
@@ -1436,7 +1455,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "<div class=\"fin-kas-right\">"
     + "<span class=\"fin-kas-pfx\">Rp</span>"
-    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"0\" oninput=\"fmtSaldoKas(this);saveSaldoKas()\">"
+    + "<input id=\"finSaldoKas\" type=\"text\" inputmode=\"numeric\" class=\"fin-kas-inp\" placeholder=\"0\" oninput=\"fmtSaldoKas(this)\" onkeydown=\"if(event.key==='Enter'){event.preventDefault();simpanSaldoKas();}\">"
+    + "<button type=\"button\" id=\"finSaldoKasBtn\" class=\"fin-kas-btn\" onclick=\"simpanSaldoKas(this)\"><i class=\"ti ti-device-floppy\"></i> Simpan</button>"
     + "</div>"
     + "</div>"
 
@@ -1489,7 +1509,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "<div class=\"fin-stat-icon saldo\"><i class=\"ti ti-scale\"></i></div></div>"
         + "<div class=\"fin-stat-val\" style=\"" + (chartSaldo < 0 ? "color:#a32d2d" : "") + "\">" + (chartSaldo < 0 ? "−" : "") + rp(Math.abs(chartSaldo)) + "</div>"
         + "<div class=\"fin-stat-foot\" style=\"flex-direction:column;align-items:flex-start;gap:3px\">"
-        + "<div>" + (chartSaldo >= 0 ? "<span style=\"color:#16a34a;font-weight:700\">Untung</span>" : "<span style=\"color:#a32d2d;font-weight:700\">Rugi</span>") + " · Margin " + chartMargin + "%</div>"
+        + "<div>" + (chartTotalOut > 0
+            ? (chartSaldo >= 0 ? "<span style=\"color:#16a34a;font-weight:700\">Untung</span>" : "<span style=\"color:#a32d2d;font-weight:700\">Rugi</span>") + " · Margin " + chartMargin + "%"
+            : "<span style=\"color:#7a8c78\">Belum ada pengeluaran tercatat</span>") + "</div>"
         + "<div style=\"font-size:10px\">Pemasukan − Pengeluaran · " + escHtml(periodeLabel) + "</div>"
         + "</div></div>"
       : "")
@@ -1574,7 +1596,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-chart-stats\">"
     + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pemasukan</div><div class=\"fin-cs-val inc\">" + rp(chartTotalIn) + "</div></div>"
     + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Pengeluaran</div><div class=\"fin-cs-val out\">" + rp(chartTotalOut) + "</div></div>"
-    + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Margin</div><div class=\"fin-cs-val mg\">" + chartMargin + "%</div></div>"
+    + "<div class=\"fin-cs-item\"><div class=\"fin-cs-lbl\">Margin</div><div class=\"fin-cs-val mg\">" + (chartTotalOut > 0 ? chartMargin + "%" : "—") + "</div></div>"
     + "</div>"
     + "</div>"
 
@@ -1680,14 +1702,52 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
       : "")
 
+    // ── Posisi Kas (R2) + Rekap per Sumber (R5) — cuma di /transaksi ──
+    + (transaksiOnly
+      ? "<div class=\"trx-rekap-grid\">"
+        // Posisi Kas (Cash vs QRIS) — ikut periode terpilih
+        + "<div class=\"trx-rekap-card\">"
+        +   "<div class=\"trx-rekap-hdr\"><div class=\"trx-rekap-ic kas\"><i class=\"ti ti-wallet\"></i></div>"
+        +     "<div class=\"trx-rekap-ttl\">Posisi Kas <span class=\"trx-rekap-ctx\" id=\"ctxKas\"></span></div></div>"
+        +   "<div class=\"kas-cols\">"
+        +     "<div class=\"kas-col cash\">"
+        +       "<div class=\"kas-col-hd\">💵 Cash (laci)</div>"
+        +       "<div class=\"kas-col-big\" id=\"kasCashTotal\">Rp 0</div>"
+        +       "<div class=\"kas-col-row\"><span>Penjualan</span><b id=\"kasCashSale\">Rp 0</b></div>"
+        +       "<div class=\"kas-col-row\"><span id=\"kasCashTukarLbl\">Tukar masuk</span><b id=\"kasCashTukar\">Rp 0</b></div>"
+        +     "</div>"
+        +     "<div class=\"kas-col qris\">"
+        +       "<div class=\"kas-col-hd\">📱 QRIS</div>"
+        +       "<div class=\"kas-col-big\" id=\"kasQrisTotal\">Rp 0</div>"
+        +       "<div class=\"kas-col-row\"><span>Penjualan</span><b id=\"kasQrisSale\">Rp 0</b></div>"
+        +       "<div class=\"kas-col-row\"><span id=\"kasQrisTukarLbl\">Tukar masuk</span><b id=\"kasQrisTukar\">Rp 0</b></div>"
+        +     "</div>"
+        +   "</div>"
+        +   "<div class=\"kas-note\">Dari penjualan + efek tukar uang. Belum dikurangi pengeluaran operasional.</div>"
+        + "</div>"
+        // Rekap per sumber bisnis (pemasukan lunas)
+        + "<div class=\"trx-rekap-card\">"
+        +   "<div class=\"trx-rekap-hdr\"><div class=\"trx-rekap-ic src\"><i class=\"ti ti-chart-pie\"></i></div>"
+        +     "<div class=\"trx-rekap-ttl\">Rekap per Sumber <span class=\"trx-rekap-ctx\" id=\"ctxSrc\"></span></div></div>"
+        +   "<div class=\"src-list\">"
+        +     "<div class=\"src-row\"><div class=\"src-row-top\"><span class=\"src-name\"><span class=\"src-dot bil\"></span> 🎱 Billiard</span><span class=\"src-amt\" id=\"srcBilAmt\">Rp 0</span></div><div class=\"src-bar\"><div class=\"src-bar-fill bil\" id=\"srcBilBar\"></div></div><div class=\"src-sub\" id=\"srcBilSub\">—</div></div>"
+        +     "<div class=\"src-row\"><div class=\"src-row-top\"><span class=\"src-name\"><span class=\"src-dot war\"></span> ☕ Warkop</span><span class=\"src-amt\" id=\"srcWarAmt\">Rp 0</span></div><div class=\"src-bar\"><div class=\"src-bar-fill war\" id=\"srcWarBar\"></div></div><div class=\"src-sub\" id=\"srcWarSub\">—</div></div>"
+        +     "<div class=\"src-row\"><div class=\"src-row-top\"><span class=\"src-name\"><span class=\"src-dot lain\"></span> Lain-lain</span><span class=\"src-amt\" id=\"srcLainAmt\">Rp 0</span></div><div class=\"src-bar\"><div class=\"src-bar-fill lain\" id=\"srcLainBar\"></div></div><div class=\"src-sub\" id=\"srcLainSub\">—</div></div>"
+        +   "</div>"
+        +   "<div class=\"src-total\">Total pemasukan: <b id=\"srcTotal\">Rp 0</b></div>"
+        + "</div>"
+        + "</div>"
+      : "")
+
     // ── Transaction table ───────────────────────────────────────
     + "<div class=\"fin-table-card\" id=\"trx-list\">"
     + (transaksiOnly
       ? // FULL mode (/transaksi): type tabs + filter bar (search + dropdowns)
         "<div class=\"fin-tbl-type-tabs\" role=\"tablist\">"
         +   "<button type=\"button\" class=\"fin-type-tab active\" data-trx-type=\"semua\" onclick=\"setTrxType('semua')\"><i class=\"ti ti-layout-list\"></i> Semua <span class=\"trx-tab-count\" id=\"cntSemua\">" + sortedTbl.length + "</span></button>"
-        +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan <span class=\"trx-tab-count\" id=\"cntIn\">" + sortedTbl.filter(function(t){return t.jenis==='pemasukan'&&!t.voidedAt;}).length + "</span></button>"
-        +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran <span class=\"trx-tab-count\" id=\"cntOut\">" + sortedTbl.filter(function(t){return t.jenis==='pengeluaran'&&!t.voidedAt;}).length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-in\" data-trx-type=\"pemasukan\" onclick=\"setTrxType('pemasukan')\"><i class=\"ti ti-arrow-up-circle\"></i> Pemasukan <span class=\"trx-tab-count\" id=\"cntIn\">" + sortedTbl.filter(function(t){return t.jenis==='pemasukan'&&!t.voidedAt&&t.kategori!==KAT_TUKAR_UANG;}).length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-out\" data-trx-type=\"pengeluaran\" onclick=\"setTrxType('pengeluaran')\"><i class=\"ti ti-arrow-down-circle\"></i> Pengeluaran <span class=\"trx-tab-count\" id=\"cntOut\">" + sortedTbl.filter(function(t){return t.jenis==='pengeluaran'&&!t.voidedAt&&t.kategori!==KAT_TUKAR_UANG;}).length + "</span></button>"
+        +   "<button type=\"button\" class=\"fin-type-tab fin-type-tukar\" data-trx-type=\"tukar\" onclick=\"setTrxType('tukar')\"><i class=\"ti ti-arrows-left-right\"></i> Tukar <span class=\"trx-tab-count\" id=\"cntTukar\">" + sortedTbl.filter(function(t){return t.kategori===KAT_TUKAR_UANG&&!t.voidedAt;}).length + "</span></button>"
         +   "<button type=\"button\" class=\"fin-type-tab fin-type-void\" data-trx-type=\"void\" onclick=\"setTrxType('void')\"><i class=\"ti ti-ban\"></i> Dibatalkan <span class=\"trx-tab-count\" id=\"cntVoid\">" + sortedTbl.filter(function(t){return !!t.voidedAt;}).length + "</span></button>"
         + "</div>"
         // Filter bar — search di row pertama, dropdowns di row kedua
@@ -2238,6 +2298,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var fBay=(document.getElementById('filterBayar')||{}).value||'';"
     +   "var rows=document.querySelectorAll('#trxRows .fin-row');"
     +   "var visible=[];var sumIn=0,sumOut=0,voidN=0;"
+    // Tab counts (ikut filter tgl/dropdown, ABAIKAN tab tipe) → konsisten dgn ringkasan saat tab 'Semua'
+    +   "var cntS=0,cIn=0,cOut=0,cTk=0,cVd=0;"
+    // Posisi Kas (Cash vs QRIS) — penjualan + efek tukar, per periode terpilih
+    +   "var kCashSale=0,kCashTkIn=0,kCashTkOut=0,kQrisSale=0,kQrisTkIn=0,kQrisTkOut=0;"
+    // Rekap per sumber bisnis (pemasukan lunas, non-tukar)
+    +   "var rkBil=0,rkWar=0,rkLain=0,rkBilN=0,rkWarN=0,rkLainN=0;"
     +   "rows.forEach(function(r){"
     +     "var tgl=r.getAttribute('data-tanggal')||'';"
     +     "var idx=parseInt(r.getAttribute('data-idx'));"
@@ -2249,13 +2315,29 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "if(sampai&&tgl>sampai)matchDate=false;"
     +     "var matchType=true,matchKat=true,matchSum=true,matchKru=true,matchBay=true;"
     +     "if(t){"
-    +       "if(typ==='pemasukan')matchType=(t.jenis==='pemasukan'&&!t.voidedAt);"
-    +       "else if(typ==='pengeluaran')matchType=(t.jenis==='pengeluaran'&&!t.voidedAt);"
+    +       "if(typ==='pemasukan')matchType=(t.jenis==='pemasukan'&&!t.voidedAt&&t.kategori!==KAT_TUKAR);"
+    +       "else if(typ==='pengeluaran')matchType=(t.jenis==='pengeluaran'&&!t.voidedAt&&t.kategori!==KAT_TUKAR);"
+    +       "else if(typ==='tukar')matchType=(t.kategori===KAT_TUKAR&&!t.voidedAt);"
     +       "else if(typ==='void')matchType=!!t.voidedAt;"
     +       "if(fKat)matchKat=(t.kategori===fKat);"
     +       "if(fSum)matchSum=(_getTrxSumber(t.kategori)===fSum);"
     +       "if(fKru)matchKru=(t.dicatatOleh===fKru);"
     +       "if(fBay)matchBay=(t.bayar===fBay);"
+    +     "}"
+    // matchOther = semua filter KECUALI tab tipe. Dipakai utk hitung tab count,
+    // Posisi Kas, & Rekap Sumber — biar konsisten lintas tab & ikut filter periode.
+    +     "var matchOther=matchSearch&&matchDate&&matchKat&&matchSum&&matchKru&&matchBay;"
+    +     "if(matchOther&&t){cntS++;var _amt=(t.jumlah||0);"
+    +       "if(t.voidedAt){cVd++;}"
+    +       "else if(t.kategori===KAT_TUKAR){cTk++;"
+    +         "if(t.jenis==='pemasukan'&&t.lunas!==false){if(t.bayar==='cash')kCashTkIn+=_amt;else if(t.bayar==='qris')kQrisTkIn+=_amt;}"
+    +         "else if(t.jenis==='pengeluaran'){if(t.bayar==='cash')kCashTkOut+=_amt;else if(t.bayar==='qris')kQrisTkOut+=_amt;}"
+    +       "}"
+    +       "else if(t.jenis==='pemasukan'){cIn++;"
+    +         "if(t.lunas!==false){if(t.bayar==='cash')kCashSale+=_amt;else if(t.bayar==='qris')kQrisSale+=_amt;"
+    +           "var _sm=_getTrxSumber(t.kategori);if(_sm==='billiard'){rkBil+=_amt;rkBilN++;}else if(_sm==='warkop'){rkWar+=_amt;rkWarN++;}else{rkLain+=_amt;rkLainN++;}}"
+    +       "}"
+    +       "else if(t.jenis==='pengeluaran'){cOut++;}"
     +     "}"
     +     "if(matchSearch&&matchDate&&matchType&&matchKat&&matchSum&&matchKru&&matchBay){"
     +       "visible.push(r);"
@@ -2291,11 +2373,33 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "if(fBay&&_bayMap[fBay])_ctxParts.push(_bayMap[fBay]);"
     +   "if(typ!=='semua'){var _typMap={pemasukan:'',pengeluaran:'',void:'Dibatalkan'};if(_typMap[typ])_ctxParts.push(_typMap[typ]);}"
     +   "var _ctxStr=_ctxParts.join(' \\u00b7 ');"
-    +   "['ctxTotal','ctxIn','ctxOut','ctxNet'].forEach(function(id){var el=document.getElementById(id);if(el){if(_ctxStr){el.textContent=_ctxStr;el.classList.add('on');}else{el.textContent='';el.classList.remove('on');}}});"
+    +   "['ctxTotal','ctxIn','ctxOut','ctxNet','ctxKas','ctxSrc'].forEach(function(id){var el=document.getElementById(id);if(el){if(_ctxStr){el.textContent=_ctxStr;el.classList.add('on');}else{el.textContent='';el.classList.remove('on');}}});"
     +   "var sOut=document.getElementById('sumTrxOut');if(sOut)sOut.textContent=_rpFmt(sumOut);"
     +   "var sOutSub=document.getElementById('sumTrxOutSub');if(sOutSub)sOutSub.textContent=nOut>0?(nOut+' catatan pengeluaran'):'Tidak ada pengeluaran';"
     +   "var sNet=document.getElementById('sumTrxNet');if(sNet){var net=sumIn-sumOut;sNet.textContent=(net<0?'-':'+')+_rpFmt(Math.abs(net));sNet.style.color=net>=0?'#2563eb':'#dc2626';}"
-    +   "var sVoid=document.getElementById('sumTrxVoidInfo');if(sVoid){var margin=sumIn>0?((sumIn-sumOut)/sumIn*100).toFixed(1):'0';sVoid.textContent=(voidN>0?'Termasuk '+voidN+' void · ':'')+'Margin '+margin+'%';}"
+    // R3 — jangan klaim "Margin 100%" saat pengeluaran Rp 0 (menyesatkan:
+    // biaya wajib bulanan tdk tercatat sbg transaksi harian). Tampilkan info
+    // pengeluaran tanpa angka margin kalau belum ada pengeluaran.
+    +   "var sVoid=document.getElementById('sumTrxVoidInfo');if(sVoid){var _vinfo=voidN>0?('Termasuk '+voidN+' void'):'';if(sumOut>0&&sumIn>0){var margin=((sumIn-sumOut)/sumIn*100).toFixed(1);_vinfo=(_vinfo?_vinfo+' · ':'')+'Margin '+margin+'%';}else if(sumIn>0){_vinfo=(_vinfo?_vinfo+' · ':'')+'Belum ada pengeluaran tercatat';}sVoid.textContent=_vinfo||'—';}"
+    // ── R4: tab count dinamis (ikut filter periode) ──
+    +   "var _setT=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};"
+    +   "_setT('cntSemua',cntS);_setT('cntIn',cIn);_setT('cntOut',cOut);_setT('cntTukar',cTk);_setT('cntVoid',cVd);"
+    // ── R2: Posisi Kas (Cash vs QRIS) ──
+    +   "var _kasSign=function(v){v=Math.round(v||0);return (v>0?'+':'')+_rpFmt(v);};"
+    +   "var _cashTk=kCashTkIn-kCashTkOut,_qrisTk=kQrisTkIn-kQrisTkOut;"
+    +   "_setT('kasCashTotal',_rpFmt(kCashSale+_cashTk));_setT('kasCashSale',_rpFmt(kCashSale));_setT('kasCashTukar',_kasSign(_cashTk));"
+    +   "_setT('kasCashTukarLbl',_cashTk<0?'Tukar keluar':'Tukar masuk');"
+    +   "_setT('kasQrisTotal',_rpFmt(kQrisSale+_qrisTk));_setT('kasQrisSale',_rpFmt(kQrisSale));_setT('kasQrisTukar',_kasSign(_qrisTk));"
+    +   "_setT('kasQrisTukarLbl',_qrisTk<0?'Tukar keluar':'Tukar masuk');"
+    // ── R5: Rekap per sumber (Billiard / Warkop / Lain) ──
+    +   "var _srcTot=rkBil+rkWar+rkLain;var _pct=function(v){return _srcTot>0?Math.round(v/_srcTot*100):0;};"
+    +   "_setT('srcBilAmt',_rpFmt(rkBil));_setT('srcWarAmt',_rpFmt(rkWar));_setT('srcLainAmt',_rpFmt(rkLain));_setT('srcTotal',_rpFmt(_srcTot));"
+    +   "var _bb=document.getElementById('srcBilBar');if(_bb)_bb.style.width=_pct(rkBil)+'%';"
+    +   "var _wb=document.getElementById('srcWarBar');if(_wb)_wb.style.width=_pct(rkWar)+'%';"
+    +   "var _lb=document.getElementById('srcLainBar');if(_lb)_lb.style.width=_pct(rkLain)+'%';"
+    +   "_setT('srcBilSub',rkBilN>0?(_pct(rkBil)+'% \\u00b7 '+rkBilN+' trx'):'Belum ada');"
+    +   "_setT('srcWarSub',rkWarN>0?(_pct(rkWar)+'% \\u00b7 '+rkWarN+' trx'):'Belum ada');"
+    +   "_setT('srcLainSub',rkLainN>0?(_pct(rkLain)+'% \\u00b7 '+rkLainN+' trx'):'Belum ada');"
     +   "var emp=document.querySelector('.empty-state');"
     +   "if(emp&&rows.length>0)emp.style.display=total===0?'flex':'none';"
     +   "var pgEl=document.getElementById('tblPagi');if(!pgEl)return;"
@@ -2906,6 +3010,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "})();"
     + "function fmtSaldoKas(el){var raw=el.value.replace(/\\D/g,'');var n=parseInt(raw)||0;el.value=n>0?String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'.'):'';}"
     + "function saveSaldoKas(){var v=(document.getElementById('finSaldoKas')||{}).value||'';var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');try{localStorage.setItem('fin_saldo_kas',JSON.stringify({v:v,d:today}));}catch(e){}}"
+    + "function simpanSaldoKas(btn){saveSaldoKas();btn=btn||document.getElementById('finSaldoKasBtn');if(!btn)return;if(btn._t)clearTimeout(btn._t);btn.innerHTML='<i class=\"ti ti-check\"></i> Tersimpan';btn.classList.add('ok');btn._t=setTimeout(function(){btn.innerHTML='<i class=\"ti ti-device-floppy\"></i> Simpan';btn.classList.remove('ok');},1600);}"
     + "(function(){try{var raw=localStorage.getItem('fin_saldo_kas');if(!raw)return;var obj=JSON.parse(raw);var d=new Date();var today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(obj&&obj.d===today){var el=document.getElementById('finSaldoKas');if(el&&obj.v)el.value=obj.v;}else{localStorage.removeItem('fin_saldo_kas');}}catch(e){}})();"
     + "function wizDropzoneClick(){var dz=document.getElementById('wizDropzone');if(dz&&dz.classList.contains('has-file'))return;document.getElementById('wizBuktiInput').click();}"
     + "function wizUpdateUpload(){var wrap=document.getElementById('wizUploadWrap');var lbl=document.getElementById('wizUploadLbl');var dzLbl=document.getElementById('dzLbl');if(!wrap)return;var showQris=wizS.bayar==='qris';var showNota=wizS.tipe==='expense';var show=showQris||showNota;wrap.style.display=show?'':'none';if(!show)return;"
@@ -4189,9 +4294,10 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
   const sim = an.simulasi;
 
   const toastMsg  = msg === "added"   ? "Biaya berhasil ditambah"
-    : msg === "updated" ? "Biaya berhasil diupdate"
-    : msg === "deleted" ? "Biaya berhasil dihapus"
-    : msg === "err"     ? "Gagal: pastikan nama & nominal terisi"
+    : msg === "updated"  ? "Biaya berhasil diupdate"
+    : msg === "deleted"  ? "Biaya berhasil dihapus"
+    : msg === "cadangan" ? "Dana cadangan disimpan"
+    : msg === "err"      ? "Gagal: pastikan nama & nominal terisi"
     : "";
   const toastType = msg === "err" ? "err" : "ok";
   const toastHtml = toastMsg
@@ -4199,10 +4305,24 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     : "";
 
   // 3 mini-card status (full version)
-  const scopeCard = (lbl, sub, data) => {
+  const scopeCard = (lbl, sub, data, showProj = false) => {
     const { pemasukan, target, status } = data;
     const margin = pemasukan - target;
     const pct    = Math.min(100, Math.round((pemasukan / Math.max(target, 1)) * 100));
+    // Item 4 — rasio target sebenarnya (tdk mentok 100%). Bar tetap dibatasi 100%.
+    const ratio    = target > 0 ? pemasukan / target : 0;
+    const ratioTxt = ratio >= 1
+      ? ratio.toFixed(1).replace(".", ",") + "× target"
+      : Math.round(ratio * 100) + "% target";
+    // Item 3 — proyeksi akhir bulan (hanya kartu Bulan)
+    const projHtml = showProj && data.proyeksi !== undefined
+      ? "<div class=\"an-proj\">"
+        + "<div class=\"an-proj-row\"><i class=\"ti ti-trending-up\"></i> Proyeksi akhir bulan <strong>" + rp(data.proyeksi) + "</strong></div>"
+        + (data.sisaTarget > 0
+            ? "<div class=\"an-proj-sub\">Sisa <strong>" + rp(data.sisaTarget) + "</strong> untuk tutup biaya bulan ini · " + data.daysRemaining + " hari tersisa</div>"
+            : "<div class=\"an-proj-sub ok\">Target biaya bulan ini sudah tercapai · " + data.daysRemaining + " hari tersisa</div>")
+        + "</div>"
+      : "";
     return "<div class=\"an-card\" style=\"--accent-bar:" + status.color + "\">"
       + "<div class=\"an-card-hdr\">"
       +   "<div><div class=\"an-scope\">" + lbl + "</div>"
@@ -4218,7 +4338,8 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
       +   "style=\"width:" + pct + "%;background:" + status.color + "\"></div></div>"
       + "<div class=\"an-margin " + (margin >= 0 ? "pos" : "neg") + "\">"
       +   (margin >= 0 ? "▲ Surplus " : "▼ Defisit ") + rp(Math.abs(margin))
-      +   " · " + pct + "% target</div>"
+      +   " · " + ratioTxt + "</div>"
+      + projHtml
       + "</div>";
   };
 
@@ -4237,6 +4358,45 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
   const trendDaysOk    = trend30.filter((d) => d.pemasukan >= an.targets.hari).length;
   const trendDaysLow   = trend30.filter((d) => d.pemasukan > 0 && d.pemasukan < an.targets.hari).length;
   const trendDaysZero  = trend30.filter((d) => d.pemasukan === 0).length;
+  // Item 5 — index hari mulai pencatatan, hanya jika jatuh DI DALAM window 30 hari
+  let recIdx = -1;
+  if (an.recordStart && trend30.length && an.recordStart > trend30[0].tanggal) {
+    recIdx = trend30.findIndex((d) => d.tanggal >= an.recordStart);
+  }
+
+  // ── Fitur 2 — indikator titik impas (break-even) harian ──
+  const beSurplus = an.hari.pemasukan - an.targets.hari;
+  const beOk      = beSurplus >= 0;
+
+  // ── Fitur 1 — pola hari ramai vs sepi (bar 7 hari, basis hari aktif) ──
+  const pola      = an.polaHari || [];
+  const polaAny   = pola.some((p) => p.count > 0);
+  const compactRp = (v) =>
+    v >= 1e6   ? (v / 1e6).toFixed(1).replace(".", ",") + "jt"
+    : v >= 1000 ? Math.round(v / 1000) + "rb"
+    : String(Math.round(v));
+  const POLA_BARMAX      = 140;
+  const polaMax          = Math.max(an.targets.hari, ...pola.map((p) => (p.enough ? p.avg : 0)), 1);
+  const polaTargetBottom = Math.round(an.targets.hari / polaMax * POLA_BARMAX);
+  const polaColsHtml = pola.map((p) => {
+    if (!p.enough) {
+      return "<div class=\"pola-col\"><div class=\"pola-bar pola-bar-empty\" style=\"height:8px\"></div></div>";
+    }
+    const h     = Math.max(5, Math.round(p.avg / polaMax * POLA_BARMAX));
+    const color = p.aboveTarget ? "#22c55e" : "#f59e0b";
+    return "<div class=\"pola-col\">"
+      + "<div class=\"pola-val\" title=\"" + rp(p.avg) + " · rata-rata " + p.count + " hari\">" + compactRp(p.avg) + "</div>"
+      + "<div class=\"pola-bar\" style=\"height:" + h + "px;background:" + color + "\"></div>"
+      + "</div>";
+  }).join("");
+  const polaLabelsHtml = pola.map((p) => {
+    const abbr = p.hari.slice(0, 3);
+    const cnt  = p.enough ? p.count + "×" : "blm cukup";
+    return "<div class=\"pola-lab" + (p.enough ? "" : " muted") + "\">"
+      + "<div class=\"pola-day\">" + abbr + "</div>"
+      + "<div class=\"pola-cnt\">" + cnt + "</div>"
+      + "</div>";
+  }).join("");
 
   // ── Breakdown rows (CRUD) ──
   const frekLabel = (f) =>
@@ -4293,6 +4453,46 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".an-margin{font-size:11px;color:var(--txt2)}",
     ".an-margin.pos{color:#22c55e}",
     ".an-margin.neg{color:#ef4444}",
+    // Item 3 — proyeksi akhir bulan (kartu Bulan)
+    ".an-proj{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}",
+    ".an-proj-row{font-size:11.5px;color:var(--txt2);display:flex;align-items:center;gap:6px}",
+    ".an-proj-row i{color:#3b82f6;font-size:14px}",
+    ".an-proj-row strong{color:var(--txt);font-family:var(--ff-mono);margin-left:auto}",
+    ".an-proj-sub{font-size:10.5px;color:var(--txt3);margin-top:3px;line-height:1.45}",
+    ".an-proj-sub strong{color:#f59e0b;font-family:var(--ff-mono)}",
+    ".an-proj-sub.ok strong{color:#22c55e}",
+    // Item 2 — baris rata-rata kalender vs hari aktif
+    ".an-avg-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;margin-bottom:18px}",
+    ".an-avg-item{display:flex;flex-direction:column;gap:2px}",
+    ".an-avg-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}",
+    ".an-avg-val{font-size:14px;font-weight:700;font-family:var(--ff-mono);color:var(--txt)}",
+    ".an-avg-note{margin-left:auto;font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px}",
+    ".an-avg-note i{color:#a855f7;font-size:14px}",
+    ".an-avg-note strong{color:var(--txt2)}",
+    "@media(max-width:640px){.an-avg-note{margin-left:0;width:100%}}",
+    // Item 2 — toggle basis simulator
+    ".an-sim-tog{display:inline-flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px;margin-bottom:14px;flex-wrap:wrap}",
+    ".an-sim-tog-btn{padding:7px 14px;background:transparent;border:none;border-radius:7px;font-size:11.5px;font-weight:600;color:var(--txt3);cursor:pointer;font-family:var(--ff);transition:all .15s}",
+    ".an-sim-tog-btn.sel{background:var(--accent);color:#fff}",
+    ".an-sim-arrow{font-size:11px;font-weight:700;opacity:.85}",
+    ".an-sim-note{margin-top:12px;font-size:11px;color:var(--txt3);line-height:1.5;display:flex;align-items:flex-start;gap:6px}",
+    ".an-sim-note i{color:#3b82f6;font-size:14px;flex-shrink:0;margin-top:1px}",
+    ".an-sim-note strong{color:var(--txt2)}",
+    // Item 6 — dana cadangan
+    ".an-cadangan{margin-top:16px;padding-top:16px;border-top:1px dashed var(--border)}",
+    ".an-cad-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}",
+    ".an-cad-info{flex:1;min-width:200px}",
+    ".an-cad-lbl{font-size:12.5px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;margin-bottom:3px}",
+    ".an-cad-lbl i{color:#a855f7;font-size:15px}",
+    ".an-cad-hint{font-size:11px;color:var(--txt3);line-height:1.45}",
+    ".an-cad-form{display:flex;gap:8px;align-items:stretch}",
+    ".an-cad-inp{max-width:160px}",
+    ".an-cad-btn{display:inline-flex;align-items:center;gap:5px;padding:0 14px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);white-space:nowrap}",
+    ".an-cad-btn:hover{opacity:.9}",
+    ".an-cad-ideal{margin-top:12px;padding:10px 14px;background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(59,130,246,.05));border:1px solid rgba(168,85,247,.2);border-radius:10px;font-size:12px;color:var(--txt2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+    ".an-cad-ideal i{color:#a855f7;font-size:15px}",
+    ".an-cad-ideal strong{color:var(--txt);font-family:var(--ff-mono)}",
+    "@media(max-width:540px){.an-cad-form{width:100%}.an-cad-inp{max-width:none;flex:1}}",
     // Trend chart
     ".ap-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:18px}",
     ".ap-card-title{font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:14px}",
@@ -4306,6 +4506,39 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     ".trend-stat strong{color:var(--txt);font-weight:700;font-family:var(--ff-mono)}",
     ".trend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;display:inline-block}",
     ".trend-dot-target{width:14px;height:0;border-top:2px dashed #a855f7;border-radius:0;align-self:center}",
+    // Fitur 2 — break-even banner
+    ".an-be{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:13px;margin-bottom:18px;border:1px solid var(--border)}",
+    ".an-be.ok{background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04));border-color:rgba(34,197,94,.32)}",
+    ".an-be.low{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.04));border-color:rgba(245,158,11,.32)}",
+    ".an-be-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}",
+    ".an-be.ok .an-be-ic{background:rgba(34,197,94,.16);color:#22c55e}",
+    ".an-be.low .an-be-ic{background:rgba(245,158,11,.16);color:#f59e0b}",
+    ".an-be-txt{flex:1;min-width:0}",
+    ".an-be-main{font-size:14px;font-weight:700;color:var(--txt);line-height:1.3}",
+    ".an-be-sub{font-size:11.5px;color:var(--txt2);margin-top:2px;line-height:1.4}",
+    ".an-be-amt{font-size:18px;font-weight:800;font-family:var(--ff-mono);white-space:nowrap}",
+    ".an-be.ok .an-be-amt{color:#22c55e}",
+    ".an-be.low .an-be-amt{color:#f59e0b}",
+    "@media(max-width:540px){.an-be{flex-wrap:wrap;gap:10px;padding:13px 14px}.an-be-amt{font-size:16px;width:100%;text-align:right}}",
+    // Fitur 1 — pola hari chart (CSS bar)
+    ".pola-chart{margin-top:4px}",
+    ".pola-cols{position:relative;display:flex;align-items:flex-end;gap:6px;height:162px;padding:0 2px}",
+    ".pola-target{position:absolute;left:2px;right:2px;border-top:2px dashed #a855f7;z-index:3;pointer-events:none}",
+    ".pola-target-lbl{position:absolute;right:0;top:-8px;background:var(--surface);padding:0 5px;font-size:9.5px;font-weight:700;color:#a855f7;font-family:var(--ff-mono)}",
+    ".pola-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0;height:100%}",
+    ".pola-val{font-size:10px;font-weight:700;font-family:var(--ff-mono);color:var(--txt2);white-space:nowrap}",
+    ".pola-bar{width:100%;max-width:36px;border-radius:5px 5px 0 0;min-height:4px}",
+    ".pola-bar-empty{background:repeating-linear-gradient(45deg,var(--surface2),var(--surface2) 5px,var(--border) 5px,var(--border) 10px);border:1px dashed var(--border2);border-bottom:none}",
+    ".pola-xaxis{display:flex;gap:6px;padding:9px 2px 0;border-top:1px solid var(--border)}",
+    ".pola-lab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}",
+    ".pola-day{font-size:11.5px;font-weight:700;color:var(--txt2)}",
+    ".pola-cnt{font-size:9px;color:var(--txt3);font-family:var(--ff-mono);white-space:nowrap}",
+    ".pola-lab.muted .pola-day{color:var(--txt3)}",
+    ".pola-lab.muted .pola-cnt{color:#f59e0b;opacity:.85}",
+    ".pola-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);font-size:11px;color:var(--txt2)}",
+    ".pola-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:11.5px;color:var(--txt3);line-height:1.5}",
+    ".pola-note i{color:#f59e0b;font-size:15px;flex-shrink:0;margin-top:1px}",
+    "@media(max-width:540px){.pola-cols{gap:3px}.pola-xaxis{gap:3px}.pola-val{font-size:8.5px}.pola-day{font-size:10px}.pola-cnt{font-size:8px}.pola-bar{max-width:28px}}",
     // Breakdown
     ".an-bd-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}",
     ".an-bd-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:9px;font-size:12px}",
@@ -4484,11 +4717,37 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +     "target " + rp(bd.totalDaily) + " / hari</div>"
     + "</div>"
 
+    // Fitur 2 — indikator titik impas (break-even) harian
+    + "<div class=\"an-be " + (beOk ? "ok" : "low") + "\">"
+    +   "<div class=\"an-be-ic\"><i class=\"ti ti-" + (beOk ? "circle-check" : "alert-triangle") + "\"></i></div>"
+    +   "<div class=\"an-be-txt\">"
+    +     "<div class=\"an-be-main\">" + (beOk ? "Hari ini sudah lewat titik impas" : "Belum tutup biaya hari ini") + "</div>"
+    +     "<div class=\"an-be-sub\">" + (beOk
+            ? "Surplus " + rp(beSurplus) + " di atas target harian " + rp(an.targets.hari)
+            : "Kurang " + rp(-beSurplus) + " lagi untuk tutup biaya hari ini (target " + rp(an.targets.hari) + ")") + "</div>"
+    +   "</div>"
+    +   "<div class=\"an-be-amt\">" + rpSigned(beSurplus) + "</div>"
+    + "</div>"
+
     // 3 scope cards
     + "<div class=\"ap-grid\">"
     +   scopeCard("Hari ini",   "Target " + rp(an.targets.hari)   + " / hari",   an.hari)
     +   scopeCard("Minggu ini", "Target " + rp(an.targets.minggu) + " / minggu", an.minggu)
-    +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan)
+    +   scopeCard("Bulan ini",  "Target " + rp(an.targets.bulan)  + " / bulan",  an.bulan, true)
+    + "</div>"
+
+    // Item 2 — konteks rata-rata & tanggal mulai pencatatan
+    + "<div class=\"an-avg-row\">"
+    +   "<div class=\"an-avg-item\">"
+    +     "<span class=\"an-avg-lbl\">Rata-rata 30 hari kalender</span>"
+    +     "<span class=\"an-avg-val\">" + rp(an.rataKalender) + " / hari</span>"
+    +   "</div>"
+    +   "<div class=\"an-avg-item\">"
+    +     "<span class=\"an-avg-lbl\">Rata-rata hari aktif (" + an.activeDays + " hari)</span>"
+    +     "<span class=\"an-avg-val\">" + rp(an.rataAktif) + " / hari</span>"
+    +   "</div>"
+    +   "<div class=\"an-avg-note\"><i class=\"ti ti-calendar-stats\"></i> Pencatatan dimulai <strong>"
+    +     fmtTglID(an.recordStart) + "</strong> · " + an.calendarDaysSinceStart + " hari kalender</div>"
     + "</div>"
 
     // Disclaimer
@@ -4596,6 +4855,30 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "<div class=\"trend-chart-wrap\"><canvas id=\"trendChartCanvas\"></canvas></div>"
     + "</div>"
 
+    // Fitur 1 — Pola Hari Ramai vs Sepi (rata-rata pemasukan per hari)
+    + "<div class=\"ap-card\">"
+    +   "<div class=\"ap-card-title\"><i class=\"ti ti-calendar-week\" style=\"color:#22c55e\"></i>"
+    +     "Pola Hari Ramai vs Sepi"
+    +     "<span class=\"ap-card-title-sub\">Rata-rata pemasukan per hari · hanya hari aktif</span>"
+    +   "</div>"
+    +   (polaAny
+        ? "<div class=\"pola-chart\">"
+          +   "<div class=\"pola-cols\">"
+          +     "<div class=\"pola-target\" style=\"bottom:" + polaTargetBottom + "px\"><span class=\"pola-target-lbl\">Target " + compactRp(an.targets.hari) + "</span></div>"
+          +     polaColsHtml
+          +   "</div>"
+          +   "<div class=\"pola-xaxis\">" + polaLabelsHtml + "</div>"
+          + "</div>"
+          + "<div class=\"pola-legend\">"
+          +   "<span class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:#22c55e\"></span>Di atas target</span>"
+          +   "<span class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:#f59e0b\"></span>Di bawah target</span>"
+          +   "<span class=\"trend-stat\"><span class=\"trend-dot\" style=\"background:var(--border2)\"></span>Data belum cukup (&lt; 2×)</span>"
+          +   "<span class=\"trend-stat\"><span class=\"trend-dot trend-dot-target\"></span>Target " + rp(an.targets.hari) + " / hari</span>"
+          + "</div>"
+          + "<div class=\"pola-note\"><i class=\"ti ti-bulb\"></i> <span>Pakai pola ini untuk atur jadwal karyawan, waktu promo, atau happy hour di hari-hari yang cenderung sepi.</span></div>"
+        : "<div class=\"ap-empty\"><i class=\"ti ti-calendar-off\"></i> Belum cukup data untuk pola harian. Catat transaksi beberapa hari dulu.</div>")
+    + "</div>"
+
     // Biaya Wajib (CRUD)
     + "<div class=\"ap-card\">"
     +   "<div class=\"ap-card-title\"><i class=\"ti ti-list-details\" style=\"color:#f59e0b\"></i>"
@@ -4606,35 +4889,64 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "</div>"
     +   biayaRows
     +   "<div class=\"an-bd-total\"><span>Total per bulan</span><span>" + rp(bd.totalMonthly) + "</span></div>"
+    +   "<div class=\"an-cadangan\">"
+    +     "<div class=\"an-cad-row\">"
+    +       "<div class=\"an-cad-info\">"
+    +         "<div class=\"an-cad-lbl\"><i class=\"ti ti-shield-half\"></i> Dana Cadangan / Darurat per Bulan</div>"
+    +         "<div class=\"an-cad-hint\">Alokasi utk kerusakan alat, perbaikan AC/lampu, dll. Disimpan terpisah — tidak menambah biaya wajib.</div>"
+    +       "</div>"
+    +       "<form class=\"an-cad-form\" method=\"post\" action=\"/operasional/analisis/cadangan\">"
+    +         "<div class=\"ap-inp-pfx an-cad-inp\"><span class=\"ap-pfx-lbl\">Rp</span>"
+    +           "<input class=\"ap-inp-pfx-inp\" type=\"text\" inputmode=\"numeric\" name=\"nominal\" placeholder=\"0\" value=\"" + (an.danaCadangan > 0 ? String(an.danaCadangan).replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "") + "\" oninput=\"bmFmt(this)\">"
+    +         "</div>"
+    +         "<button type=\"submit\" class=\"an-cad-btn\"><i class=\"ti ti-check\"></i> Simpan</button>"
+    +       "</form>"
+    +     "</div>"
+    +     "<div class=\"an-cad-ideal\"><i class=\"ti ti-target-arrow\"></i> Target ideal termasuk cadangan: <strong>"
+    +       rp(an.monthlyIdeal) + " / bulan</strong> · <strong>" + rp(an.targetsIdeal.hari) + " / hari</strong></div>"
+    +   "</div>"
     + "</div>"
 
-    // Simulator
-    + "<div class=\"an-sim\">"
-    +   "<div class=\"an-sim-hdr\"><i class=\"ti ti-user-plus\"></i> Simulasi: Tambah 1 Karyawan (+Rp 900.000/bulan)</div>"
-    +   "<div class=\"an-sim-body\">"
-    +     "<div class=\"an-sim-cell\">"
-    +       "<div class=\"an-sim-cell-lbl\">Rata-rata 30 hari terakhir</div>"
-    +       "<div class=\"an-sim-cell-val\">" + rp(sim.rataPemasukan) + " / hari</div>"
-    +     "</div>"
-    +     "<div class=\"an-sim-cell\">"
-    +       "<div class=\"an-sim-cell-lbl\">Margin sekarang</div>"
-    +       "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginLama >= 0 ? "#22c55e" : "#ef4444") + "\">"
-    +         (sim.marginLama >= 0 ? "+" : "") + rp(sim.marginLama) + " / hari</div>"
-    +     "</div>"
-    +     "<div class=\"an-sim-cell\">"
-    +       "<div class=\"an-sim-cell-lbl\">Beban tambahan karyawan baru</div>"
-    +       "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(sim.tambahanHarian) + " / hari</div>"
-    +     "</div>"
-    +     "<div class=\"an-sim-cell\">"
-    +       "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
-    +       "<div class=\"an-sim-cell-val\" style=\"color:" + (sim.marginBaru >= 0 ? "#22c55e" : "#ef4444") + "\">"
-    +         (sim.marginBaru >= 0 ? "+" : "") + rp(sim.marginBaru) + " / hari</div>"
-    +     "</div>"
-    +   "</div>"
-    +   "<div class=\"an-sim-rec\" style=\"background:" + sim.color + "20;color:" + sim.color + ";border:1px solid " + sim.color + "40\">"
-    +     sim.emoji + " " + escHtml(sim.rekomendasi)
-    +   "</div>"
-    + "</div>"
+    // Simulator (item 1: tanda minus + arah turun; item 2: basis toggle)
+    + (function() {
+        const simBody = (s) =>
+          "<div class=\"an-sim-body\">"
+          + "<div class=\"an-sim-cell\">"
+          +   "<div class=\"an-sim-cell-lbl\">Rata-rata pemasukan / hari</div>"
+          +   "<div class=\"an-sim-cell-val\">" + rp(s.rataPemasukan) + " / hari</div>"
+          + "</div>"
+          + "<div class=\"an-sim-cell\">"
+          +   "<div class=\"an-sim-cell-lbl\">Margin sekarang</div>"
+          +   "<div class=\"an-sim-cell-val\" style=\"color:" + (s.marginLama >= 0 ? "#22c55e" : "#ef4444") + "\">"
+          +     rpSigned(s.marginLama) + " / hari</div>"
+          + "</div>"
+          + "<div class=\"an-sim-cell\">"
+          +   "<div class=\"an-sim-cell-lbl\">Beban tambahan karyawan baru</div>"
+          +   "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(s.tambahanHarian) + " / hari</div>"
+          + "</div>"
+          + "<div class=\"an-sim-cell\">"
+          +   "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
+          +   "<div class=\"an-sim-cell-val\" style=\"color:" + (s.marginBaru >= 0 ? "#22c55e" : "#ef4444") + "\">"
+          +     rpSigned(s.marginBaru) + " <span class=\"an-sim-arrow\" title=\"margin turun\">▼</span> / hari</div>"
+          + "</div>"
+          + "</div>"
+          + "<div class=\"an-sim-rec\" style=\"background:" + s.color + "20;color:" + s.color + ";border:1px solid " + s.color + "40\">"
+          +   s.emoji + " " + escHtml(s.rekomendasi)
+          + "</div>";
+
+        const isAktif = sim.defaultBasis === "aktif";
+        return "<div class=\"an-sim\">"
+          + "<div class=\"an-sim-hdr\"><i class=\"ti ti-user-plus\"></i> Simulasi: Tambah 1 Karyawan (+Rp 900.000/bulan)</div>"
+          + "<div class=\"an-sim-tog\">"
+          +   "<button type=\"button\" class=\"an-sim-tog-btn" + (isAktif ? " sel" : "") + "\" data-basis=\"aktif\" onclick=\"setSimBasis('aktif')\">Hari aktif (" + an.activeDays + " hari)</button>"
+          +   "<button type=\"button\" class=\"an-sim-tog-btn" + (!isAktif ? " sel" : "") + "\" data-basis=\"kalender\" onclick=\"setSimBasis('kalender')\">30 hari kalender</button>"
+          + "</div>"
+          + "<div id=\"simBodyAktif\" style=\"display:" + (isAktif ? "block" : "none") + "\">" + simBody(sim.aktif) + "</div>"
+          + "<div id=\"simBodyKalender\" style=\"display:" + (!isAktif ? "block" : "none") + "\">" + simBody(sim.kalender) + "</div>"
+          + "<div class=\"an-sim-note\"><i class=\"ti ti-info-circle\"></i> <strong>Hari aktif</strong> = rata-rata hanya dari hari yang ada transaksi (lebih realistis kalau ada hari tutup). <strong>30 hari kalender</strong> = dibagi rata 30 hari."
+          +   (isAktif ? " Default ke hari aktif karena data masih < 14 hari." : "") + "</div>"
+          + "</div>";
+      })()
 
     + "</div></div></div>"
 
@@ -4703,6 +5015,12 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "bmSetFrek(d.frek);"
     +   "document.getElementById('biayaModal').classList.add('open');}"
     + "function closeBiayaModal(){document.getElementById('biayaModal').classList.remove('open');}"
+    + "function setSimBasis(b){"
+    +   "var a=document.getElementById('simBodyAktif'),k=document.getElementById('simBodyKalender');"
+    +   "if(a)a.style.display=b==='aktif'?'block':'none';"
+    +   "if(k)k.style.display=b==='kalender'?'block':'none';"
+    +   "document.querySelectorAll('.an-sim-tog-btn').forEach(function(x){x.classList.toggle('sel',x.getAttribute('data-basis')===b);});"
+    + "}"
     + "setTimeout(function(){var t=document.getElementById('apToast');if(t)setTimeout(function(){t.classList.remove('show');},3000);},100);"
     + "</script>"
     // Chart.js + init trend bar chart
@@ -4715,9 +5033,22 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
     +   "var fulls=" + safeJson(trendFulls) + ";"
     +   "var colors=" + safeJson(trendColors) + ";"
     +   "var target=" + an.targets.hari + ";"
+    +   "var recIdx=" + recIdx + ";"
     +   "var rpFmt=function(v){return 'Rp '+Number(v||0).toLocaleString('id-ID');};"
     +   "var yTick=function(v){return v>=1e6?(v/1e6).toFixed(1)+'jt':v>=1000?Math.round(v/1000)+'rb':v;};"
     +   "new Chart(el,{"
+    +     "plugins:[{id:'recStart',afterDraw:function(c){"
+    +       "if(recIdx<0)return;"
+    +       "var x=c.scales.x.getPixelForValue(recIdx);"
+    +       "var top=c.chartArea.top,bot=c.chartArea.bottom;var cx=c.ctx;cx.save();"
+    +       "cx.strokeStyle='#a855f7';cx.lineWidth=1.5;cx.setLineDash([4,4]);"
+    +       "cx.beginPath();cx.moveTo(x,top);cx.lineTo(x,bot);cx.stroke();cx.setLineDash([]);"
+    +       "cx.fillStyle='#a855f7';cx.font='600 10px DM Sans';"
+    +       "var lbl='Pencatatan dimulai';var tw=cx.measureText(lbl).width;"
+    +       "if(x+4+tw>c.chartArea.right){cx.textAlign='right';cx.fillText(lbl,x-5,top+10);}"
+    +       "else{cx.textAlign='left';cx.fillText(lbl,x+5,top+10);}"
+    +       "cx.restore();"
+    +     "}}],"
     +     "type:'bar',"
     +     "data:{labels:labels,datasets:["
     +       "{type:'bar',label:'Pemasukan',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false,borderWidth:0,maxBarThickness:24,order:2},"

@@ -3,7 +3,9 @@
 // Hitung target pemasukan & status berdasarkan biaya wajib di DB
 // (tabel fixed_costs). Owner bisa CRUD via /operasional/analisis.
 
-import { readFixedCosts } from "./db.js";
+import { readFixedCosts, readSetting } from "./db.js";
+
+export const SETTING_DANA_CADANGAN = "dana_cadangan_bulanan";
 
 // ── Convert per-item nominal → biaya per bulan ────────────────
 // Asumsi: 30 hari/bulan, 4.286 minggu/bulan
@@ -38,12 +40,18 @@ export function computeTargetsFromTotal(monthly) {
   return { hari, minggu, bulan: monthly };
 }
 
-// ── Load semua dari DB → return { breakdown, targets } ─────────
+// ── Load semua dari DB → return { breakdown, targets, ... } ────
+// danaCadangan: alokasi cadangan/darurat per bulan (input terpisah, disimpan
+// di app_settings). Target "ideal" = biaya wajib + cadangan; ditampilkan sbg
+// pembanding TANPA mengubah baseline biaya wajib.
 export async function loadAnalisisData() {
   const items     = await readFixedCosts();
   const breakdown = computeFromItems(items);
   const targets   = computeTargetsFromTotal(breakdown.totalMonthly);
-  return { breakdown, targets };
+  const danaCadangan = parseInt(await readSetting(SETTING_DANA_CADANGAN, "0"), 10) || 0;
+  const monthlyIdeal = breakdown.totalMonthly + danaCadangan;
+  const targetsIdeal = computeTargetsFromTotal(monthlyIdeal);
+  return { breakdown, targets, danaCadangan, monthlyIdeal, targetsIdeal };
 }
 
 // ── Status berdasarkan rasio pemasukan vs biaya ─────────────────

@@ -1122,6 +1122,20 @@ export const deleteFixedCost = async (id) => {
   await query("DELETE FROM fixed_costs WHERE id = $1", [parseInt(id)]);
 };
 
+// ── App settings (KV sederhana) ───────────────────────────────
+export const readSetting = async (key, fallback = null) => {
+  const res = await query("SELECT value FROM app_settings WHERE key = $1", [key]);
+  return res.rows.length ? res.rows[0].value : fallback;
+};
+
+export const writeSetting = async (key, value) => {
+  await query(
+    `INSERT INTO app_settings (key, value, updated_at) VALUES ($1, $2, NOW())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+    [key, String(value)]
+  );
+};
+
 // ── Planning / Roadmap Bisnis (wishlist items) ────────────────
 
 const parseAttachments = (raw) => {
