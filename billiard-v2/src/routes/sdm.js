@@ -11,6 +11,7 @@ import {
   appendTransaksi, readAdminAccounts, updateAdminAccount,
 } from "../utils/db.js";
 import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage } from "../views/sdm.js";
+import { notifyNewTransaksi } from "../utils/notifTrigger.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
 // Fail-loud kalau env var ga di-set (sebelumnya hardcoded '2222' & 'warpat-sdm-key-v1'
@@ -247,7 +248,7 @@ router.post("/sdm/transaksi", async (req, res) => {
       thr: "THR", bonus: "Bonus", makan_harian: "Makan Harian",
     };
     const ket = k.nama + (keterangan ? " — " + keterangan : "");
-    await appendTransaksi({
+    const sdmTrx = {
       id:          trxId + "-k",
       tanggal:     new Date().toISOString().slice(0, 10),
       jam:         new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }),
@@ -258,7 +259,10 @@ router.post("/sdm/transaksi", async (req, res) => {
       keterangan:  ket,
       jumlah,
       createdAt:   new Date().toISOString(),
-    });
+    };
+    await appendTransaksi(sdmTrx);
+    notifyNewTransaksi(sdmTrx).catch((e) =>
+      console.error("[SDM] notifyNewTransaksi error:", e.message));
 
     // Msg spesifik per tipe (cocok dgn map di view sdmDashboard)
     const tipeMsg = {

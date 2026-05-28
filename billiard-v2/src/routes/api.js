@@ -10,6 +10,7 @@ import {
 } from "../utils/db.js";
 import { requireApiAuth, signToken } from "../middleware/apiAuth.js";
 import { CONFIG }         from "../config.js";
+import { notifyNewTransaksi } from "../utils/notifTrigger.js";
 import {
   generateKode, normalizeTelepon, formatTeleponDisplay,
   validateTelepon, selisihHari, formatJam, KAT_TUKAR_UANG,
@@ -343,6 +344,8 @@ router.post("/transaksi", requireApiAuth(["finance", "admin"]), async (req, res)
     };
 
     await appendTransaksi(item);
+    notifyNewTransaksi(item).catch((e) =>
+      console.error("[API] notifyNewTransaksi error:", e.message));
     return ok(res, { data: item }, 201);
   } catch (e) {
     console.error("[API] POST /transaksi:", e.message);

@@ -29,13 +29,22 @@ const TIPE_CONF = {
     label: "Ringkasan Harian", icon: "ti-calendar-stats",
     color: "#2660a4", bg: "#e6f1fb",
   },
+  transaksi_in: {
+    label: "Pemasukan", icon: "ti-arrow-down-circle",
+    color: "#2d6624", bg: "#eaf3de",
+  },
+  transaksi_out: {
+    label: "Pengeluaran", icon: "ti-arrow-up-circle",
+    color: "#a32d2d", bg: "#fef5f5",
+  },
 };
 
 // Filter pills order — tampil semua tipe yg punya entry + "Semua".
 const FILTER_GROUPS = [
   { key: "",            label: "Semua" },
-  { key: "stok",        label: "Stok",   match: ["stok_low", "stok_out"] },
-  { key: "target",      label: "Target", match: ["target_harian", "target_mingguan", "target_bulanan"] },
+  { key: "transaksi",   label: "Transaksi", match: ["transaksi_in", "transaksi_out"] },
+  { key: "stok",        label: "Stok",      match: ["stok_low", "stok_out"] },
+  { key: "target",      label: "Target",    match: ["target_harian", "target_mingguan", "target_bulanan"] },
   { key: "daily",       label: "Ringkasan", match: ["daily_summary"] },
 ];
 
@@ -101,9 +110,10 @@ export function renderNotifSheetBody({ notifs = [], unreadCount = 0 } = {}) {
   const renderItem = (n) => {
     const conf = TIPE_CONF[n.tipe] || { label: "Info", icon: "ti-info-circle", color: "#7a8c78", bg: "#f0f3ef" };
     const isRead = !!n.read_at;
-    const filterKey = n.tipe.startsWith("stok_") ? "stok"
-                    : n.tipe.startsWith("target_") ? "target"
-                    : n.tipe === "daily_summary" ? "daily" : "";
+    const filterKey = n.tipe.startsWith("stok_")      ? "stok"
+                    : n.tipe.startsWith("target_")    ? "target"
+                    : n.tipe.startsWith("transaksi_") ? "transaksi"
+                    : n.tipe === "daily_summary"     ? "daily" : "";
     return ""
       + "<div class=\"ns-item" + (isRead ? " is-read" : "") + "\""
       +    " data-id=\"" + n.id + "\" data-tipe=\"" + filterKey + "\">"

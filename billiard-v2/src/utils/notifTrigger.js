@@ -25,6 +25,52 @@ function mondayOf(tanggal) {
 
 const fmtRp = (n) => "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 
+// ── Trigger: notif tiap transaksi baru ────────────────────────
+// Panggil setelah appendTransaksi sukses. Pemasukan → tipe transaksi_in
+// (hijau), Pengeluaran → tipe transaksi_out (merah). dedupKey unik per
+// trx.id supaya retry insert gak duplicate. Window pendek (1 jam) cukup.
+export async function notifyNewTransaksi(trx) {
+  try {
+    if (!trx || !trx.id) return;
+    const jenis = trx.jenis === "pemasukan" ? "pemasukan" : "pengeluaran";
+    const tipe  = jenis === "pemasukan" ? "transaksi_in" : "transaksi_out";
+    const kategori = (trx.kategori || (jenis === "pemasukan" ? "Pemasukan" : "Pengeluaran")).toString();
+    const titleHead = jenis === "pemasukan" ? "Pemasukan" : "Pengeluaran";
+    const title = titleHead + " " + kategori + ": " + fmtRp(trx.jumlah || 0);
+    const parts = [];
+    if (trx.subKategori) parts.push(trx.subKategori);
+    if (trx.keterangan)  parts.push(trx.keterangan);
+    if (trx.bayar)       parts.push("via " + trx.bayar);
+    if (trx.dicatatOleh) parts.push("oleh " + trx.dicatatOleh);
+    const pesan = parts.join(" • ");
+    const link  = trx.tanggal
+      ? "/operasional/transaksi?tgl_dari=" + trx.tanggal + "&tgl_sampai=" + trx.tanggal
+      : "/operasional/transaksi";
+
+    await addNotifikasi({
+      tipe,
+      prioritas: "info",
+      title,
+      pesan,
+      link,
+      meta: {
+        trxId:       trx.id,
+        jenis,
+        kategori,
+        subKategori: trx.subKategori || "",
+        jumlah:      trx.jumlah || 0,
+        tanggal:     trx.tanggal || "",
+        bayar:       trx.bayar || "",
+        dicatatOleh: trx.dicatatOleh || "",
+      },
+      dedupKey: "trx:" + trx.id,
+      dedupWindowHours: 1,
+    });
+  } catch (err) {
+    console.error("[notif] notifyNewTransaksi error:", err.message);
+  }
+}
+
 // ── Trigger: target tercapai (harian/mingguan/bulanan) ──────────
 // Panggil setelah appendTransaksi (pemasukan). Re-compute totals + bandingkan
 // dgn target. Idempotent via dedupKey: skip kalau notif scope+date sama

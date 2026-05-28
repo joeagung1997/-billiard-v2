@@ -35,7 +35,7 @@ import {
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
-import { checkAndNotifyTarget, createDailySummaryNotif } from "../utils/notifTrigger.js";
+import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
 import {
@@ -364,7 +364,7 @@ router.post("/tambah", async (req, res) => {
     const jamSafe   = (jam ?? "").slice(0, 5);
     const userId    = res.locals.financeUser || "";
 
-    await appendTransaksi({
+    const trxMain = {
       id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
       tanggal:     tanggalBiz,
       jam:         jamSafe,
@@ -379,11 +379,13 @@ router.post("/tambah", async (req, res) => {
       buktiUrl,
       dicatatOleh: userId,
       lunas,
-    });
+    };
+    await appendTransaksi(trxMain);
 
     // Transaksi ke-2: Kopi/Snack add-on (kalau ada). Share waktu/bayar/bukti/lunas.
+    let trxKopi = null;
     if (hasKopiAddon) {
-      await appendTransaksi({
+      trxKopi = {
         id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
         tanggal:     tanggalBiz,
         jam:         jamSafe,
@@ -398,11 +400,19 @@ router.post("/tambah", async (req, res) => {
         buktiUrl,
         dicatatOleh: userId,
         lunas,
-      });
+      };
+      await appendTransaksi(trxKopi);
     }
 
-    // Trigger notif target tercapai (fire-and-forget, non-blocking response).
-    // Hanya untuk pemasukan beneran (lunas, kategori revenue).
+    // ── Trigger notif (fire-and-forget, non-blocking response) ──
+    // Notif tiap transaksi baru — masuk bell sidebar (filter "Transaksi").
+    notifyNewTransaksi(trxMain).catch((err) =>
+      console.error("[FINANCE] notifyNewTransaksi main error:", err.message));
+    if (trxKopi) {
+      notifyNewTransaksi(trxKopi).catch((err) =>
+        console.error("[FINANCE] notifyNewTransaksi kopi error:", err.message));
+    }
+    // Notif target tercapai — hanya untuk pemasukan lunas.
     if (jenis === "pemasukan" && lunas) {
       checkAndNotifyTarget(tanggalBiz).catch((err) =>
         console.error("[FINANCE] target notif trigger error:", err.message)

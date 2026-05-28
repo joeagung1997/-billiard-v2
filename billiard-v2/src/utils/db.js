@@ -657,6 +657,7 @@ const VALID_NOTIF_TIPE = [
   "stok_low", "stok_out",
   "target_harian", "target_mingguan", "target_bulanan",
   "daily_summary",
+  "transaksi_in", "transaksi_out",
 ];
 const VALID_PRIORITAS = ["info", "warning", "danger"];
 
