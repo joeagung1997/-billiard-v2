@@ -364,6 +364,8 @@ function normalizeBahanExtras(extras = {}) {
 }
 
 export const readBahan = async () => {
+  // last_mov: subquery ambil movement terbaru per bahan (untuk kolom "Terakhir
+  // Diperbarui" di stok page). Pakai DISTINCT ON utk performa, urut by created_at DESC.
   const res = await query(
     `SELECT b.id, b.nama, b.satuan, b.harga_per_satuan,
             b.qty_per_porsi::float AS qty_per_porsi, b.porsi_label,
@@ -374,9 +376,20 @@ export const readBahan = async () => {
             b.supplier_id,
             b.stok::float     AS stok,
             b.stok_min::float AS stok_min,
-            s.nama AS supplier_nama
+            b.updated_at,
+            s.nama AS supplier_nama,
+            lm.created_at AS last_movement_at,
+            lm.created_by AS last_movement_by,
+            lm.jenis      AS last_movement_jenis
      FROM bahan_baku b
      LEFT JOIN supplier s ON s.id = b.supplier_id
+     LEFT JOIN LATERAL (
+       SELECT created_at, created_by, jenis
+       FROM stok_movement
+       WHERE bahan_id = b.id
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) lm ON TRUE
      ORDER BY b.nama ASC`
   );
   return res.rows;
@@ -567,6 +580,26 @@ export const readStokMovements = async (bahanId, limit = 50) => {
      ORDER BY created_at DESC
      LIMIT $2`,
     [bahanId, lim]
+  );
+  return res.rows;
+};
+
+// Read movement terbaru LINTAS bahan — untuk panel riwayat di stok page.
+// JOIN bahan_baku biar dapat nama + satuan utk display.
+export const readStokMovementsAll = async (limit = 10) => {
+  const lim = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
+  const res = await query(
+    `SELECT m.id, m.bahan_id, m.jenis,
+            m.qty_change::float AS qty_change,
+            m.qty_after::float  AS qty_after,
+            m.catatan, m.created_by, m.created_at,
+            b.nama   AS bahan_nama,
+            b.satuan AS bahan_satuan
+     FROM stok_movement m
+     LEFT JOIN bahan_baku b ON b.id = m.bahan_id
+     ORDER BY m.created_at DESC
+     LIMIT $1`,
+    [lim]
   );
   return res.rows;
 };

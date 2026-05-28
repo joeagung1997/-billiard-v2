@@ -28,7 +28,7 @@ import {
   deleteUnpaidPlanningPayments, wipeAllPlanningPayments,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
   readSuppliers, addSupplier, updateSupplier, deleteSupplier,
-  adjustStok, readStokMovements, setStokMin,
+  adjustStok, readStokMovements, readStokMovementsAll, setStokMin,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
@@ -1270,19 +1270,25 @@ router.get("/catatan-fitur/hapus", requireOwner, async (req, res) => {
 
 // ── /operasional/stok — kelola stok & inventory (owner only) ──────
 // List bahan baku dgn info stok, threshold low-stock, dan adjust stok.
+// Query param ?action=restock|adjust|threshold + ?edit=<id> → open form mode.
 router.get("/stok", requireOwner, async (req, res) => {
   try {
-    const [bahanList, suppliers] = await Promise.all([readBahan(), readSuppliers()]);
+    const [bahanList, suppliers, recentMovements] = await Promise.all([
+      readBahan(),
+      readSuppliers(),
+      readStokMovementsAll(15),
+    ]);
     const editId   = parseInt(req.query.edit) || 0;
     const editBahan = editId ? bahanList.find((b) => b.id === editId) || null : null;
+    const action   = ["restock", "adjust", "threshold"].includes(req.query.action) ? req.query.action : "";
     const filter   = ["low", "out", "warn"].includes(req.query.filter) ? req.query.filter : "";
     const searchQ  = (req.query.q ?? "").toString().slice(0, 100);
     res.send(stokPage({
-      bahanList, suppliers,
+      bahanList, suppliers, recentMovements,
       filter, searchQ,
       role:        res.locals.financeRole,
       displayName: res.locals.financeDisplay || "",
-      editBahan,
+      editBahan, action,
       msg:    req.query.msg || "",
       hasErr: !!req.query.err,
     }));
@@ -1292,32 +1298,81 @@ router.get("/stok", requireOwner, async (req, res) => {
   }
 });
 
-// POST /operasional/stok/adjust — adjust stok bahan + (opsional) update threshold.
-// Body: bahan_id, jenis (in/out/adjust), qty, stok_min, catatan.
+// POST /operasional/stok/restock — tambah stok masuk (jenis 'in') + catatan.
+// Body: bahan_id, qty, catatan. Validasi: qty > 0.
+router.post("/stok/restock", requireOwner, async (req, res) => {
+  const bahanId = parseInt(req.body.bahan_id) || 0;
+  const qty     = Math.max(0, Number(req.body.qty) || 0);
+  const catatan = (req.body.catatan ?? "").toString().slice(0, 200);
+  const who     = res.locals.financeDisplay || res.locals.financeUser || "owner";
+  if (!bahanId || qty <= 0) return res.redirect("/operasional/stok?edit=" + bahanId + "&action=restock&err=1");
+  try {
+    await adjustStok(bahanId, "in", qty, { catatan, changedBy: who });
+    res.redirect("/operasional/stok?msg=restocked");
+  } catch (err) {
+    console.error("[FINANCE] stok restock error:", err.message);
+    res.redirect("/operasional/stok?edit=" + bahanId + "&action=restock&err=1");
+  }
+});
+
+// POST /operasional/stok/adjust — koreksi/penyesuaian stok (jenis out / adjust).
+// Body: bahan_id, jenis ('out' atau 'adjust'), qty, catatan.
 router.post("/stok/adjust", requireOwner, async (req, res) => {
   const bahanId = parseInt(req.body.bahan_id) || 0;
-  const jenis   = ["in", "out", "adjust"].includes(req.body.jenis) ? req.body.jenis : "adjust";
-  const qty     = Number(req.body.qty) || 0;
+  const jenis   = ["out", "adjust"].includes(req.body.jenis) ? req.body.jenis : "adjust";
+  const qty     = Math.max(0, Number(req.body.qty) || 0);
   const catatan = (req.body.catatan ?? "").toString().slice(0, 200);
-  const stokMinRaw = req.body.stok_min;
-  const changedBy  = res.locals.financeDisplay || res.locals.financeUser || "owner";
-
+  const who     = res.locals.financeDisplay || res.locals.financeUser || "owner";
   if (!bahanId) return res.redirect("/operasional/stok?err=1");
   try {
-    // adjustStok pakai newStok utk jenis='adjust', qtyChange utk in/out.
     await adjustStok(bahanId, jenis, qty, {
-      catatan, changedBy,
+      catatan, changedBy: who,
       newStok: jenis === "adjust" ? qty : null,
     });
-    // Optional: update threshold stok_min sekalian (cuma kalau dikirim).
-    if (stokMinRaw !== undefined && stokMinRaw !== "") {
-      await setStokMin(bahanId, stokMinRaw);
-    }
     res.redirect("/operasional/stok?msg=adjusted");
   } catch (err) {
     console.error("[FINANCE] stok adjust error:", err.message);
-    res.redirect("/operasional/stok?edit=" + bahanId + "&err=1");
+    res.redirect("/operasional/stok?edit=" + bahanId + "&action=adjust&err=1");
   }
+});
+
+// POST /operasional/stok/set-threshold — quick set threshold min per bahan.
+// Body: bahan_id, stok_min. Validasi: stok_min >= 0.
+router.post("/stok/set-threshold", requireOwner, async (req, res) => {
+  const bahanId = parseInt(req.body.bahan_id) || 0;
+  const stokMin = Math.max(0, Number(req.body.stok_min) || 0);
+  if (!bahanId) return res.redirect("/operasional/stok?err=1");
+  try {
+    await setStokMin(bahanId, stokMin);
+    res.redirect("/operasional/stok?msg=threshold");
+  } catch (err) {
+    console.error("[FINANCE] set-threshold error:", err.message);
+    res.redirect("/operasional/stok?edit=" + bahanId + "&action=threshold&err=1");
+  }
+});
+
+// POST /operasional/stok/bulk-restock — restock multiple bahan sekaligus.
+// Body: bahan_ids[]=[1,2,3], qty_<id>=<num> per bahan, catatan (shared).
+// Iterate tiap bahan_id, adjustStok jenis='in'. Skip qty<=0. Pakai 1 catatan
+// shared utk semua entry biar audit trail-nya jelas (mis. "Belanja Mei 30").
+router.post("/stok/bulk-restock", requireOwner, async (req, res) => {
+  const ids     = [].concat(req.body.bahan_ids ?? []).map((x) => parseInt(x) || 0).filter((x) => x > 0);
+  const catatan = (req.body.catatan ?? "").toString().slice(0, 200);
+  const who     = res.locals.financeDisplay || res.locals.financeUser || "owner";
+  if (ids.length === 0) return res.redirect("/operasional/stok?err=1");
+  let ok = 0, skip = 0;
+  for (const id of ids) {
+    const qty = Math.max(0, Number(req.body["qty_" + id]) || 0);
+    if (qty <= 0) { skip++; continue; }
+    try {
+      await adjustStok(id, "in", qty, { catatan, changedBy: who });
+      ok++;
+    } catch (err) {
+      console.error("[FINANCE] bulk-restock item " + id + " error:", err.message);
+      skip++;
+    }
+  }
+  res.redirect("/operasional/stok?msg=bulkrestock&ok=" + ok + "&skip=" + skip);
 });
 
 // GET /operasional/stok/history?id=X — JSON history stok_movement utk 1 bahan.
