@@ -705,9 +705,16 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   // Hitung jumlah Tukar Uang dalam scope, biar bisa ditampilkan sbg info terpisah.
   const tukarCount = activeSortedTbl.filter((t) => t.kategori === KAT_TUKAR_UANG).length;
 
-  // Breakdown metode pembayaran (pemasukan saja, exclude Tukar Uang)
-  const totalCash = revenueSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "cash").reduce((s, t) => s + t.jumlah, 0);
-  const totalQris = revenueSortedTbl.filter((t) => t.jenis === "pemasukan" && t.bayar === "qris").reduce((s, t) => s + t.jumlah, 0);
+  // Breakdown metode pembayaran (cash vs QRIS).
+  // Tukar Uang tidak menambah total Pemasukan, tapi memindahkan posisi kas:
+  // customer transfer QRIS lalu ambil cash dari laci → cash turun, QRIS naik.
+  // Jadi per-metode = pemasukan-lunas metode itu − tukar-keluar (pengeluaran) metode itu.
+  // totalCash + totalQris tetap == chartTotalIn (selisihnya net nol).
+  const _masukLunas  = activeSortedTbl.filter((t) => t.jenis === "pemasukan" && t.lunas !== false);
+  const _tukarKeluar = activeSortedTbl.filter((t) => t.jenis === "pengeluaran" && t.kategori === KAT_TUKAR_UANG);
+  const _sumMetode   = (arr, m) => arr.filter((t) => t.bayar === m).reduce((s, t) => s + t.jumlah, 0);
+  const totalCash = _sumMetode(_masukLunas, "cash") - _sumMetode(_tukarKeluar, "cash");
+  const totalQris = _sumMetode(_masukLunas, "qris") - _sumMetode(_tukarKeluar, "qris");
 
   // Summary (exclude voided + Tukar Uang)
   const pemasukan   = revenueFiltered.filter((t) => t.jenis === "pemasukan");
@@ -1138,7 +1145,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-tbl-head{padding:12px 14px!important}"
     +   ".fin-row::after{content:'›';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;font-weight:300;opacity:.5;pointer-events:none}"
     +   ".fr-desc-title{font-weight:600!important;line-height:1.4!important;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}"
-    +   // Force fit viewport — semua card di dashboard
+        // Force fit viewport — semua card di dashboard
     +   "body,html{overflow-x:hidden;max-width:100%}"
     +   ".page,.page>*,.fin-stat-card,.fin-kas-card,.fin-bayar-card,.fin-table-card,.fin-chart-card{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}"
     +   ".dash-topbar{flex-wrap:wrap;gap:10px}"
@@ -1147,23 +1154,25 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".page-sub{font-size:11.5px}"
     +   ".topbar-actions{flex-wrap:wrap;gap:8px}"
     +   ".topbar-actions>*{flex:1 1 calc(50% - 4px);justify-content:center}"
-    +   // Saldo kas card lebih compact
+        // Saldo kas card lebih compact
     +   ".fin-kas-card{padding:12px 14px!important;gap:10px!important}"
     +   ".fin-kas-lbl{font-size:13px}"
     +   ".fin-kas-sub{font-size:10.5px}"
-    +   // Cash / QRIS row pertahankan 2 col tapi padding compact
+        // Cash / QRIS row pertahankan 2 col tapi padding compact
     +   ".fin-bayar-card{grid-template-columns:1fr 1fr!important;gap:0!important}"
     +   ".fin-bayar-item{padding:14px 14px!important}"
     +   ".fin-bayar-lbl{font-size:10.5px}"
     +   ".fin-bayar-val{font-size:18px!important;word-break:break-all}"
     +   ".fin-bayar-sub{font-size:10px;line-height:1.4}"
-    +   // Stat cards (Pemasukan/Pengeluaran/Saldo/Trx)
+        // Stat cards (Pemasukan/Pengeluaran/Saldo/Trx) — 2 kolom biar angka muat
+    +   ".fin-stat-grid{grid-template-columns:repeat(2,1fr)!important}"
+    +   ".fin-stat-grid>.fin-stat-card:nth-child(3):last-child{grid-column:1/-1}"
     +   ".fin-stat-card{padding:14px 16px!important;border-radius:12px!important}"
     +   ".fin-stat-val{font-size:20px!important;word-break:break-all;line-height:1.2}"
     +   ".fin-stat-lbl{font-size:10.5px}"
     +   ".fin-stat-foot{font-size:10.5px;flex-wrap:wrap;gap:3px}"
     +   ".fin-stat-icon{width:32px!important;height:32px!important;font-size:15px!important}"
-    +   // Chart card
+        // Chart card
     +   ".fin-chart-hdr{padding:12px 14px 6px;gap:8px}"
     +   ".fin-chart-body{padding:4px 12px 14px;height:220px}"
     +   ".fin-chart-stats{grid-template-columns:repeat(3,1fr)}"
@@ -2116,6 +2125,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "const WIZ_MENU_OPTS=" + safeJson("<option value=''>Pilih item...</option>" + menuOptsHtml) + ";"
     + "const WIZ_TOPPINGS=" + safeJson(toppingsByName) + ";"
     + "const TRX_DATA=" + safeJson(sortedTbl) + ";"
+    + "const KAT_TUKAR=" + safeJson(KAT_TUKAR_UANG) + ";"
     + "const USER_NAME_MAP=" + safeJson(userNameMap) + ";"
     + "const USER_SHIFT_MAP=" + safeJson(userShiftMap) + ";"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
@@ -2250,7 +2260,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +     "if(matchSearch&&matchDate&&matchType&&matchKat&&matchSum&&matchKru&&matchBay){"
     +       "visible.push(r);"
     // Sum cuma transaksi lunas (cash-basis). Belum lunas tidak masuk total.
-    +       "if(t&&!t.voidedAt&&t.lunas!==false){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
+    +       "if(t&&!t.voidedAt&&t.lunas!==false&&t.kategori!==KAT_TUKAR){if(t.jenis==='pemasukan')sumIn+=(t.jumlah||0);else if(t.jenis==='pengeluaran')sumOut+=(t.jumlah||0);}"
     +       "if(t&&t.voidedAt)voidN++;"
     +     "}"
     +     "r.style.display='none';});"
@@ -2263,9 +2273,9 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "if(cEl){var shown=Math.min(end,total)-start;"
     +     "cEl.innerHTML=(total===0?'Tidak ada':shown+' dari '+total)+' transaksi';}"
     // Update summary cards (cuma kalau elementnya ada → di /transaksi page)
-    +   "var nIn=0,nOut=0;visible.forEach(function(r){var i=parseInt(r.getAttribute('data-idx'));var t=(typeof TRX_DATA!=='undefined'&&!isNaN(i))?TRX_DATA[i]:null;if(t&&!t.voidedAt){if(t.jenis==='pemasukan')nIn++;else if(t.jenis==='pengeluaran')nOut++;}});"
+    +   "var nIn=0,nOut=0,nTukar=0;visible.forEach(function(r){var i=parseInt(r.getAttribute('data-idx'));var t=(typeof TRX_DATA!=='undefined'&&!isNaN(i))?TRX_DATA[i]:null;if(t&&!t.voidedAt){if(t.kategori===KAT_TUKAR)nTukar++;else if(t.jenis==='pemasukan')nIn++;else if(t.jenis==='pengeluaran')nOut++;}});"
     +   "var sCount=document.getElementById('sumTrxCount');if(sCount)sCount.textContent=total;"
-    +   "var sCountSub=document.getElementById('sumTrxCountSub');if(sCountSub)sCountSub.textContent=(nIn+' masuk · '+nOut+' keluar'+(voidN>0?' · '+voidN+' void':''));"
+    +   "var sCountSub=document.getElementById('sumTrxCountSub');if(sCountSub)sCountSub.textContent=(nIn+' masuk · '+nOut+' keluar'+(nTukar>0?' · '+nTukar+' tukar':'')+(voidN>0?' · '+voidN+' void':''));"
     +   "var sIn=document.getElementById('sumTrxIn');if(sIn)sIn.textContent=_rpFmt(sumIn);"
     +   "var sInSub=document.getElementById('sumTrxInSub');if(sInSub){var avg=nIn>0?Math.round(sumIn/nIn):0;sInSub.textContent=nIn>0?('Rata-rata '+_rpFmt(avg)+' / trx'):'Tidak ada pemasukan';}"
     // Build filter context string from active dropdowns — apply ke 4 cards
