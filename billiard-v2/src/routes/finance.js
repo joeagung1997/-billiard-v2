@@ -27,6 +27,8 @@ import {
   readPlanningPayments, addPlanningPayment, deletePlanningPayment, togglePlanningPayment,
   deleteUnpaidPlanningPayments, wipeAllPlanningPayments,
   readPlanningGoals, addPlanningGoal, updatePlanningGoal, addGoalDeposit, deletePlanningGoal,
+  readSuppliers, addSupplier, updateSupplier, deleteSupplier,
+  adjustStok, readStokMovements, setStokMin,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
@@ -40,6 +42,8 @@ import {
 } from "../views/finance.js";
 import { planningPage } from "../views/planning.js";
 import { catatanFiturPage } from "../views/catatan.js";
+import { stokPage } from "../views/stok.js";
+import { supplierPage } from "../views/supplier.js";
 
 const router = Router();
 
@@ -965,12 +969,13 @@ router.post("/kategori/urutan", requireOwner, async (req, res) => {
 //   ?err=1          → flash error
 router.get("/menu", requireOwner, async (req, res) => {
   try {
-    const [items, toppings, bahanList, resepAll, hppMap] = await Promise.all([
+    const [items, toppings, bahanList, resepAll, hppMap, suppliers] = await Promise.all([
       readMenuItems(),
       readMenuToppings(),
       readBahan(),
       readResepAll(),
       computeHppMap(),
+      readSuppliers(),
     ]);
     const editId       = parseInt(req.query.edit)      || 0;
     const editBahanId  = parseInt(req.query.editbahan) || 0;
@@ -980,7 +985,7 @@ router.get("/menu", requireOwner, async (req, res) => {
     const resepMenu    = resepMenuId ? items.find((m) => m.id === resepMenuId)   || null : null;
     const activeTab    = req.query.tab === "bahan" ? "bahan" : "menu";
     res.send(financeMenuPage(res.locals.financeRole, items, toppings, !!req.query.err, editItem, {
-      bahanList, resepAll, hppMap, editBahan, resepMenu, activeTab,
+      bahanList, resepAll, hppMap, editBahan, resepMenu, activeTab, suppliers,
     }));
   } catch (err) {
     console.error("[FINANCE] menu GET error:", err.message);
@@ -1008,8 +1013,9 @@ function parseBahanExtras(body) {
     isiPerDus:       parseNum(body.isi_per_dus),
     hargaRenteng:    parseRupiah(body.harga_renteng),
     isiPerRenteng:   parseNum(body.isi_per_renteng),
-    supplier:        (body.supplier ?? "").trim(),
+    supplier:        (body.supplier ?? "").trim(),  // legacy: preserved via hidden input di edit form
     catatan:         (body.catatan  ?? "").trim(),
+    supplierId:      parseInt(body.supplier_id) || 0,
   };
 }
 
@@ -1260,6 +1266,137 @@ router.get("/catatan-fitur/hapus", requireOwner, async (req, res) => {
     }
   }
   res.redirect("/operasional/catatan-fitur?msg=deleted");
+});
+
+// ── /operasional/stok — kelola stok & inventory (owner only) ──────
+// List bahan baku dgn info stok, threshold low-stock, dan adjust stok.
+router.get("/stok", requireOwner, async (req, res) => {
+  try {
+    const [bahanList, suppliers] = await Promise.all([readBahan(), readSuppliers()]);
+    const editId   = parseInt(req.query.edit) || 0;
+    const editBahan = editId ? bahanList.find((b) => b.id === editId) || null : null;
+    const filter   = ["low", "out", "warn"].includes(req.query.filter) ? req.query.filter : "";
+    const searchQ  = (req.query.q ?? "").toString().slice(0, 100);
+    res.send(stokPage({
+      bahanList, suppliers,
+      filter, searchQ,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      editBahan,
+      msg:    req.query.msg || "",
+      hasErr: !!req.query.err,
+    }));
+  } catch (err) {
+    console.error("[FINANCE] stok GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+// POST /operasional/stok/adjust — adjust stok bahan + (opsional) update threshold.
+// Body: bahan_id, jenis (in/out/adjust), qty, stok_min, catatan.
+router.post("/stok/adjust", requireOwner, async (req, res) => {
+  const bahanId = parseInt(req.body.bahan_id) || 0;
+  const jenis   = ["in", "out", "adjust"].includes(req.body.jenis) ? req.body.jenis : "adjust";
+  const qty     = Number(req.body.qty) || 0;
+  const catatan = (req.body.catatan ?? "").toString().slice(0, 200);
+  const stokMinRaw = req.body.stok_min;
+  const changedBy  = res.locals.financeDisplay || res.locals.financeUser || "owner";
+
+  if (!bahanId) return res.redirect("/operasional/stok?err=1");
+  try {
+    // adjustStok pakai newStok utk jenis='adjust', qtyChange utk in/out.
+    await adjustStok(bahanId, jenis, qty, {
+      catatan, changedBy,
+      newStok: jenis === "adjust" ? qty : null,
+    });
+    // Optional: update threshold stok_min sekalian (cuma kalau dikirim).
+    if (stokMinRaw !== undefined && stokMinRaw !== "") {
+      await setStokMin(bahanId, stokMinRaw);
+    }
+    res.redirect("/operasional/stok?msg=adjusted");
+  } catch (err) {
+    console.error("[FINANCE] stok adjust error:", err.message);
+    res.redirect("/operasional/stok?edit=" + bahanId + "&err=1");
+  }
+});
+
+// GET /operasional/stok/history?id=X — JSON history stok_movement utk 1 bahan.
+router.get("/stok/history", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (!id) return res.json({ history: [] });
+  try {
+    const history = await readStokMovements(id, 50);
+    res.json({ history });
+  } catch (err) {
+    console.error("[FINANCE] stok history error:", err.message);
+    res.json({ history: [], error: err.message });
+  }
+});
+
+// ── /operasional/supplier — kelola data supplier (owner only) ─────
+router.get("/supplier", requireOwner, async (req, res) => {
+  try {
+    const suppliers = await readSuppliers();
+    const editId    = parseInt(req.query.edit) || 0;
+    const editSup   = editId ? suppliers.find((s) => s.id === editId) || null : null;
+    const searchQ   = (req.query.q ?? "").toString().slice(0, 100);
+    res.send(supplierPage({
+      suppliers, searchQ,
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      editSup,
+      msg:    req.query.msg || "",
+      hasErr: !!req.query.err,
+    }));
+  } catch (err) {
+    console.error("[FINANCE] supplier GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+router.post("/supplier/tambah", requireOwner, async (req, res) => {
+  const nama = (req.body.nama ?? "").trim();
+  if (!nama) return res.redirect("/operasional/supplier?err=1");
+  try {
+    await addSupplier({
+      nama,
+      kontak:  req.body.kontak  ?? "",
+      alamat:  req.body.alamat  ?? "",
+      catatan: req.body.catatan ?? "",
+    });
+    res.redirect("/operasional/supplier?msg=added");
+  } catch (err) {
+    console.error("[FINANCE] supplier tambah error:", err.message);
+    res.redirect("/operasional/supplier?err=1");
+  }
+});
+
+router.post("/supplier/edit", requireOwner, async (req, res) => {
+  const id   = parseInt(req.body.id) || 0;
+  const nama = (req.body.nama ?? "").trim();
+  if (!id || !nama) return res.redirect("/operasional/supplier?err=1");
+  try {
+    await updateSupplier(id, {
+      nama,
+      kontak:  req.body.kontak  ?? "",
+      alamat:  req.body.alamat  ?? "",
+      catatan: req.body.catatan ?? "",
+    });
+    res.redirect("/operasional/supplier?msg=edited");
+  } catch (err) {
+    console.error("[FINANCE] supplier edit error:", err.message);
+    res.redirect("/operasional/supplier?edit=" + id + "&err=1");
+  }
+});
+
+router.get("/supplier/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteSupplier(id); } catch (err) {
+      console.error("[FINANCE] supplier hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/supplier?msg=deleted");
 });
 
 export { requireFinanceAuth, requireOwner };

@@ -347,8 +347,9 @@ export const deleteMenuTopping = async (id) => {
 // (mis. 1 gram = Rp 100). HPP menu = SUM(qty × harga_per_satuan) dari resep.
 
 // Helper: normalize extras object — terima { hargaDus, isiPerDus, hargaRenteng,
-// isiPerRenteng, supplier, catatan } dgn default aman.
+// isiPerRenteng, supplier, catatan, supplierId, stok, stokMin } dgn default aman.
 function normalizeBahanExtras(extras = {}) {
+  const sid = parseInt(extras.supplierId || 0) || 0;
   return {
     hargaDus:        Math.max(0, parseInt(extras.hargaDus || 0) || 0),
     isiPerDus:       Math.max(0, Number(extras.isiPerDus || 0) || 0),
@@ -356,18 +357,27 @@ function normalizeBahanExtras(extras = {}) {
     isiPerRenteng:   Math.max(0, Number(extras.isiPerRenteng || 0) || 0),
     supplier:        (extras.supplier || "").toString().trim().slice(0, 120),
     catatan:         (extras.catatan  || "").toString().trim().slice(0, 500),
+    supplierId:      sid > 0 ? sid : null,
+    stok:            Math.max(0, Number(extras.stok || 0) || 0),
+    stokMin:         Math.max(0, Number(extras.stokMin || 0) || 0),
   };
 }
 
 export const readBahan = async () => {
   const res = await query(
-    `SELECT id, nama, satuan, harga_per_satuan,
-            qty_per_porsi::float AS qty_per_porsi, porsi_label,
-            tanggal_input, tanggal_update_harga,
-            harga_dus, isi_per_dus::float AS isi_per_dus,
-            harga_renteng, isi_per_renteng::float AS isi_per_renteng,
-            supplier, catatan
-     FROM bahan_baku ORDER BY nama ASC`
+    `SELECT b.id, b.nama, b.satuan, b.harga_per_satuan,
+            b.qty_per_porsi::float AS qty_per_porsi, b.porsi_label,
+            b.tanggal_input, b.tanggal_update_harga,
+            b.harga_dus, b.isi_per_dus::float AS isi_per_dus,
+            b.harga_renteng, b.isi_per_renteng::float AS isi_per_renteng,
+            b.supplier, b.catatan,
+            b.supplier_id,
+            b.stok::float     AS stok,
+            b.stok_min::float AS stok_min,
+            s.nama AS supplier_nama
+     FROM bahan_baku b
+     LEFT JOIN supplier s ON s.id = b.supplier_id
+     ORDER BY b.nama ASC`
   );
   return res.rows;
 };
@@ -378,14 +388,16 @@ export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, po
   const res = await query(
     `INSERT INTO bahan_baku
        (nama, satuan, harga_per_satuan, qty_per_porsi, porsi_label,
-        harga_dus, isi_per_dus, harga_renteng, isi_per_renteng, supplier, catatan)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        harga_dus, isi_per_dus, harga_renteng, isi_per_renteng, supplier, catatan,
+        supplier_id, stok, stok_min)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      ON CONFLICT (nama) DO NOTHING
      RETURNING id`,
     [
       nama.trim(), satuan.trim() || "pcs", hargaPerSatuan | 0, qpp,
       (porsiLabel || "").trim().slice(0, 20),
       e.hargaDus, e.isiPerDus, e.hargaRenteng, e.isiPerRenteng, e.supplier, e.catatan,
+      e.supplierId, e.stok, e.stokMin,
     ]
   );
   return res.rows[0]?.id ?? null;
@@ -410,13 +422,15 @@ export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi 
          SET nama=$1, satuan=$2, harga_per_satuan=$3, qty_per_porsi=$4, porsi_label=$5,
              harga_dus=$6, isi_per_dus=$7, harga_renteng=$8, isi_per_renteng=$9,
              supplier=$10, catatan=$11,
-             tanggal_update_harga = CASE WHEN $12 THEN NOW() ELSE tanggal_update_harga END,
+             supplier_id=$12, stok_min=$13,
+             tanggal_update_harga = CASE WHEN $14 THEN NOW() ELSE tanggal_update_harga END,
              updated_at=NOW()
-       WHERE id=$13`,
+       WHERE id=$15`,
       [
         nama.trim(), satuan.trim() || "pcs", newHarga, qpp,
         (porsiLabel || "").trim().slice(0, 20),
         e.hargaDus, e.isiPerDus, e.hargaRenteng, e.isiPerRenteng, e.supplier, e.catatan,
+        e.supplierId, e.stokMin,
         hargaChanged, id,
       ]
     );
@@ -437,6 +451,124 @@ export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi 
 
 export const deleteBahan = async (id) => {
   await query("DELETE FROM bahan_baku WHERE id=$1", [id]);
+};
+
+// ── Supplier (master data pemasok bahan baku) ──────────────────
+// readSuppliers: kembaliin list supplier + count bahan yg pakai supplier itu.
+// Berguna utk display "X bahan" di card supplier dan utk warning saat hapus.
+export const readSuppliers = async () => {
+  const res = await query(
+    `SELECT s.id, s.nama, s.kontak, s.alamat, s.catatan,
+            s.created_at, s.updated_at,
+            COUNT(b.id)::int AS bahan_count
+     FROM supplier s
+     LEFT JOIN bahan_baku b ON b.supplier_id = s.id
+     GROUP BY s.id
+     ORDER BY s.nama ASC`
+  );
+  return res.rows;
+};
+
+export const addSupplier = async ({ nama, kontak = "", alamat = "", catatan = "" }) => {
+  const res = await query(
+    `INSERT INTO supplier (nama, kontak, alamat, catatan)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (nama) DO NOTHING
+     RETURNING id`,
+    [
+      (nama || "").trim().slice(0, 120),
+      (kontak  || "").toString().trim().slice(0, 120),
+      (alamat  || "").toString().trim().slice(0, 250),
+      (catatan || "").toString().trim().slice(0, 500),
+    ]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const updateSupplier = async (id, { nama, kontak = "", alamat = "", catatan = "" }) => {
+  await query(
+    `UPDATE supplier
+       SET nama=$1, kontak=$2, alamat=$3, catatan=$4, updated_at=NOW()
+     WHERE id=$5`,
+    [
+      (nama || "").trim().slice(0, 120),
+      (kontak  || "").toString().trim().slice(0, 120),
+      (alamat  || "").toString().trim().slice(0, 250),
+      (catatan || "").toString().trim().slice(0, 500),
+      id,
+    ]
+  );
+};
+
+export const deleteSupplier = async (id) => {
+  // bahan_baku.supplier_id ON DELETE SET NULL — bahan terkait di-unlink, gak ke-hapus.
+  await query("DELETE FROM supplier WHERE id=$1", [id]);
+};
+
+// ── Stok (penyesuaian + audit trail) ───────────────────────────
+// adjustStok: ubah stok bahan + log ke stok_movement (audit trail).
+//   jenis: 'in' (tambah), 'out' (kurang), 'adjust' (set absolute).
+//   qtyChange: angka delta. Utk 'in'/'out' jadi delta positif/negatif.
+//     Utk 'adjust' diabaikan — pakai newStok sebagai target absolute.
+//   newStok: hanya dipakai utk jenis='adjust' (set absolute).
+// Pakai transaction supaya update bahan + insert movement atomic.
+export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", changedBy = "", newStok = null } = {}) => {
+  const jn = ["in", "out", "adjust"].includes(jenis) ? jenis : "adjust";
+  await query("BEGIN");
+  try {
+    const cur = await query(`SELECT stok::float AS stok FROM bahan_baku WHERE id=$1 FOR UPDATE`, [bahanId]);
+    if (!cur.rows[0]) throw new Error("Bahan tidak ditemukan");
+    const stokLama = Number(cur.rows[0].stok) || 0;
+
+    let stokBaru;
+    let delta;
+    if (jn === "adjust") {
+      stokBaru = Math.max(0, Number(newStok) || 0);
+      delta    = stokBaru - stokLama;
+    } else {
+      const qc = Math.max(0, Number(qtyChange) || 0);
+      delta    = jn === "in" ? qc : -qc;
+      stokBaru = Math.max(0, stokLama + delta);
+    }
+
+    await query(`UPDATE bahan_baku SET stok=$1, updated_at=NOW() WHERE id=$2`, [stokBaru, bahanId]);
+    await query(
+      `INSERT INTO stok_movement (bahan_id, jenis, qty_change, qty_after, catatan, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        bahanId, jn, delta, stokBaru,
+        (catatan   || "").toString().trim().slice(0, 200),
+        (changedBy || "").toString().trim().slice(0, 60),
+      ]
+    );
+    await query("COMMIT");
+    return { stokLama, stokBaru, delta };
+  } catch (err) {
+    await query("ROLLBACK");
+    throw err;
+  }
+};
+
+// Set threshold low-stock utk bahan. Bypass updateBahan biar gak trigger
+// history harga / reset kolom lain. Cuma 1 field, idempotent.
+export const setStokMin = async (id, stokMin) => {
+  const sm = Math.max(0, Number(stokMin) || 0);
+  await query(`UPDATE bahan_baku SET stok_min=$1, updated_at=NOW() WHERE id=$2`, [sm, id]);
+};
+
+// Read history movement utk 1 bahan, urut terbaru duluan. Limit 50 row.
+export const readStokMovements = async (bahanId, limit = 50) => {
+  const lim = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+  const res = await query(
+    `SELECT id, jenis, qty_change::float AS qty_change, qty_after::float AS qty_after,
+            catatan, created_by, created_at
+     FROM stok_movement
+     WHERE bahan_id=$1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [bahanId, lim]
+  );
+  return res.rows;
 };
 
 // ── Catatan Fitur (note pengembangan aplikasi) ─────────────────

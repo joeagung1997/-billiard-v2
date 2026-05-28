@@ -80,8 +80,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       label: "Warkop",
       items: [
         { id: "menu",     href: "/operasional/menu",      icon: "ti ti-list-details",     label: "Kelola Menu",      tk: true },
-        { id: "stok",     href: soon("Stok & Inventory"), icon: "ti ti-package",          label: "Stok & Inventory", soon: true },
-        { id: "supplier", href: soon("Supplier"),         icon: "ti ti-truck-delivery",   label: "Supplier",         soon: true },
+        { id: "stok",     href: "/operasional/stok",      icon: "ti ti-package",          label: "Stok & Inventory", tk: true },
+        { id: "supplier", href: "/operasional/supplier",  icon: "ti ti-truck-delivery",   label: "Supplier",         tk: true },
       ],
     },
     {

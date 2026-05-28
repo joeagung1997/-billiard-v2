@@ -55,7 +55,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     const activeMap = { keuangan: "keuangan", transaksi: "transaksi", kategori: "kategori",
                         menu: "menu", sdm: "kru", monitoring: "aktivitas-kru",
                         analisis: "analisis", planning: "planning",
-                        catatan: "catatan-fitur" };
+                        catatan: "catatan-fitur",
+                        stok: "stok", supplier: "supplier" };
     return buildOwnerSidebar({ token: ftk, activePage: activeMap[page] || page, displayName });
   }
 
@@ -3166,6 +3167,7 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
   const {
     bahanList = [], resepAll = [], hppMap = new Map(),
     editBahan = null, resepMenu = null, activeTab = "menu",
+    suppliers = [],
   } = extras;
   const resepByMenu = {};
   for (const r of resepAll) {
@@ -3361,9 +3363,19 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
     const ipd = (b && b.isi_per_dus)     ? b.isi_per_dus     : "";
     const hr  = (b && b.harga_renteng)   ? b.harga_renteng   : "";
     const ipr = (b && b.isi_per_renteng) ? b.isi_per_renteng : "";
-    const sup = b ? (b.supplier || "") : "";
+    const supLegacy = b ? (b.supplier || "") : "";
+    const supId     = b && b.supplier_id ? b.supplier_id : 0;
     const cat = b ? (b.catatan  || "") : "";
-    const isOpen = b && (hd || hr || sup || cat);
+    const isOpen = b && (hd || hr || supLegacy || supId || cat);
+    // Dropdown supplier — kalau belum ada supplier di sistem, tampilin link ke /supplier.
+    const supSelect = suppliers.length === 0
+      ? "<div class=\"mp-input\" style=\"background:#fef9e6;border-color:#f0e3c5;color:#c47f1a;font-size:11.5px;display:flex;align-items:center;gap:6px;padding:9px 12px\">"
+        + "<i class=\"ti ti-info-circle\"></i> Belum ada supplier. <a href=\"/operasional/supplier\" style=\"color:#2d6624;font-weight:600;text-decoration:underline\">Tambah dulu di sini</a>."
+        + "</div>"
+      : "<select class=\"mp-input\" name=\"supplier_id\">"
+        +   "<option value=\"0\">— Tanpa supplier —</option>"
+        +   suppliers.map((s) => "<option value=\"" + s.id + "\"" + (s.id === supId ? " selected" : "") + ">" + escHtml(s.nama) + "</option>").join("")
+        + "</select>";
     return "<details class=\"mp-bb-more\"" + (isOpen ? " open" : "") + ">"
       + "<summary><i class=\"ti ti-chevron-down\"></i> Info lebih (harga bulk, supplier, catatan)</summary>"
       + "<div class=\"mp-bb-more-body\">"
@@ -3387,9 +3399,13 @@ export function financeMenuPage(role = "owner", items = [], toppings = [], hasEr
       +   "<div class=\"mp-bb-more-sec\">"
       +     "<div class=\"mp-bb-more-lbl\"><i class=\"ti ti-truck\"></i> Supplier &amp; Catatan</div>"
       +     "<div class=\"mp-bb-more-grid\">"
-      +       "<input class=\"mp-input\" type=\"text\" name=\"supplier\" value=\"" + escHtml(sup) + "\" placeholder=\"Toko / supplier (opsional)\" maxlength=\"120\">"
+      +       supSelect
       +       "<input class=\"mp-input\" type=\"text\" name=\"catatan\" value=\"" + escHtml(cat) + "\" placeholder=\"Catatan bebas (opsional)\" maxlength=\"500\">"
       +     "</div>"
+      +     (supLegacy && !supId
+        ? "<div style=\"margin-top:6px;font-size:11px;color:#7a8c78;font-style:italic\"><i class=\"ti ti-info-circle\" style=\"font-size:12px\"></i> Supplier lama (text): <b>" + escHtml(supLegacy) + "</b> — pilih dari dropdown utk migrate.</div>"
+        : "")
+      +     "<input type=\"hidden\" name=\"supplier\" value=\"" + escHtml(supLegacy) + "\">"
       +   "</div>"
       + "</div>"
       + "</details>";

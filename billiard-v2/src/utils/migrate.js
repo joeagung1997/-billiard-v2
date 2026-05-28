@@ -274,6 +274,51 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS supplier             TEXT          NOT NULL DEFAULT ''`);
   await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS catatan              TEXT          NOT NULL DEFAULT ''`);
 
+  // ── Tabel supplier (dedicated, decoupled dari bahan_baku.supplier text) ─
+  // Kolom bahan_baku.supplier (text) ttp ada utk backward compat. Sekarang
+  // bahan_baku.supplier_id FK ke tabel ini — nullable, ON DELETE SET NULL
+  // supaya hapus supplier gak hapus bahan terkait, cuma unlink.
+  await query(`
+    CREATE TABLE IF NOT EXISTS supplier (
+      id          SERIAL      PRIMARY KEY,
+      nama        TEXT        NOT NULL UNIQUE,
+      kontak      TEXT        NOT NULL DEFAULT '',
+      alamat      TEXT        NOT NULL DEFAULT '',
+      catatan     TEXT        NOT NULL DEFAULT '',
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES supplier(id) ON DELETE SET NULL`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_bahan_supplier ON bahan_baku (supplier_id)`);
+
+  // ── Kolom stok di bahan_baku ────────────────────────────────────
+  // stok: jumlah bahan tersedia saat ini (dalam satuan utama bahan).
+  // stok_min: threshold low-stock — alert ditampilin saat stok ≤ stok_min.
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS stok      NUMERIC(12,3) NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE bahan_baku ADD COLUMN IF NOT EXISTS stok_min  NUMERIC(12,3) NOT NULL DEFAULT 0`);
+
+  // ── Tabel stok_movement (audit trail penyesuaian stok) ──────────
+  // jenis: 'in' (tambah, mis. beli/restok), 'out' (kurang, mis. dipakai/rusak),
+  //   'adjust' (set absolute, mis. stock opname).
+  // qty_change: delta perubahan (positif/negatif sesuai jenis).
+  // qty_after: nilai stok setelah perubahan (snapshot utk audit).
+  // catatan: alasan/keterangan (mis. "beli 5kg gula", "stock opname Mei").
+  await query(`
+    CREATE TABLE IF NOT EXISTS stok_movement (
+      id          SERIAL        PRIMARY KEY,
+      bahan_id    INTEGER       NOT NULL REFERENCES bahan_baku(id) ON DELETE CASCADE,
+      jenis       TEXT          NOT NULL DEFAULT 'adjust',
+      qty_change  NUMERIC(12,3) NOT NULL DEFAULT 0,
+      qty_after   NUMERIC(12,3) NOT NULL DEFAULT 0,
+      catatan     TEXT          NOT NULL DEFAULT '',
+      created_by  TEXT          NOT NULL DEFAULT '',
+      created_at  TIMESTAMPTZ   DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_stok_movement_bahan ON stok_movement (bahan_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_stok_movement_when  ON stok_movement (created_at DESC)`);
+
   // ── Tabel history perubahan harga bahan ──────────────────────────
   // Audit trail: tiap kali harga_per_satuan diubah di updateBahan,
   // insert row dgn harga lama → harga baru. Berguna utk tracking
