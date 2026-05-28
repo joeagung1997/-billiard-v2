@@ -633,6 +633,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     ".sdm-hist-chip i{font-size:13px}",
     ".sdm-hist-chip-carry{background:rgba(99,102,241,.12);color:#4338ca}",
     ".sdm-hist-chip-excess{background:rgba(34,197,94,.14);color:#15803d}",
+    ".sdm-hist-chip-sisa{background:rgba(245,158,11,.14);color:#b45309}",
     ".sdm-hist-chip-future{background:rgba(99,102,241,.16);color:#4f46e5;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}",
     // Foot row (progress bar + status badge)
     ".sdm-hist-foot{display:flex;align-items:center;gap:12px}",
@@ -764,6 +765,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
                 chips.push(h.isFuture
                   ? "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Dari kasbon: " + rp(ci.carryIn) + "</span>"
                   : "<span class=\"sdm-hist-chip sdm-hist-chip-carry\"><i class=\"ti ti-arrow-down-left\"></i> Termasuk kasbon lalu " + rp(ci.carryIn) + "</span>");
+              }
+              const sisaBayar = Math.max(0, sm.gajiPokok - effectivePaid);
+              if (sisaBayar > 0) {
+                chips.push("<span class=\"sdm-hist-chip sdm-hist-chip-sisa\"><i class=\"ti ti-wallet\"></i> Sisa bayar: " + rp(sisaBayar) + "</span>");
               }
               if (ci.excess > 0) {
                 chips.push("<span class=\"sdm-hist-chip sdm-hist-chip-excess\"><i class=\"ti ti-arrow-up-right\"></i> Excess " + rp(ci.excess) + " ke bulan depan</span>");
