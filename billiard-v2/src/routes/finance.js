@@ -1330,6 +1330,8 @@ router.post("/stok/restock", requireOwner, async (req, res) => {
 
 // POST /operasional/stok/adjust — koreksi/penyesuaian stok (jenis out / adjust).
 // Body: bahan_id, jenis ('out' atau 'adjust'), qty, catatan.
+// Validasi: untuk 'out' butuh qty > 0 (kurangi 0 = meaningless). Untuk 'adjust',
+// qty bisa 0 (set ke 0 = habis). Hasil noop (delta=0) ditandai msg=nochange.
 router.post("/stok/adjust", requireOwner, async (req, res) => {
   const bahanId = parseInt(req.body.bahan_id) || 0;
   const jenis   = ["out", "adjust"].includes(req.body.jenis) ? req.body.jenis : "adjust";
@@ -1337,11 +1339,18 @@ router.post("/stok/adjust", requireOwner, async (req, res) => {
   const catatan = (req.body.catatan ?? "").toString().slice(0, 200);
   const who     = res.locals.financeDisplay || res.locals.financeUser || "owner";
   if (!bahanId) return res.redirect("/operasional/stok?err=1");
+  // Mode 'out': qty harus > 0 (kurangi 0 itu noop & misleading)
+  if (jenis === "out" && qty <= 0) {
+    return res.redirect("/operasional/stok?edit=" + bahanId + "&action=adjust&err=1&reason=outzero");
+  }
   try {
-    await adjustStok(bahanId, jenis, qty, {
+    const result = await adjustStok(bahanId, jenis, qty, {
       catatan, changedBy: who,
       newStok: jenis === "adjust" ? qty : null,
     });
+    if (result && result.noop) {
+      return res.redirect("/operasional/stok?msg=nochange");
+    }
     res.redirect("/operasional/stok?msg=adjusted");
   } catch (err) {
     console.error("[FINANCE] stok adjust error:", err.message);

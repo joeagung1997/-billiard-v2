@@ -123,6 +123,8 @@ export function stokPage({
     : "";
 
   // ── Form: Adjust (kurang/koreksi/opname) ──────────────────────
+  // Default radio: 'adjust' (set absolute) — lebih intuitif utk use case "set stok ke
+  // nilai tertentu" (mis. opname / set jadi 0). Mode 'out' (kurangi) urutan ke-2.
   const adjustForm = showAdjust ? ""
     + "<div class=\"st-form-wrap st-form-adjust\">"
     +   "<div class=\"st-form-hdr\">"
@@ -130,16 +132,19 @@ export function stokPage({
     +     "<a href=\"/operasional/stok\" class=\"st-cancel\">Batal</a>"
     +   "</div>"
     +   renderEditInfo(editBahan)
-    +   "<form action=\"/operasional/stok/adjust\" method=\"post\" class=\"st-form\">"
+    +   "<form action=\"/operasional/stok/adjust\" method=\"post\" class=\"st-form\" id=\"adjustForm\""
+    +        " data-stok-lama=\"" + (Number(editBahan.stok) || 0) + "\""
+    +        " data-satuan=\"" + escHtml(editBahan.satuan || "pcs") + "\">"
     +     "<input type=\"hidden\" name=\"bahan_id\" value=\"" + editBahan.id + "\">"
     +     "<div class=\"st-adj-jenis\">"
-    +       "<label class=\"st-adj-radio\"><input type=\"radio\" name=\"jenis\" value=\"out\" checked> <i class=\"ti ti-minus\"></i> Kurangi (rusak/terpakai)</label>"
-    +       "<label class=\"st-adj-radio\"><input type=\"radio\" name=\"jenis\" value=\"adjust\"> <i class=\"ti ti-equal\"></i> Set Absolute (opname)</label>"
+    +       "<label class=\"st-adj-radio\"><input type=\"radio\" name=\"jenis\" value=\"adjust\" checked onchange=\"updateAdjPreview()\"> <i class=\"ti ti-equal\"></i> Set Stok ke Nilai (opname)</label>"
+    +       "<label class=\"st-adj-radio\"><input type=\"radio\" name=\"jenis\" value=\"out\" onchange=\"updateAdjPreview()\"> <i class=\"ti ti-minus\"></i> Kurangi (rusak/terpakai)</label>"
     +     "</div>"
     +     "<div class=\"st-form-row\">"
     +       "<div class=\"st-form-field\">"
     +         "<label class=\"st-lbl\">Jumlah (" + escHtml(editBahan.satuan || "pcs") + ") <span class=\"st-req\">*</span></label>"
-    +         "<input class=\"st-inp\" type=\"number\" name=\"qty\" step=\"0.001\" min=\"0\" required placeholder=\"0\" autofocus>"
+    +         "<input class=\"st-inp\" type=\"number\" id=\"adjQty\" name=\"qty\" step=\"0.001\" min=\"0\" required placeholder=\"0\" autofocus oninput=\"updateAdjPreview()\">"
+    +         "<div class=\"st-adj-preview\" id=\"adjPreview\"></div>"
     +       "</div>"
     +       "<div class=\"st-form-field\">"
     +         "<label class=\"st-lbl\">Catatan</label>"
@@ -378,7 +383,8 @@ export function stokPage({
                  : msg === "restocked"  ? "<div class=\"st-msg ok\"><i class=\"ti ti-circle-check\"></i> Restock berhasil dicatat.</div>"
                  : msg === "threshold"  ? "<div class=\"st-msg ok\"><i class=\"ti ti-circle-check\"></i> Threshold min disimpan.</div>"
                  : msg === "bulkrestock" ? "<div class=\"st-msg ok\"><i class=\"ti ti-circle-check\"></i> Bulk restock selesai.</div>"
-                 : hasErr               ? "<div class=\"st-msg err\"><i class=\"ti ti-alert-circle\"></i> Gagal menyimpan — pastikan input valid (qty &gt; 0, tidak negatif).</div>"
+                 : msg === "nochange"   ? "<div class=\"st-msg warn\"><i class=\"ti ti-info-circle\"></i> Tidak ada perubahan stok — nilai yang di-input sama dengan stok saat ini.</div>"
+                 : hasErr               ? "<div class=\"st-msg err\"><i class=\"ti ti-alert-circle\"></i> Gagal menyimpan — pastikan input valid (qty &gt; 0 untuk mode Kurangi, tidak negatif).</div>"
                  : "";
 
   // ── CSS ───────────────────────────────────────────────────────
@@ -442,6 +448,11 @@ export function stokPage({
     ".st-adj-radio{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e2e8e0;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer}",
     ".st-adj-radio:has(input:checked){background:#fef9e6;border-color:#c47f1a;color:#c47f1a}",
     ".st-adj-radio input{margin:0}",
+    // Preview line
+    ".st-adj-preview{margin-top:6px;font-size:12px;color:#4a5e58;padding:6px 10px;background:#fff;border:1px dashed #d4ddd2;border-radius:6px;font-family:'DM Mono',monospace;display:none}",
+    ".st-adj-preview.show{display:block}",
+    ".st-adj-preview.warn{border-color:#f7c1c1;color:#a32d2d;background:#fef5f5;border-style:solid}",
+    ".st-adj-preview b{color:#1a2318}",
     ".st-thr-hint,.st-bulk-hint{padding:10px 14px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;font-size:12px;color:#4a5e58;margin-bottom:12px;display:flex;align-items:flex-start;gap:7px;line-height:1.5}",
     ".st-thr-hint i,.st-bulk-hint i{color:#2660a4;font-size:14px;flex-shrink:0;margin-top:1px}",
     ".st-thr-curr{padding:9px 12px;background:#fff;border:1px solid #e2e8e0;border-radius:7px;font-size:13px;color:#1a2318}",
@@ -572,10 +583,51 @@ export function stokPage({
     ".st-msg{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px;display:flex;align-items:center;gap:7px}",
     ".st-msg.ok{background:#eaf3de;color:#2d6624;border:1px solid #b4d4a0}",
     ".st-msg.err{background:#fef5f5;color:#a32d2d;border:1px solid #f7c1c1}",
+    ".st-msg.warn{background:#fef9e6;color:#c47f1a;border:1px solid #f0e3c5}",
   ].join("");
 
-  // ── JS: sorting + bulk select + bulk modal ────────────────────
+  // ── JS: sorting + bulk select + bulk modal + adjust preview ────
   const js = `
+    // ── Adjust preview: hitung "stok akan jadi" realtime ─────
+    function updateAdjPreview() {
+      var form = document.getElementById("adjustForm");
+      var prev = document.getElementById("adjPreview");
+      var qtyInp = document.getElementById("adjQty");
+      if (!form || !prev) return;
+      var stokLama = parseFloat(form.dataset.stokLama) || 0;
+      var satuan   = form.dataset.satuan || "pcs";
+      var qty      = parseFloat(qtyInp.value) || 0;
+      var jenis    = (form.querySelector('input[name="jenis"]:checked') || {}).value || "adjust";
+      if (!qtyInp.value) { prev.classList.remove("show","warn"); prev.innerHTML = ""; return; }
+
+      var stokBaru, label, warn = false;
+      if (jenis === "adjust") {
+        stokBaru = Math.max(0, qty);
+        label = "→ Stok akan jadi: <b>" + fmtNum(stokBaru) + " " + satuan + "</b>";
+        if (stokBaru === stokLama) { warn = true; label += " (tidak berubah — gak akan disimpan)"; }
+      } else {
+        // out
+        if (qty <= 0) { warn = true; label = "Mode 'Kurangi' butuh jumlah > 0."; }
+        else {
+          stokBaru = Math.max(0, stokLama - qty);
+          label = "→ Stok akan jadi: <b>" + fmtNum(stokBaru) + " " + satuan + "</b>"
+                + " (kurangi " + fmtNum(qty) + " " + satuan + ")";
+        }
+      }
+      prev.innerHTML = label;
+      prev.classList.add("show");
+      prev.classList.toggle("warn", warn);
+    }
+    function fmtNum(n) {
+      var num = Number(n) || 0;
+      if (Number.isInteger(num)) return num.toString();
+      return num.toFixed(3).replace(/\\.?0+$/, "").replace(".", ",");
+    }
+    // Trigger initial preview kalau form sudah ada (defer DOMContentLoaded)
+    document.addEventListener("DOMContentLoaded", function(){
+      if (document.getElementById("adjustForm")) updateAdjPreview();
+    });
+
     // ── Sorting: klik header toggle direction ────────────────
     (function(){
       var tbody = document.getElementById("stTbody");

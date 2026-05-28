@@ -550,6 +550,13 @@ export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", chan
       stokBaru = Math.max(0, stokLama + delta);
     }
 
+    // Skip noop: kalau delta === 0 (tidak ada perubahan stok), jangan UPDATE/INSERT
+    // movement supaya gak noise di riwayat. Tetap COMMIT supaya FOR UPDATE lock release.
+    if (delta === 0) {
+      await query("COMMIT");
+      return { stokLama, stokBaru, delta: 0, noop: true };
+    }
+
     await query(`UPDATE bahan_baku SET stok=$1, updated_at=NOW() WHERE id=$2`, [stokBaru, bahanId]);
     await query(
       `INSERT INTO stok_movement (bahan_id, jenis, qty_change, qty_after, catatan, created_by)
