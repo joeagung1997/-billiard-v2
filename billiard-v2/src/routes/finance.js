@@ -35,7 +35,7 @@ import {
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
-import { checkAndNotifyTarget } from "../utils/notifTrigger.js";
+import { checkAndNotifyTarget, createDailySummaryNotif } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost } from "../utils/db.js";
 import {
@@ -1546,6 +1546,20 @@ router.post("/notif/hapus-semua", requireOwner, async (_req, res) => {
     res.json({ ok: true, unreadCount: 0 });
   } catch (err) {
     console.error("[FINANCE] notif hapus-semua error:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// POST /operasional/notif/test-daily-summary — manual trigger daily summary
+// notif (in-app + WA). Berguna utk testing tanpa nunggu cron jam 6 pagi.
+// Owner only. Idempotent via dedupKey jadi gak akan duplicate kalau di-trigger
+// 2x untuk tanggal yg sama.
+router.post("/notif/test-daily-summary", requireOwner, async (_req, res) => {
+  try {
+    await createDailySummaryNotif();
+    res.json({ ok: true, message: "Daily summary notif dipicu. Cek bell sidebar + WA (kalau FONNTE_TOKEN sudah di-set)." });
+  } catch (err) {
+    console.error("[FINANCE] test-daily-summary error:", err.message);
     res.json({ ok: false, error: err.message });
   }
 });

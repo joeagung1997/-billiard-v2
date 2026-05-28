@@ -93,6 +93,13 @@ export const CONFIG = Object.freeze({
   // Bukan rahasia (publish utk customer); default aman karena warpat tunggal.
   NOMOR_WA: process.env.NOMOR_WA ?? "6281519210552",
 
+  // Notif WA outbound via Fonnte (https://fonnte.com). Untuk daily summary
+  // jam 6 pagi WIB. Kalau FONNTE_TOKEN kosong, WA-send di-skip dgn graceful
+  // log warn (in-app notif tetap jalan). Token didapat dari dashboard Fonnte
+  // setelah connect device WA (scan QR).
+  FONNTE_TOKEN:    process.env.FONNTE_TOKEN    ?? "",
+  WA_NOTIF_NUMBER: process.env.WA_NOTIF_NUMBER ?? "081519210552",
+
   // Path database — pakai Railway Volume jika ada
   DATA_DIR:   existsSync("/data") ? "/data" : process.cwd(),
   get DB_PATH()  { return join(this.DATA_DIR, "db.json");  },

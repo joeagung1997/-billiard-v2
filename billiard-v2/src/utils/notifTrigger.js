@@ -6,6 +6,8 @@
 import { addNotifikasi, readTransaksi, readKaryawan, readBahan } from "./db.js";
 import { loadAnalisisData } from "./analisis.js";
 import { KAT_TUKAR_UANG, todayBusinessDayISO } from "./format.js";
+import { sendWa } from "./waSender.js";
+import { CONFIG } from "../config.js";
 
 // Filter helper: hanya transaksi pemasukan beneran (bukan void/tukar uang/piutang).
 const isRevenue = (t) =>
@@ -83,22 +85,32 @@ export async function checkAndNotifyTarget(tanggal) {
 // ── Cron: daily summary jam 6 pagi WIB ─────────────────────────
 // Ringkas aktivitas kemarin: total pemasukan, total pengeluaran, count
 // transaksi, count bahan perlu restok (stok <= threshold atau habis).
-// Insert 1 notif tipe daily_summary dgn dedup_key per tanggal.
+// Plus: bandingkan dgn target harian + vs hari sebelumnya (insight).
+// Output:
+//   1. Insert in-app notif tipe daily_summary (dedup per tanggal).
+//   2. Kirim WA via Fonnte ke CONFIG.WA_NOTIF_NUMBER (kalau FONNTE_TOKEN ada).
 export async function createDailySummaryNotif() {
   try {
     const today     = todayBusinessDayISO();
     const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86400000).toISOString().slice(0, 10);
+    const dayBefore = new Date(new Date(yesterday + "T00:00:00Z").getTime() - 86400000).toISOString().slice(0, 10);
 
-    const [transaksi, bahanList, karyawanList] = await Promise.all([
+    const [transaksi, bahanList, karyawanList, analData] = await Promise.all([
       readTransaksi(),
       readBahan(),
       readKaryawan(true),
+      loadAnalisisData(),
     ]);
 
-    const txYday  = transaksi.filter((t) => t.tanggal === yesterday && !t.voidedAt);
-    const pemasukan  = txYday.filter((t) => isRevenue(t)).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const pengeluaran = txYday.filter((t) => t.jenis === "pengeluaran" && !t.voidedAt).reduce((s, t) => s + (t.jumlah || 0), 0);
-    const trxCount = txYday.length;
+    const targets = (analData && analData.targets) || { hari: 0 };
+
+    const txYday = transaksi.filter((t) => t.tanggal === yesterday  && !t.voidedAt);
+    const txDbef = transaksi.filter((t) => t.tanggal === dayBefore && !t.voidedAt);
+
+    const pemasukan     = txYday.filter((t) => isRevenue(t)).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const pengeluaran   = txYday.filter((t) => t.jenis === "pengeluaran" && !t.voidedAt).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const pemasukanDbef = txDbef.filter((t) => isRevenue(t)).reduce((s, t) => s + (t.jumlah || 0), 0);
+    const trxCount      = txYday.length;
 
     // Stok perlu restok = stok <= stok_min (saat stok_min > 0) atau stok = 0.
     const restokCount = bahanList.filter((b) => {
@@ -107,21 +119,79 @@ export async function createDailySummaryNotif() {
       return s <= 0 || (m > 0 && s <= m);
     }).length;
 
-    const lines = [];
-    lines.push("Pemasukan: " + fmtRp(pemasukan));
-    lines.push("Pengeluaran: " + fmtRp(pengeluaran));
-    lines.push(trxCount + " transaksi tercatat.");
-    if (restokCount > 0) lines.push(restokCount + " bahan perlu restok.");
+    // ── Comparison metrics ─────────────────────────────────
+    // vs hari sebelumnya: delta absolut + persen
+    const diff = pemasukan - pemasukanDbef;
+    const pctDiff = pemasukanDbef > 0
+      ? (diff / pemasukanDbef) * 100
+      : (pemasukan > 0 ? 100 : 0);
+    const trendIcon = diff > 0 ? "📈" : diff < 0 ? "📉" : "➡️";
+    const trendText = pemasukanDbef === 0 && pemasukan === 0
+      ? "tidak ada data pembanding"
+      : (diff === 0
+        ? "sama dgn kemarin lusa"
+        : (diff > 0 ? "+" : "−") + fmtRp(Math.abs(diff))
+          + " (" + (pctDiff > 0 ? "+" : "") + pctDiff.toFixed(1) + "%)");
+
+    // vs target harian
+    const targetPct  = targets.hari > 0 ? (pemasukan / targets.hari) * 100 : 0;
+    const targetIcon = targetPct >= 100 ? "✅"
+                     : targetPct >= 80  ? "⚠️"
+                     : targetPct > 0    ? "❌" : "•";
+    const targetText = targets.hari > 0
+      ? fmtRp(targets.hari) + " (" + targetPct.toFixed(0) + "% " + targetIcon + ")"
+      : "belum diatur";
+
+    // Format tanggal Indonesia
+    const dateLabel = new Date(yesterday + "T00:00:00Z")
+      .toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    // ── WhatsApp message (multi-line, markdown Fonnte) ─────
+    const waLines = [
+      "📊 *Ringkasan Penghasilan Harian*",
+      "_" + dateLabel + "_",
+      "",
+      "💰 *Pemasukan:* " + fmtRp(pemasukan),
+      "🎯 Target harian: " + targetText,
+      trendIcon + " vs kemarin lusa: " + trendText,
+      "",
+      "💸 Pengeluaran: " + fmtRp(pengeluaran),
+      "📝 " + trxCount + " transaksi tercatat",
+    ];
+    if (restokCount > 0) waLines.push("📦 *" + restokCount + " bahan perlu restok*");
+    waLines.push("");
+    waLines.push("_" + CONFIG.NAMA_ARENA + " — Owner Panel_");
+    const waMessage = waLines.join("\n");
+
+    // Kirim WA (fire-and-forget; gagal tidak block in-app notif)
+    if (CONFIG.WA_NOTIF_NUMBER) {
+      sendWa(CONFIG.WA_NOTIF_NUMBER, waMessage)
+        .then((r) => {
+          if (r.ok)       console.log("[notif] WA daily summary terkirim ke " + CONFIG.WA_NOTIF_NUMBER);
+          else if (r.skipped) console.log("[notif] WA daily summary skip (FONNTE_TOKEN belum di-set)");
+          else            console.error("[notif] WA send error:", r.error);
+        })
+        .catch((err) => console.error("[notif] WA send exception:", err.message));
+    }
+
+    // ── In-app notif (existing behavior, lebih ringkas) ───
+    const inAppLines = [];
+    inAppLines.push("Pemasukan " + fmtRp(pemasukan));
+    if (targets.hari > 0) inAppLines.push(targetPct.toFixed(0) + "% target");
+    inAppLines.push(trxCount + " transaksi");
+    if (restokCount > 0) inAppLines.push(restokCount + " bahan perlu restok");
 
     await addNotifikasi({
       tipe: "daily_summary",
       prioritas: restokCount > 0 ? "warning" : "info",
       title: "Ringkasan harian " + yesterday,
-      pesan: lines.join(" • "),
+      pesan: inAppLines.join(" • "),
       link: "/operasional/transaksi?tgl_dari=" + yesterday + "&tgl_sampai=" + yesterday,
       meta: {
-        tanggal: yesterday,
-        pemasukan, pengeluaran, trxCount, restokCount,
+        tanggal: yesterday, pemasukan, pengeluaran, trxCount, restokCount,
+        targetHari: targets.hari,
+        targetPct: Math.round(targetPct),
+        pemasukanDbef, diff, pctDiff: Math.round(pctDiff * 10) / 10,
         karyawanAktif: karyawanList.length,
       },
       dedupKey: "daily_summary:" + yesterday,
