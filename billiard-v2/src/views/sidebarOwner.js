@@ -168,22 +168,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       </button>
     </div>
 
-    <!-- Notif sheet (rendered once per page; body di-load lazy via JS fetch) -->
-    <div class="notif-sheet-overlay" id="notifSheetOv" onclick="if(event.target===this)closeNotifSheet()">
-      <div class="notif-sheet">
-        <div class="notif-sheet-hdr">
-          <div class="notif-sheet-title"><i class="ti ti-bell"></i> Notifikasi</div>
-          <button type="button" class="notif-sheet-close" onclick="closeNotifSheet()"><i class="ti ti-x"></i></button>
-        </div>
-        <div class="notif-sheet-body" id="notifSheetBody">
-          <div class="ns-loading">
-            <i class="ti ti-loader-2"></i>
-            <div>Memuat notifikasi...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Inline CSS utk sheet body (di-share antar halaman owner) -->
     <style id="notifSheetStyle">${notifSheetCss}
     .sidebar-bell-cnt{position:absolute;top:-3px;right:-3px;background:#a32d2d;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:9px;font-family:'DM Mono',monospace;min-width:16px;text-align:center;line-height:1.4}
@@ -211,6 +195,21 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       <button type="button" class="own-profile-logout" onclick="ownerLogout()" aria-label="Logout" title="Keluar"><i class="ti ti-logout"></i></button>
     </div>
   </aside>
+  <!-- Notif sheet — sengaja di luar <aside> biar tidak ke-trap transform drawer di mobile (position:fixed ke viewport, bukan ke sidebar) -->
+  <div class="notif-sheet-overlay" id="notifSheetOv" onclick="if(event.target===this)closeNotifSheet()">
+    <div class="notif-sheet">
+      <div class="notif-sheet-hdr">
+        <div class="notif-sheet-title"><i class="ti ti-bell"></i> Notifikasi</div>
+        <button type="button" class="notif-sheet-close" onclick="closeNotifSheet()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="notif-sheet-body" id="notifSheetBody">
+        <div class="ns-loading">
+          <i class="ti ti-loader-2"></i>
+          <div>Memuat notifikasi...</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     function ownToggle(btn) {
       var sec = btn.parentElement;
