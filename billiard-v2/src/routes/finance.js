@@ -426,6 +426,73 @@ router.post("/tambah", async (req, res) => {
   }
 });
 
+// ── POST /operasional/tukar-uang — shortcut tukar cash → QRIS ──────
+// Customer kasih cash ke laci (kita catat sbg pengeluaran cash), lalu transfer
+// QRIS senilai sama (kita catat sbg pemasukan qris). Kedua entry pakai kategori
+// "Tukar Uang" supaya otomatis di-exclude dari revenue/stats (sudah ada handler).
+router.post("/tukar-uang", async (req, res) => {
+  const { datetime } = req.body;
+  const jumlahNum = parseInt((req.body.jumlah ?? "").replace(/\./g, "")) || 0;
+  const ketUser   = (req.body.keterangan ?? "").trim().slice(0, 150);
+  const tanggal   = (datetime ?? "").slice(0, 10);
+  const jam       = (datetime ?? "").slice(11, 16);
+
+  if (!tanggal || jumlahNum <= 0) {
+    return res.redirect("/operasional?msg=err");
+  }
+
+  const tanggalBiz = applyBusinessDay(tanggal, jam);
+  const userId     = res.locals.financeUser || "";
+  const ketBase    = "Tukar uang Cash → QRIS" + (ketUser ? " · " + ketUser : "");
+
+  try {
+    // Entry 1: pengeluaran cash (uang keluar dari laci)
+    const trxOut = {
+      id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      tanggal:     tanggalBiz,
+      jam,
+      jenis:       "pengeluaran",
+      waktu:       "siang",
+      kategori:    KAT_TUKAR_UANG,
+      subKategori: "",
+      keterangan:  ketBase,
+      jumlah:      jumlahNum,
+      createdAt:   new Date().toISOString(),
+      bayar:       "cash",
+      buktiUrl:    "",
+      dicatatOleh: userId,
+      lunas:       true,
+    };
+    await appendTransaksi(trxOut);
+
+    // Entry 2: pemasukan qris (uang masuk via transfer). createdAt sedikit
+    // lebih besar supaya urutan di tabel: pemasukan QRIS di atas pengeluaran
+    // cash (tabel sort by createdAt desc dalam tanggal yg sama).
+    const trxIn = {
+      id:          Date.now() + 1 + "-" + Math.random().toString(36).slice(2, 7),
+      tanggal:     tanggalBiz,
+      jam,
+      jenis:       "pemasukan",
+      waktu:       "siang",
+      kategori:    KAT_TUKAR_UANG,
+      subKategori: "",
+      keterangan:  ketBase,
+      jumlah:      jumlahNum,
+      createdAt:   new Date(Date.now() + 1).toISOString(),
+      bayar:       "qris",
+      buktiUrl:    "",
+      dicatatOleh: userId,
+      lunas:       true,
+    };
+    await appendTransaksi(trxIn);
+
+    res.redirect("/operasional?msg=tukar");
+  } catch (err) {
+    console.error("[FINANCE] tukar-uang error:", err.message);
+    res.redirect("/operasional?msg=err");
+  }
+});
+
 // ── POST /operasional/lunas — tandai transaksi sbg lunas (settle piutang/hutang)
 router.post("/lunas", async (req, res) => {
   const id = (req.body.id ?? "").trim();

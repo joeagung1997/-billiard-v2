@@ -543,6 +543,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
     : msg === "voided"    ? "Transaksi dibatalkan. Saldo sudah diperbarui."
     : msg === "lunas"     ? "Transaksi ditandai lunas. Sekarang dihitung di total Pemasukan/Pengeluaran."
+    : msg === "tukar"     ? "Tukar uang berhasil dicatat: 2 entry (cash keluar + QRIS masuk). Tidak masuk total revenue."
     : msg === "err"       ? "Gagal menyimpan. Cek isian form lalu coba lagi."
     : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner."
     : "";
@@ -663,9 +664,17 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
 
   // Terapkan filter range tanggal ke tabel (stats bulanan tetap)
   const tSampaiEff = tSampai || tDari;
-  const sortedTbl = tDari
+  const _sortedTblBase = tDari
     ? sorted.filter((t) => t.tanggal >= tDari && t.tanggal <= tSampaiEff)
     : sorted;
+  // Belum Lunas (piutang/hutang aktif) selalu naik ke paling atas supaya gampang
+  // di-spot dan ditindaklanjuti. Voided tetap di posisi normal. Urutan internal
+  // (tanggal desc, createdAt desc) dari `sorted` tetap dipertahankan via stable sort.
+  const _isPending = (t) => t.lunas === false && !t.voidedAt;
+  const sortedTbl = [
+    ..._sortedTblBase.filter(_isPending),
+    ..._sortedTblBase.filter((t) => !_isPending(t)),
+  ];
 
   // Voided transaksi DIKECUALIKAN dari semua perhitungan stats.
   // Tetap ditampilkan di tabel dengan styling khusus.
@@ -1357,6 +1366,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         ],
         actionsHtml:
           '<a href="/operasional/kategori" class="own-header-btn"><i class="ti ti-tag"></i> Kategori</a>'
+        + (transaksiOnly ? '<button type="button" class="own-header-btn" onclick="openTukarModal()" title="Tukar uang Cash → QRIS (1-klik, otomatis bikin 2 entry berpasangan)"><i class="ti ti-arrows-exchange-2"></i> Tukar Uang</button>' : '')
         + '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
       }) : "")
 
@@ -1396,6 +1406,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "</div>"
       : (isOwner ? "" : (
           "<div class=\"topbar-actions\">"
+          + "<button type=\"button\" class=\"btn-outline\" onclick=\"openTukarModal()\" title=\"Tukar uang Cash → QRIS (otomatis bikin 2 entry berpasangan)\"><i class=\"ti ti-arrows-exchange-2\"></i> Tukar Uang</button>"
           + "<button class=\"btn-primary\" onclick=\"openTrxModal()\"><i class=\"ti ti-plus\" style=\"font-size:14px\"></i> Catat Transaksi</button>"
           + "</div>"
         )))
@@ -1974,6 +1985,42 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "</div>"
     + "</div>"
 
+    // ── Modal Tukar Uang (Cash → QRIS) ──────────────────────────
+    // Shortcut 1-klik untuk customer yg tukar cash ke QRIS: 1 form → 2 entry
+    // (pengeluaran cash + pemasukan qris, keduanya kategori "Tukar Uang").
+    + "<div class=\"overlay\" id=\"tukarOverlay\" onclick=\"if(event.target===this)closeTukarModal()\">"
+    + "<div class=\"over-modal\" style=\"width:460px\">"
+    + "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:14px\">"
+    + "<div style=\"width:36px;height:36px;border-radius:9px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;color:#0369a1\"><i class=\"ti ti-arrows-exchange-2\" style=\"font-size:18px\"></i></div>"
+    + "<div><div style=\"font-size:16px;font-weight:600;color:#1a2318\">Tukar Uang: Cash → QRIS</div>"
+    + "<div style=\"font-size:11px;color:#7a8c78;margin-top:1px\">Otomatis bikin 2 entry berpasangan, tidak dihitung sebagai revenue</div></div>"
+    + "</div>"
+    + "<div style=\"background:#f0f9ff;border:1px solid #bae6fd;border-radius:9px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12px;flex-wrap:wrap\">"
+    + "<span style=\"color:#0369a1;font-weight:600;display:inline-flex;align-items:center;gap:4px\">💵 Cash keluar dari laci</span>"
+    + "<i class=\"ti ti-arrow-right\" style=\"font-size:14px;color:#0369a1\"></i>"
+    + "<span style=\"color:#0369a1;font-weight:600;display:inline-flex;align-items:center;gap:4px\">⚡ QRIS masuk via transfer</span>"
+    + "</div>"
+    + "<form id=\"tukarForm\" action=\"/operasional/tukar-uang\" method=\"post\" onsubmit=\"return submitTukar(event)\">"
+    + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Jumlah (Rp)</label>"
+    + "<div class=\"fin-inp-pfx\"><span class=\"fin-pfx-lbl\">Rp</span>"
+    + "<input class=\"fin-pfx-inp\" type=\"text\" inputmode=\"numeric\" id=\"tukarJumlah\" name=\"jumlah\" placeholder=\"0\" oninput=\"wizFmtJ(this);tukarHideErr()\" autocomplete=\"off\" required></div>"
+    + "<div id=\"tukarErr\" style=\"display:none;font-size:11px;color:#a32d2d;margin-top:4px\">Jumlah harus diisi dan lebih dari 0.</div>"
+    + "</div>"
+    + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Tanggal &amp; Jam</label>"
+    + "<div class=\"fin-inp-pfx\"><span class=\"fin-pfx-lbl\"><i class=\"ti ti-calendar\" style=\"font-size:14px\"></i></span>"
+    + "<input class=\"fin-pfx-inp\" type=\"datetime-local\" id=\"tukarDt\" name=\"datetime\" style=\"width:100%\" required></div>"
+    + "</div>"
+    + "<div class=\"fmg\"><label class=\"fin-wiz-lbl\">Keterangan <span style=\"font-size:11px;color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:0\">(opsional)</span></label>"
+    + "<input class=\"finp\" type=\"text\" id=\"tukarKet\" name=\"keterangan\" placeholder=\"cth: dari Pak Budi\" maxlength=\"150\" autocomplete=\"off\">"
+    + "</div>"
+    + "<div style=\"display:flex;gap:10px;justify-content:flex-end;margin-top:18px\">"
+    + "<button type=\"button\" class=\"fin-btn-back\" onclick=\"closeTukarModal()\">Batal</button>"
+    + "<button type=\"submit\" class=\"fin-btn-next\" id=\"tukarSubmit\"><i class=\"ti ti-arrows-exchange-2\" style=\"font-size:15px\"></i> Simpan Tukar Uang</button>"
+    + "</div>"
+    + "</form>"
+    + "</div>"
+    + "</div>"
+
     // ── Modal Void Transaksi ────────────────────────────────────
     + "<div class=\"overlay\" id=\"voidOverlay\" onclick=\"if(event.target===this)closeVoidModal()\">"
     + "<div class=\"over-modal\" style=\"width:420px\">"
@@ -2257,6 +2304,23 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Auto-open trx modal via URL param ?openModal=trx (utk Aksi Cepat 'Transaksi Baru' di sidebar)
     + "(function(){try{var u=new URL(window.location.href);if(u.searchParams.get('openModal')==='trx'){setTimeout(openTrxModal,100);u.searchParams.delete('openModal');history.replaceState(null,'',u.toString());}}catch(_){}})();"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
+    // ── Tukar Uang modal (Cash → QRIS shortcut) ─────────────────
+    + "function openTukarModal(){"
+    +   "var o=document.getElementById('tukarOverlay');if(!o)return;"
+    +   "var dt=document.getElementById('tukarDt');if(dt)dt.value=wizNowLocal();"
+    +   "var j=document.getElementById('tukarJumlah');if(j)j.value='';"
+    +   "var k=document.getElementById('tukarKet');if(k)k.value='';"
+    +   "tukarHideErr();o.classList.add('open');"
+    +   "setTimeout(function(){if(j)j.focus();},80);}"
+    + "function closeTukarModal(){var o=document.getElementById('tukarOverlay');if(o)o.classList.remove('open');}"
+    + "function tukarHideErr(){var e=document.getElementById('tukarErr');if(e)e.style.display='none';}"
+    + "function submitTukar(ev){"
+    +   "var j=document.getElementById('tukarJumlah');"
+    +   "var raw=(j&&j.value||'').replace(/\\./g,'');var n=parseInt(raw)||0;"
+    +   "if(n<=0){ev.preventDefault();var e=document.getElementById('tukarErr');if(e)e.style.display='block';if(j)j.focus();return false;}"
+    +   "var btn=document.getElementById('tukarSubmit');"
+    +   "if(btn){btn.disabled=true;btn.style.opacity='.7';btn.innerHTML='<i class=\"fin-spin ti ti-loader-2\" style=\"font-size:15px\"></i> Menyimpan...';}"
+    +   "startLoad();return true;}"
     + "function openVoidModal(btn){"
     + "document.getElementById('voidId').value=btn.dataset.id;"
     + "document.getElementById('voidDesc').textContent=btn.dataset.desc;"
