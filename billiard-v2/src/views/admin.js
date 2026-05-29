@@ -4,7 +4,7 @@
 // sebagai variabel string biasa SEBELUM dimasukkan ke template literal.
 
 import { CONFIG } from "../config.js";
-import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG } from "../utils/format.js";
+import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG, todayBusinessDayISO } from "../utils/format.js";
 import { initials } from "./finance.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
 
@@ -868,10 +868,13 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
   });
 
   // ── Ringkasan keuangan ────────────────────────────────────────
-  // Exclude kategori "Tukar Uang" (internal transfer) + transaksi belum lunas
-  // (piutang/hutang yg blm dibayar — cash-basis: belum boleh dihitung).
-  const isRev = (t) => t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
-  const todayStr    = curBulan + '-' + String(nowWib.getDate()).padStart(2, '0');
+  // Exclude kategori "Tukar Uang" (internal transfer), transaksi belum lunas
+  // (piutang/hutang yg blm dibayar — cash-basis), dan transaksi yg di-void.
+  // Disamakan dgn Dashboard Keuangan (isRevPem) biar angka konsisten.
+  const isRev = (t) => !t.voidedAt && t.kategori !== KAT_TUKAR_UANG && t.lunas !== false;
+  // "Hari ini" pakai business day (cutoff CONFIG.BUSINESS_DAY_CUTOFF_HOUR), sama
+  // spt Dashboard Keuangan — bukan calendar day, biar konsisten saat dini hari.
+  const todayStr    = todayBusinessDayISO();
   const trxBulan    = transaksi.filter((t) => (t.tanggal ?? '').startsWith(curBulan) && isRev(t));
   const pemasukanBulan   = trxBulan.filter((t) => t.jenis === 'pemasukan').reduce((s, t) => s + (t.jumlah ?? 0), 0);
   const pengeluaranBulan = trxBulan.filter((t) => t.jenis === 'pengeluaran').reduce((s, t) => s + (t.jumlah ?? 0), 0);
