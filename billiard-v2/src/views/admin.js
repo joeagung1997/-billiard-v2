@@ -1035,7 +1035,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=58">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1471,7 +1471,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=58">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
     + '</head><body>'
 
     + '<div class="layout">'
@@ -1948,7 +1948,7 @@ export function riwayatKunjunganPage({ log = [], token, req, user = {} }) {
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
-    + '<link rel="stylesheet" href="/admin.css?v=58">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
     + '<style>'
     + '.rk-aksi-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;font-family:var(--ff-mono,monospace);letter-spacing:.02em;white-space:nowrap}'
     + '.rk-aksi-scan{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}'

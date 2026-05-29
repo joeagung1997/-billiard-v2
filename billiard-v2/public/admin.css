@@ -7,6 +7,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* iOS Safari: matikan auto-inflate font (text-size-adjust) biar ukuran teks
+   konsisten dgn Android & web. Tanpa ini, teks di kolom sempit (mis. summary
+   yg nge-stack di HP) tampil lebih gede di iPhone drpd device lain. */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
   --ff:      'DM Sans', -apple-system, sans-serif;
