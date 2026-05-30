@@ -9,7 +9,7 @@ import {
   createMember, findMember, findMemberIndex,
   resetQrMember, appendLog, checkBonusExpiry,
   readAdminAccounts, listWarungsWithStats, createWarung,
-  listAllMemberKodes, getWarungBySlug,
+  listAllMemberKodes, getWarungBySlug, touchAdminLogin,
 } from "../utils/db.js";
 import { requireAdmin, readFrtCookie } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
@@ -120,6 +120,9 @@ export async function doAdminLogin(req, res, { errRedirect = "/admin?err=1", okB
   }
 
   if (!found) return res.redirect(errRedirect);
+
+  // Catat waktu login (best-effort; tak blokir login bila gagal).
+  touchAdminLogin(found.warungId, found.username);
 
   const token = createToken({ username: found.username, role: found.role, displayName: found.displayName, warungId: found.warungId });
 

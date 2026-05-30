@@ -57,6 +57,12 @@ export async function isWarungActive(warungId) {
   return ok;
 }
 
+// Buang cache 1 warung → perubahan status/modul langsung berlaku (tak tunggu TTL).
+// Dipanggil setelah superadmin ubah langganan/modul (db.js).
+export function invalidateWarung(warungId) {
+  cache.delete(warungId);
+}
+
 // Express middleware (web): hentikan render kalau langganan tidak aktif.
 export async function subscriptionGate(req, res, next) {
   if (await isWarungActive(currentWarungId())) return next();

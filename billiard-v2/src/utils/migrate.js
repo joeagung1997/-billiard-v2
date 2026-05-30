@@ -514,6 +514,8 @@ export const runMigrations = async () => {
   `);
   // Backfill kolom shift utk tabel admin_accounts existing
   await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS shift TEXT NOT NULL DEFAULT 'siang'`);
+  // Terakhir login (utk panel platform: tahu warung aktif dipakai/tidak). Nullable.
+  await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ`);
   // Seed akun awal dari config — hanya jika tabel masih kosong
   const akunCount = await query("SELECT COUNT(*) FROM admin_accounts");
   if (parseInt(akunCount.rows[0].count) === 0) {

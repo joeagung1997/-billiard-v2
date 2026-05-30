@@ -5,6 +5,7 @@ import { randomInt } from "crypto";
 import { query, pool } from "./postgres.js";
 import { runMigrations, seedWarungDefaults } from "./migrate.js";
 import { currentWarungId, DEFAULT_WARUNG_ID, OPTIONAL_MODULES } from "./tenant.js";
+import { wibEndOfDayISO } from "./format.js";
 
 // ── Multi-tenant: konvensi warung_id ───────────────────────────
 // Setiap fungsi yg menyentuh tabel data menerima `warungId` dan menyertakannya
@@ -91,7 +92,8 @@ export const createWarung = async ({
     let trialSelesai = null;
     if (status === "trial") {
       const days = Number(trialDays) > 0 ? Number(trialDays) : 14;
-      trialSelesai = new Date(Date.now() + days * 86400000).toISOString();
+      const wibDate = new Date(Date.now() + days * 86400000).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+      trialSelesai = wibEndOfDayISO(wibDate); // akhir-hari WIB (konsisten dgn tampilan)
     }
 
     const w = await client.query(
@@ -150,11 +152,21 @@ export const updateWarungLangganan = async (id, status, trialSelesai = null) => 
 // ── Platform: akun owner sebuah warung (TANPA pin) ──────────────────
 export const getWarungOwner = async (warungId) => {
   const res = await query(
-    `SELECT username, display_name, role FROM admin_accounts
+    `SELECT username, display_name, role, last_login FROM admin_accounts
      WHERE warung_id = $1 AND role = 'owner' ORDER BY id LIMIT 1`,
     [warungId]
   );
   return res.rows[0] ?? null;
+};
+
+// Catat waktu login akun (utk panel platform: "terakhir login"). Best-effort.
+export const touchAdminLogin = async (warungId, username) => {
+  try {
+    await query(
+      `UPDATE admin_accounts SET last_login = NOW() WHERE warung_id = $1 AND LOWER(username) = LOWER($2)`,
+      [warungId, username]
+    );
+  } catch (e) { console.warn("[DB] touchAdminLogin gagal:", e.message); }
 };
 
 // ── Platform: set modul aktif warung (whitelist opsional). Warung 1 → no-op. ──

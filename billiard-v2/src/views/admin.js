@@ -5,7 +5,7 @@
 
 import { CONFIG } from "../config.js";
 import { arenaName } from "../utils/brand.js";
-import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG, todayBusinessDayISO } from "../utils/format.js";
+import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG, todayBusinessDayISO, formatTanggalWIB, toDateInputWIB } from "../utils/format.js";
 import { initials } from "./finance.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle, buildPlatformSidebar } from "./sidebarOwner.js";
 
@@ -2775,6 +2775,10 @@ const PF_CSS = ''
   + '.pf-pin-new b{font-family:var(--ff-mono,monospace);font-size:16px;letter-spacing:1px}'
   + '.pf-note{font-size:11px;color:#9aa898;margin-top:6px}'
   + '.pf-back{display:inline-flex;align-items:center;gap:5px;color:#2d6624;text-decoration:none;font-size:13px;font-weight:600;margin-bottom:14px}'
+  + '.pf-copy{background:none;border:none;color:#9aa898;cursor:pointer;padding:1px 4px;border-radius:6px;font-size:13px;vertical-align:-1px}'
+  + '.pf-copy:hover{background:#f0f4ee;color:#2d6624}'
+  + '.pf-link{color:#2563eb;text-decoration:none;word-break:break-all}.pf-link:hover{text-decoration:underline}'
+  + '.pf-wa{color:#16a34a;text-decoration:none;font-weight:600;white-space:nowrap}.pf-wa:hover{text-decoration:underline}'
   + '.pf-warn-box{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#fef4e6;border:1px solid #f5dca8;color:#b45309;font-size:12px;margin-bottom:12px}'
   + '.wl-nm{color:#1a2318;font-weight:600;line-height:1.3}.wl-slug{color:#7a8c78;font-size:11px;font-family:var(--ff-mono,monospace);margin-top:2px}'
   + '.wl-meta{color:#5c6e5a;font-size:12px;font-family:var(--ff-mono,monospace)}.wl-chev{color:#c4d0c0;font-size:16px}'
@@ -2836,51 +2840,82 @@ export function platformDashboardPage({ token, displayName = '', warungs = [], l
 }
 
 // ── Detail & Kelola Warung ───────────────────────────────────────────
-export function warungDetailPage({ token, displayName = '', warung, owner = null, newPin = null } = {}) {
+export function warungDetailPage({ token, displayName = '', warung, owner = null, newPin = null, hostBase = '' } = {}) {
   const w = warung;
   const isWarpat = Number(w.id) === 1;
   const base = '/platform';
   const dis = isWarpat ? ' disabled' : '';
-  const fmt = (d) => { if (!d) return '—'; try { return formatTanggalPendek(d); } catch (_) { return '—'; } };
   const kv = (k, v) => '<div class="pf-kv"><span class="k">' + k + '</span><span class="vv">' + v + '</span></div>';
+  const copyBtn = (val) => '<button type="button" class="pf-copy" data-copy="' + pEsc(val) + '" title="Salin"><i class="ti ti-copy"></i></button>';
   const mods = String(w.active_modules || '').split(',').map((s) => s.trim()).filter(Boolean);
   const OPT = [['billiard', '🎱 Billiard'], ['warkop', '☕ Warkop'], ['sdm', '👨‍💼 SDM'], ['planning', '🗺️ Planning']];
   const sOpt = (v, l) => '<option value="' + v + '"' + (w.status_langganan === v ? ' selected' : '') + '>' + l + '</option>';
-  const trialDate = w.trial_selesai ? new Date(w.trial_selesai).toISOString().slice(0, 10) : '';
+  const fullUrl = (hostBase || '') + '/w/' + w.slug;          // URL penuh dari host aktif (tak hardcode)
+  const trialDate = toDateInputWIB(w.trial_selesai);          // value input = tanggal WIB (konsisten)
+  const waNum = String(w.owner_wa || '').replace(/[^0-9]/g, '');
+  const lastLogin = owner && owner.last_login ? formatTanggalWIB(owner.last_login) : 'Belum pernah';
+
+  // Indikator trial: ≤7 hari / sudah lewat.
+  let trialBanner = '';
+  if (w.status_langganan === 'trial' && w.trial_selesai) {
+    const days = Math.ceil((new Date(w.trial_selesai).getTime() - Date.now()) / 86400000);
+    if (days < 0) trialBanner = '<div class="pf-warn-box" style="background:#fdeceb;border-color:#f6cfcc;color:#dc2626"><i class="ti ti-clock-x"></i> Trial sudah berakhir (' + formatTanggalWIB(w.trial_selesai) + ').</div>';
+    else if (days <= 7) trialBanner = '<div class="pf-warn-box"><i class="ti ti-alert-triangle"></i> Trial habis ' + days + ' hari lagi (' + formatTanggalWIB(w.trial_selesai) + ').</div>';
+  }
 
   const pinBanner = newPin
-    ? '<div class="pf-pin-new"><i class="ti ti-key"></i> PIN baru untuk <b>' + pEsc(newPin.username) + '</b>: <b>' + pEsc(newPin.pin) + '</b> — catat & beri tahu owner (hanya tampil sekali).</div>'
+    ? '<div class="pf-pin-new"><i class="ti ti-key"></i> PIN baru untuk <b>' + pEsc(newPin.username) + '</b>: <b>' + pEsc(newPin.pin) + '</b> — catat & beri tahu owner (tampil sekali). ' + copyBtn(newPin.pin)
+      + (waNum ? ' <a class="pf-wa" target="_blank" rel="noopener" href="https://wa.me/' + waNum + '?text=' + encodeURIComponent('PIN login baru ' + w.nama + ' (/w/' + w.slug + ') — user ' + newPin.username + ', PIN ' + newPin.pin) + '"><i class="ti ti-brand-whatsapp"></i> Kirim ke WA</a>' : '')
+      + '</div>'
     : '';
   const warpatNote = isWarpat ? '<div class="pf-warn-box"><i class="ti ti-lock"></i> Warpat (warung utama) dilindungi: status & modul tak bisa diubah. Reset PIN tetap boleh.</div>' : '';
 
   const infoBox = '<div class="pf-box"><h3><i class="ti ti-building-store"></i> Info Warung</h3>'
-    + kv('Nama', pEsc(w.nama)) + kv('Slug', '/w/' + pEsc(w.slug)) + kv('Prefix kode', pEsc(w.kode_prefix))
-    + kv('Status', pEsc(w.status_langganan)) + kv('Trial berakhir', fmt(w.trial_selesai)) + kv('Dibuat', fmt(w.created_at))
+    + kv('Nama', pEsc(w.nama))
+    + '<div class="pf-kv"><span class="k">URL</span><span class="vv"><a href="' + pEsc(fullUrl) + '" target="_blank" rel="noopener" class="pf-link">' + pEsc(fullUrl) + '</a> ' + copyBtn(fullUrl) + '</span></div>'
+    + '<div class="pf-kv"><span class="k">Slug</span><span class="vv">' + pEsc(w.slug) + ' ' + copyBtn(w.slug) + '</span></div>'
+    + kv('Prefix kode', pEsc(w.kode_prefix)) + kv('Status', pEsc(w.status_langganan))
+    + kv('Trial berakhir', formatTanggalWIB(w.trial_selesai)) + kv('Dibuat', formatTanggalWIB(w.created_at))
     + kv('Modul aktif', mods.length ? mods.join(', ') : 'inti saja') + '</div>';
+
   const ownerBox = '<div class="pf-box"><h3><i class="ti ti-user-shield"></i> Akun Owner</h3>'
     + (owner
-        ? kv('Username', pEsc(owner.username)) + kv('Nama', pEsc(owner.display_name || '—')) + kv('Role', pEsc(owner.role))
+        ? '<div class="pf-kv"><span class="k">Username</span><span class="vv">' + pEsc(owner.username) + ' ' + copyBtn(owner.username) + '</span></div>'
+          + kv('Nama', pEsc(owner.display_name || '—')) + kv('Terakhir login', lastLogin)
           + kv('WA pemilik', pEsc(w.owner_wa || '—')) + kv('Email pemilik', pEsc(w.owner_email || '—'))
+          + (waNum ? '<a class="pf-btn" style="margin-top:10px;background:#16a34a;box-shadow:none" target="_blank" rel="noopener" href="https://wa.me/' + waNum + '"><i class="ti ti-brand-whatsapp"></i> Hubungi via WA</a>' : '')
         : '<div class="pf-note">Warung ini belum punya akun owner.</div>')
-    + '<form method="POST" action="' + base + '/warung/' + w.id + '/reset-pin?tk=' + token + '" onsubmit="return confirm(\'Reset PIN owner? PIN baru akan dibuat & ditampilkan sekali.\')" style="margin-top:14px">'
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/reset-pin?tk=' + token + '" onsubmit="return confirm(\'Yakin reset PIN milik ' + pEsc(owner ? owner.username : 'owner') + '? PIN baru dibuat & ditampilkan sekali.\')" style="margin-top:12px">'
     + '<button class="pf-btn danger" type="submit"><i class="ti ti-key"></i> Reset PIN Owner</button></form>'
-    + '<div class="pf-note">Membuat PIN baru 6 digit. PIN lama tidak pernah ditampilkan.</div></div>';
+    + '<div class="pf-note">PIN baru 6 digit. PIN lama tidak pernah ditampilkan.</div></div>';
+
   const statusForm = '<div class="pf-box"><h3><i class="ti ti-receipt-2"></i> Status & Langganan</h3>' + warpatNote
-    + '<form method="POST" action="' + base + '/warung/' + w.id + '/langganan?tk=' + token + '">'
-    + '<div class="pf-field"><label>Status</label><select name="status"' + dis + '>' + sOpt('aktif', 'Aktif') + sOpt('trial', 'Trial') + sOpt('nonaktif', 'Nonaktif') + '</select></div>'
-    + '<div class="pf-field"><label>Trial berakhir (jika Trial)</label><input type="date" name="trialDate" value="' + trialDate + '"' + dis + '></div>'
-    + '<button class="pf-btn" type="submit"' + dis + '><i class="ti ti-check"></i> Simpan Status</button></form></div>';
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/langganan?tk=' + token + '" onsubmit="return pfStatusConfirm(this)">'
+    + '<div class="pf-field"><label>Status</label><select name="status" id="pf-status"' + dis + '>' + sOpt('aktif', 'Aktif') + sOpt('trial', 'Trial') + sOpt('nonaktif', 'Nonaktif') + '</select></div>'
+    + '<div class="pf-field" id="pf-trial-wrap"><label>Trial berakhir</label><input type="date" name="trialDate" value="' + trialDate + '"' + dis + '></div>'
+    + '<div class="pf-note">Nonaktif TIDAK menghapus data — warung hanya tak bisa diakses owner sampai diaktifkan lagi.</div>'
+    + '<button class="pf-btn" type="submit" style="margin-top:10px"' + dis + '><i class="ti ti-check"></i> Simpan Status</button></form></div>';
+
   const modForm = '<div class="pf-box"><h3><i class="ti ti-apps"></i> Modul Aktif</h3>'
     + '<form method="POST" action="' + base + '/warung/' + w.id + '/modul?tk=' + token + '">'
     + '<div class="pf-mods">' + OPT.map(([v, l]) => '<label class="pf-mod"><input type="checkbox" name="modul" value="' + v + '"' + (mods.includes(v) ? ' checked' : '') + dis + '> ' + l + '</label>').join('') + '</div>'
     + '<button class="pf-btn" type="submit"' + dis + '><i class="ti ti-check"></i> Simpan Modul</button>'
-    + '<div class="pf-note">Inti (Keuangan, Member, Kategori, Stok, Supplier) selalu aktif.</div></form></div>';
+    + '<div class="pf-note">Inti (Keuangan, Member, Kategori, Stok, Supplier) selalu aktif. Mematikan modul TIDAK menghapus datanya — dinyalakan lagi, data lama kembali.</div></form></div>';
+
+  const js = '<script>'
+    + 'document.querySelectorAll(".pf-copy").forEach(function(b){b.addEventListener("click",function(){navigator.clipboard.writeText(b.getAttribute("data-copy")||"").then(function(){var i=b.querySelector("i");if(i){var c=i.className;i.className="ti ti-check";setTimeout(function(){i.className=c;},1200);}});});});'
+    + 'var pfSt=document.getElementById("pf-status"),pfTw=document.getElementById("pf-trial-wrap");'
+    + 'function pfTrialUpd(){if(pfTw)pfTw.style.display=(pfSt&&pfSt.value==="trial")?"":"none";}'
+    + 'if(pfSt){pfSt.addEventListener("change",pfTrialUpd);pfTrialUpd();}'
+    + 'function pfStatusConfirm(f){if(f.status&&f.status.value==="nonaktif")return confirm("Nonaktifkan warung ini? Owner tak bisa akses sampai diaktifkan lagi (data TIDAK dihapus).");return true;}'
+    + '</script>';
 
   const body = '<a href="' + base + '/warung?tk=' + token + '" class="pf-back"><i class="ti ti-arrow-left"></i> Daftar Warung</a>'
     + '<div class="dash-topbar"><div><div class="page-title">' + pEsc(w.nama) + ' <span style="color:#9aa898;font-size:14px">#' + w.id + '</span></div>'
     + '<div class="page-sub">Kelola akun, langganan & modul. Data operasional warung tidak dapat dibuka dari sini.</div></div></div>'
-    + pinBanner
-    + '<div class="pf-cols">' + infoBox + ownerBox + statusForm + modForm + '</div>';
+    + trialBanner + pinBanner
+    + '<div class="pf-cols">' + infoBox + ownerBox + statusForm + modForm + '</div>'
+    + js;
   return platformShell({ token, active: 'daftar-warung', title: 'Detail Warung', displayName, bodyHtml: body });
 }
 

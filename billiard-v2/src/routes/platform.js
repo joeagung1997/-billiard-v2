@@ -16,6 +16,8 @@ import { CONFIG } from "../config.js";
 import { createToken, verifyToken } from "../utils/session.js";
 import { readFrtCookie } from "../middleware/auth.js";
 import { OPTIONAL_MODULES } from "../utils/tenant.js";
+import { invalidateWarung } from "../middleware/subscription.js";
+import { wibEndOfDayISO } from "../utils/format.js";
 import { uploadImageToCloudinary } from "./share.js";
 import {
   warungListPage, warungCreatePage, adminLoginPage,
@@ -122,7 +124,8 @@ router.get("/warung/:id", requirePlatformAuth, async (req, res) => {
     const warung = await getWarungById(parseInt(req.params.id, 10));
     if (!warung) return res.status(404).send(resultPage("error", { judul: "Warung Tidak Ada", pesan: "Warung tidak ditemukan." }));
     const owner = await getWarungOwner(warung.id);
-    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner }));
+    const hostBase = req.protocol + "://" + req.get("host");
+    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner, hostBase }));
   } catch (err) {
     console.error("[PLATFORM] detail warung error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -137,7 +140,10 @@ router.post("/warung/:id/modul", requirePlatformAuth, async (req, res) => {
   const mods = b.modul == null ? [] : (Array.isArray(b.modul) ? b.modul : [b.modul]);
   const clean = mods.filter((m) => OPTIONAL_MODULES.includes(m));
   const ok = await updateWarungModules(id, clean);
-  if (ok) await logPlatformAction({ actor: res.locals.adminUser, action: "ubah modul", warungId: id, detail: clean.join(",") || "(kosong)" });
+  if (ok) {
+    invalidateWarung(id); // efek langsung ke sidebar/gate owner (tak tunggu cache 60s)
+    await logPlatformAction({ actor: res.locals.adminUser, action: "ubah modul", warungId: id, detail: clean.join(",") || "(kosong)" });
+  }
   res.redirect(BASE + "/warung/" + id + "?tk=" + token);
 });
 
@@ -151,7 +157,8 @@ router.post("/warung/:id/reset-pin", requirePlatformAuth, async (req, res) => {
     const newPin = await resetOwnerPin(id);
     if (newPin) await logPlatformAction({ actor: res.locals.adminUser, action: "reset PIN owner", warungId: id, detail: "user " + newPin.username });
     const owner = await getWarungOwner(id);
-    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner, newPin }));
+    const hostBase = req.protocol + "://" + req.get("host");
+    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner, newPin, hostBase }));
   } catch (err) {
     console.error("[PLATFORM] reset-pin error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -262,13 +269,16 @@ router.post("/warung/:id/langganan", requirePlatformAuth, async (req, res) => {
   let trialSelesai = null;
   if (status === "trial") {
     const d = String(req.body.trialDate || "").trim();
-    trialSelesai = /^\d{4}-\d{2}-\d{2}$/.test(d)
-      ? new Date(d + "T23:59:59").toISOString()                 // tanggal dari form
-      : new Date(Date.now() + 30 * 86400000).toISOString();      // default 30 hari
+    // Tanggal dari form (WIB) → akhir-hari WIB; default 30 hari (WIB end-of-day).
+    trialSelesai = wibEndOfDayISO(d)
+      || wibEndOfDayISO(new Date(Date.now() + 30 * 86400000).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }));
   }
   try {
     const ok = await updateWarungLangganan(id, status, trialSelesai);
-    if (ok) await logPlatformAction({ actor: res.locals.adminUser, action: "ubah status langganan", warungId: id, detail: status + (trialSelesai ? " s/d " + trialSelesai.slice(0, 10) : "") });
+    if (ok) {
+      invalidateWarung(id); // status berlaku langsung utk owner
+      await logPlatformAction({ actor: res.locals.adminUser, action: "ubah status langganan", warungId: id, detail: status + (trialSelesai ? " s/d " + trialSelesai.slice(0, 10) : "") });
+    }
   } catch (err) {
     console.error("[PLATFORM] langganan error:", err.message);
   }

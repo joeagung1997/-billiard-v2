@@ -76,6 +76,26 @@ export const formatTanggalBulan = (date) =>
     day: "numeric", month: "short",
   });
 
+// ── Tanggal trial di-PIN ke WIB (Asia/Jakarta) — konsisten lintas TZ server ──
+// Hindari mismatch display/input: tampil & input & simpan sama-sama berbasis WIB.
+// toDateInputWIB: value <input type=date> (YYYY-MM-DD, tanggal WIB).
+export const toDateInputWIB = (ts) => {
+  if (!ts) return "";
+  try { return new Date(ts).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }); }
+  catch { return ""; }
+};
+// formatTanggalWIB: tampil "D Mon YYYY" dalam WIB.
+export const formatTanggalWIB = (ts) => {
+  if (!ts) return "—";
+  try { return new Date(ts).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }); }
+  catch { return "—"; }
+};
+// wibEndOfDayISO: 'YYYY-MM-DD' (WIB) → ISO instan akhir-hari WIB (offset +07:00 eksplisit).
+export const wibEndOfDayISO = (dateStr) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "")) return null;
+  return new Date(dateStr + "T23:59:59+07:00").toISOString();
+};
+
 export const formatTanggalJam = (date) =>
   new Date(date).toLocaleString("id-ID", {
     day: "2-digit", month: "short", year: "numeric",
