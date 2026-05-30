@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Fitur Sistem Manajemen Billiard &amp; Warkop</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  @page { size: A4; margin: 0 0 12mm 0; }
+
+  :root{
+    --ink:#16210f; --ink2:#46563f; --ink3:#7a8c78;
+    --line:#e2e8e0; --bg:#f4f6f3; --card:#ffffff;
+    --g0:#0f2010; --g1:#1c3d1f; --g2:#2d6624; --acc:#3a7d2c; --acc2:#5aa544;
+    --gold:#c9871f;
+  }
+  body{
+    font-family:"Segoe UI",Roboto,system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    color:var(--ink); background:#fff; line-height:1.5; font-size:11px;
+  }
+  .mono{ font-family:"Consolas","DM Mono",ui-monospace,monospace; }
+
+  /* fixed running footer (repeats every page) */
+  .foot{
+    position:fixed; left:0; right:0; bottom:0; height:12mm;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 13mm; font-size:8.5px; color:var(--ink3);
+    border-top:1px solid var(--line); background:#fff;
+  }
+  .foot b{ color:var(--g2); font-weight:700; }
+
+  /* ───────── COVER ───────── */
+  .cover{
+    position:relative; overflow:hidden;
+    background:linear-gradient(135deg,#0f2010 0%,#1a3b1f 52%,#2d6624 100%);
+    color:#fff; padding:24mm 16mm 18mm; page-break-after:always;
+    min-height:285mm;
+  }
+  .cover::after{ content:""; position:absolute; right:-70px; top:-70px;
+    width:320px; height:320px; border-radius:50%;
+    background:radial-gradient(circle,rgba(90,165,68,.40),transparent 68%); }
+  .cover::before{ content:""; position:absolute; left:18%; bottom:-90px;
+    width:260px; height:260px; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%); }
+  .cv-brand{ display:flex; align-items:center; gap:12px; position:relative; z-index:2; }
+  .cv-logo{ width:52px; height:52px; border-radius:14px;
+    background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+    display:flex; align-items:center; justify-content:center; font-size:28px; }
+  .cv-brand-txt b{ font-size:19px; font-weight:800; letter-spacing:.2px; display:block; }
+  .cv-brand-txt span{ font-size:10.5px; color:rgba(255,255,255,.72); letter-spacing:.6px; text-transform:uppercase; }
+
+  .cv-eyebrow{ position:relative; z-index:2; margin-top:42mm; display:inline-block;
+    font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    color:#bfe6ad; background:rgba(255,255,255,.06); padding:6px 13px; border-radius:99px;
+    border:1px solid rgba(255,255,255,.14); }
+  .cv-title{ position:relative; z-index:2; margin-top:16px; font-size:33px; line-height:1.16;
+    font-weight:800; letter-spacing:-.4px; max-width:155mm; }
+  .cv-title em{ color:#7dd765; font-style:normal; }
+  .cv-sub{ position:relative; z-index:2; margin-top:14px; font-size:13px; line-height:1.7;
+    color:rgba(255,255,255,.82); max-width:150mm; }
+
+  .cv-chips{ position:relative; z-index:2; margin-top:24px; display:flex; flex-wrap:wrap; gap:9px; max-width:155mm; }
+  .cv-chip{ font-size:10.5px; font-weight:600; color:#eafbe3;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16);
+    padding:8px 13px; border-radius:10px; }
+
+  .cv-stats{ position:relative; z-index:2; margin-top:30px; display:flex; gap:0; max-width:155mm;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:14px; overflow:hidden; }
+  .cv-stat{ flex:1; padding:16px 14px; }
+  .cv-stat + .cv-stat{ border-left:1px solid rgba(255,255,255,.14); }
+  .cv-stat b{ display:block; font-size:23px; font-weight:800; color:#fff; }
+  .cv-stat span{ font-size:9.5px; color:rgba(255,255,255,.72); letter-spacing:.3px; }
+
+  .cv-proof{ position:relative; z-index:2; margin-top:auto; padding-top:26px; }
+  .cv-proof-box{ display:flex; align-items:center; gap:12px; margin-top:24mm;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15);
+    border-radius:12px; padding:13px 16px; max-width:130mm; }
+  .cv-proof-box .ic{ font-size:22px; }
+  .cv-proof-box div{ font-size:10.5px; color:rgba(255,255,255,.86); line-height:1.5; }
+  .cv-proof-box b{ color:#fff; }
+
+  /* ───────── CONTENT ───────── */
+  .content{ padding:13mm 13mm 4mm; }
+
+  .sec-head{ display:flex; align-items:center; gap:11px; margin:0 0 4mm; }
+  .sec-head .bar{ width:5px; height:30px; border-radius:3px;
+    background:linear-gradient(180deg,var(--acc2),var(--g2)); }
+  .sec-head h2{ font-size:18px; font-weight:800; letter-spacing:-.2px; color:var(--ink); }
+  .sec-head p{ font-size:10.5px; color:var(--ink3); margin-top:1px; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:12px 13px 13px; page-break-inside:avoid; position:relative; }
+  .card-h{ display:flex; align-items:flex-start; gap:9px; margin-bottom:7px; }
+  .card-ic{ width:30px; height:30px; border-radius:9px; flex-shrink:0;
+    background:rgba(45,102,36,.10); display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .card-tt b{ font-size:12px; font-weight:800; color:var(--ink); display:block; line-height:1.25; }
+  .card-tt span{ font-size:9.5px; color:var(--acc); font-weight:600; }
+  .card ul{ list-style:none; margin:0; }
+  .card li{ position:relative; padding-left:14px; font-size:10px; color:var(--ink2);
+    line-height:1.5; margin-top:3px; }
+  .card li::before{ content:""; position:absolute; left:2px; top:6px;
+    width:5px; height:5px; border-radius:50%; background:var(--acc2); }
+  .card li b{ color:var(--ink); font-weight:700; }
+
+  /* why band */
+  .why{ margin-top:9px; background:linear-gradient(135deg,#eef6e9,#e4efdc);
+    border:1px solid #cfe0c6; border-radius:14px; padding:15px 17px; page-break-inside:avoid; }
+  .why-h{ font-size:13.5px; font-weight:800; color:var(--g2); margin-bottom:11px; }
+  .why-grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:13px; }
+  .why-item .ic{ font-size:20px; }
+  .why-item b{ display:block; font-size:11px; font-weight:800; color:var(--ink); margin:5px 0 3px; }
+  .why-item span{ font-size:9px; color:var(--ink2); line-height:1.45; }
+
+  /* roadmap */
+  .roadmap{ page-break-before:always; }
+  .rm-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .rm-card{ background:#fbfcfa; border:1px dashed #c4d3bf; border-radius:11px; padding:12px;
+    page-break-inside:avoid; }
+  .rm-card .ic{ font-size:18px; }
+  .rm-card b{ display:block; font-size:11px; font-weight:800; color:var(--ink); margin:6px 0 3px; }
+  .rm-card span{ font-size:9.5px; color:var(--ink3); line-height:1.5; }
+  .rm-badge{ display:inline-block; font-size:8px; font-weight:800; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--gold); background:rgba(201,135,31,.12);
+    border:1px solid rgba(201,135,31,.30); padding:2px 7px; border-radius:99px; }
+
+  /* CTA */
+  .cta{ page-break-inside:avoid; margin-top:9mm;
+    background:linear-gradient(135deg,#0f2010,#234b25 60%,#2d6624);
+    border-radius:16px; padding:22px 24px; color:#fff; position:relative; overflow:hidden; }
+  .cta::after{ content:""; position:absolute; right:-50px; top:-50px; width:200px; height:200px;
+    border-radius:50%; background:radial-gradient(circle,rgba(90,165,68,.4),transparent 70%); }
+  .cta h3{ font-size:20px; font-weight:800; position:relative; z-index:2; }
+  .cta p{ font-size:11px; color:rgba(255,255,255,.85); margin-top:7px; max-width:120mm; position:relative; z-index:2; line-height:1.6; }
+  .cta-contact{ position:relative; z-index:2; margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+  .cta-pill{ display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.20); border-radius:11px; padding:11px 15px; font-size:12px; font-weight:700; }
+  .cta-pill .ic{ font-size:16px; }
+  .cta-note{ position:relative; z-index:2; margin-top:14px; font-size:9px; color:rgba(255,255,255,.6); }
+</style>
+</head>
+<body>
+
+<!-- ══════════ COVER ══════════ -->
+<div class="cover">
+  <div class="cv-brand">
+    <div class="cv-logo">🎱</div>
+    <div class="cv-brand-txt">
+      <b>Warpat Jombang</b>
+      <span>Sistem Manajemen Billiard &amp; Warkop</span>
+    </div>
+  </div>
+
+  <div class="cv-eyebrow">Daftar Fitur Lengkap</div>
+  <div class="cv-title">Satu sistem untuk kelola <em>seluruh</em> bisnis billiard &amp; warkop Anda.</div>
+  <div class="cv-sub">Dari kasir, keuangan, member, stok &amp; resep, sampai gaji karyawan — semua tercatat otomatis, real&#8209;time, dan bisa diakses dari HP maupun komputer. Ambil keputusan berdasarkan angka, bukan kira&#8209;kira.</div>
+
+  <div class="cv-chips">
+    <div class="cv-chip">📊 Keuangan real-time</div>
+    <div class="cv-chip">🎯 Analisis target &amp; break-even</div>
+    <div class="cv-chip">💳 Member QR &amp; loyalty</div>
+    <div class="cv-chip">📦 Stok, resep &amp; HPP</div>
+    <div class="cv-chip">👥 Gaji, kasbon &amp; shift</div>
+    <div class="cv-chip">🔔 Notifikasi WhatsApp</div>
+  </div>
+
+  <div class="cv-stats">
+    <div class="cv-stat"><b>14+</b><span>MODUL SIAP PAKAI</span></div>
+    <div class="cv-stat"><b>2&nbsp;in&nbsp;1</b><span>BILLIARD + WARKOP</span></div>
+    <div class="cv-stat"><b>HP &amp; PC</b><span>AKSES DI MANA SAJA</span></div>
+    <div class="cv-stat"><b>Cloud</b><span>DATA AMAN ONLINE</span></div>
+  </div>
+
+  <div class="cv-proof">
+    <div class="cv-proof-box">
+      <span class="ic">✅</span>
+      <div>Bukan sekadar konsep — <b>sistem yang sama menjalankan operasional Warpat Jombang setiap hari.</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ FITUR ══════════ -->
+<div class="content">
+
+  <div class="sec-head">
+    <div class="bar"></div>
+    <div>
+      <h2>Fitur Tersedia Sekarang</h2>
+      <p>Semua sudah berjalan &amp; dipakai harian — bukan janji.</p>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">📊</div><div class="card-tt"><b>Dashboard Keuangan</b><span>Pantau untung-rugi real-time</span></div></div>
+      <ul>
+        <li>Pemasukan, pengeluaran, <b>saldo bersih &amp; margin %</b> otomatis per hari/minggu/bulan</li>
+        <li>Posisi kas terpisah: <b>uang Cash di laci vs saldo QRIS</b> (sudah bersih dikurangi pengeluaran)</li>
+        <li>Grafik tren &amp; komposisi sumber (Billiard vs Warkop)</li>
+        <li>Saldo kas awal harian + pembanding vs bulan lalu</li>
+        <li>Shortcut <b>"Tukar Uang"</b> (Cash↔QRIS) 1-klik tanpa mengacaukan omzet</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🧾</div><div class="card-tt"><b>Transaksi &amp; Kasir</b><span>Catat cepat, rapi, aman</span></div></div>
+      <ul>
+        <li>Catat pemasukan/pengeluaran dgn <b>kategori &amp; sub-kategori</b></li>
+        <li>Pilih metode bayar (Cash/QRIS) + <b>upload foto bukti/nota</b></li>
+        <li>Status <b>Lunas / Belum Lunas</b> (piutang &amp; hutang) — basis kas akurat</li>
+        <li>Koreksi lewat <b>void + alasan</b> (tak bisa diubah diam-diam)</li>
+        <li>Tutup buku otomatis ikut jam tutup — shift malam masuk hari yang benar</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🎯</div><div class="card-tt"><b>Analisis Target</b><span>Tahu kapan ramai &amp; kapan rugi</span></div></div>
+      <ul>
+        <li>Target harian/mingguan/bulanan + status <b>Sepi → Ramai Sekali</b></li>
+        <li>Indikator <b>break-even</b>: hari ini sudah nutup biaya wajib atau belum</li>
+        <li>Pola hari ramai vs sepi (rata-rata 7 hari) untuk atur jadwal &amp; promo</li>
+        <li>Proyeksi akhir bulan + simulasi <b>"kalau tambah 1 karyawan"</b></li>
+        <li>Kelola Biaya Wajib (harian/mingguan/bulanan) + dana cadangan</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🗺️</div><div class="card-tt"><b>Planning &amp; Roadmap</b><span>Rencanakan ekspansi pakai angka</span></div></div>
+      <ul>
+        <li>Wishlist upgrade/investasi + <b>skor prioritas otomatis</b> (rekomendasi #1 🏆)</li>
+        <li>Hitung <b>balik modal (ROI)</b> &amp; dampak cashflow tiap rencana</li>
+        <li>Pantau hutang/cicilan + estimasi tanggal lunas</li>
+        <li>Goal tabungan dgn <b>auto-sisihkan %</b> dari laba + setor dana</li>
+        <li>Timeline 12 bulan &amp; simulasi ROI</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">💳</div><div class="card-tt"><b>Membership &amp; Loyalty</b><span>Bikin pelanggan balik lagi</span></div></div>
+      <ul>
+        <li>Kartu member ber-<b>QR unik</b>, bisa di-share via WhatsApp</li>
+        <li>Scan tiap kunjungan → poin terkumpul otomatis</li>
+        <li>Reward <b>main GRATIS tiap 10 kunjungan</b> (bisa diatur)</li>
+        <li>Reset otomatis kalau lama tak datang (anti data basi)</li>
+        <li>Leaderboard, tren kunjungan &amp; heatmap aktivitas 4 minggu</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">☕</div><div class="card-tt"><b>Menu, Resep &amp; HPP</b><span>Tahu untung tiap gelas</span></div></div>
+      <ul>
+        <li>Kelola menu + harga (termasuk <b>harga cuaca panas</b>) &amp; best seller</li>
+        <li>Resep bahan per menu → <b>HPP &amp; margin kotor otomatis</b></li>
+        <li>Add-on / topping per menu dgn harga sendiri</li>
+        <li>Riwayat perubahan harga bahan tercatat</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">📦</div><div class="card-tt"><b>Stok &amp; Inventory</b><span>Stok selalu terkontrol</span></div></div>
+      <ul>
+        <li>Stok per bahan dgn satuan (pcs/gram/liter) + <b>batas minimum</b></li>
+        <li>Alert otomatis <b>"Stok Tipis" / "Habis"</b></li>
+        <li>Restock, <b>stok opname</b>, &amp; pengurangan (rusak/susut)</li>
+        <li>Restock massal sekaligus + nilai inventory (stok × harga)</li>
+        <li>Log pergerakan stok lengkap (siapa, kapan, berapa)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🚚</div><div class="card-tt"><b>Supplier</b><span>Data pemasok terpusat</span></div></div>
+      <ul>
+        <li>Simpan supplier (kontak/WA, alamat, catatan)</li>
+        <li>Hubungkan tiap bahan ke supplier-nya</li>
+        <li>Cari cepat + statistik jumlah bahan per supplier</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">👥</div><div class="card-tt"><b>SDM &amp; Penggajian</b><span>Gaji &amp; kasbon tanpa pusing</span></div></div>
+      <ul>
+        <li>Data kru: jabatan, shift, gaji pokok, uang makan, tgl masuk</li>
+        <li><b>Gaji, Kasbon, THR, Bonus, Uang Makan</b> — semua tercatat</li>
+        <li>Saldo kasbon berjalan + status <b>Belum / Sebagian / Lunas</b></li>
+        <li>Carry-forward antar bulan + riwayat 12 bulan</li>
+        <li>Bayar Cash/Transfer, otomatis masuk pembukuan</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">💰</div><div class="card-tt"><b>Shift &amp; Setoran</b><span>Uang laci selalu cocok</span></div></div>
+      <ul>
+        <li>Buka/tutup shift: modal awal, jam buka/tutup, nama kru</li>
+        <li>Hitung <b>uang seharusnya vs uang disetor</b> → selisih</li>
+        <li>Status <b>Sesuai / Kurang / Lebih</b> ter-warna</li>
+        <li>Rekap setoran per shift / bulan / karyawan</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🔍</div><div class="card-tt"><b>Aktivitas &amp; Monitoring</b><span>Siapa catat apa, transparan</span></div></div>
+      <ul>
+        <li>Log <b>siapa mencatat</b> tiap transaksi + metode bayar</li>
+        <li>Filter per karyawan, per jenis, per periode</li>
+        <li>Monitoring aktivitas member (scan, reward, member baru)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🔔</div><div class="card-tt"><b>Notifikasi WhatsApp</b><span>Laporan datang sendiri</span></div></div>
+      <ul>
+        <li><b>Ringkasan harian via WhatsApp</b> tiap pagi (omzet, vs target, stok menipis)</li>
+        <li>Notif saat target harian/mingguan/bulanan tercapai</li>
+        <li>Notif tiap transaksi baru &amp; reward member</li>
+        <li>Tugas otomatis: reset harian, bersih notif, cek bonus kedaluwarsa</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">🔐</div><div class="card-tt"><b>Keamanan &amp; Multi-Akses</b><span>Akses sesuai peran</span></div></div>
+      <ul>
+        <li>Peran <b>Owner</b> (akses penuh) vs <b>Karyawan</b> (catat + lihat hari ini)</li>
+        <li>Login PIN per pengguna + sesi aman (auto-logout saat update)</li>
+        <li>Transaksi <b>immutable</b> + jejak audit (anti manipulasi)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div class="card-ic">📱</div><div class="card-tt"><b>Platform</b><span>Modern, ringan, dari HP</span></div></div>
+      <ul>
+        <li>Tampilan <b>responsif</b>: nyaman di HP &amp; desktop (ada menu bawah di HP)</li>
+        <li><b>Dua bisnis dalam 1 sistem</b>: Billiard + Warkop</li>
+        <li>Data di cloud (PostgreSQL) — aman &amp; bisa diakses di mana saja</li>
+        <li>Berbasis web, tanpa instal aplikasi</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- KENAPA -->
+  <div class="why">
+    <div class="why-h">Kenapa pakai sistem ini?</div>
+    <div class="why-grid">
+      <div class="why-item"><div class="ic">⏱️</div><b>Hemat waktu</b><span>Rekap &amp; tutup buku otomatis — tak perlu Excel manual tiap malam.</span></div>
+      <div class="why-item"><div class="ic">🛡️</div><b>Anti kebocoran</b><span>Tiap rupiah &amp; stok tercatat; jelas siapa input apa (audit).</span></div>
+      <div class="why-item"><div class="ic">📈</div><b>Untung lebih terukur</b><span>Tahu HPP, margin, target &amp; pola ramai — putuskan dgn angka.</span></div>
+      <div class="why-item"><div class="ic">📲</div><b>Kontrol dari HP</b><span>Pantau bisnis kapan saja, di mana saja — real-time.</span></div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <div class="roadmap">
+    <div class="sec-head" style="margin-top:2mm">
+      <div class="bar" style="background:linear-gradient(180deg,#e0b15a,#c9871f)"></div>
+      <div>
+        <h2>Segera Hadir <span class="rm-badge">Roadmap</span></h2>
+        <p>Sedang dikembangkan — sistem terus bertumbuh tanpa biaya tambahan untuk pembaruan.</p>
+      </div>
+    </div>
+
+    <div class="rm-grid">
+      <div class="rm-card"><div class="ic">🎱</div><b>Manajemen Meja &amp; Riwayat Sewa</b><span>Kelola meja billiard, tarif per jam, &amp; histori sewa.</span></div>
+      <div class="rm-card"><div class="ic">🏆</div><b>Turnamen</b><span>Buat &amp; kelola turnamen billiard beserta pesertanya.</span></div>
+      <div class="rm-card"><div class="ic">📈</div><b>Laporan Siap Cetak</b><span>Untung-Rugi, Arus Kas, Per Sumber &amp; Per Kategori.</span></div>
+      <div class="rm-card"><div class="ic">📤</div><b>Export &amp; Backup</b><span>Ekspor CSV/PDF transaksi &amp; backup data berkala.</span></div>
+      <div class="rm-card"><div class="ic">🛡️</div><b>Hak Akses Lanjutan</b><span>Atur pengguna &amp; izin per modul lebih detail.</span></div>
+      <div class="rm-card"><div class="ic">⚙️</div><b>Manajemen Profil</b><span>Pengaturan profil &amp; identitas usaha mandiri.</span></div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta">
+    <h3>Siap bikin bisnis Anda lebih rapi &amp; lebih untung?</h3>
+    <p>Hentikan catat-mencatat manual yang rawan bocor. Pakai satu sistem yang sudah teruji harian — pantau keuangan, member, stok, dan karyawan langsung dari genggaman.</p>
+    <div class="cta-contact">
+      <div class="cta-pill"><span class="ic">💬</span> WhatsApp: ____________</div>
+      <div class="cta-pill"><span class="ic">🌐</span> warpatjombang.com</div>
+    </div>
+    <div class="cta-note">* Lengkapi nomor WhatsApp / kontak Anda sebelum dibagikan ke calon pelanggan.</div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <span><b>Warpat Jombang</b> · Sistem Manajemen Billiard &amp; Warkop</span>
+  <span>Daftar Fitur · 2026</span>
+</div>
+
+</body>
+</html>
