@@ -3,6 +3,7 @@
 
 import jwt from "jsonwebtoken";
 import { CONFIG } from "../config.js";
+import { setRequestWarung } from "../utils/tenant.js";
 
 /**
  * Buat JWT token
@@ -44,7 +45,7 @@ export const requireApiAuth = (roles = ["admin"]) =>
       }
       req.apiUser = payload;
       // Tenant context dari klaim token (default 1 utk token lama / REST global-PIN).
-      req.warungId = Number.isInteger(payload.warungId) && payload.warungId > 0 ? payload.warungId : 1;
+      setRequestWarung(req, payload.warungId);
       next();
     } catch (err) {
       return res.status(401).json({

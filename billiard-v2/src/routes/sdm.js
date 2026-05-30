@@ -12,6 +12,7 @@ import {
 } from "../utils/db.js";
 import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage } from "../views/sdm.js";
 import { notifyNewTransaksi } from "../utils/notifTrigger.js";
+import { setRequestWarung } from "../utils/tenant.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
 // Fail-loud kalau env var ga di-set (sebelumnya hardcoded '2222' & 'warpat-sdm-key-v1'
@@ -69,23 +70,28 @@ const bulanSekarang = () => new Date().toISOString().slice(0, 7);
 // ── Finance role guard — SDM hanya untuk owner ────────────────
 // Cek cookie _frt sebelum masuk halaman SDM apapun.
 const FIN_COOKIE = "_frt";
-function getFinanceRole(req) {
+function getFinanceClaims(req) {
   const entry = (req.headers.cookie || "").split(";").map((s) => s.trim()).find((s) => s.startsWith(FIN_COOKIE + "="));
   if (!entry) return null;
   try {
     const raw = decodeURIComponent(entry.slice(FIN_COOKIE.length + 1));
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
     if (decoded.boot !== CONFIG.DEPLOY_ID) return null;
-    return decoded.role || null;
+    return decoded;
   } catch { return null; }
+}
+function getFinanceRole(req) {
+  return getFinanceClaims(req)?.role || null;
 }
 
 router.use("/sdm", (req, res, next) => {
-  const finRole = getFinanceRole(req);
+  const claims  = getFinanceClaims(req);
+  const finRole = claims?.role || null;
   // Tidak login sama sekali → ke finance login
   if (!finRole) return res.redirect("/operasional/login?r=" + encodeURIComponent(req.originalUrl));
   // Karyawan tidak boleh akses SDM
   if (finRole !== "owner") return res.redirect("/operasional?msg=no_access");
+  setRequestWarung(req, claims.warungId);   // isi async-context tenant dari _frt
   next();
 });
 

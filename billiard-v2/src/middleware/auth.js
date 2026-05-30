@@ -3,6 +3,7 @@
 
 import jwt from "jsonwebtoken";
 import { verifyToken, createToken } from "../utils/session.js";
+import { setRequestWarung } from "../utils/tenant.js";
 import { CONFIG } from "../config.js";
 
 // Helper: baca cookie _frt (JWT finance role) dari header. Return payload
@@ -48,7 +49,7 @@ export const requireAdmin = (req, res, next) => {
   res.locals.adminUser    = user.username;
   res.locals.adminRole    = user.role;
   res.locals.adminDisplay = user.displayName || "";
-  req.warungId            = user.warungId || 1;   // tenant context, dikonsumsi db.js via getWarungId (C5)
+  setRequestWarung(req, user.warungId);   // isi async-context tenant dari klaim token
   res.locals.warungId     = req.warungId;
   next();
 };

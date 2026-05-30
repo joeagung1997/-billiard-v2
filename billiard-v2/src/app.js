@@ -8,8 +8,9 @@ import cron           from "node-cron";
 import swaggerUi      from "swagger-ui-express";
 
 import { CONFIG }     from "./config.js";
-import { initDB, resetScanHarian, cleanupOldNotifikasi } from "./utils/db.js";
+import { initDB, resetScanHarian, cleanupOldNotifikasi, getActiveWarungIds } from "./utils/db.js";
 import { createDailySummaryNotif } from "./utils/notifTrigger.js";
+import { tenantContext, runWithTenant } from "./utils/tenant.js";
 import scanRouter     from "./routes/scan.js";
 import adminRouter    from "./routes/admin.js";
 import qrRouter       from "./routes/qr.js";
@@ -39,6 +40,11 @@ app.use(express.static(join(__dirname, "../public"), {
     }
   },
 }));
+
+// ── Multi-tenant: buka async-context tenant per request (sebelum semua route).
+// Middleware auth nanti mengisi warung_id dari token via setRequestWarung;
+// fungsi db.js default-nya membaca konteks ini (currentWarungId()).
+app.use(tenantContext);
 
 
 // ── REST API v1 + Swagger UI ──────────────────────────────────
@@ -88,8 +94,13 @@ if (!process.env.VERCEL) {
   // Daily summary notif: jam 06:00 WIB tiap hari.
   cron.schedule("0 6 * * *", async () => {
     try {
-      await createDailySummaryNotif();
-      console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Daily summary notif dibuat.`);
+      // Per-warung: tiap warung aktif dapat ringkasan harian sendiri (data
+      // ter-scope via runWithTenant → currentWarungId()).
+      const ids = await getActiveWarungIds();
+      for (const wid of ids) {
+        await runWithTenant(wid, () => createDailySummaryNotif());
+      }
+      console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Daily summary notif dibuat (${ids.length} warung).`);
     } catch (err) {
       console.error("[CRON] Daily summary gagal:", err.message);
     }

@@ -34,6 +34,7 @@ import {
   deleteNotifikasi, deleteAllNotifikasi,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
+import { setRequestWarung } from "../utils/tenant.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
 import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan, SETTING_DANA_CADANGAN } from "../utils/analisis.js";
@@ -113,7 +114,7 @@ function requireFinanceAuth(req, res, next) {
   res.locals.financeUser    = user.username;
   res.locals.financeDisplay = user.displayName;
   res.locals.financeShift   = user.shift;
-  req.warungId              = user.warungId || 1;   // tenant context, dikonsumsi db.js via getWarungId (C5)
+  setRequestWarung(req, user.warungId);   // isi async-context tenant dari klaim token
   res.locals.warungId       = req.warungId;
   next();
 }

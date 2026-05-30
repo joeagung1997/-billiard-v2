@@ -3,7 +3,7 @@
 
 import { query } from "./postgres.js";
 import { runMigrations } from "./migrate.js";
-import { DEFAULT_WARUNG_ID } from "./tenant.js";
+import { currentWarungId, DEFAULT_WARUNG_ID } from "./tenant.js";
 
 // ── Multi-tenant: konvensi warung_id ───────────────────────────
 // Setiap fungsi yg menyentuh tabel data menerima `warungId` dan menyertakannya
@@ -11,19 +11,27 @@ import { DEFAULT_WARUNG_ID } from "./tenant.js";
 // termasuk operasi by-id supaya warung A tidak bisa baca/ubah baris warung B
 // lewat ID langsung (anti-IDOR).
 //
-// Tahap C2: param default ke Warpat (DEFAULT_WARUNG_ID = 1) supaya route yg
-// belum di-wire (sampai C5) tetap jalan di warung 1 — tidak ada state rusak di
-// antara tahap, dan memang baru ada 1 warung sampai onboarding tenant baru.
-// Fail-closed (tolak request tanpa konteks warung valid) ditegakkan di lapisan
-// middleware tenant pada C4, sebelum fungsi-fungsi ini dipanggil.
+// Default param = currentWarungId(): dibaca dari async-context tenant per
+// request (lihat utils/tenant.js). Call-site yg tidak mengoper warungId otomatis
+// ter-scope ke warung request aktif — "sulit lupa". Override eksplisit dipakai
+// cron per-warung (runWithTenant) atau lookup lintas-warung.
 //
 // Pengecualian sengaja TIDAK difilter (lintas-tenant by design): cron global
-// resetScanHarian() & cleanupOldNotifikasi() (maintenance semua warung).
+// resetScanHarian() (branch tanpa arg) & cleanupOldNotifikasi() (semua warung).
 
 // ── Init ──────────────────────────────────────────────────────
 
 export const initDB = async () => {
   await runMigrations();
+};
+
+// Daftar id warung yg masih aktif/trial — utk cron yg loop per-warung
+// (mis. daily summary). Warung nonaktif di-skip.
+export const getActiveWarungIds = async () => {
+  const res = await query(
+    "SELECT id FROM warung WHERE status_langganan IN ('aktif','trial') ORDER BY id"
+  );
+  return res.rows.map((r) => r.id);
 };
 
 // ── Row mapper helpers ────────────────────────────────────────
@@ -77,7 +85,7 @@ const rowToTransaksi = (row) => ({
 
 // ── readDB — ambil semua members + transaksi ──────────────────
 
-export const readDB = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readDB = async (warungId = currentWarungId()) => {
   const [membersRes, transaksiRes] = await Promise.all([
     query("SELECT * FROM members WHERE warung_id = $1 ORDER BY tanggal_daftar DESC", [warungId]),
     query("SELECT * FROM transaksi WHERE warung_id = $1 ORDER BY tanggal DESC, created_at DESC", [warungId]),
@@ -90,7 +98,7 @@ export const readDB = async (warungId = DEFAULT_WARUNG_ID) => {
 
 // ── Member CRUD ───────────────────────────────────────────────
 
-export const saveMember = async (m, warungId = DEFAULT_WARUNG_ID) => {
+export const saveMember = async (m, warungId = currentWarungId()) => {
   await query(`
     INSERT INTO members
       (kode, nama, telepon, total_main, tanggal_mulai, sudah_scan_hari_ini,
@@ -118,7 +126,7 @@ export const saveMember = async (m, warungId = DEFAULT_WARUNG_ID) => {
   ]);
 };
 
-export const checkBonusExpiry = async (warungId = DEFAULT_WARUNG_ID) => {
+export const checkBonusExpiry = async (warungId = currentWarungId()) => {
   const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const res = await query(
     `SELECT kode, nama FROM members WHERE warung_id = $2 AND bonus_earned_at IS NOT NULL AND bonus_earned_at < $1`,
@@ -134,12 +142,12 @@ export const checkBonusExpiry = async (warungId = DEFAULT_WARUNG_ID) => {
   if (res.rows.length > 0) console.log("[DB] Bonus expired:", res.rows.length, "member direset");
 };
 
-export const deleteMember = async (kode, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteMember = async (kode, warungId = currentWarungId()) => {
   await query("DELETE FROM members WHERE kode = $1 AND warung_id = $2", [kode.toUpperCase(), warungId]);
 };
 
 // ── Reset QR — kode baru, data tetap ─────────────────────────
-export const resetQrMember = async (oldKode, newKode, warungId = DEFAULT_WARUNG_ID) => {
+export const resetQrMember = async (oldKode, newKode, warungId = currentWarungId()) => {
   // Copy semua data ke kode baru — termasuk total_point (lifetime) dan
   // bonus_earned_at supaya progress member gak hilang gara-gara kartu hilang.
   await query(`
@@ -192,7 +200,7 @@ export const createMember = (kode, nama, telepon = "") => ({
 
 // ── Log ───────────────────────────────────────────────────────
 
-export const readLog = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readLog = async (warungId = currentWarungId()) => {
   const res = await query(
     "SELECT ts, kode, nama, aksi, detail FROM logs WHERE warung_id = $1 ORDER BY ts DESC LIMIT 500",
     [warungId]
@@ -206,7 +214,7 @@ export const readLog = async (warungId = DEFAULT_WARUNG_ID) => {
   }));
 };
 
-export const appendLog = async (kode, nama, aksi, detail = "", warungId = DEFAULT_WARUNG_ID) => {
+export const appendLog = async (kode, nama, aksi, detail = "", warungId = currentWarungId()) => {
   await query(
     "INSERT INTO logs (ts, kode, nama, aksi, detail, warung_id) VALUES (NOW(),$1,$2,$3,$4,$5)",
     [kode, nama, aksi, detail, warungId]
@@ -215,7 +223,7 @@ export const appendLog = async (kode, nama, aksi, detail = "", warungId = DEFAUL
 
 // ── Finance ───────────────────────────────────────────────────
 
-export const readTransaksi = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readTransaksi = async (warungId = currentWarungId()) => {
   const res = await query(
     "SELECT * FROM transaksi WHERE warung_id = $1 ORDER BY tanggal DESC, created_at DESC",
     [warungId]
@@ -223,7 +231,7 @@ export const readTransaksi = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows.map(rowToTransaksi);
 };
 
-export const appendTransaksi = async (item, warungId = DEFAULT_WARUNG_ID) => {
+export const appendTransaksi = async (item, warungId = currentWarungId()) => {
   // Default lunas = true kalau tidak di-specify. lunas_at = NOW() kalau lunas
   // saat dicatat, NULL kalau belum (akan diisi saat user klik "Tandai Lunas").
   const lunas = item.lunas !== false;
@@ -248,7 +256,7 @@ export const appendTransaksi = async (item, warungId = DEFAULT_WARUNG_ID) => {
 
 // Tandai transaksi sebagai lunas (set lunas=TRUE + lunas_at=NOW()).
 // Idempotent — kalau sudah lunas, gak ada efek.
-export const markTransaksiLunas = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const markTransaksiLunas = async (id, warungId = currentWarungId()) => {
   const res = await query(
     `UPDATE transaksi
        SET lunas = TRUE, lunas_at = NOW()
@@ -258,7 +266,7 @@ export const markTransaksiLunas = async (id, warungId = DEFAULT_WARUNG_ID) => {
   return res.rowCount > 0;
 };
 
-export const deleteTransaksi = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteTransaksi = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM transaksi WHERE id = $1 AND warung_id = $2", [id, warungId]);
 };
 
@@ -266,7 +274,7 @@ export const deleteTransaksi = async (id, warungId = DEFAULT_WARUNG_ID) => {
 // Transaksi tetap tersimpan untuk audit trail, tapi dikecualikan dari
 // perhitungan stats (pemasukan/pengeluaran/saldo). Idempotent —
 // voiding transaksi yang sudah voided tidak menimpa data lama.
-export const voidTransaksi = async (id, reason, warungId = DEFAULT_WARUNG_ID) => {
+export const voidTransaksi = async (id, reason, warungId = currentWarungId()) => {
   const res = await query(
     `UPDATE transaksi
        SET voided_at = NOW(), void_reason = $2
@@ -278,12 +286,12 @@ export const voidTransaksi = async (id, reason, warungId = DEFAULT_WARUNG_ID) =>
 
 // ── Kategori ──────────────────────────────────────────────────
 
-export const readKategori = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readKategori = async (warungId = currentWarungId()) => {
   const res = await query("SELECT * FROM kategori WHERE warung_id = $1 ORDER BY jenis, urutan, id", [warungId]);
   return res.rows;
 };
 
-export const addKategori = async (nama, jenis, warungId = DEFAULT_WARUNG_ID) => {
+export const addKategori = async (nama, jenis, warungId = currentWarungId()) => {
   await query(
     `INSERT INTO kategori (nama, jenis, urutan, warung_id)
      VALUES ($1, $2, COALESCE((SELECT MAX(urutan) FROM kategori WHERE jenis = $2 AND warung_id = $3), 0) + 1, $3)
@@ -292,13 +300,13 @@ export const addKategori = async (nama, jenis, warungId = DEFAULT_WARUNG_ID) => 
   );
 };
 
-export const deleteKategori = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteKategori = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM kategori WHERE id = $1 AND warung_id = $2", [id, warungId]);
 };
 
 // Reorder kategori — terima array ids berurutan, set urutan 1..N.
 // Hanya update id yang valid; id tak dikenal di-skip dgn aman.
-export const updateKategoriUrutan = async (ids, warungId = DEFAULT_WARUNG_ID) => {
+export const updateKategoriUrutan = async (ids, warungId = currentWarungId()) => {
   if (!Array.isArray(ids) || ids.length === 0) return;
   for (let i = 0; i < ids.length; i += 1) {
     const idNum = parseInt(ids[i]);
@@ -309,12 +317,12 @@ export const updateKategoriUrutan = async (ids, warungId = DEFAULT_WARUNG_ID) =>
 
 // ── Sub Kategori ──────────────────────────────────────────────
 
-export const readSubKategori = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readSubKategori = async (warungId = currentWarungId()) => {
   const res = await query("SELECT * FROM sub_kategori WHERE warung_id = $1 ORDER BY kategori_id, urutan, id", [warungId]);
   return res.rows;
 };
 
-export const addSubKategori = async (kategoriId, nama, warungId = DEFAULT_WARUNG_ID) => {
+export const addSubKategori = async (kategoriId, nama, warungId = currentWarungId()) => {
   await query(
     `INSERT INTO sub_kategori (kategori_id, nama, urutan, warung_id)
      VALUES ($1, $2, COALESCE((SELECT MAX(urutan) FROM sub_kategori WHERE kategori_id = $1), 0) + 1, $3)
@@ -323,48 +331,48 @@ export const addSubKategori = async (kategoriId, nama, warungId = DEFAULT_WARUNG
   );
 };
 
-export const deleteSubKategori = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteSubKategori = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM sub_kategori WHERE id = $1 AND warung_id = $2", [id, warungId]);
 };
 
 // ── Menu Items (kopi/snack) ───────────────────────────────────
 
-export const readMenuItems = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readMenuItems = async (warungId = currentWarungId()) => {
   const res = await query("SELECT id, nama, harga, harga_hot, kategori, best_seller FROM menu_items WHERE warung_id = $1 ORDER BY kategori, best_seller DESC, id ASC", [warungId]);
   return res.rows;
 };
 
-export const readMenuToppings = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readMenuToppings = async (warungId = currentWarungId()) => {
   const res = await query("SELECT id, item_id, nama, harga FROM menu_toppings WHERE warung_id = $1 ORDER BY item_id, id", [warungId]);
   return res.rows;
 };
 
-export const addMenuItem = async (nama, harga, kategori, bestSeller = false, hargaHot = null, warungId = DEFAULT_WARUNG_ID) => {
+export const addMenuItem = async (nama, harga, kategori, bestSeller = false, hargaHot = null, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_items (nama, harga, harga_hot, kategori, best_seller, warung_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (warung_id, nama) DO NOTHING",
     [nama.trim(), harga, hargaHot, kategori, bestSeller, warungId]
   );
 };
 
-export const updateMenuItem = async (id, nama, harga, kategori, bestSeller = false, hargaHot = null, warungId = DEFAULT_WARUNG_ID) => {
+export const updateMenuItem = async (id, nama, harga, kategori, bestSeller = false, hargaHot = null, warungId = currentWarungId()) => {
   await query(
     "UPDATE menu_items SET nama=$1, harga=$2, harga_hot=$3, kategori=$4, best_seller=$5 WHERE id=$6 AND warung_id=$7",
     [nama.trim(), harga, hargaHot, kategori, bestSeller, id, warungId]
   );
 };
 
-export const deleteMenuItem = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteMenuItem = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM menu_items WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
 
-export const addMenuTopping = async (itemId, nama, harga, warungId = DEFAULT_WARUNG_ID) => {
+export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_toppings (item_id, nama, harga, warung_id) VALUES ($1, $2, $3, $4)",
     [itemId, nama.trim(), harga, warungId]
   );
 };
 
-export const deleteMenuTopping = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteMenuTopping = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM menu_toppings WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
 
@@ -389,7 +397,7 @@ function normalizeBahanExtras(extras = {}) {
   };
 }
 
-export const readBahan = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readBahan = async (warungId = currentWarungId()) => {
   // last_mov: subquery ambil movement terbaru per bahan (untuk kolom "Terakhir
   // Diperbarui" di stok page). Pakai DISTINCT ON utk performa, urut by created_at DESC.
   const res = await query(
@@ -423,7 +431,7 @@ export const readBahan = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows;
 };
 
-export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}, warungId = currentWarungId()) => {
   const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
   const e = normalizeBahanExtras(extras);
   const res = await query(
@@ -446,7 +454,7 @@ export const addBahan = async (nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, po
 
 // Update bahan. Kalau harga_per_satuan berubah → log ke bahan_harga_history
 // + update tanggal_update_harga. Pakai transaction utk atomicity.
-export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}, changedBy = "", warungId = DEFAULT_WARUNG_ID) => {
+export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi = 1, porsiLabel = "", extras = {}, changedBy = "", warungId = currentWarungId()) => {
   const qpp = Number(qtyPerPorsi) > 0 ? Number(qtyPerPorsi) : 1;
   const e   = normalizeBahanExtras(extras);
   const newHarga = hargaPerSatuan | 0;
@@ -490,14 +498,14 @@ export const updateBahan = async (id, nama, satuan, hargaPerSatuan, qtyPerPorsi 
   }
 };
 
-export const deleteBahan = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteBahan = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM bahan_baku WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
 
 // ── Supplier (master data pemasok bahan baku) ──────────────────
 // readSuppliers: kembaliin list supplier + count bahan yg pakai supplier itu.
 // Berguna utk display "X bahan" di card supplier dan utk warning saat hapus.
-export const readSuppliers = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readSuppliers = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT s.id, s.nama, s.kontak, s.alamat, s.catatan,
             s.created_at, s.updated_at,
@@ -512,7 +520,7 @@ export const readSuppliers = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows;
 };
 
-export const addSupplier = async ({ nama, kontak = "", alamat = "", catatan = "" }, warungId = DEFAULT_WARUNG_ID) => {
+export const addSupplier = async ({ nama, kontak = "", alamat = "", catatan = "" }, warungId = currentWarungId()) => {
   const res = await query(
     `INSERT INTO supplier (nama, kontak, alamat, catatan, warung_id)
      VALUES ($1, $2, $3, $4, $5)
@@ -529,7 +537,7 @@ export const addSupplier = async ({ nama, kontak = "", alamat = "", catatan = ""
   return res.rows[0]?.id ?? null;
 };
 
-export const updateSupplier = async (id, { nama, kontak = "", alamat = "", catatan = "" }, warungId = DEFAULT_WARUNG_ID) => {
+export const updateSupplier = async (id, { nama, kontak = "", alamat = "", catatan = "" }, warungId = currentWarungId()) => {
   await query(
     `UPDATE supplier
        SET nama=$1, kontak=$2, alamat=$3, catatan=$4, updated_at=NOW()
@@ -544,7 +552,7 @@ export const updateSupplier = async (id, { nama, kontak = "", alamat = "", catat
   );
 };
 
-export const deleteSupplier = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteSupplier = async (id, warungId = currentWarungId()) => {
   // bahan_baku.supplier_id ON DELETE SET NULL — bahan terkait di-unlink, gak ke-hapus.
   await query("DELETE FROM supplier WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
@@ -556,7 +564,7 @@ export const deleteSupplier = async (id, warungId = DEFAULT_WARUNG_ID) => {
 //     Utk 'adjust' diabaikan — pakai newStok sebagai target absolute.
 //   newStok: hanya dipakai utk jenis='adjust' (set absolute).
 // Pakai transaction supaya update bahan + insert movement atomic.
-export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", changedBy = "", newStok = null } = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", changedBy = "", newStok = null } = {}, warungId = currentWarungId()) => {
   const jn = ["in", "out", "adjust"].includes(jenis) ? jenis : "adjust";
   await query("BEGIN");
   let stokLama, stokBaru, delta, stokMin, bahanNama, bahanSatuan;
@@ -642,13 +650,13 @@ export const adjustStok = async (bahanId, jenis, qtyChange, { catatan = "", chan
 
 // Set threshold low-stock utk bahan. Bypass updateBahan biar gak trigger
 // history harga / reset kolom lain. Cuma 1 field, idempotent.
-export const setStokMin = async (id, stokMin, warungId = DEFAULT_WARUNG_ID) => {
+export const setStokMin = async (id, stokMin, warungId = currentWarungId()) => {
   const sm = Math.max(0, Number(stokMin) || 0);
   await query(`UPDATE bahan_baku SET stok_min=$1, updated_at=NOW() WHERE id=$2 AND warung_id=$3`, [sm, id, warungId]);
 };
 
 // Read history movement utk 1 bahan, urut terbaru duluan. Limit 50 row.
-export const readStokMovements = async (bahanId, limit = 50, warungId = DEFAULT_WARUNG_ID) => {
+export const readStokMovements = async (bahanId, limit = 50, warungId = currentWarungId()) => {
   const lim = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
   const res = await query(
     `SELECT id, jenis, qty_change::float AS qty_change, qty_after::float AS qty_after,
@@ -664,7 +672,7 @@ export const readStokMovements = async (bahanId, limit = 50, warungId = DEFAULT_
 
 // Read movement terbaru LINTAS bahan — untuk panel riwayat di stok page.
 // JOIN bahan_baku biar dapat nama + satuan utk display.
-export const readStokMovementsAll = async (limit = 10, warungId = DEFAULT_WARUNG_ID) => {
+export const readStokMovementsAll = async (limit = 10, warungId = currentWarungId()) => {
   const lim = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
   const res = await query(
     `SELECT m.id, m.bahan_id, m.jenis,
@@ -697,7 +705,7 @@ const VALID_PRIORITAS = ["info", "warning", "danger"];
 export const addNotifikasi = async ({
   tipe, title, pesan = "", link = "", meta = {}, prioritas = "info",
   dedupKey = "", dedupWindowHours = 24,
-}, warungId = DEFAULT_WARUNG_ID) => {
+}, warungId = currentWarungId()) => {
   const tp = VALID_NOTIF_TIPE.includes(tipe) ? tipe : "info";
   const pr = VALID_PRIORITAS.includes(prioritas) ? prioritas : "info";
   // Dedup: kalau dedupKey kosong, skip cek (selalu insert).
@@ -730,7 +738,7 @@ export const addNotifikasi = async ({
 };
 
 // Read notifikasi terbaru. opts: { limit, tipe, unreadOnly }.
-export const readNotifikasi = async ({ limit = 30, tipe = "", unreadOnly = false } = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const readNotifikasi = async ({ limit = 30, tipe = "", unreadOnly = false } = {}, warungId = currentWarungId()) => {
   const lim = Math.min(Math.max(parseInt(limit) || 30, 1), 200);
   const where = ["warung_id = $1"];
   const params = [warungId];
@@ -752,13 +760,13 @@ export const readNotifikasi = async ({ limit = 30, tipe = "", unreadOnly = false
   return res.rows;
 };
 
-export const countUnreadNotifikasi = async (warungId = DEFAULT_WARUNG_ID) => {
+export const countUnreadNotifikasi = async (warungId = currentWarungId()) => {
   const res = await query(`SELECT COUNT(*)::int AS c FROM notifikasi WHERE warung_id = $1 AND read_at IS NULL`, [warungId]);
   return res.rows[0]?.c || 0;
 };
 
 // Count per tipe — untuk filter dropdown badge ("Stok 3, Target 1...").
-export const countNotifikasiByTipe = async (warungId = DEFAULT_WARUNG_ID) => {
+export const countNotifikasiByTipe = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT tipe, COUNT(*)::int AS total,
             COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread
@@ -768,19 +776,19 @@ export const countNotifikasiByTipe = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows;
 };
 
-export const markNotifikasiRead = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const markNotifikasiRead = async (id, warungId = currentWarungId()) => {
   await query(`UPDATE notifikasi SET read_at = NOW() WHERE id = $1 AND warung_id = $2 AND read_at IS NULL`, [id, warungId]);
 };
 
-export const markAllNotifikasiRead = async (warungId = DEFAULT_WARUNG_ID) => {
+export const markAllNotifikasiRead = async (warungId = currentWarungId()) => {
   await query(`UPDATE notifikasi SET read_at = NOW() WHERE warung_id = $1 AND read_at IS NULL`, [warungId]);
 };
 
-export const deleteNotifikasi = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteNotifikasi = async (id, warungId = currentWarungId()) => {
   await query(`DELETE FROM notifikasi WHERE id = $1 AND warung_id = $2`, [id, warungId]);
 };
 
-export const deleteAllNotifikasi = async (warungId = DEFAULT_WARUNG_ID) => {
+export const deleteAllNotifikasi = async (warungId = currentWarungId()) => {
   await query(`DELETE FROM notifikasi WHERE warung_id = $1`, [warungId]);
 };
 
@@ -801,7 +809,7 @@ const VALID_STATUS   = ["ide", "planning", "coding", "done"];
 const cleanPrio = (p) => VALID_PRIORITY.includes(p) ? p : "medium";
 const cleanStat = (s) => VALID_STATUS.includes(s) ? s : "ide";
 
-export const readFeatureNotes = async (filters = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const readFeatureNotes = async (filters = {}, warungId = currentWarungId()) => {
   // Urutan: priority urgent > high > medium > low, lalu status non-done dulu, lalu updated_at terbaru.
   const where = ["warung_id=$1"];
   const params = [warungId];
@@ -821,7 +829,7 @@ export const readFeatureNotes = async (filters = {}, warungId = DEFAULT_WARUNG_I
   return res.rows;
 };
 
-export const addFeatureNote = async ({ title, deskripsi, priority, status, kategori, createdBy }, warungId = DEFAULT_WARUNG_ID) => {
+export const addFeatureNote = async ({ title, deskripsi, priority, status, kategori, createdBy }, warungId = currentWarungId()) => {
   const res = await query(
     `INSERT INTO feature_notes (title, deskripsi, priority, status, kategori, created_by, warung_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
@@ -838,7 +846,7 @@ export const addFeatureNote = async ({ title, deskripsi, priority, status, kateg
   return res.rows[0]?.id ?? null;
 };
 
-export const updateFeatureNote = async (id, { title, deskripsi, priority, status, kategori }, warungId = DEFAULT_WARUNG_ID) => {
+export const updateFeatureNote = async (id, { title, deskripsi, priority, status, kategori }, warungId = currentWarungId()) => {
   const stat = cleanStat(status);
   await query(
     `UPDATE feature_notes
@@ -859,7 +867,7 @@ export const updateFeatureNote = async (id, { title, deskripsi, priority, status
   );
 };
 
-export const setFeatureNoteStatus = async (id, status, warungId = DEFAULT_WARUNG_ID) => {
+export const setFeatureNoteStatus = async (id, status, warungId = currentWarungId()) => {
   const stat = cleanStat(status);
   await query(
     `UPDATE feature_notes
@@ -872,12 +880,12 @@ export const setFeatureNoteStatus = async (id, status, warungId = DEFAULT_WARUNG
   );
 };
 
-export const deleteFeatureNote = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteFeatureNote = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM feature_notes WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
 
 // Read history harga perubahan utk 1 bahan, urut terbaru duluan.
-export const readBahanHistory = async (bahanId, warungId = DEFAULT_WARUNG_ID) => {
+export const readBahanHistory = async (bahanId, warungId = currentWarungId()) => {
   const res = await query(
     `SELECT id, harga_lama, harga_baru, changed_at, changed_by
      FROM bahan_harga_history
@@ -895,7 +903,7 @@ export const readBahanHistory = async (bahanId, warungId = DEFAULT_WARUNG_ID) =>
 // qty = jumlah PORSI (integer). Subtotal = qty × qty_per_porsi × harga_per_satuan.
 // Return: [{ menu_item_id, bahan_id, qty, catatan, nama, satuan, harga_per_satuan,
 //            qty_per_porsi, porsi_label, harga_per_porsi, subtotal }]
-export const readResepAll = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readResepAll = async (warungId = currentWarungId()) => {
   const res = await query(`
     SELECT r.menu_item_id, r.bahan_id, r.qty::float AS qty, r.catatan,
            b.nama, b.satuan, b.harga_per_satuan,
@@ -913,7 +921,7 @@ export const readResepAll = async (warungId = DEFAULT_WARUNG_ID) => {
 // Replace semua resep utk 1 menu (atomic via transaction). items = [{ bahan_id, qty, catatan? }].
 // Row dengan qty<=0 atau bahan_id invalid di-skip — jadi simpan resep "kosong"
 // (hapus semua) tetap aman.
-export const setResep = async (menuItemId, items = [], warungId = DEFAULT_WARUNG_ID) => {
+export const setResep = async (menuItemId, items = [], warungId = currentWarungId()) => {
   const valid = items.filter((x) => x && x.bahan_id && Number(x.qty) > 0);
   await query("BEGIN");
   try {
@@ -934,7 +942,7 @@ export const setResep = async (menuItemId, items = [], warungId = DEFAULT_WARUNG
 // Hitung HPP per menu item → Map<menu_item_id, hpp_int>. Dipakai di view
 // untuk display HPP & margin di tiap card menu.
 // qty = jumlah porsi → kalikan qty_per_porsi (konversi ke satuan dasar) × harga.
-export const computeHppMap = async (warungId = DEFAULT_WARUNG_ID) => {
+export const computeHppMap = async (warungId = currentWarungId()) => {
   const res = await query(`
     SELECT r.menu_item_id, SUM(r.qty * b.qty_per_porsi * b.harga_per_satuan)::int AS hpp
     FROM menu_resep r
@@ -949,7 +957,7 @@ export const computeHppMap = async (warungId = DEFAULT_WARUNG_ID) => {
 
 // ── Karyawan ──────────────────────────────────────────────────
 
-export const readKaryawan = async (includeNonaktif = false, warungId = DEFAULT_WARUNG_ID) => {
+export const readKaryawan = async (includeNonaktif = false, warungId = currentWarungId()) => {
   const res = await query(
     includeNonaktif
       ? "SELECT * FROM karyawan WHERE warung_id = $1 ORDER BY created_at"
@@ -959,12 +967,12 @@ export const readKaryawan = async (includeNonaktif = false, warungId = DEFAULT_W
   return res.rows;
 };
 
-export const getKaryawanById = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const getKaryawanById = async (id, warungId = currentWarungId()) => {
   const res = await query("SELECT * FROM karyawan WHERE id = $1 AND warung_id = $2", [id, warungId]);
   return res.rows[0] ?? null;
 };
 
-export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = DEFAULT_WARUNG_ID) => {
+export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = currentWarungId()) => {
   const res = await query(
     `INSERT INTO karyawan (nama, jabatan, gaji_pokok, uang_makan, hari_kerja, tgl_mulai, telepon, shift, warung_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
@@ -973,20 +981,20 @@ export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKer
   return res.rows[0].id;
 };
 
-export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = DEFAULT_WARUNG_ID) => {
+export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = currentWarungId()) => {
   await query(
     `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, uang_makan=$4, hari_kerja=$5, tgl_mulai=$6, telepon=$7, shift=$8 WHERE id=$9 AND warung_id=$10`,
     [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang", id, warungId]
   );
 };
 
-export const nonaktifkanKaryawan = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const nonaktifkanKaryawan = async (id, warungId = currentWarungId()) => {
   await query(`UPDATE karyawan SET status = 'nonaktif' WHERE id = $1 AND warung_id = $2`, [id, warungId]);
 };
 
 // ── SDM Transaksi ─────────────────────────────────────────────
 
-export const readSdmTransaksi = async (bulan, warungId = DEFAULT_WARUNG_ID) => {
+export const readSdmTransaksi = async (bulan, warungId = currentWarungId()) => {
   const res = await query(
     "SELECT * FROM sdm_transaksi WHERE bulan = $1 AND warung_id = $2 ORDER BY created_at DESC",
     [bulan, warungId]
@@ -994,7 +1002,7 @@ export const readSdmTransaksi = async (bulan, warungId = DEFAULT_WARUNG_ID) => {
   return res.rows;
 };
 
-export const readSdmTransaksiByKaryawan = async (karyawanId, warungId = DEFAULT_WARUNG_ID) => {
+export const readSdmTransaksiByKaryawan = async (karyawanId, warungId = currentWarungId()) => {
   const res = await query(
     "SELECT * FROM sdm_transaksi WHERE karyawan_id = $1 AND warung_id = $2 ORDER BY bulan DESC, created_at DESC",
     [karyawanId, warungId]
@@ -1002,7 +1010,7 @@ export const readSdmTransaksiByKaryawan = async (karyawanId, warungId = DEFAULT_
   return res.rows;
 };
 
-export const appendSdmTransaksi = async (item, warungId = DEFAULT_WARUNG_ID) => {
+export const appendSdmTransaksi = async (item, warungId = currentWarungId()) => {
   await query(
     `INSERT INTO sdm_transaksi (id, karyawan_id, tipe, jumlah, bulan, keterangan, metode, created_at, warung_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
@@ -1011,13 +1019,13 @@ export const appendSdmTransaksi = async (item, warungId = DEFAULT_WARUNG_ID) => 
   );
 };
 
-export const deleteSdmTransaksi = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteSdmTransaksi = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM sdm_transaksi WHERE id = $1 AND warung_id = $2", [id, warungId]);
 };
 
 // ── Admin Accounts ────────────────────────────────────────────
 
-export const readAdminAccounts = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readAdminAccounts = async (warungId = currentWarungId()) => {
   const res = await query(
     "SELECT * FROM admin_accounts WHERE warung_id = $1 ORDER BY (role = 'owner') DESC, id",
     [warungId]
@@ -1025,7 +1033,7 @@ export const readAdminAccounts = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows;
 };
 
-export const updateAdminAccount = async (id, username, pin, shift = null, warungId = DEFAULT_WARUNG_ID) => {
+export const updateAdminAccount = async (id, username, pin, shift = null, warungId = currentWarungId()) => {
   if (shift !== null) {
     await query(
       "UPDATE admin_accounts SET username=$1, pin=$2, shift=$3 WHERE id=$4 AND warung_id=$5",
@@ -1041,7 +1049,7 @@ export const updateAdminAccount = async (id, username, pin, shift = null, warung
 
 // ── Monitoring: Setoran (shift closing report) ────────────────
 
-export const readSetoranList = async ({ bulan, username } = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const readSetoranList = async ({ bulan, username } = {}, warungId = currentWarungId()) => {
   let sql = "SELECT * FROM setoran WHERE warung_id = $1";
   const params = [warungId];
   if (bulan)    { params.push(bulan + "%"); sql += ` AND tanggal::TEXT LIKE $${params.length}`; }
@@ -1066,7 +1074,7 @@ export const readSetoranList = async ({ bulan, username } = {}, warungId = DEFAU
   }));
 };
 
-export const appendSetoran = async (s, warungId = DEFAULT_WARUNG_ID) => {
+export const appendSetoran = async (s, warungId = currentWarungId()) => {
   await query(
     `INSERT INTO setoran (id, tanggal, shift, karyawan_nama, karyawan_username, jam_buka, jam_tutup, modal_awal, pemasukan, pengeluaran, uang_setor, selisih, keterangan, warung_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
@@ -1083,7 +1091,7 @@ export const appendSetoran = async (s, warungId = DEFAULT_WARUNG_ID) => {
 };
 
 // ── Monitoring: Aktivitas Member (dari tabel logs) ────────────
-export const readMemberActivity = async ({ tglDari, tglSampai, aksi, kode, limit = 500 } = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const readMemberActivity = async ({ tglDari, tglSampai, aksi, kode, limit = 500 } = {}, warungId = currentWarungId()) => {
   let sql = "SELECT ts, kode, nama, aksi, detail FROM logs WHERE warung_id = $1";
   const params = [warungId];
   if (tglDari)   { params.push(tglDari);   sql += ` AND (ts AT TIME ZONE 'Asia/Jakarta')::DATE >= $${params.length}::DATE`; }
@@ -1102,7 +1110,7 @@ export const readMemberActivity = async ({ tglDari, tglSampai, aksi, kode, limit
   }));
 };
 
-export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, limit = 300 } = {}, warungId = DEFAULT_WARUNG_ID) => {
+export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, limit = 300 } = {}, warungId = currentWarungId()) => {
   let sql = "SELECT * FROM transaksi WHERE warung_id = $1 AND voided_at IS NULL";
   const params = [warungId];
   if (tglDari)   { params.push(tglDari);   sql += ` AND tanggal >= $${params.length}`; }
@@ -1130,7 +1138,7 @@ export const readTransaksiLog = async ({ tglDari, tglSampai, username, jenis, li
 };
 
 // ── Biaya wajib (untuk Analisis Target) ──────────────────────
-export const readFixedCosts = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readFixedCosts = async (warungId = currentWarungId()) => {
   const res = await query(
     "SELECT id, nama, frekuensi, nominal, urutan FROM fixed_costs WHERE warung_id = $1 ORDER BY urutan ASC, id ASC",
     [warungId]
@@ -1144,7 +1152,7 @@ export const readFixedCosts = async (warungId = DEFAULT_WARUNG_ID) => {
   }));
 };
 
-export const addFixedCost = async ({ nama, frekuensi, nominal }, warungId = DEFAULT_WARUNG_ID) => {
+export const addFixedCost = async ({ nama, frekuensi, nominal }, warungId = currentWarungId()) => {
   const ur = await query("SELECT COALESCE(MAX(urutan), 0) + 1 AS u FROM fixed_costs WHERE warung_id = $1", [warungId]);
   const urutan = ur.rows[0].u || 1;
   await query(
@@ -1153,24 +1161,24 @@ export const addFixedCost = async ({ nama, frekuensi, nominal }, warungId = DEFA
   );
 };
 
-export const updateFixedCost = async (id, { nama, frekuensi, nominal }, warungId = DEFAULT_WARUNG_ID) => {
+export const updateFixedCost = async (id, { nama, frekuensi, nominal }, warungId = currentWarungId()) => {
   await query(
     "UPDATE fixed_costs SET nama = $1, frekuensi = $2, nominal = $3 WHERE id = $4 AND warung_id = $5",
     [nama, frekuensi, nominal, parseInt(id), warungId]
   );
 };
 
-export const deleteFixedCost = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteFixedCost = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM fixed_costs WHERE id = $1 AND warung_id = $2", [parseInt(id), warungId]);
 };
 
 // ── App settings (KV sederhana) ───────────────────────────────
-export const readSetting = async (key, fallback = null, warungId = DEFAULT_WARUNG_ID) => {
+export const readSetting = async (key, fallback = null, warungId = currentWarungId()) => {
   const res = await query("SELECT value FROM app_settings WHERE key = $1 AND warung_id = $2", [key, warungId]);
   return res.rows.length ? res.rows[0].value : fallback;
 };
 
-export const writeSetting = async (key, value, warungId = DEFAULT_WARUNG_ID) => {
+export const writeSetting = async (key, value, warungId = currentWarungId()) => {
   await query(
     `INSERT INTO app_settings (key, value, updated_at, warung_id) VALUES ($1, $2, NOW(), $3)
      ON CONFLICT (warung_id, key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
@@ -1217,7 +1225,7 @@ const rowToPlanning = (row) => ({
 
 const PLANNING_PRIORITAS_ORDER = "CASE prioritas WHEN 'urgent' THEN 1 WHEN 'penting' THEN 2 WHEN 'nice' THEN 3 ELSE 4 END";
 
-export const readPlanningItems = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readPlanningItems = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT * FROM planning_items WHERE warung_id = $1 ORDER BY ${PLANNING_PRIORITAS_ORDER}, created_at DESC`,
     [warungId]
@@ -1225,7 +1233,7 @@ export const readPlanningItems = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows.map(rowToPlanning);
 };
 
-export const addPlanningItem = async (item, warungId = DEFAULT_WARUNG_ID) => {
+export const addPlanningItem = async (item, warungId = currentWarungId()) => {
   const id = item.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
   await query(
     `INSERT INTO planning_items
@@ -1253,7 +1261,7 @@ export const addPlanningItem = async (item, warungId = DEFAULT_WARUNG_ID) => {
 
 // saved_amount tdk lagi update via form — sekarang derived dari sum(planning_payments
 // where paid=true) via add/toggle/delete payment. Form cuma update field lain.
-export const updatePlanningItem = async (id, item, warungId = DEFAULT_WARUNG_ID) => {
+export const updatePlanningItem = async (id, item, warungId = currentWarungId()) => {
   await query(
     `UPDATE planning_items SET
        nama=$2, kategori=$3, estimasi=$4, prioritas=$5, status=$6,
@@ -1278,7 +1286,7 @@ export const updatePlanningItem = async (id, item, warungId = DEFAULT_WARUNG_ID)
   );
 };
 
-export const deletePlanningItem = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deletePlanningItem = async (id, warungId = currentWarungId()) => {
   // Cascade delete payments terlebih dulu
   await query("DELETE FROM planning_payments WHERE item_id = $1 AND warung_id = $2", [id, warungId]);
   await query("DELETE FROM planning_items WHERE id = $1 AND warung_id = $2", [id, warungId]);
@@ -1297,14 +1305,14 @@ const rowToPayment = (row) => ({
 });
 
 // Read all payments untuk satu item, atau semua kalau itemId null
-export const readPlanningPayments = async (itemId = null, warungId = DEFAULT_WARUNG_ID) => {
+export const readPlanningPayments = async (itemId = null, warungId = currentWarungId()) => {
   const res = itemId
     ? await query("SELECT * FROM planning_payments WHERE item_id = $1 AND warung_id = $2 ORDER BY bulan ASC, paid_at ASC", [itemId, warungId])
     : await query("SELECT * FROM planning_payments WHERE warung_id = $1 ORDER BY bulan ASC, paid_at ASC", [warungId]);
   return res.rows.map(rowToPayment);
 };
 
-export const addPlanningPayment = async (p, warungId = DEFAULT_WARUNG_ID) => {
+export const addPlanningPayment = async (p, warungId = currentWarungId()) => {
   const id = p.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
   const amt = Math.max(0, parseInt(p.amount) || 0);
   const itemId = (p.itemId || "").trim();
@@ -1332,7 +1340,7 @@ export const addPlanningPayment = async (p, warungId = DEFAULT_WARUNG_ID) => {
 };
 
 // Toggle status paid/unpaid sebuah pembayaran; sesuaikan saved_amount parent item
-export const togglePlanningPayment = async (id, newPaid, warungId = DEFAULT_WARUNG_ID) => {
+export const togglePlanningPayment = async (id, newPaid, warungId = currentWarungId()) => {
   const r = await query("SELECT item_id, amount, paid FROM planning_payments WHERE id = $1 AND warung_id = $2", [id, warungId]);
   if (!r.rows.length) return;
   const { item_id, amount, paid } = r.rows[0];
@@ -1354,7 +1362,7 @@ export const togglePlanningPayment = async (id, newPaid, warungId = DEFAULT_WARU
   }
 };
 
-export const deletePlanningPayment = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deletePlanningPayment = async (id, warungId = currentWarungId()) => {
   const r = await query("SELECT item_id, amount, paid FROM planning_payments WHERE id = $1 AND warung_id = $2", [id, warungId]);
   if (!r.rows.length) return;
   const { item_id, amount, paid } = r.rows[0];
@@ -1371,7 +1379,7 @@ export const deletePlanningPayment = async (id, warungId = DEFAULT_WARUNG_ID) =>
 // Hapus semua entries unpaid (scheduled) utk satu item — dipakai saat
 // regenerate rencana cicilan supaya gak duplicate. Entries paid tetap aman.
 // Gak perlu adjust saved_amount karena rows unpaid memang gak nyumbang.
-export const deleteUnpaidPlanningPayments = async (itemId, warungId = DEFAULT_WARUNG_ID) => {
+export const deleteUnpaidPlanningPayments = async (itemId, warungId = currentWarungId()) => {
   if (!itemId) return;
   await query("DELETE FROM planning_payments WHERE item_id = $1 AND warung_id = $2 AND paid = FALSE", [itemId, warungId]);
 };
@@ -1379,7 +1387,7 @@ export const deleteUnpaidPlanningPayments = async (itemId, warungId = DEFAULT_WA
 // Hapus SEMUA entries (paid + unpaid) utk satu item & reset saved_amount.
 // Dipakai saat user regenerate plan dgn clean-slate behavior — semua history
 // pembayaran hilang, mulai dari nol.
-export const wipeAllPlanningPayments = async (itemId, warungId = DEFAULT_WARUNG_ID) => {
+export const wipeAllPlanningPayments = async (itemId, warungId = currentWarungId()) => {
   if (!itemId) return;
   await query("DELETE FROM planning_payments WHERE item_id = $1 AND warung_id = $2", [itemId, warungId]);
   await query("UPDATE planning_items SET saved_amount = 0, updated_at = NOW() WHERE id = $1 AND warung_id = $2", [itemId, warungId]);
@@ -1402,7 +1410,7 @@ const rowToGoal = (row) => ({
   updatedAt:      row.updated_at,
 });
 
-export const readPlanningGoals = async (warungId = DEFAULT_WARUNG_ID) => {
+export const readPlanningGoals = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT * FROM planning_goals
      WHERE warung_id = $1
@@ -1413,7 +1421,7 @@ export const readPlanningGoals = async (warungId = DEFAULT_WARUNG_ID) => {
   return res.rows.map(rowToGoal);
 };
 
-export const addPlanningGoal = async (g, warungId = DEFAULT_WARUNG_ID) => {
+export const addPlanningGoal = async (g, warungId = currentWarungId()) => {
   const id = g.id || (Date.now() + "-" + Math.random().toString(36).slice(2, 7));
   await query(
     `INSERT INTO planning_goals
@@ -1436,7 +1444,7 @@ export const addPlanningGoal = async (g, warungId = DEFAULT_WARUNG_ID) => {
   return id;
 };
 
-export const updatePlanningGoal = async (id, g, warungId = DEFAULT_WARUNG_ID) => {
+export const updatePlanningGoal = async (id, g, warungId = currentWarungId()) => {
   await query(
     `UPDATE planning_goals SET
        nama=$2, target_amount=$3, auto_percent=$4, source=$5, status=$6,
@@ -1459,7 +1467,7 @@ export const updatePlanningGoal = async (id, g, warungId = DEFAULT_WARUNG_ID) =>
 
 // Tambah deposit ke goal (current_amount += amount). Auto-mark completed
 // kalau current >= target.
-export const addGoalDeposit = async (id, amount, warungId = DEFAULT_WARUNG_ID) => {
+export const addGoalDeposit = async (id, amount, warungId = currentWarungId()) => {
   const amt = parseInt(amount) || 0;
   if (amt <= 0) return;
   await query(
@@ -1472,6 +1480,6 @@ export const addGoalDeposit = async (id, amount, warungId = DEFAULT_WARUNG_ID) =
   );
 };
 
-export const deletePlanningGoal = async (id, warungId = DEFAULT_WARUNG_ID) => {
+export const deletePlanningGoal = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM planning_goals WHERE id = $1 AND warung_id = $2", [id, warungId]);
 };

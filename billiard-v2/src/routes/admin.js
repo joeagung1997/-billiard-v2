@@ -13,6 +13,7 @@ import {
 import { requireAdmin, readFrtCookie } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
+import { setRequestWarung, getWarungId } from "../utils/tenant.js";
 import {
   generateKode, formatTanggalPendek, formatTanggalBulan,
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
@@ -69,6 +70,7 @@ router.get("/", async (req, res) => {
   }
 
   try {
+    setRequestWarung(req, user.warungId);   // GET / bukan di belakang requireAdmin → set konteks manual
     await checkBonusExpiry();
     const db        = await readDB();
     const log       = await readLog();
@@ -378,7 +380,7 @@ router.get("/reset-qr", requireAdmin, async (req, res) => {
 router.get("/reset", requireAdmin, async (req, res) => {
   const { tk } = res.locals;
   try {
-    await resetScanHarian();
+    await resetScanHarian(getWarungId(req));   // reset scan HANYA warung ini (bukan global)
     res.redirect(`/admin?tk=${tk}`);
   } catch (err) {
     console.error("[ADMIN] reset error:", err.message);

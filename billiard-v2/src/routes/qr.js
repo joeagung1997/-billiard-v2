@@ -4,6 +4,7 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/auth.js";
 import { readDB, findMember } from "../utils/db.js";
+import { getWarungId } from "../utils/tenant.js";
 import { qrBuffer, brandedQrCard, buildScanUrl, qrDataUrl } from "../utils/qr.js";
 import { qrCardPage } from "../views/qrCard.js";
 
@@ -13,7 +14,7 @@ const router = Router();
 router.get("/qr-view/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
   try {
-    const { members } = await readDB();
+    const { members } = await readDB(getWarungId(req));
     const member = findMember(members, kode);
     if (!member) return res.status(404).send("Member tidak ditemukan");
 
@@ -38,7 +39,7 @@ router.get("/qr-view/:kode", requireAdmin, async (req, res) => {
 router.get("/qr-img/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
   try {
-    const { members } = await readDB();
+    const { members } = await readDB(getWarungId(req));
     if (!findMember(members, kode)) return res.status(404).end();
 
     const buf = await qrBuffer(buildScanUrl(req, kode), 200);
@@ -54,7 +55,7 @@ router.get("/qr-img/:kode", requireAdmin, async (req, res) => {
 router.get("/qr-card/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
   try {
-    const { members } = await readDB();
+    const { members } = await readDB(getWarungId(req));
     const member = findMember(members, kode);
     if (!member) return res.status(404).end();
 
@@ -75,7 +76,7 @@ router.get("/qr-card/:kode", requireAdmin, async (req, res) => {
 router.get("/qr/:kode", requireAdmin, async (req, res) => {
   const kode = req.params.kode.toUpperCase();
   try {
-    const { members } = await readDB();
+    const { members } = await readDB(getWarungId(req));
     const member = findMember(members, kode);
     if (!member) return res.status(404).send("Member tidak ditemukan");
 

@@ -1,27 +1,64 @@
 // src/utils/tenant.js
-// ── Multi-tenant: penentuan "warung aktif" dari sebuah request ─────
+// ── Multi-tenant: konteks "warung aktif" per-request (AsyncLocalStorage) ──
 //
-// Satu sumber terpusat untuk membaca warung_id dari request. Dipakai oleh
-// route/middleware sebelum memanggil fungsi db.js. Sumber kebenaran dibangun
-// bertahap:
-//   - C3: warung_id dari klaim token (session ?tk= / cookie _frt / Bearer /
-//         SDM) = OTORITATIF untuk otorisasi data.
-//   - C4: slug dari path /w/:slug → di-cross-check harus cocok dgn token
-//         (mencegah pakai cookie warung A di /w/<slug-B>/).
+// Mekanisme "sulit lupa": daripada mengoper warungId manual ke ratusan call-site
+// db.js (rawan terlewat → diam-diam jatuh ke warung 1), kita simpan warung aktif
+// di async-context per request. Fungsi db.js default-nya membaca konteks ini
+// (currentWarungId()), jadi SETIAP query otomatis ter-scope tanpa perlu diingat.
+// Parameter `warungId` eksplisit tetap ada sebagai override (dipakai cron yang
+// memproses banyak warung via runWithTenant).
 //
-// Tahap sekarang (C0): selalu kembalikan Warpat (1) supaya perilaku aplikasi
-// TIDAK berubah sampai auth & routing di-wire. Middleware C4 nanti akan meng-set
-// `req.warungId`; helper ini membacanya kalau sudah ada, fallback ke 1.
+// Alur:
+//   1. tenantContext (middleware global di app.js) buka store {warungId:1} per
+//      request — dipasang SEBELUM router.
+//   2. middleware auth (requireAdmin / requireFinanceAuth / requireApiAuth /
+//      cek _frt di sdm.js) panggil setRequestWarung(req, <dari token>) →
+//      update store + req.warungId begitu warung diketahui dari token.
+//   3. handler memanggil db.js tanpa argумen → default = currentWarungId().
+//
+// Request publik tanpa auth (scan/checkin) → store tetap 1 (Warpat). Resolusi
+// warung dari kode + KASIR_PIN per-warung menyusul di onboarding.
+
+import { AsyncLocalStorage } from "node:async_hooks";
+
 export const DEFAULT_WARUNG_ID = 1;
 
-/**
- * Ambil warung_id aktif untuk request ini.
- * @param {import('express').Request} [req]
- * @returns {number}
- */
+const tenantStore = new AsyncLocalStorage();
+
+const normId = (v) => (Number.isInteger(v) && v > 0 ? v : DEFAULT_WARUNG_ID);
+
+// Express middleware: buka async-context tenant utk request ini. Store berupa
+// objek MUTABLE supaya middleware auth (jalan setelah ini) bisa update warungId
+// setelah token diverifikasi, dan handler hilir membaca nilai final.
+export function tenantContext(req, _res, next) {
+  tenantStore.run({ warungId: DEFAULT_WARUNG_ID }, () => next());
+}
+
+// Set warung aktif utk request (dipanggil middleware auth). Update store async
+// + req.warungId (dua-duanya, supaya getWarungId(req) & currentWarungId() sinkron).
+export function setRequestWarung(req, warungId) {
+  const id = normId(warungId);
+  if (req) req.warungId = id;
+  const store = tenantStore.getStore();
+  if (store) store.warungId = id;
+  return id;
+}
+
+// Jalankan fn dalam konteks warung tertentu (utk cron yg memproses per-warung,
+// di luar siklus request). Semua db.js call di dalam fn auto-scope ke warungId.
+export function runWithTenant(warungId, fn) {
+  return tenantStore.run({ warungId: normId(warungId) }, fn);
+}
+
+// Default warung utk fungsi db.js — dibaca dari async-context request aktif.
+// Tanpa konteks (mis. cron tanpa runWithTenant) → fallback Warpat (1).
+export function currentWarungId() {
+  const store = tenantStore.getStore();
+  return store ? normId(store.warungId) : DEFAULT_WARUNG_ID;
+}
+
+// Baca warung dari objek request (mis. di handler yg tidak di belakang auth
+// middleware). Fallback 1.
 export function getWarungId(req) {
-  // C3 ✓: req.warungId di-set middleware auth (admin/finance/api) dari klaim token.
-  // TODO(C4): cross-check dengan slug path /w/:slug (tolak kalau token ≠ slug).
-  const id = req && req.warungId;
-  return Number.isInteger(id) && id > 0 ? id : DEFAULT_WARUNG_ID;
+  return normId(req && req.warungId);
 }
