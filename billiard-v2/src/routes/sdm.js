@@ -13,6 +13,7 @@ import {
 import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage } from "../views/sdm.js";
 import { notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { setRequestWarung } from "../utils/tenant.js";
+import { subscriptionGate } from "../middleware/subscription.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
 // Fail-loud kalau env var ga di-set (sebelumnya hardcoded '2222' & 'warpat-sdm-key-v1'
@@ -94,6 +95,9 @@ router.use("/sdm", (req, res, next) => {
   setRequestWarung(req, claims.warungId);   // isi async-context tenant dari _frt
   next();
 });
+
+// Gate langganan (warung sudah diketahui dari _frt di guard atas).
+router.use("/sdm", subscriptionGate);
 
 // ── PIN routes (tidak perlu auth) ────────────────────────────
 

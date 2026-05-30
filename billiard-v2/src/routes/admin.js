@@ -14,6 +14,8 @@ import { requireAdmin, readFrtCookie } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
 import { setRequestWarung, getWarungId } from "../utils/tenant.js";
+import { isWarungActive } from "../middleware/subscription.js";
+import { resultPage } from "../views/member.js";
 import {
   generateKode, formatTanggalPendek, formatTanggalBulan,
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
@@ -71,6 +73,12 @@ router.get("/", async (req, res) => {
 
   try {
     setRequestWarung(req, user.warungId);   // GET / bukan di belakang requireAdmin → set konteks manual
+    if (!(await isWarungActive(user.warungId))) {
+      return res.status(403).send(resultPage("error", {
+        judul: "Langganan Tidak Aktif",
+        pesan: "Masa aktif warung ini sudah berakhir. Hubungi admin untuk mengaktifkan kembali.",
+      }));
+    }
     await checkBonusExpiry();
     const db        = await readDB();
     const log       = await readLog();

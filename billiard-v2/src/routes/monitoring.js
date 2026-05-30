@@ -17,12 +17,14 @@ import {
 } from "../views/monitoring.js";
 import { todayBusinessDayISO } from "../utils/format.js";
 import { requireFinanceAuth, requireOwner } from "./finance.js";
+import { subscriptionGate } from "../middleware/subscription.js";
 
 const router = Router();
 
 // Apply auth to all monitoring routes
 router.use(requireFinanceAuth);
 router.use(requireOwner);
+router.use(subscriptionGate);
 
 // GET /monitoring → redirect to aktivitas
 router.get("/monitoring", (_req, res) => res.redirect("/operasional/monitoring/aktivitas"));

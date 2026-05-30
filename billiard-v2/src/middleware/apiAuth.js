@@ -4,6 +4,7 @@
 import jwt from "jsonwebtoken";
 import { CONFIG } from "../config.js";
 import { setRequestWarung } from "../utils/tenant.js";
+import { isWarungActive } from "./subscription.js";
 
 /**
  * Buat JWT token
@@ -18,7 +19,7 @@ export const signToken = (payload) =>
  * @param {string[]} roles - role yang diizinkan: 'admin' | 'finance'
  */
 export const requireApiAuth = (roles = ["admin"]) =>
-  (req, res, next) => {
+  async (req, res, next) => {
     const auth = req.headers.authorization ?? "";
 
     if (!auth.startsWith("Bearer ")) {
@@ -46,6 +47,9 @@ export const requireApiAuth = (roles = ["admin"]) =>
       req.apiUser = payload;
       // Tenant context dari klaim token (default 1 utk token lama / REST global-PIN).
       setRequestWarung(req, payload.warungId);
+      if (!(await isWarungActive(payload.warungId))) {
+        return res.status(403).json({ success: false, message: "Langganan warung tidak aktif." });
+      }
       next();
     } catch (err) {
       return res.status(401).json({

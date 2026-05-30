@@ -9,6 +9,7 @@
 import { Router } from "express";
 import { getWarungBySlug } from "../utils/db.js";
 import { setRequestWarung } from "../utils/tenant.js";
+import { isActiveRow } from "../middleware/subscription.js";
 import { adminLoginPage } from "../views/admin.js";
 import { resultPage } from "../views/member.js";
 import { doAdminLogin } from "./admin.js";
@@ -26,11 +27,11 @@ router.use(async (req, res, next) => {
         pesan: `Alamat "/w/${slug}" tidak terdaftar. Periksa kembali link Anda.`,
       }));
     }
-    // Gate langganan dasar (C7 akan memperluas: trial lewat, dll).
-    if (warung.status_langganan === "nonaktif") {
+    // Gate langganan: nonaktif ATAU trial sudah lewat → tolak di entry.
+    if (!isActiveRow(warung)) {
       return res.status(403).send(resultPage("error", {
-        judul: "Langganan Nonaktif",
-        pesan: "Akses warung ini sedang dinonaktifkan. Silakan hubungi admin.",
+        judul: "Langganan Tidak Aktif",
+        pesan: "Masa aktif / trial warung ini sudah berakhir. Silakan hubungi admin.",
       }));
     }
     setRequestWarung(req, warung.id);     // konteks tenant utk lookup akun saat login

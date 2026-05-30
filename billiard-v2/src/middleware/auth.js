@@ -4,6 +4,8 @@
 import jwt from "jsonwebtoken";
 import { verifyToken, createToken } from "../utils/session.js";
 import { setRequestWarung } from "../utils/tenant.js";
+import { isWarungActive } from "./subscription.js";
+import { resultPage } from "../views/member.js";
 import { CONFIG } from "../config.js";
 
 // Helper: baca cookie _frt (JWT finance role) dari header. Return payload
@@ -25,7 +27,7 @@ export function readFrtCookie(req) {
 // session token baru lalu redirect ke URL yg sama dengan ?tk=... supaya
 // navigasi sidebar berikutnya tetap konsisten. Tujuannya: owner yang sudah
 // login tidak perlu input PIN lagi tiap masuk menu /admin/*.
-export const requireAdmin = (req, res, next) => {
+export const requireAdmin = async (req, res, next) => {
   const tk   = req.query.tk ?? req.body.tk ?? "";
   const user = verifyToken(tk);
 
@@ -51,6 +53,12 @@ export const requireAdmin = (req, res, next) => {
   res.locals.adminDisplay = user.displayName || "";
   setRequestWarung(req, user.warungId);   // isi async-context tenant dari klaim token
   res.locals.warungId     = req.warungId;
+  if (!(await isWarungActive(user.warungId))) {
+    return res.status(403).send(resultPage("error", {
+      judul: "Langganan Tidak Aktif",
+      pesan: "Masa aktif warung ini sudah berakhir. Hubungi admin untuk mengaktifkan kembali.",
+    }));
+  }
   next();
 };
 
