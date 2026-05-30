@@ -41,6 +41,39 @@ const OLD_PENGELUARAN = [
 ];
 
 export const runMigrations = async () => {
+  // ── Multi-tenant: tabel warung (tenant root) ────────────────
+  // Satu baris per warung. slug dipakai utk routing path /w/:slug.
+  // status_langganan: 'trial' | 'aktif' | 'nonaktif' (gate di middleware C7).
+  // kode_prefix: prefix kode member per-warung (mis. 'JMB'); kode tetap unik
+  // global supaya alur scan publik /scan?id=KODE bekerja tanpa slug.
+  await query(`
+    CREATE TABLE IF NOT EXISTS warung (
+      id               SERIAL PRIMARY KEY,
+      nama             TEXT NOT NULL,
+      slug             TEXT UNIQUE NOT NULL,
+      kode_prefix      TEXT NOT NULL DEFAULT 'JMB',
+      logo_url         TEXT NOT NULL DEFAULT '',
+      warna            TEXT NOT NULL DEFAULT '',
+      nomor_wa         TEXT NOT NULL DEFAULT '',
+      wa_notif_number  TEXT NOT NULL DEFAULT '',
+      status_langganan TEXT NOT NULL DEFAULT 'trial',
+      trial_mulai      TIMESTAMPTZ DEFAULT NOW(),
+      trial_selesai    TIMESTAMPTZ,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  // Seed Warpat Jombang sebagai warung_id = 1 (tenant pertama, sudah aktif).
+  // id eksplisit = 1 supaya semua data lama (backfill DEFAULT 1) terhubung ke
+  // warung ini. Nilai branding di-set sama dgn default lama di config.js.
+  await query(`
+    INSERT INTO warung (id, nama, slug, kode_prefix, nomor_wa, wa_notif_number, status_langganan)
+    VALUES (1, 'Warpat Jombang', 'warpat', 'JMB', '6281519210552', '081519210552', 'aktif')
+    ON CONFLICT (id) DO NOTHING
+  `);
+  // Majukan sequence id supaya warung berikutnya dapat id >= 2 (tidak bentrok
+  // dgn id=1 yg kita set manual). GREATEST jaga2 kalau sudah ada warung lain.
+  await query(`SELECT setval(pg_get_serial_sequence('warung','id'), GREATEST((SELECT MAX(id) FROM warung), 1))`);
+
   // ── Tabel members ───────────────────────────────────────────
   await query(`
     CREATE TABLE IF NOT EXISTS members (
@@ -600,6 +633,41 @@ export const runMigrations = async () => {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+
+  // ── Multi-tenant: kolom warung_id di semua tabel data (idempotent) ──
+  // NOT NULL DEFAULT 1 berarti:
+  //   • baris LAMA otomatis ke-backfill ke Warpat (warung 1) saat kolom dibuat;
+  //   • INSERT lama yg belum mengirim warung_id TETAP jalan (default 1) sampai
+  //     db.js di-update di tahap C2 — jadi aplikasi tidak rusak di antara tahap.
+  // Default 1 dipertahankan sbg jaring pengaman + fallback Warpat; korektnya
+  // per-tenant ditegakkan di lapisan aplikasi (guard fail-closed db.js, C2).
+  // Nama tabel berasal dari whitelist statis di bawah (bukan input user) →
+  // interpolasi string aman dari SQL injection.
+  const TENANT_TABLES = [
+    "members", "transaksi", "logs", "kategori", "menu_items", "sub_kategori",
+    "menu_toppings", "bahan_baku", "supplier", "stok_movement",
+    "bahan_harga_history", "menu_resep", "feature_notes", "notifikasi",
+    "karyawan", "sdm_transaksi", "admin_accounts", "setoran", "fixed_costs",
+    "planning_items", "planning_payments", "planning_goals", "app_settings",
+  ];
+  for (const t of TENANT_TABLES) {
+    await query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS warung_id INTEGER NOT NULL DEFAULT 1`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_${t}_warung ON ${t} (warung_id)`);
+  }
+
+  // ── Verifikasi backfill: tidak boleh ada baris warung_id NULL ──
+  // NOT NULL DEFAULT 1 sudah menjamin ini, tapi kita assert eksplisit + log
+  // ringkasan per tabel supaya migrasi gagal-keras (fail-loud) kalau ada anomali.
+  let totalRows = 0;
+  for (const t of TENANT_TABLES) {
+    const r = await query(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE warung_id IS NULL)::int AS nulls FROM ${t}`);
+    const { total, nulls } = r.rows[0];
+    if (nulls > 0) {
+      throw new Error(`[MIGRATE] Tabel '${t}': ${nulls} baris warung_id NULL — backfill gagal, hentikan.`);
+    }
+    totalRows += total;
+  }
+  console.log(`[DB] Multi-tenant: kolom warung_id siap di ${TENANT_TABLES.length} tabel (${totalRows} baris, backfill warung_id=1 OK).`);
 
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
 };
