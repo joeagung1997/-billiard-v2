@@ -2,6 +2,7 @@
 // ── HTML view: branded QR card v3 (dipakai di iframe modal) ──
 
 import { CONFIG } from "../config.js";
+import { arenaName, arenaWa } from "../utils/brand.js";
 
 export const qrCardPage = ({ nama, kode, totalMain, status, qrDataUrl }) => {
   const tm       = totalMain ?? 0;
@@ -23,7 +24,7 @@ export const qrCardPage = ({ nama, kode, totalMain, status, qrDataUrl }) => {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Kartu Member — ${CONFIG.NAMA_ARENA}</title>
+<title>Kartu Member — ${arenaName()}</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -293,7 +294,7 @@ body::after{
 
 <!-- Page header -->
 <div class="ph">
-  <div class="ph-brand">${CONFIG.NAMA_ARENA}</div>
+  <div class="ph-brand">${arenaName()}</div>
   <div class="ph-desc">Tunjukkan kartu ini ke kasir untuk check-in billiard.</div>
 </div>
 
@@ -314,7 +315,7 @@ body::after{
           <div class="brand-cluster">
             <div class="ball-logo"><div class="ball-shine"></div></div>
             <div>
-              <div class="brand-name-lg">${CONFIG.NAMA_ARENA}</div>
+              <div class="brand-name-lg">${arenaName()}</div>
               <div class="brand-sub">Member Card</div>
             </div>
           </div>
@@ -561,9 +562,9 @@ export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl, nomorWa }) =>
   const tm    = totalMain ?? 0;
   const batas = CONFIG.BATAS_MAIN;
   const sisaLagi = Math.max(0, batas - tm);
-  const wa      = nomorWa || CONFIG.NOMOR_WA || "6281519210552";
+  const wa      = nomorWa || arenaWa() || "6281519210552";
   const waText  = encodeURIComponent(
-    `Halo ${CONFIG.NAMA_ARENA}, saya ${nama} (member ${kode}). Mau booking meja, ada yang tersedia? 🎱`
+    `Halo ${arenaName()}, saya ${nama} (member ${kode}). Mau booking meja, ada yang tersedia? 🎱`
   );
   const waUrl   = `https://wa.me/${wa}?text=${waText}`;
 
@@ -579,7 +580,7 @@ export const memberCardPage = ({ nama, kode, totalMain, qrDataUrl, nomorWa }) =>
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
-<title>Kartu Member — ${CONFIG.NAMA_ARENA}</title>
+<title>Kartu Member — ${arenaName()}</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
@@ -803,7 +804,7 @@ body::before{
 
   <!-- Header -->
   <div class="hdr">
-    <div class="hdr-brand">${CONFIG.NAMA_ARENA}</div>
+    <div class="hdr-brand">${arenaName()}</div>
     <div class="hdr-sub">Tunjukkan QR ini ke kasir untuk check-in billiard</div>
   </div>
 
@@ -819,7 +820,7 @@ body::before{
       <div class="brand-row">
         <div class="ball">8</div>
         <div class="brand-txt">
-          <div class="name">${CONFIG.NAMA_ARENA}</div>
+          <div class="name">${arenaName()}</div>
           <div class="sub">Member Card</div>
         </div>
       </div>
@@ -975,7 +976,7 @@ body::before{
   <div class="terms">
     <div class="terms-title">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-top:1px"><rect x="1" y="1" width="12" height="12" rx="3" stroke="#C9A84C" stroke-width="1.3"/><line x1="4" y1="5" x2="10" y2="5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/><line x1="4" y1="10" x2="7.5" y2="10" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round"/></svg>
-      Ketentuan Member ${CONFIG.NAMA_ARENA}
+      Ketentuan Member ${arenaName()}
     </div>
     <div class="terms-sub">Biar nggak ada salah paham, simak dulu ya! 😊</div>
     <div class="terms-list">
@@ -999,7 +1000,7 @@ body::before{
     <div class="terms-footer">Punya pertanyaan? Hubungi kasir kami langsung.</div>
   </div>
 
-  <div class="ftr"><div class="ftr-txt">${CONFIG.NAMA_ARENA} • Member Card</div></div>
+  <div class="ftr"><div class="ftr-txt">${arenaName()} • Member Card</div></div>
 </div>
 
 <script>

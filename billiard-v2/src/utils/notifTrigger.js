@@ -3,11 +3,13 @@
 // Dipisah dari db.js + analisis.js untuk hindari circular import
 // (db.js & analisis.js sudah saling import).
 
-import { addNotifikasi, readTransaksi, readKaryawan, readBahan } from "./db.js";
+import { addNotifikasi, readTransaksi, readKaryawan, readBahan, getWarungById } from "./db.js";
 import { loadAnalisisData } from "./analisis.js";
 import { KAT_TUKAR_UANG, todayBusinessDayISO } from "./format.js";
 import { sendWa } from "./waSender.js";
 import { CONFIG } from "../config.js";
+import { arenaName, arenaWaNotif } from "./brand.js";
+import { currentWarungId, setRequestBrandFromRow } from "./tenant.js";
 
 // Filter helper: hanya transaksi pemasukan beneran (bukan void/tukar uang/piutang).
 const isRevenue = (t) =>
@@ -134,9 +136,12 @@ export async function checkAndNotifyTarget(tanggal) {
 // Plus: bandingkan dgn target harian + vs hari sebelumnya (insight).
 // Output:
 //   1. Insert in-app notif tipe daily_summary (dedup per tanggal).
-//   2. Kirim WA via Fonnte ke CONFIG.WA_NOTIF_NUMBER (kalau FONNTE_TOKEN ada).
+//   2. Kirim WA via Fonnte ke arenaWaNotif() (kalau FONNTE_TOKEN ada).
 export async function createDailySummaryNotif() {
   try {
+    // Muat brand warung aktif → arenaName()/arenaWaNotif() per-warung (cron
+    // memanggil ini di dalam runWithTenant(wid), jadi currentWarungId() benar).
+    setRequestBrandFromRow(await getWarungById(currentWarungId()));
     const today     = todayBusinessDayISO();
     const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86400000).toISOString().slice(0, 10);
     const dayBefore = new Date(new Date(yesterday + "T00:00:00Z").getTime() - 86400000).toISOString().slice(0, 10);
@@ -206,14 +211,14 @@ export async function createDailySummaryNotif() {
     ];
     if (restokCount > 0) waLines.push("📦 *" + restokCount + " bahan perlu restok*");
     waLines.push("");
-    waLines.push("_" + CONFIG.NAMA_ARENA + " — Owner Panel_");
+    waLines.push("_" + arenaName() + " — Owner Panel_");
     const waMessage = waLines.join("\n");
 
     // Kirim WA (fire-and-forget; gagal tidak block in-app notif)
-    if (CONFIG.WA_NOTIF_NUMBER) {
-      sendWa(CONFIG.WA_NOTIF_NUMBER, waMessage)
+    if (arenaWaNotif()) {
+      sendWa(arenaWaNotif(), waMessage)
         .then((r) => {
-          if (r.ok)       console.log("[notif] WA daily summary terkirim ke " + CONFIG.WA_NOTIF_NUMBER);
+          if (r.ok)       console.log("[notif] WA daily summary terkirim ke " + arenaWaNotif());
           else if (r.skipped) console.log("[notif] WA daily summary skip (FONNTE_TOKEN belum di-set)");
           else            console.error("[notif] WA send error:", r.error);
         })

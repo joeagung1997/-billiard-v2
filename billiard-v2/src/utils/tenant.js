@@ -62,3 +62,28 @@ export function currentWarungId() {
 export function getWarungId(req) {
   return normId(req && req.warungId);
 }
+
+// ── Brand per-request (opsional) ──────────────────────────────────
+// Disimpan di store async oleh gate langganan / resolver slug (dari baris
+// warung). Dibaca helper sinkron di utils/brand.js (arenaName dll). Warung 1
+// (Warpat) tidak di-load → helper fallback ke CONFIG = nilai Warpat.
+export function setRequestBrand(brand) {
+  const store = tenantStore.getStore();
+  if (store) store.brand = brand;
+}
+
+export function currentBrand() {
+  const store = tenantStore.getStore();
+  return store ? store.brand || null : null;
+}
+
+// Set brand dari baris tabel `warung` (kolom snake_case → camelCase).
+export function setRequestBrandFromRow(w) {
+  if (!w) return;
+  setRequestBrand({
+    nama:       w.nama,
+    nomorWa:    w.nomor_wa,
+    kodePrefix: w.kode_prefix,
+    waNotif:    w.wa_notif_number,
+  });
+}

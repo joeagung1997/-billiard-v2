@@ -8,7 +8,7 @@
 
 import { Router } from "express";
 import { getWarungBySlug } from "../utils/db.js";
-import { setRequestWarung } from "../utils/tenant.js";
+import { setRequestWarung, setRequestBrandFromRow } from "../utils/tenant.js";
 import { isActiveRow } from "../middleware/subscription.js";
 import { adminLoginPage } from "../views/admin.js";
 import { resultPage } from "../views/member.js";
@@ -35,6 +35,7 @@ router.use(async (req, res, next) => {
       }));
     }
     setRequestWarung(req, warung.id);     // konteks tenant utk lookup akun saat login
+    setRequestBrandFromRow(warung);       // brand utk halaman login warung ini
     res.locals.warung     = warung;
     res.locals.warungBase = "/w/" + slug;
     next();

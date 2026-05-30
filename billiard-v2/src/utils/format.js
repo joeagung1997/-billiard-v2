@@ -2,6 +2,7 @@
 // ── Format tanggal, telepon, kode ────────────────────────────
 
 import { CONFIG } from "../config.js";
+import { arenaPrefix } from "./brand.js";
 
 const ID_TZ = "Asia/Jakarta";
 
@@ -121,10 +122,10 @@ export const generateKode = (members = []) => {
   do {
     const r1 = chars[Math.floor(Math.random() * chars.length)];
     const r2 = chars[Math.floor(Math.random() * chars.length)];
-    kode = `${CONFIG.KODE_PREFIX}-${period}-${r1}${r2}`;
+    kode = `${arenaPrefix()}-${period}-${r1}${r2}`;
     if (++attempts > 500) {
       const r3 = chars[Math.floor(Math.random() * chars.length)];
-      kode = `${CONFIG.KODE_PREFIX}-${period}-${r1}${r2}${r3}`;
+      kode = `${arenaPrefix()}-${period}-${r1}${r2}${r3}`;
       break;
     }
   } while (existing.has(kode));

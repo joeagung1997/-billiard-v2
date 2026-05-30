@@ -11,7 +11,7 @@
 // Belum ada payment gateway — status diubah manual (admin/SQL).
 
 import { getWarungById } from "../utils/db.js";
-import { currentWarungId, DEFAULT_WARUNG_ID } from "../utils/tenant.js";
+import { currentWarungId, DEFAULT_WARUNG_ID, setRequestBrandFromRow } from "../utils/tenant.js";
 import { resultPage } from "../views/member.js";
 
 const TTL_MS = 60 * 1000;
@@ -30,18 +30,19 @@ export function isActiveRow(w) {
 
 // True kalau warung boleh akses. Warung 1 selalu true. Cache 60 dtk.
 export async function isWarungActive(warungId) {
-  if (warungId === DEFAULT_WARUNG_ID) return true;
+  if (warungId === DEFAULT_WARUNG_ID) return true;   // warung 1 → brand fallback ke CONFIG
   const now = Date.now();
   const c = cache.get(warungId);
-  if (c && c.exp > now) return c.ok;
-  let ok = true; // fail-open default
+  if (c && c.exp > now) { setRequestBrandFromRow(c.row); return c.ok; }
+  let ok = true, row = null; // fail-open default
   try {
-    const w = await getWarungById(warungId);
-    ok = isActiveRow(w);
+    row = await getWarungById(warungId);
+    ok = isActiveRow(row);
   } catch (err) {
     console.error("[SUB] cek status warung gagal (fail-open):", err.message);
   }
-  cache.set(warungId, { ok, exp: now + TTL_MS });
+  cache.set(warungId, { ok, row, exp: now + TTL_MS });
+  setRequestBrandFromRow(row);   // muat brand warung ke konteks utk view
   return ok;
 }
 

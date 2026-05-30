@@ -3,6 +3,7 @@
 
 import QRCode from "qrcode";
 import { CONFIG } from "../config.js";
+import { arenaName } from "./brand.js";
 
 const QR_OPTIONS = {
   errorCorrectionLevel: "M",
@@ -57,7 +58,7 @@ export const brandedQrCard = async ({ text, nama, kode, totalMain = 0, sudahScan
   const CX   = W / 2;                  // 200
   const DOTS = CONFIG.BATAS_MAIN;      // biasanya 10
 
-  const ARENA = escSvg(CONFIG.NAMA_ARENA);
+  const ARENA = escSvg(arenaName());
   const NAMA  = escSvg(nama.length > 22 ? nama.slice(0, 20) + "…" : nama);
   const KODE  = escSvg(kode);
 
@@ -314,7 +315,7 @@ export const ogImageSvg = async ({ text, nama, kode }) => {
 
   const W     = 1200;
   const H     = 630;
-  const ARENA = escSvg(CONFIG.NAMA_ARENA);
+  const ARENA = escSvg(arenaName());
   const NAMA  = escSvg(nama.length > 28 ? nama.slice(0, 26) + "..." : nama);
   const KODE  = escSvg(kode);
 

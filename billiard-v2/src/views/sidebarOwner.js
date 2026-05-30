@@ -12,6 +12,7 @@
 //   profil, pengguna, backup
 
 import { CONFIG } from "../config.js";
+import { arenaName } from "../utils/brand.js";
 import { notifSheetCss } from "./notif.js";
 
 // Helper: initials nama (mis. "Agung Setiawan" → "AS")
@@ -156,7 +157,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     <div class="own-brand">
       <div class="own-brand-logo"><i class="ti ti-circle-number-8"></i><span class="own-brand-online"></span></div>
       <div class="own-brand-text">
-        <div class="own-brand-name">${CONFIG.NAMA_ARENA}</div>
+        <div class="own-brand-name">${arenaName()}</div>
         <div class="own-brand-sub">Owner Panel</div>
       </div>
       <button type="button" class="sidebar-bell" onclick="openNotifSheet()" aria-label="Notifikasi" title="Notifikasi">

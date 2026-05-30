@@ -2,6 +2,7 @@
 // ── Placeholder page utk menu yg blm di-implement ────────────
 
 import { CONFIG } from "../config.js";
+import { arenaName } from "../utils/brand.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell } from "./sidebarOwner.js";
 
 export function segeraHadirPage({ title = "Fitur Ini", token = "", user = {} }) {
@@ -11,7 +12,7 @@ export function segeraHadirPage({ title = "Fitur Ini", token = "", user = {} }) 
   return `<!DOCTYPE html><html lang="id"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <title>${title} — ${CONFIG.NAMA_ARENA}</title>
+    <title>${title} — ${arenaName()}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">

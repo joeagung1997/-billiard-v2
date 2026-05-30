@@ -4,6 +4,7 @@
 // sebagai variabel string biasa SEBELUM dimasukkan ke template literal.
 
 import { CONFIG } from "../config.js";
+import { arenaName } from "../utils/brand.js";
 import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG, todayBusinessDayISO } from "../utils/format.js";
 import { initials } from "./finance.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
@@ -40,7 +41,7 @@ const DARK_BASE = [
 function docHead(title) {
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">'
-    + '<title>' + title + ' — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<title>' + title + ' — ' + arenaName() + '</title>'
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">';
 }
 
@@ -190,7 +191,7 @@ export function adminLoginPage(showError, actionUrl = "/admin/login") {
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">'
-    + '<title>Masuk — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<title>Masuk — ' + arenaName() + '</title>'
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600&family=Geist:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
@@ -204,7 +205,7 @@ export function adminLoginPage(showError, actionUrl = "/admin/login") {
     + '<div class="bp-content">'
     + '<a href="/" class="bp-logo">'
     + '<div class="bp-logo-sq">8</div>'
-    + '<span class="bp-logo-name">' + CONFIG.NAMA_ARENA + '</span>'
+    + '<span class="bp-logo-name">' + arenaName() + '</span>'
     + '</a>'
     + '<h2 class="bp-title">Selamat<br>datang<br><em>kembali</em></h2>'
     + '<p class="bp-sub">Masuk untuk mengakses dashboard operasional billiard Anda.</p>'
@@ -628,7 +629,7 @@ function buildSidebar(token, activePage, user = {}) {
     + '<div class="logo-row">'
     + '<div class="logo-mark"><i class="ti ti-circle-number-8"></i><div class="logo-online"></div></div>'
     + '<div class="logo-text">'
-    + '<div class="logo-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div class="logo-name">' + arenaName() + '</div>'
     + '<div class="logo-sub">Admin Panel</div>'
     + '</div>'
     + '</div>'
@@ -1034,7 +1035,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-    + '<title>Admin — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<title>Admin — ' + arenaName() + '</title>'
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
@@ -1058,7 +1059,7 @@ export function adminDashboard({ db, log, transaksi = [], token, req, user = {} 
     + '<div class="topbar-brand">'
     + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
     + '<i class="ti ti-circle-number-8"></i></div>'
-    + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div><div class="topbar-name">' + arenaName() + '</div>'
     + '<div class="topbar-label">' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
@@ -1470,7 +1471,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-    + '<title>Kelola Member — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<title>Kelola Member — ' + arenaName() + '</title>'
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
@@ -1493,7 +1494,7 @@ export function memberPage({ db, log = [], token, req, user = {} }) {
     + '<div class="topbar-brand">'
     + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
     + '<i class="ti ti-circle-number-8"></i></div>'
-    + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div><div class="topbar-name">' + arenaName() + '</div>'
     + '<div class="topbar-label">Kelola Member · ' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'
@@ -1744,7 +1745,7 @@ export function addMemberPage(tk, errTlp) {
 export function addMemberSuccess({ tk, kode, nama, telepon, scanUrl }) {
   const shareUrl = scanUrl.replace('/scan?id=', '/member/').replace('http://', 'https://');
   const waMsg = encodeURIComponent(
-    'Halo ' + nama + '! Ini kartu member ' + CONFIG.NAMA_ARENA + '.\n'
+    'Halo ' + nama + '! Ini kartu member ' + arenaName() + '.\n'
     + 'Scan QR ini tiap kali mau main ya! ' + shareUrl
   );
   // Normalize ke format internasional WhatsApp (62XXX, tanpa +/spasi/dash)
@@ -1947,7 +1948,7 @@ export function riwayatKunjunganPage({ log = [], token, req, user = {} }) {
 
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-    + '<title>Riwayat Kunjungan — ' + CONFIG.NAMA_ARENA + '</title>'
+    + '<title>Riwayat Kunjungan — ' + arenaName() + '</title>'
     + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
     + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
@@ -1995,7 +1996,7 @@ export function riwayatKunjunganPage({ log = [], token, req, user = {} }) {
     + '<div class="topbar-brand">'
     + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
     + '<i class="ti ti-circle-number-8"></i></div>'
-    + '<div><div class="topbar-name">' + CONFIG.NAMA_ARENA + '</div>'
+    + '<div><div class="topbar-name">' + arenaName() + '</div>'
     + '<div class="topbar-label">Riwayat Kunjungan · ' + now + '</div></div>'
     + '</div>'
     + '<div class="topbar-right">'

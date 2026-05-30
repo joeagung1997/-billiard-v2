@@ -2,6 +2,7 @@
 // ── HTML views untuk halaman keuangan ────────────────────────
 
 import { CONFIG } from "../config.js";
+import { arenaName } from "../utils/brand.js";
 import { KAT_TUKAR_UANG } from "../utils/format.js";
 import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
 
@@ -41,7 +42,7 @@ const safeJson = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 function docHead(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-    + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
+    + "<title>" + title + " — " + arenaName() + "</title>"
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"/finance.css?v=3\">";
 }
@@ -49,7 +50,7 @@ function docHead(title) {
 export function docHeadV4(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-    + "<title>" + title + " — " + CONFIG.NAMA_ARENA + "</title>"
+    + "<title>" + title + " — " + arenaName() + "</title>"
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
@@ -105,7 +106,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     + "<div class=\"logo-row\">"
     + "<div class=\"logo-mark\"><i class=\"ti ti-circle-number-8\"></i><div class=\"logo-online\"></div></div>"
     + "<div class=\"logo-text\">"
-    + "<div class=\"logo-name\">" + CONFIG.NAMA_ARENA + "</div>"
+    + "<div class=\"logo-name\">" + arenaName() + "</div>"
     + "<div class=\"logo-sub\">Operasional</div>"
     + "</div>"
     + "</div>"
@@ -516,7 +517,7 @@ export function financeLoginPage(showErr) {
     + "<div class=\"bg-glow\"></div>"
     + "<div class=\"card\">"
     +   "<div class=\"icon-box\">💰</div>"
-    +   "<div class=\"arena-lbl\">" + CONFIG.NAMA_ARENA + "</div>"
+    +   "<div class=\"arena-lbl\">" + arenaName() + "</div>"
     +   "<h1>Laporan Keuangan</h1>"
     +   "<p class=\"sub\">Masukkan username &amp; PIN untuk akses</p>"
     +   errHtml
@@ -1405,7 +1406,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\">"
     + "<div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-circle-number-8\"></i></div>"
-    + "<div><div class=\"topbar-name\">" + CONFIG.NAMA_ARENA + "</div>"
+    + "<div><div class=\"topbar-name\">" + arenaName() + "</div>"
     + "<div class=\"topbar-label\">Keuangan · " + bulanLabel + "</div></div>"
     + "</div>"
     + "<div class=\"topbar-right\">" + (role === "owner" ? buildOwnerTopbarBell() : "") + buildFinanceTopbarProfile(role, displayName) + "</div>"

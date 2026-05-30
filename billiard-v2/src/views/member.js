@@ -2,6 +2,7 @@
 // ── HTML views untuk halaman member (scan, PIN, hasil) ────────
 
 import { CONFIG, getTip } from "../config.js";
+import { arenaName, arenaWa } from "../utils/brand.js";
 import { formatTanggal } from "../utils/format.js";
 
 // ── Shared assets ─────────────────────────────────────────────
@@ -416,9 +417,9 @@ const memberIdentity = (nama, kode) => `
 
 // ── WA Booking button (post-checkin) ──────────────────────────
 const waBookBtn = (nama, kode) => {
-  const wa   = CONFIG.NOMOR_WA || "6281519210552";
+  const wa   = arenaWa() || "6281519210552";
   const text = encodeURIComponent(
-    `Halo ${CONFIG.NAMA_ARENA}, saya ${nama}${kode ? ` (member ${kode})` : ""}. Mau booking meja, ada yang tersedia? 🎱`
+    `Halo ${arenaName()}, saya ${nama}${kode ? ` (member ${kode})` : ""}. Mau booking meja, ada yang tersedia? 🎱`
   );
   return `<div class="act-row">
     <a class="act-btn-wa" href="https://wa.me/${wa}?text=${text}" target="_blank" rel="noopener">
@@ -434,7 +435,7 @@ const waBookBtn = (nama, kode) => {
 // ── Terms / Ketentuan Member block ────────────────────────────
 const termsBlock = () => `
 <div class="terms-block">
-  <div class="terms-title">Ketentuan Member ${CONFIG.NAMA_ARENA}</div>
+  <div class="terms-title">Ketentuan Member ${arenaName()}</div>
   <div class="terms-sub">Biar nggak ada salah paham, simak dulu ya!</div>
   <div class="terms-list">
     <div class="term-item">
@@ -476,7 +477,7 @@ ${FONTS_LINK}
 // ─────────────────────────────────────────────────────────────
 
 export const pinPage = (kode, nama, errorMsg = null) => htmlDoc(
-  CONFIG.NAMA_ARENA,
+  arenaName(),
   `
 input[type=password]{
   width:100%;padding:14px;
@@ -537,7 +538,7 @@ button[type=submit]:active{opacity:.85;transform:scale(.98)}
 `,
   `
 <div class="page-header">
-  <div class="brand-name">${CONFIG.NAMA_ARENA}</div>
+  <div class="brand-name">${arenaName()}</div>
   <div class="page-desc">Konfirmasi check-in billiard</div>
 </div>
 <div class="card-wrap">
@@ -633,15 +634,15 @@ export const resultPage = (tipe, data) => {
 
   // ── Sukses ─────────────────────────────────────────────────
   if (tipe === "sukses") return htmlDoc(
-    CONFIG.NAMA_ARENA, "",
+    arenaName(), "",
     `
 <div class="page-header">
-  <div class="brand-name">${CONFIG.NAMA_ARENA}</div>
+  <div class="brand-name">${arenaName()}</div>
   <div class="page-desc">Tunjukkan kartu ini ke kasir untuk check-in billiard.</div>
 </div>
 <div class="card-wrap">
   <div class="card">
-    ${charBanner("chip-green", "Check-in ✓", CONFIG.NAMA_ARENA)}
+    ${charBanner("chip-green", "Check-in ✓", arenaName())}
     <div class="card-body">
       ${memberIdentity(nama, kode)}
       <div class="divider"></div>
@@ -672,15 +673,15 @@ export const resultPage = (tipe, data) => {
 
   // ── Sudah Scan ─────────────────────────────────────────────
   if (tipe === "sudahScan") return htmlDoc(
-    CONFIG.NAMA_ARENA, "",
+    arenaName(), "",
     `
 <div class="page-header">
-  <div class="brand-name">${CONFIG.NAMA_ARENA}</div>
+  <div class="brand-name">${arenaName()}</div>
   <div class="page-desc">Kartu Member</div>
 </div>
 <div class="card-wrap">
   <div class="card">
-    ${charBanner("chip-amber", "Sudah Hadir", CONFIG.NAMA_ARENA)}
+    ${charBanner("chip-amber", "Sudah Hadir", arenaName())}
     <div class="card-body">
       ${memberIdentity(nama, kode)}
       <div class="divider"></div>
@@ -706,16 +707,16 @@ ${termsBlock()}`
 
   // ── Gratis ─────────────────────────────────────────────────
   if (tipe === "gratis") return htmlDoc(
-    CONFIG.NAMA_ARENA,
+    arenaName(),
     `.card{animation:celebrateGlow 2s ease-in-out infinite}`,
     `
 <div class="page-header">
-  <div class="brand-name">${CONFIG.NAMA_ARENA}</div>
+  <div class="brand-name">${arenaName()}</div>
   <div class="page-desc">Selamat — reward menanti kamu!</div>
 </div>
 <div class="card-wrap">
   <div class="card">
-    ${charBanner("chip-gold", "GRATIS 🏆", CONFIG.NAMA_ARENA)}
+    ${charBanner("chip-gold", "GRATIS 🏆", arenaName())}
     <div class="card-body">
       ${memberIdentity(nama, kode)}
       <div class="divider"></div>
@@ -744,7 +745,7 @@ ${termsBlock()}`
 
   // ── Error ───────────────────────────────────────────────────
   return htmlDoc(
-    CONFIG.NAMA_ARENA, "",
+    arenaName(), "",
     `
 <div class="card-wrap">
   <div class="card">

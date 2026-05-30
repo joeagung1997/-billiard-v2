@@ -5,6 +5,7 @@ import { Router }             from "express";
 import { readDB, findMember } from "../utils/db.js";
 import { buildScanUrl, buildBaseUrl, brandedQrCard, qrDataUrl } from "../utils/qr.js";
 import { CONFIG }             from "../config.js";
+import { arenaName, arenaWa } from "../utils/brand.js";
 import { memberCardPage }    from "../views/qrCard.js";
 import QRCode                 from "qrcode";
 
@@ -64,7 +65,7 @@ function makeCloudinaryUrl(kode, nama) {
 
   const enc = (t) => encodeURIComponent(String(t ?? "")).replace(/,/g, "%2C");
 
-  const arena    = enc(CONFIG.NAMA_ARENA);
+  const arena    = enc(arenaName());
   const namaDisp = enc(nama.length > 20 ? nama.slice(0, 18) + "..." : nama);
   const kodeDisp = enc(kode);
   const footer   = enc("Tunjukkan ke kasir setiap mau main");
@@ -125,8 +126,8 @@ router.get("/member/:kode", async (req, res) => {
   const base     = buildBaseUrl(req);
   const scanUrl  = base + "/scan?id=" + kode;
   const ogImgUrl = base + "/og-image/" + kode;
-  const title    = CONFIG.NAMA_ARENA + " — " + member.nama;
-  const desc     = "Kartu member " + CONFIG.NAMA_ARENA
+  const title    = arenaName() + " — " + member.nama;
+  const desc     = "Kartu member " + arenaName()
     + ". Tunjukkan QR ini ke kasir untuk check-in. Kode: " + kode;
 
   // Generate QR data URL untuk kartu.
@@ -140,7 +141,7 @@ router.get("/member/:kode", async (req, res) => {
     kode,
     totalMain: member.totalMain ?? 0,
     qrDataUrl: qrImg,
-    nomorWa:   CONFIG.NOMOR_WA,
+    nomorWa:   arenaWa(),
   });
 
   // Inject OG + Twitter meta tags ke dalam <head> sebelum </head>
@@ -155,7 +156,7 @@ router.get("/member/:kode", async (req, res) => {
     + '<meta property="og:image:width"      content="800">'
     + '<meta property="og:image:height"     content="800">'
     + '<meta property="og:image:alt"        content="QR ' + member.nama + '">'
-    + '<meta property="og:site_name"        content="' + CONFIG.NAMA_ARENA + '">'
+    + '<meta property="og:site_name"        content="' + arenaName() + '">'
     + '<meta name="twitter:card"            content="summary_large_image">'
     + '<meta name="twitter:title"           content="' + title + '">'
     + '<meta name="twitter:description"     content="' + desc + '">'
