@@ -207,14 +207,21 @@ export const runMigrations = async () => {
   }
 
   // ── Tambah kategori "Tukar Uang" untuk DB yg sudah existing ──
-  // Idempotent: ON CONFLICT DO NOTHING. Urutan = 999 → muncul di paling bawah
-  // list kategori, tapi user bisa drag-and-drop di /operasional/kategori.
+  // Idempotent via WHERE NOT EXISTS (BUKAN ON CONFLICT) — karena unique
+  // (nama,jenis) di-swap jadi komposit (warung_id,nama,jenis) di bawah, target
+  // ON CONFLICT lama tidak ada lagi pada re-run. Tidak menyebut warung_id di
+  // sini supaya tetap jalan saat kolom belum dibuat (fresh DB); baris ini
+  // ke-backfill ke warung 1 lewat DEFAULT saat kolom ditambahkan.
   await query(
-    `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, 'pemasukan',   999) ON CONFLICT (nama, jenis) DO NOTHING`,
+    `INSERT INTO kategori (nama, jenis, urutan)
+     SELECT $1, 'pemasukan', 999
+     WHERE NOT EXISTS (SELECT 1 FROM kategori WHERE nama = $1 AND jenis = 'pemasukan')`,
     ["Tukar Uang"]
   );
   await query(
-    `INSERT INTO kategori (nama, jenis, urutan) VALUES ($1, 'pengeluaran', 999) ON CONFLICT (nama, jenis) DO NOTHING`,
+    `INSERT INTO kategori (nama, jenis, urutan)
+     SELECT $1, 'pengeluaran', 999
+     WHERE NOT EXISTS (SELECT 1 FROM kategori WHERE nama = $1 AND jenis = 'pengeluaran')`,
     ["Tukar Uang"]
   );
 
@@ -654,6 +661,48 @@ export const runMigrations = async () => {
     await query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS warung_id INTEGER NOT NULL DEFAULT 1`);
     await query(`CREATE INDEX IF NOT EXISTS idx_${t}_warung ON ${t} (warung_id)`);
   }
+
+  // ── Multi-tenant: unique/PK global → komposit per-warung (idempotent) ──
+  // Unique lama (auto-name PG: <tabel>_<kolom>_key) di-DROP IF EXISTS lalu
+  // diganti UNIQUE INDEX komposit (IF NOT EXISTS). Index unik tetap kompatibel
+  // dgn ON CONFLICT (warung_id, ...) di db.js. members.kode sengaja TETAP PK
+  // global (kode unik global, prefix per-warung) supaya /scan?id=KODE jalan
+  // tanpa slug. Data lama (warung 1) sudah unik global → swap aman, tanpa
+  // risiko duplikat.
+  await query(`ALTER TABLE kategori       DROP CONSTRAINT IF EXISTS kategori_nama_jenis_key`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_kategori_warung_nama_jenis ON kategori (warung_id, nama, jenis)`);
+
+  await query(`ALTER TABLE menu_items     DROP CONSTRAINT IF EXISTS menu_items_nama_key`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_menu_items_warung_nama ON menu_items (warung_id, nama)`);
+
+  await query(`ALTER TABLE bahan_baku     DROP CONSTRAINT IF EXISTS bahan_baku_nama_key`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_bahan_baku_warung_nama ON bahan_baku (warung_id, nama)`);
+
+  await query(`ALTER TABLE supplier       DROP CONSTRAINT IF EXISTS supplier_nama_key`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_supplier_warung_nama ON supplier (warung_id, nama)`);
+
+  await query(`ALTER TABLE admin_accounts DROP CONSTRAINT IF EXISTS admin_accounts_username_key`);
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_admin_accounts_warung_username ON admin_accounts (warung_id, username)`);
+
+  // app_settings: PK (key) → komposit (warung_id, key). DO block idempotent —
+  // hanya swap kalau PK lama masih single-column (belum mengandung warung_id).
+  await query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'app_settings' AND constraint_type = 'PRIMARY KEY'
+          AND constraint_name = 'app_settings_pkey'
+      ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.key_column_usage
+        WHERE table_name = 'app_settings' AND constraint_name = 'app_settings_pkey'
+          AND column_name = 'warung_id'
+      ) THEN
+        ALTER TABLE app_settings DROP CONSTRAINT app_settings_pkey;
+        ALTER TABLE app_settings ADD PRIMARY KEY (warung_id, key);
+      END IF;
+    END $$;
+  `);
 
   // ── Verifikasi backfill: tidak boleh ada baris warung_id NULL ──
   // NOT NULL DEFAULT 1 sudah menjamin ini, tapi kita assert eksplisit + log
