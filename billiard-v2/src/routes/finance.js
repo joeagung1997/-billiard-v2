@@ -61,8 +61,8 @@ function getCookie(req, name) {
   return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
 }
 
-function setRoleCookie(res, role, username = "", displayName = "", shift = "siang") {
-  const token = jwt.sign({ role, username, displayName, shift, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+function setRoleCookie(res, role, username = "", displayName = "", shift = "siang", warungId = 1) {
+  const token = jwt.sign({ role, username, displayName, shift, warungId, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
   // Path=/ supaya cookie juga dikirim ke /admin/* — fallback _frt di
   // middleware/auth.js bisa baca cookie ini saat owner pindah menu.
@@ -93,6 +93,7 @@ function getFinanceUser(req) {
       username:    decoded.username    || "",
       displayName: decoded.displayName || "",
       shift:       decoded.shift       || "siang",
+      warungId:    decoded.warungId    || 1,
     };
   } catch { return null; }
 }
@@ -112,6 +113,8 @@ function requireFinanceAuth(req, res, next) {
   res.locals.financeUser    = user.username;
   res.locals.financeDisplay = user.displayName;
   res.locals.financeShift   = user.shift;
+  req.warungId              = user.warungId || 1;   // tenant context, dikonsumsi db.js via getWarungId (C5)
+  res.locals.warungId       = req.warungId;
   next();
 }
 
@@ -135,7 +138,7 @@ router.post("/login", async (req, res) => {
   const username = (req.body.username ?? "").trim().toLowerCase();
   const redir    = (req.query.r       ?? "").slice(0, 300);
 
-  let role = null, displayName = "", shift = "siang";
+  let role = null, displayName = "", shift = "siang", warungId = 1;
 
   if (username) {
     // Username diisi → wajib match akun di admin_accounts. Tidak fallback ke PIN-only.
@@ -146,6 +149,7 @@ router.post("/login", async (req, res) => {
         role = row.role;
         displayName = row.display_name || row.username;
         shift = row.shift || "siang";
+        warungId = row.warung_id || 1;
       }
     } catch (err) { console.error("[FINANCE] accounts lookup:", err.message); }
   } else {
@@ -159,7 +163,7 @@ router.post("/login", async (req, res) => {
     return res.redirect(back);
   }
 
-  setRoleCookie(res, role, username, displayName, shift);
+  setRoleCookie(res, role, username, displayName, shift, warungId);
   res.redirect(redir || "/operasional");
 });
 

@@ -35,6 +35,7 @@ export const requireAdmin = (req, res, next) => {
         username:    frt.username,
         role:        frt.role,
         displayName: frt.displayName || frt.username,
+        warungId:    frt.warungId || 1,
       });
       const u = new URL(req.originalUrl, "http://x");
       u.searchParams.set("tk", newTk);
@@ -47,6 +48,8 @@ export const requireAdmin = (req, res, next) => {
   res.locals.adminUser    = user.username;
   res.locals.adminRole    = user.role;
   res.locals.adminDisplay = user.displayName || "";
+  req.warungId            = user.warungId || 1;   // tenant context, dikonsumsi db.js via getWarungId (C5)
+  res.locals.warungId     = req.warungId;
   next();
 };
 

@@ -7,9 +7,9 @@ const sessions = new Map();
 const SESSION_TTL = 4 * 60 * 60 * 1000; // 4 jam
 
 // Buat token baru. Simpan { username, role, displayName } di in-memory store.
-export const createToken = ({ username, role, displayName = "" }) => {
+export const createToken = ({ username, role, displayName = "", warungId = 1 }) => {
   const token = randomBytes(24).toString("hex");
-  sessions.set(token, { username, role, displayName, exp: Date.now() + SESSION_TTL });
+  sessions.set(token, { username, role, displayName, warungId, exp: Date.now() + SESSION_TTL });
   return token;
 };
 
@@ -22,7 +22,7 @@ export const verifyToken = (token) => {
     sessions.delete(token);
     return null;
   }
-  return { username: session.username, role: session.role, displayName: session.displayName ?? "" };
+  return { username: session.username, role: session.role, displayName: session.displayName ?? "", warungId: session.warungId ?? 1 };
 };
 
 // Bersihkan session expired tiap 30 menit

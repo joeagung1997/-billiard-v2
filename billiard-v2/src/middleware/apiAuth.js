@@ -43,6 +43,8 @@ export const requireApiAuth = (roles = ["admin"]) =>
         });
       }
       req.apiUser = payload;
+      // Tenant context dari klaim token (default 1 utk token lama / REST global-PIN).
+      req.warungId = Number.isInteger(payload.warungId) && payload.warungId > 0 ? payload.warungId : 1;
       next();
     } catch (err) {
       return res.status(401).json({

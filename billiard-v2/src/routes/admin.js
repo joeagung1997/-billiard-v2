@@ -61,6 +61,7 @@ router.get("/", async (req, res) => {
         username:    frt.username,
         role:        frt.role,
         displayName: frt.displayName || frt.username,
+        warungId:    frt.warungId || 1,
       });
       return res.redirect(`/admin?tk=${newTk}`);
     }
@@ -93,7 +94,7 @@ router.post("/login", async (req, res) => {
       const row = accounts.find(
         (u) => u.username.toLowerCase() === username && u.pin === pin
       );
-      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username, shift: row.shift || "siang" };
+      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username, shift: row.shift || "siang", warungId: row.warung_id || 1 };
     }
   } catch (err) {
     console.error("[ADMIN] DB accounts lookup failed, fallback ke CONFIG:", err.message);
@@ -104,12 +105,12 @@ router.post("/login", async (req, res) => {
     const fromConfig = CONFIG.ADMIN_USERS.find(
       (u) => u.username.toLowerCase() === username && u.pin === pin
     );
-    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username, shift: "siang" };
+    if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username, shift: "siang", warungId: 1 };
   }
 
   if (!found) return res.redirect("/admin?err=1");
 
-  const token = createToken({ username: found.username, role: found.role, displayName: found.displayName });
+  const token = createToken({ username: found.username, role: found.role, displayName: found.displayName, warungId: found.warungId });
 
   // Auto-set cookie _frt utk semua role (owner & karyawan) — supaya akses
   // /operasional/* tdk perlu input PIN lagi setelah login di /admin.
@@ -117,7 +118,7 @@ router.post("/login", async (req, res) => {
   // ini owner yg pindah dari /operasional balik ke /admin akan dimintai PIN
   // ulang karena fallback _frt di middleware/auth.js gak bisa baca cookie.
   const frt = jwt.sign(
-    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, boot: CONFIG.DEPLOY_ID },
+    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, warungId: found.warungId, boot: CONFIG.DEPLOY_ID },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );

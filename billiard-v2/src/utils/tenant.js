@@ -20,8 +20,8 @@ export const DEFAULT_WARUNG_ID = 1;
  * @returns {number}
  */
 export function getWarungId(req) {
-  // TODO(C3): isi req.warungId dari token saat auth middleware berjalan.
-  // TODO(C4): cross-check dengan slug path /w/:slug.
+  // C3 ✓: req.warungId di-set middleware auth (admin/finance/api) dari klaim token.
+  // TODO(C4): cross-check dengan slug path /w/:slug (tolak kalau token ≠ slug).
   const id = req && req.warungId;
   return Number.isInteger(id) && id > 0 ? id : DEFAULT_WARUNG_ID;
 }

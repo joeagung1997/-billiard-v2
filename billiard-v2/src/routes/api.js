@@ -36,7 +36,9 @@ router.post("/auth", (req, res) => {
 
   if (!validRole) return err(res, "PIN salah atau role tidak valid.", 401);
 
-  const token = signToken({ role: validRole });
+  // REST API v1 pakai PIN global → warung 1 (Warpat). Multi-warung REST API
+  // (API key per-warung) menyusul saat onboarding tenant baru.
+  const token = signToken({ role: validRole, warungId: 1 });
   return ok(res, { token, role: validRole, expiresIn: CONFIG.JWT_EXPIRES });
 });
 
