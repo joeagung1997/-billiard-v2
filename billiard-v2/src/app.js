@@ -19,6 +19,7 @@ import financeRouter     from "./routes/finance.js";
 import sdmRouter         from "./routes/sdm.js";
 import monitoringRouter  from "./routes/monitoring.js";
 import apiRouter      from "./routes/api.js";
+import warungRouter   from "./routes/warung.js";
 import { swaggerSpec } from "./utils/swagger.js";
 import { resultPage } from "./views/member.js";
 
@@ -58,6 +59,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.get("/api/v1/openapi.json", (_req, res) => res.json(swaggerSpec));
 
 // ── Routes ────────────────────────────────────────────────────
+// Multi-tenant entry: /w/:slug → login per-warung (path-based, Opsi A).
+// Setelah login, token menentukan warung; app dipakai via URL biasa di bawah.
+app.use("/w/:slug", warungRouter);
 app.use("/", scanRouter);
 app.use("/admin", adminRouter);
 app.use("/admin", qrRouter);

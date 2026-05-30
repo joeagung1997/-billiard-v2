@@ -46,7 +46,7 @@ function docHead(title) {
 
 // ── Login page ────────────────────────────────────────────────
 
-export function adminLoginPage(showError) {
+export function adminLoginPage(showError, actionUrl = "/admin/login") {
   const errHtml = showError
     ? '<div class="error-msg show"><i class="ti ti-alert-circle"></i><span>Username atau PIN salah. Silakan coba lagi.</span></div>'
     : '<div class="error-msg"><i class="ti ti-alert-circle"></i><span>Username atau PIN salah. Silakan coba lagi.</span></div>';
@@ -259,7 +259,7 @@ export function adminLoginPage(showError) {
     + '<button type="button" class="np-btn go-btn" onclick="go()" aria-label="Masuk"><i class="ti ti-arrow-right"></i></button>'
     + '</div>'
 
-    + '<form id="pf" action="/admin/login" method="post">'
+    + '<form id="pf" action="' + actionUrl + '" method="post">'
     + '<input type="hidden" name="pin"      id="pi">'
     + '<input type="hidden" name="username" id="pun">'
     + '</form>'

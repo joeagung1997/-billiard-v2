@@ -83,58 +83,54 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ── POST /admin/login ─────────────────────────────────────────
-router.post("/login", async (req, res) => {
+// ── Login admin (shared) ──────────────────────────────────────
+// Cocokkan akun di WARUNG AKTIF (konteks tenant via ALS) lalu terbitkan session
+// token + cookie _frt berisi warung_id. Dipakai dua entry:
+//   • POST /admin/login        → legacy, konteks default warung 1 (Warpat).
+//   • POST /w/:slug/login       → konteks = warung dari slug (lihat routes/warung.js).
+// okBase = path tujuan setelah sukses (default "/admin"; token yg menentukan
+// warung, jadi URL pasca-login boleh legacy).
+export async function doAdminLogin(req, res, { errRedirect = "/admin?err=1", okBase = "/admin" } = {}) {
   const username = (req.body.username ?? "").trim().toLowerCase();
   const pin      = (req.body.pin      ?? "").trim();
+  const warungId = getWarungId(req);   // 1 utk /admin/login; warung slug utk /w/:slug/login
 
-  // Cari user dari DB admin_accounts (dengan fallback ke CONFIG)
   let found = null;
   try {
-    const accounts = await readAdminAccounts();
-    if (accounts.length > 0) {
-      const row = accounts.find(
-        (u) => u.username.toLowerCase() === username && u.pin === pin
-      );
-      if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username, shift: row.shift || "siang", warungId: row.warung_id || 1 };
-    }
+    const accounts = await readAdminAccounts();   // ter-scope ke warung aktif (ALS)
+    const row = accounts.find((u) => u.username.toLowerCase() === username && u.pin === pin);
+    if (row) found = { username: row.username, role: row.role, displayName: row.display_name || row.username, shift: row.shift || "siang", warungId: row.warung_id || warungId };
   } catch (err) {
-    console.error("[ADMIN] DB accounts lookup failed, fallback ke CONFIG:", err.message);
+    console.error("[ADMIN] DB accounts lookup failed:", err.message);
   }
 
-  // Fallback: cek CONFIG.ADMIN_USERS jika DB gagal / kosong
-  if (!found) {
-    const fromConfig = CONFIG.ADMIN_USERS.find(
-      (u) => u.username.toLowerCase() === username && u.pin === pin
-    );
+  // Fallback CONFIG.ADMIN_USERS HANYA utk Warpat (warung 1) — akun env legacy.
+  if (!found && warungId === 1) {
+    const fromConfig = CONFIG.ADMIN_USERS.find((u) => u.username.toLowerCase() === username && u.pin === pin);
     if (fromConfig) found = { username: fromConfig.username, role: fromConfig.role, displayName: fromConfig.username, shift: "siang", warungId: 1 };
   }
 
-  if (!found) return res.redirect("/admin?err=1");
+  if (!found) return res.redirect(errRedirect);
 
   const token = createToken({ username: found.username, role: found.role, displayName: found.displayName, warungId: found.warungId });
 
-  // Auto-set cookie _frt utk semua role (owner & karyawan) — supaya akses
-  // /operasional/* tdk perlu input PIN lagi setelah login di /admin.
-  // Path=/ (bukan /operasional) supaya cookie juga dikirim ke /admin/*; tanpa
-  // ini owner yg pindah dari /operasional balik ke /admin akan dimintai PIN
-  // ulang karena fallback _frt di middleware/auth.js gak bisa baca cookie.
+  // Auto-set cookie _frt (Path=/) supaya /operasional/* & /admin/* tidak minta
+  // PIN lagi. Clear dulu cookie legacy Path=/operasional biar tidak dobel.
   const frt = jwt.sign(
     { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, warungId: found.warungId, boot: CONFIG.DEPLOY_ID },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );
-  // Clear cookie lama Path=/operasional (legacy dari deploy sebelumnya) +
-  // set cookie baru Path=/. Tanpa clear, browser bs simpan 2 cookie _frt
-  // dgn path berbeda, dan parser kita ambil yg pertama match → bisa ambil
-  // cookie expired.
   res.setHeader("Set-Cookie", [
     `_frt=; HttpOnly; Path=/operasional; Max-Age=0; SameSite=Lax`,
     `_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/; Max-Age=${24 * 3600}; SameSite=Lax`,
   ]);
 
-  res.redirect(`/admin?tk=${token}`);
-});
+  res.redirect(`${okBase}?tk=${token}`);
+}
+
+// ── POST /admin/login (legacy = warung 1) ─────────────────────
+router.post("/login", (req, res) => doAdminLogin(req, res, { errRedirect: "/admin?err=1", okBase: "/admin" }));
 
 // ── GET /admin/members — member management page ───────────────
 router.get("/members", requireAdmin, async (req, res) => {

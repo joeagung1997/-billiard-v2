@@ -34,6 +34,18 @@ export const getActiveWarungIds = async () => {
   return res.rows.map((r) => r.id);
 };
 
+// Ambil 1 warung berdasarkan slug (utk routing /w/:slug). Null kalau tak ada.
+export const getWarungBySlug = async (slug) => {
+  const res = await query("SELECT * FROM warung WHERE slug = $1", [(slug || "").toLowerCase()]);
+  return res.rows[0] ?? null;
+};
+
+// Ambil 1 warung berdasarkan id (utk branding/konteks). Null kalau tak ada.
+export const getWarungById = async (id) => {
+  const res = await query("SELECT * FROM warung WHERE id = $1", [id]);
+  return res.rows[0] ?? null;
+};
+
 // ── Row mapper helpers ────────────────────────────────────────
 
 // 60 hari = 2 bulan (threshold inaktif)
