@@ -14,6 +14,7 @@ import { sdmDashboard, sdmDetailPage, sdmFormKaryawan, sdmPinPage, sdmAkunPage }
 import { notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { setRequestWarung } from "../utils/tenant.js";
 import { subscriptionGate } from "../middleware/subscription.js";
+import { requireModule } from "../middleware/module.js";
 
 // ── PIN auth ─────────────────────────────────────────────────
 // Fail-loud kalau env var ga di-set (sebelumnya hardcoded '2222' & 'warpat-sdm-key-v1'
@@ -98,6 +99,8 @@ router.use("/sdm", (req, res, next) => {
 
 // Gate langganan (warung sudah diketahui dari _frt di guard atas).
 router.use("/sdm", subscriptionGate);
+// Gate modul: SDM hanya untuk warung yang mengaktifkan modul 'sdm'.
+router.use("/sdm", requireModule("sdm"));
 
 // ── PIN routes (tidak perlu auth) ────────────────────────────
 

@@ -14,6 +14,7 @@
 import { CONFIG } from "../config.js";
 import { arenaName } from "../utils/brand.js";
 import { notifSheetCss } from "./notif.js";
+import { currentModules } from "../utils/tenant.js";
 
 // Helper: initials nama (mis. "Agung Setiawan" → "AS")
 function initials(name) {
@@ -53,7 +54,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
         { id: "keuangan",  href: "/operasional",           icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
         { id: "transaksi", href: "/operasional/transaksi", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
         { id: "analisis",  href: "/operasional/analisis",  icon: "ti ti-target",    label: "Analisis Target",    tk: true },
-        { id: "planning",  href: "/operasional/planning",  icon: "ti ti-route",     label: "Planning & Roadmap", tk: true },
+        { id: "planning",  href: "/operasional/planning",  icon: "ti ti-route",     label: "Planning & Roadmap", tk: true, module: "planning" },
         { id: "kategori",  href: "/operasional/kategori",  icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
@@ -70,6 +71,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       key: "billiard",
       emoji: "🎱",
       label: "Billiard",
+      module: "billiard",
       items: [
         { id: "manajemen-meja", href: soon("Manajemen Meja"), icon: "ti ti-grid-dots",  label: "Manajemen Meja", soon: true },
         { id: "riwayat-sewa",   href: soon("Riwayat Sewa"),   icon: "ti ti-receipt-2",  label: "Riwayat Sewa",   soon: true },
@@ -80,8 +82,17 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       key: "warkop",
       emoji: "☕",
       label: "Warkop",
+      module: "warkop",
       items: [
         { id: "menu",     href: "/operasional/menu",      icon: "ti ti-list-details",     label: "Kelola Menu",      tk: true },
+      ],
+    },
+    {
+      // Inventori = INTI (semua jenis usaha butuh stok & supplier) → selalu tampil.
+      key: "inventori",
+      emoji: "📦",
+      label: "Inventori",
+      items: [
         { id: "stok",     href: "/operasional/stok",      icon: "ti ti-package",          label: "Stok & Inventory", tk: true },
         { id: "supplier", href: "/operasional/supplier",  icon: "ti ti-truck-delivery",   label: "Supplier",         tk: true },
       ],
@@ -90,6 +101,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       key: "sdm",
       emoji: "👨‍💼",
       label: "SDM",
+      module: "sdm",
       items: [
         { id: "kru",            href: "/operasional/sdm",                   icon: "ti ti-users-group", label: "Kelola Kru",      tk: true },
         { id: "penggajian",     href: "/operasional/sdm#gaji",              icon: "ti ti-coin",        label: "Penggajian",      tk: true },
@@ -121,14 +133,22 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
   ];
 
+  // (Area Admin Platform kini terpisah di /platform dgn login & layout sendiri —
+  //  tidak lagi muncul sebagai section di sidebar owner.)
+
   // Build nav HTML
   // Section dianggap "open" kalau: ada item aktif DI section itu, ATAU
   // section termasuk 'always open' (Operasional default expanded — section
   // utama harian, biar 1-klik akses ke Dashboard Keuangan / Transaksi).
+  const activeModules = currentModules();
+  const modOK = (m) => !m || activeModules.includes(m);
   const alwaysOpenKeys = new Set(["operasional"]);
   let navHtml = "";
   for (const sec of sections) {
-    const isOpen = alwaysOpenKeys.has(sec.key) || sec.items.some((i) => i.id === activePage);
+    if (!modOK(sec.module)) continue;                 // modul section mati → sembunyikan
+    const visItems = sec.items.filter((it) => modOK(it.module));
+    if (visItems.length === 0) continue;              // semua item ter-filter → skip section
+    const isOpen = alwaysOpenKeys.has(sec.key) || visItems.some((i) => i.id === activePage);
     navHtml += `<div class="own-section${isOpen ? " open" : ""}" data-key="${sec.key}">`;
     navHtml += `<button type="button" class="own-section-hdr" onclick="ownToggle(this)">`
       +   `<span class="own-section-emoji">${sec.emoji}</span>`
@@ -136,7 +156,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       +   `<i class="ti ti-chevron-down own-section-chev"></i>`
       + `</button>`;
     navHtml += `<div class="own-section-body">`;
-    for (const it of sec.items) {
+    for (const it of visItems) {
       const isActive = it.id === activePage;
       const onclick  = it.tk ? tkSet : "";
       const itemCls  = "own-item"
@@ -451,4 +471,49 @@ export function buildOwnerHeader({ breadcrumb = [], actionsHtml = "", hasNotifDo
       ${actionsHtml}
     </div>
   </header>`;
+}
+
+// ── Sidebar AREA ADMIN PLATFORM (superadmin) ─────────────────────────
+// Ringkas & TERPISAH dari sidebar owner warung: tanpa menu operasional
+// (billiard/warkop/stok/member/dll). Reuse CSS .own-sidebar agar konsisten.
+export function buildPlatformSidebar({ token = "", activePage = "", displayName = "" } = {}) {
+  const tk = token ? "?tk=" + encodeURIComponent(token) : "";
+  const items = [
+    { id: "dashboard",     href: "/platform" + tk,           icon: "ti ti-layout-dashboard", label: "Dashboard" },
+    { id: "daftar-warung", href: "/platform/warung" + tk,    icon: "ti ti-building-store",    label: "Daftar Warung" },
+    { id: "buat-warung",   href: "/platform/baru" + tk,      icon: "ti ti-plus",             label: "Buat Warung" },
+    { id: "langganan",     href: "/platform/langganan" + tk, icon: "ti ti-receipt-2",        label: "Kelola Langganan" },
+  ];
+  const nav = items.map((it) =>
+    `<a href="${it.href}" class="own-item${it.id === activePage ? " active" : ""}">`
+    + `<i class="${it.icon} own-item-icon"></i><span class="own-item-label">${it.label}</span></a>`
+  ).join("");
+  const name = (displayName || "").trim() || "Super Admin";
+
+  return `<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+  <aside class="sidebar own-sidebar" id="ownSidebar">
+    <div class="own-brand">
+      <div class="own-brand-logo"><i class="ti ti-shield-cog"></i><span class="own-brand-online"></span></div>
+      <div class="own-brand-text">
+        <div class="own-brand-name">Admin Platform</div>
+        <div class="own-brand-sub">Superadmin</div>
+      </div>
+      <button type="button" class="sidebar-close" onclick="closeSidebar()" aria-label="Tutup menu" title="Tutup"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="own-nav-scroll">
+      <div class="own-section open"><div class="own-section-body">${nav}</div></div>
+    </div>
+    <div class="own-profile">
+      <div class="own-profile-avatar">SA</div>
+      <div class="own-profile-info">
+        <div class="own-profile-name">${name}</div>
+        <div class="own-profile-role">Superadmin</div>
+      </div>
+      <a href="/platform/logout" class="own-profile-logout" aria-label="Logout" title="Keluar"><i class="ti ti-logout"></i></a>
+    </div>
+  </aside>
+  <script>
+    function toggleSidebar(){var s=document.getElementById("ownSidebar"),b=document.getElementById("sidebarBackdrop");var o=s&&!s.classList.contains("open");if(s)s.classList.toggle("open",o);if(b)b.classList.toggle("open",o);document.body.classList.toggle("sidebar-lock",o);}
+    function closeSidebar(){var s=document.getElementById("ownSidebar"),b=document.getElementById("sidebarBackdrop");if(s)s.classList.remove("open");if(b)b.classList.remove("open");document.body.classList.remove("sidebar-lock");}
+  </script>`;
 }

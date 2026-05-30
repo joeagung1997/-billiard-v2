@@ -4,7 +4,7 @@
     {
       "name": "billiard-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["src/app.js"],
+      "runtimeArgs": ["--env-file=.env", "src/app.js"],
       "cwd": "billiard-v2",
       "port": 3000
     }

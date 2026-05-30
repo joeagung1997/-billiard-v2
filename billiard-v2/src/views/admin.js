@@ -7,7 +7,7 @@ import { CONFIG } from "../config.js";
 import { arenaName } from "../utils/brand.js";
 import { getBulanOptions, formatTanggalPendek, formatTanggalBulan, formatTanggalJam, KAT_TUKAR_UANG, todayBusinessDayISO } from "../utils/format.js";
 import { initials } from "./finance.js";
-import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle } from "./sidebarOwner.js";
+import { buildOwnerSidebar, buildOwnerTopbarBell, buildOwnerHeader, buildOwnerMenuToggle, buildPlatformSidebar } from "./sidebarOwner.js";
 
 // ── WA SVG icon (string biasa, bukan template literal) ────────
 const WA_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">'
@@ -2183,4 +2183,729 @@ export function riwayatKunjunganPage({ log = [], token, req, user = {} }) {
     + 'rkFilter();'
     + '</script>'
     + '</body></html>';
+}
+
+// ── Daftar Warung (SUPER-ADMIN / owner platform = warung 1) ──────────
+// Lintas-tenant: menampilkan SEMUA warung + ringkasan. Route /admin/warung
+// sudah memagari akses ke owner warung 1; view ini sekadar render.
+export function warungListPage({ warungs = [], token, req, user = {}, platform = false, base = '/admin/warung' } = {}) {
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const createdSlug = (req && req.query && req.query.created) ? String(req.query.created).slice(0, 60) : '';
+  const buatBtnHeader = '<a href="' + base + '/baru?tk=' + token + '" class="own-header-btn own-header-btn-primary"><i class="ti ti-plus"></i> Buat Warung</a>';
+  const buatBtnTopbar = '<a href="' + base + '/baru?tk=' + token + '" class="btn-primary"><i class="ti ti-plus" style="font-size:14px"></i> Buat Warung</a>';
+
+  const total  = warungs.length;
+  const nAktif = warungs.filter((w) => w.status_langganan === 'aktif').length;
+  const nTrial = warungs.filter((w) => w.status_langganan === 'trial').length;
+  const nOff   = warungs.filter((w) => w.status_langganan === 'nonaktif').length;
+
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    try { return formatTanggalPendek(d); } catch (_) { return '—'; }
+  };
+
+  const statusBadge = (w) => {
+    const s = w.status_langganan;
+    if (s === 'aktif')    return '<span class="wl-badge wl-ok"><i class="ti ti-circle-check"></i> Aktif</span>';
+    if (s === 'nonaktif') return '<span class="wl-badge wl-off"><i class="ti ti-ban"></i> Nonaktif</span>';
+    let extra = '';
+    if (w.trial_selesai && new Date(w.trial_selesai).getTime() < Date.now()) {
+      extra = ' <span class="wl-badge wl-off"><i class="ti ti-clock-x"></i> Lewat</span>';
+    }
+    return '<span class="wl-badge wl-trial"><i class="ti ti-clock"></i> Trial</span>' + extra;
+  };
+
+  const MOD_EMOJI = { billiard: '🎱', warkop: '☕', sdm: '👨‍💼', planning: '🗺️' };
+  // Sel "Trial Berakhir": tanggal + sisa/lewat. Non-trial → '—'.
+  const trialCell = (w) => {
+    if (w.status_langganan !== 'trial' || !w.trial_selesai) return '—';
+    const ms = new Date(w.trial_selesai).getTime() - Date.now();
+    const tgl = fmtDate(w.trial_selesai);
+    return ms < 0 ? tgl + ' <span class="wl-warn">lewat</span>'
+                  : tgl + ' <span class="wl-sub2">(' + Math.ceil(ms / 86400000) + 'h)</span>';
+  };
+  const modBadges = (w) => {
+    const mods = String(w.active_modules || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (!mods.length) return '<span class="wl-modnone">inti saja</span>';
+    return mods.map((m) => '<span class="wl-modb" title="' + m + '">' + (MOD_EMOJI[m] || '•') + '</span>').join('');
+  };
+
+  const rowsHtml = warungs.map((w) => {
+    const nama   = esc(w.nama);
+    const slug   = esc(w.slug);
+    const badge  = statusBadge(w);
+    const dibuat = fmtDate(w.created_at);
+    const warna  = w.warna ? esc(w.warna) : '#2d6624';
+    const dot    = w.logo_url
+      ? '<img class="wl-logo" src="' + esc(w.logo_url) + '" alt="" loading="lazy">'
+      : '<span class="wl-dot" style="background:' + warna + '"></span>';
+    const href = base + '/warung/' + w.id + '?tk=' + token;
+    const data = ' data-s="' + esc((w.nama + ' ' + w.slug).toLowerCase()) + '" data-status="' + esc(w.status_langganan) + '"';
+    const desk = '<a class="wl-row" href="' + href + '"' + data + '>'
+      + '<div class="wl-cell-nm">' + dot + '<div><div class="wl-nm">' + nama + ' <span class="wl-id">#' + w.id + '</span></div>'
+        + '<div class="wl-slug">/w/' + slug + '</div></div></div>'
+      + '<div>' + badge + '</div>'
+      + '<div class="wl-meta">' + dibuat + '</div>'
+      + '<div class="wl-meta">' + trialCell(w) + '</div>'
+      + '<div class="wl-mods-cell">' + modBadges(w) + '</div>'
+      + '<div class="wl-chev"><i class="ti ti-chevron-right"></i></div>'
+      + '</a>';
+    const mob = '<a class="wl-card" href="' + href + '"' + data + '>'
+      + '<div class="wl-card-top">' + dot + '<div style="flex:1;min-width:0"><div class="wl-nm">' + nama + ' <span class="wl-id">#' + w.id + '</span></div>'
+        + '<div class="wl-slug">/w/' + slug + '</div></div>' + badge + '</div>'
+      + '<div class="wl-card-meta"><span>Daftar: ' + dibuat + '</span><span>Trial: ' + trialCell(w) + '</span></div>'
+      + '<div class="wl-mods-cell">' + modBadges(w) + '</div>'
+      + '</a>';
+    return desk + mob;
+  }).join('');
+
+  const emptyHtml = total === 0
+    ? '<div class="empty-state"><i class="ti ti-building-store"></i>Belum ada warung terdaftar.</div>'
+    : '';
+
+  const now = new Date().toLocaleString('id-ID', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+  });
+
+  return '<!DOCTYPE html><html lang="id"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<title>Daftar Warung — ' + arenaName() + '</title>'
+    + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
+    + '<style>'
+    + '.wl-row{display:grid;grid-template-columns:minmax(180px,1.6fr) 130px 110px 130px minmax(110px,1fr) 36px;gap:12px;padding:14px 16px;border-bottom:1px solid #edf0ea;align-items:center;font-size:13px;text-decoration:none;color:inherit;cursor:pointer}'
+    + '.wl-row:hover{background:#f6faf5}'
+    + '.wl-row:last-child{border-bottom:none}'
+    + '.wl-cell-nm{display:flex;align-items:center;gap:11px;min-width:0}'
+    + '.wl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(26,35,24,.05)}'
+    + '.wl-logo{width:30px;height:30px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid #e6ebe4;background:#f4f6f3}'
+    + '.wl-nm{color:#1a2318;font-weight:600;line-height:1.3}'
+    + '.wl-id{color:#9aa898;font-size:11px;font-family:var(--ff-mono,monospace);font-weight:500}'
+    + '.wl-slug{color:#7a8c78;font-size:11px;font-family:var(--ff-mono,monospace);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.wl-num{font-family:var(--ff-mono,monospace);font-weight:600;color:#1a2318;text-align:center;font-size:14px}'
+    + '.wl-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}'
+    + '.wl-ok{background:#e8f6ec;color:#15803d;border:1px solid #bfe6cb}'
+    + '.wl-trial{background:#fef4e6;color:#b45309;border:1px solid #f5dca8}'
+    + '.wl-off{background:#fdeceb;color:#dc2626;border:1px solid #f6cfcc}'
+    + '.wl-sub{display:block;color:#9aa898;font-size:10px;margin-top:3px}'
+    + '.wl-open{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:9px;font-size:12px;font-weight:600;text-decoration:none;background:#eef4fb;color:#2563eb;border:1px solid #cfe0f6;transition:background .15s}'
+    + '.wl-open:hover{background:#dfeafa}'
+    + '.wl-aksi{display:flex;align-items:center;gap:7px;flex-wrap:wrap}'
+    + '.wl-lg{display:flex;align-items:center;gap:4px}'
+    + '.wl-lg-sel{padding:5px 7px;border:1.5px solid #dbe3d8;border-radius:8px;background:#fff;color:#1a2318;font-size:12px;font-family:inherit;outline:none;cursor:pointer}'
+    + '.wl-lg-sel:focus{border-color:#2d6624}'
+    + '.wl-lg-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;border-radius:8px;background:#2d6624;color:#fff;cursor:pointer}'
+    + '.wl-lg-btn:hover{background:#255a1e}'
+    + '.wl-lg-lock{color:#9aa898;font-size:14px}'
+    + '.wl-success{display:flex;align-items:center;gap:9px;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:500;background:#e8f6ec;color:#15803d;border:1px solid #bfe6cb}'
+    + '.wl-meta{color:#5c6e5a;font-size:12px;font-family:var(--ff-mono,monospace)}'
+    + '.wl-warn{color:#dc2626;font-weight:600}'
+    + '.wl-sub2{color:#9aa898;font-size:11px}'
+    + '.wl-mods-cell{display:flex;gap:4px;flex-wrap:wrap;align-items:center}'
+    + '.wl-modb{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:#f0f4ee;border:1px solid #e0e7dd;font-size:13px}'
+    + '.wl-modnone{color:#9aa898;font-size:11px;font-style:italic}'
+    + '.wl-chev{color:#c4d0c0;display:flex;justify-content:flex-end;font-size:16px}'
+    + '.wl-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}'
+    + '.wl-search-wrap{flex:1;min-width:180px;position:relative;display:flex;align-items:center}'
+    + '.wl-search-wrap i{position:absolute;left:11px;color:#9aa898;font-size:15px}'
+    + '.wl-search{width:100%;padding:10px 12px 10px 34px;border:1.5px solid #dbe3d8;border-radius:10px;background:#fff;color:#1a2318;font-size:13px;font-family:inherit;outline:none}'
+    + '.wl-search:focus{border-color:#2d6624}'
+    + '.wl-fsel{padding:10px 12px;border:1.5px solid #dbe3d8;border-radius:10px;background:#fff;color:#1a2318;font-size:13px;font-family:inherit;outline:none;cursor:pointer}'
+    + '.wl-fsel:focus{border-color:#2d6624}'
+    + '.wl-card-meta{display:flex;gap:14px;font-size:12px;color:#5c6e5a;flex-wrap:wrap}'
+    + '.wl-card{display:none}'
+    + '@media (max-width:768px){'
+    + '  .wl-tbl-head{display:none}'
+    + '  .wl-row{display:none}'
+    + '  .wl-card{display:flex;flex-direction:column;gap:11px;padding:15px;border-bottom:1px solid #edf0ea;text-decoration:none;color:inherit}'
+    + '  .wl-card:last-child{border-bottom:none}'
+    + '  .wl-card-top{display:flex;align-items:center;gap:11px}'
+    + '  .wl-card-stats{display:flex;gap:16px;font-size:12px;color:#5c6e5a;flex-wrap:wrap}'
+    + '  .wl-card-stats b{color:#1a2318;font-family:var(--ff-mono,monospace)}'
+    + '  .wl-card-bot{display:flex;justify-content:space-between;align-items:center;gap:8px}'
+    + '}'
+    + '</style>'
+    + '</head><body>'
+
+    + '<div class="layout">'
+    + (platform
+        ? buildPlatformSidebar({ token, activePage: 'daftar-warung', displayName: user.displayName })
+        : buildSidebar(token, 'daftar-warung', user))
+
+    + '<div class="main-wrap">'
+
+    + (!platform && user.role === 'owner' ? buildOwnerHeader({
+        breadcrumb: [{ label: 'Platform' }, { label: 'Daftar Warung' }],
+        actionsHtml: buatBtnHeader,
+      }) : '')
+
+    + '<header class="topbar">'
+    + ((platform || user.role === 'owner') ? buildOwnerMenuToggle() : '')
+    + '<div class="topbar-brand">'
+    + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
+    + '<i class="ti ti-circle-number-8"></i></div>'
+    + '<div><div class="topbar-name">' + (platform ? 'Admin Platform' : arenaName()) + '</div>'
+    + '<div class="topbar-label">Daftar Warung · ' + now + '</div></div>'
+    + '</div>'
+    + '<div class="topbar-right">'
+    + (!platform && user.role === 'owner' ? buildOwnerTopbarBell() : '')
+    + buildAdminTopbarProfile(user)
+    + '</div></header>'
+
+    + '<div class="page">'
+
+    + '<div class="dash-topbar">'
+    + '<div>'
+    + '<div class="page-title">Daftar Warung</div>'
+    + '<div class="page-sub">Semua tenant terdaftar di platform &amp; ringkasannya</div>'
+    + '</div>'
+    + '<div class="topbar-actions">' + buatBtnTopbar + '</div>'
+    + '</div>'
+
+    + (createdSlug
+        ? '<div class="wl-success"><i class="ti ti-circle-check"></i> Warung <b>/w/' + esc(createdSlug) + '</b> berhasil dibuat. Akun owner siap dipakai login.</div>'
+        : '')
+
+    + '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">'
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Total Warung<div class="stat-icon green"><i class="ti ti-building-store"></i></div></div>'
+    + '<div class="stat-value">' + total + '</div>'
+    + '<div class="stat-footer">Semua tenant</div></div>'
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Aktif<div class="stat-icon green"><i class="ti ti-circle-check"></i></div></div>'
+    + '<div class="stat-value">' + nAktif + '</div>'
+    + '<div class="stat-footer">Langganan aktif</div></div>'
+    + '<div class="stat-card amber">'
+    + '<div class="stat-label">Trial<div class="stat-icon amber"><i class="ti ti-clock"></i></div></div>'
+    + '<div class="stat-value">' + nTrial + '</div>'
+    + '<div class="stat-footer">Masa percobaan</div></div>'
+    + '<div class="stat-card">'
+    + '<div class="stat-label">Nonaktif<div class="stat-icon" style="background:rgba(239,68,68,.14);color:#ef4444"><i class="ti ti-ban"></i></div></div>'
+    + '<div class="stat-value">' + nOff + '</div>'
+    + '<div class="stat-footer">Terkunci</div></div>'
+    + '</div>'
+
+    + '<div class="wl-toolbar">'
+    + '<div class="wl-search-wrap"><i class="ti ti-search"></i><input id="wl-cari" class="wl-search" placeholder="Cari nama atau slug warung…" oninput="wlFilter()" autocomplete="off"></div>'
+    + '<select id="wl-fstatus" class="wl-fsel" onchange="wlFilter()"><option value="">Semua status</option><option value="aktif">Aktif</option><option value="trial">Trial</option><option value="nonaktif">Nonaktif</option></select>'
+    + '</div>'
+
+    + '<div class="table-card">'
+    + '<div class="tbl-head wl-tbl-head" style="grid-template-columns:minmax(180px,1.6fr) 130px 110px 130px minmax(110px,1fr) 36px">'
+    + '<div class="tbl-th">Warung</div>'
+    + '<div class="tbl-th">Status</div>'
+    + '<div class="tbl-th">Daftar</div>'
+    + '<div class="tbl-th">Trial Berakhir</div>'
+    + '<div class="tbl-th">Modul</div>'
+    + '<div class="tbl-th"></div>'
+    + '</div>'
+    + rowsHtml
+    + '<div id="wl-empty" class="empty-state" style="display:none"><i class="ti ti-search-off"></i>Tak ada warung cocok.</div>'
+    + emptyHtml
+    + '</div>'
+
+    + '<p style="margin-top:14px;font-size:11px;color:var(--txt3);text-align:center">'
+    + '<i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px"></i> '
+    + 'Klik baris warung untuk Detail & Kelola (status, modul, reset PIN owner). Data operasional warung (transaksi/keuangan/member) tidak bisa diakses dari sini.'
+    + '</p>'
+
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + (platform ? '' : buildBottomNav(token, 'daftar-warung', user))
+    + '<script>function wlFilter(){var q=(document.getElementById("wl-cari").value||"").toLowerCase().trim();var st=document.getElementById("wl-fstatus").value;var n=0;document.querySelectorAll(".wl-row,.wl-card").forEach(function(r){var okQ=!q||(r.getAttribute("data-s")||"").indexOf(q)>=0;var okS=!st||r.getAttribute("data-status")===st;var show=okQ&&okS;r.style.display=show?"":"none";if(show)n++;});var e=document.getElementById("wl-empty");if(e)e.style.display=n?"none":"block";}</script>'
+    + '</body></html>';
+}
+
+// ── Form Buat Warung (SUPER-ADMIN) ───────────────────────────────────
+// values: sticky input saat re-render karena error. error: pesan (string).
+export function warungCreatePage({ token, user = {}, values = {}, error = '', base = '/admin/warung', platform = false } = {}) {
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const v = (k) => esc(values[k] || '');
+  const status = values.status === 'aktif' ? 'aktif' : 'trial';
+  const trialDays = values.trialDays ? esc(values.trialDays) : '14';
+  const action = base + '/baru?tk=' + token;
+
+  // Modul opsional terpilih (sticky saat re-render). Default form baru = semua aktif.
+  const selMods = values.modul != null
+    ? (Array.isArray(values.modul) ? values.modul : [values.modul])
+    : ['billiard', 'warkop', 'sdm', 'planning'];
+  const modChk = (m) => (selMods.includes(m) ? ' checked' : '');
+
+  const errHtml = error
+    ? '<div class="wc-err"><i class="ti ti-alert-triangle"></i> ' + esc(error) + '</div>'
+    : '';
+
+  const now = new Date().toLocaleString('id-ID', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+  });
+
+  return '<!DOCTYPE html><html lang="id"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<title>Buat Warung — ' + arenaName() + '</title>'
+    + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
+    + '<style>'
+    + '.wc-wrap{max-width:680px;margin:0 auto}'
+    + '.wc-card{background:#fff;border:1px solid #e6ebe4;border-radius:18px;padding:28px 26px;box-shadow:0 1px 2px rgba(26,35,24,.04),0 12px 32px rgba(26,35,24,.06)}'
+    + '.wc-intro{font-size:13px;color:#6b7c69;margin:-4px 0 22px;line-height:1.5}'
+    + '.wc-field{margin-bottom:18px}'
+    + '.wc-field label{display:block;font-size:11px;font-weight:700;color:#5c6e5a;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}'
+    + '.wc-field .req{color:#e5484d;margin-left:1px}'
+    + '.wc-field input,.wc-field select{width:100%;padding:12px 14px;background:#fbfcfb;border:1.5px solid #dbe3d8;border-radius:11px;color:#1a2318;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}'
+    + '.wc-field input:hover,.wc-field select:hover{border-color:#c4d0c0}'
+    + '.wc-field input:focus,.wc-field select:focus{border-color:#2d6624;background:#fff;box-shadow:0 0 0 3px rgba(45,102,36,.13)}'
+    + '.wc-field input::placeholder{color:#a8b6a5}'
+    + '.wc-field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' fill=\'none\' stroke=\'%236b7c69\' stroke-width=\'2\'%3E%3Cpath d=\'M4 6l4 4 4-4\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}'
+    + '.wc-hint{font-size:11px;color:#7a8c78;margin-top:6px;line-height:1.45}'
+    + '.wc-pre{display:flex}'
+    + '.wc-pre-tag{display:flex;align-items:center;padding:0 13px;background:#eef2ec;border:1.5px solid #dbe3d8;border-right:none;border-radius:11px 0 0 11px;color:#5c6e5a;font-size:13px;font-family:var(--ff-mono,monospace);white-space:nowrap;transition:border-color .15s,color .15s}'
+    + '.wc-pre input{border-radius:0 11px 11px 0}'
+    + '.wc-pre:focus-within .wc-pre-tag{border-color:#2d6624;color:#2d6624}'
+    + '.wc-color{display:flex;align-items:center;border:1.5px solid #dbe3d8;border-radius:11px;background:#fbfcfb;overflow:hidden;transition:border-color .15s,box-shadow .15s,background .15s}'
+    + '.wc-color:hover{border-color:#c4d0c0}'
+    + '.wc-color:focus-within{border-color:#2d6624;background:#fff;box-shadow:0 0 0 3px rgba(45,102,36,.13)}'
+    + '.wc-color input[type=color]{width:48px;height:44px;border:none;background:none;padding:5px;cursor:pointer;flex-shrink:0}'
+    + '.wc-color input[type=color]::-webkit-color-swatch-wrapper{padding:0}'
+    + '.wc-color input[type=color]::-webkit-color-swatch{border:1px solid rgba(0,0,0,.12);border-radius:7px}'
+    + '.wc-color input[type=color]::-moz-color-swatch{border:1px solid rgba(0,0,0,.12);border-radius:7px}'
+    + '.wc-color input[type=text]{flex:1;min-width:0;border:none;background:none;padding:12px 12px 12px 4px;color:#1a2318;font-size:14px;font-family:var(--ff-mono,monospace);outline:none}'
+    + '.wc-color input[type=text]:focus{box-shadow:none}'
+    + '.wc-slug-status{font-size:11px;margin-top:6px;font-weight:600;display:none;align-items:center;gap:5px}'
+    + '.wc-slug-status.ok{color:#15803d}'
+    + '.wc-slug-status.bad{color:#dc2626}'
+    + '.wc-slug-status.neutral{color:#7a8c78}'
+    + '.wc-logo{display:flex;align-items:center;gap:14px}'
+    + '.wc-logo-preview{width:64px;height:64px;border-radius:12px;border:1.5px dashed #c4d0c0;background:#f4f6f3 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#a8b6a5;font-size:24px;flex-shrink:0;overflow:hidden}'
+    + '.wc-logo-main{display:flex;flex-direction:column;gap:7px;align-items:flex-start;min-width:0}'
+    + '.wc-logo-btn,.wc-logo-rm{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #dbe3d8;background:#fff;color:#2d6624;transition:background .15s}'
+    + '.wc-logo-btn:hover{background:#f4f6f3}'
+    + '.wc-logo-rm{color:#dc2626;border-color:#f6cfcc}'
+    + '.wc-logo-rm:hover{background:#fdeceb}'
+    + '.wc-logo-status{font-size:11px;color:#7a8c78;line-height:1.4}'
+    + '.wc-logo-status.ok{color:#15803d;font-weight:600}'
+    + '.wc-logo-status.bad{color:#dc2626;font-weight:600}'
+    + '.wc-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}'
+    + '.wc-sec{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#2d6624;text-transform:uppercase;letter-spacing:.04em;margin:28px 0 16px;padding-bottom:11px;border-bottom:1px solid #edf0ea}'
+    + '.wc-sec i{font-size:16px}'
+    + '.wc-err{display:flex;align-items:center;gap:9px;margin-bottom:18px;padding:12px 15px;border-radius:11px;font-size:13px;font-weight:500;background:#fef3f2;color:#c0322f;border:1px solid #f5d2cf}'
+    + '.wc-actions{display:flex;gap:11px;margin-top:28px}'
+    + '.wc-btn{flex:1;background:#2d6624;color:#fff;border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,transform .05s;box-shadow:0 2px 10px rgba(45,102,36,.22)}'
+    + '.wc-btn:hover{background:#255a1e}'
+    + '.wc-btn:active{transform:translateY(1px)}'
+    + '.wc-cancel{padding:14px 22px;border-radius:11px;border:1.5px solid #dbe3d8;background:#fff;color:#5c6e5a;text-decoration:none;font-size:14px;font-weight:600;display:inline-flex;align-items:center;transition:background .15s,border-color .15s}'
+    + '.wc-cancel:hover{background:#f4f6f3;border-color:#c4d0c0}'
+    + '.wc-presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}'
+    + '.wc-preset{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1.5px solid #dbe3d8;background:#fff;color:#2d6624;font-size:12px;font-weight:600;cursor:pointer}'
+    + '.wc-preset:hover{background:#f4f6f3}'
+    + '.wc-mods{display:grid;grid-template-columns:1fr 1fr;gap:10px}'
+    + '.wc-mod{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid #dbe3d8;border-radius:11px;cursor:pointer;background:#fbfcfb;transition:border-color .15s,background .15s}'
+    + '.wc-mod:hover{border-color:#c4d0c0}'
+    + '.wc-mod input{width:17px;height:17px;accent-color:#2d6624;flex-shrink:0}'
+    + '.wc-mod-emoji{font-size:18px;flex-shrink:0}'
+    + '.wc-mod-txt{display:flex;flex-direction:column;line-height:1.25;min-width:0}'
+    + '.wc-mod-txt b{font-size:13px;color:#1a2318;font-weight:600}'
+    + '.wc-mod-txt small{font-size:11px;color:#7a8c78}'
+    + '.wc-mods-core{margin-top:10px;font-size:11px;color:#7a8c78;display:flex;align-items:center;gap:5px}'
+    + '@media (max-width:560px){.wc-row{grid-template-columns:1fr}.wc-card{padding:22px 18px}.wc-mods{grid-template-columns:1fr}}'
+    + '</style>'
+    + '</head><body>'
+
+    + '<div class="layout">'
+    + (platform
+        ? buildPlatformSidebar({ token, activePage: 'buat-warung', displayName: user.displayName })
+        : buildSidebar(token, 'daftar-warung', user))
+
+    + '<div class="main-wrap">'
+
+    + (!platform && user.role === 'owner' ? buildOwnerHeader({
+        breadcrumb: [{ label: 'Platform' }, { label: 'Daftar Warung', href: base + '?tk=' + token }, { label: 'Buat Warung' }],
+        actionsHtml: '',
+      }) : '')
+
+    + '<header class="topbar">'
+    + ((platform || user.role === 'owner') ? buildOwnerMenuToggle() : '')
+    + '<div class="topbar-brand">'
+    + '<div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px">'
+    + '<i class="ti ti-circle-number-8"></i></div>'
+    + '<div><div class="topbar-name">' + (platform ? 'Admin Platform' : arenaName()) + '</div>'
+    + '<div class="topbar-label">Buat Warung · ' + now + '</div></div>'
+    + '</div>'
+    + '<div class="topbar-right">'
+    + (!platform && user.role === 'owner' ? buildOwnerTopbarBell() : '')
+    + buildAdminTopbarProfile(user)
+    + '</div></header>'
+
+    + '<div class="page">'
+
+    + '<div class="dash-topbar">'
+    + '<div>'
+    + '<div class="page-title">Buat Warung Baru</div>'
+    + '<div class="page-sub">Daftarkan tenant baru + akun owner pertamanya</div>'
+    + '</div>'
+    + '</div>'
+
+    + '<div class="wc-wrap">'
+    + '<div class="wc-card">'
+    + '<div class="wc-intro">Warung baru langsung bisa diakses di <b>/w/&lt;slug&gt;</b> dan login pakai akun owner yang kamu buat di bawah.</div>'
+    + errHtml
+    + '<form method="POST" action="' + action + '" autocomplete="off">'
+    + '<input type="hidden" name="tk" value="' + token + '">'
+
+    + '<div class="wc-sec" style="margin-top:0;padding-top:0;border-top:none"><i class="ti ti-building-store"></i> Data Warung</div>'
+
+    + '<div class="wc-field"><label>Nama Warung <span class="req">*</span></label>'
+    + '<input type="text" id="wc-nama" name="nama" value="' + v('nama') + '" placeholder="mis. Galaxy Pool Center" maxlength="60" required></div>'
+
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>Slug (alamat) <span class="req">*</span></label>'
+    + '<div class="wc-pre"><span class="wc-pre-tag">/w/</span>'
+    + '<input type="text" id="wc-slug" name="slug" value="' + v('slug') + '" placeholder="galaxy" maxlength="40" required></div>'
+    + '<div class="wc-hint">huruf kecil, angka, & strip. Jadi link login: /w/&lt;slug&gt;</div>'
+    + '<div id="wc-slug-status" class="wc-slug-status"></div></div>'
+    + '<div class="wc-field"><label>Prefix Kode Member <span class="req">*</span></label>'
+    + '<input type="text" id="wc-prefix" name="kodePrefix" value="' + v('kodePrefix') + '" placeholder="GLX" maxlength="6" required>'
+    + '<div class="wc-hint">Awalan kode member, mis. GLX. Kode lengkap (GLX-0001) dibuat otomatis saat menambah member.</div></div>'
+    + '</div>'
+
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>Status Langganan</label>'
+    + '<select id="wc-status" name="status">'
+    + '<option value="trial"' + (status === 'trial' ? ' selected' : '') + '>Trial (masa percobaan)</option>'
+    + '<option value="aktif"' + (status === 'aktif' ? ' selected' : '') + '>Aktif</option>'
+    + '</select></div>'
+    + '<div class="wc-field" id="wc-trial-wrap"><label>Durasi Trial (hari)</label>'
+    + '<input type="number" name="trialDays" value="' + trialDays + '" min="1" max="365"></div>'
+    + '</div>'
+
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>Warna Brand (opsional)</label>'
+    + '<div class="wc-color">'
+    + '<input type="color" id="wc-color-pick" value="' + (/^#[0-9a-fA-F]{6}$/.test(values.warna || '') ? esc(values.warna) : '#2d6624') + '" aria-label="Pilih warna brand">'
+    + '<input type="text" name="warna" id="wc-color-hex" value="' + v('warna') + '" placeholder="#7c3aed" maxlength="7">'
+    + '</div>'
+    + '<div class="wc-hint">Klik kotak warna untuk pilih, atau ketik kode hex.</div></div>'
+    + '<div class="wc-field"><label>Nomor WA (opsional)</label>'
+    + '<input type="text" name="nomorWa" value="' + v('nomorWa') + '" placeholder="6281..."></div>'
+    + '</div>'
+
+    + '<div class="wc-field"><label>Logo Warung (opsional)</label>'
+    + '<div class="wc-logo">'
+    + '<div class="wc-logo-preview" id="wc-logo-preview"><i class="ti ti-photo"></i></div>'
+    + '<div class="wc-logo-main">'
+    + '<input type="file" id="wc-logo-file" accept="image/png,image/jpeg" hidden>'
+    + '<button type="button" class="wc-logo-btn" id="wc-logo-btn"><i class="ti ti-upload"></i> Pilih Logo</button>'
+    + '<button type="button" class="wc-logo-rm" id="wc-logo-rm" style="display:none"><i class="ti ti-trash"></i> Hapus</button>'
+    + '<div class="wc-logo-status" id="wc-logo-status">PNG/JPG, maks 2 MB.</div>'
+    + '</div></div>'
+    + '<input type="hidden" name="logoUrl" id="wc-logo-url" value="' + v('logoUrl') + '"></div>'
+
+    + '<div class="wc-sec"><i class="ti ti-apps"></i> Modul Aktif</div>'
+    + '<div class="wc-hint" style="margin:-6px 0 12px">Pilih fitur yang aktif untuk warung ini. Yang tak dicentang tak akan tampil & URL-nya ditolak.</div>'
+    + '<div class="wc-presets">'
+    + '<button type="button" class="wc-preset" data-mods="billiard,warkop,sdm,planning"><i class="ti ti-stack-2"></i> Billiard + Warkop</button>'
+    + '<button type="button" class="wc-preset" data-mods="warkop"><i class="ti ti-tools-kitchen-2"></i> Makanan saja</button>'
+    + '<button type="button" class="wc-preset" data-mods=""><i class="ti ti-square-off"></i> Kosongkan</button>'
+    + '</div>'
+    + '<div class="wc-mods">'
+    + '<label class="wc-mod"><input type="checkbox" name="modul" value="billiard"' + modChk('billiard') + '><span class="wc-mod-emoji">🎱</span><span class="wc-mod-txt"><b>Billiard</b><small>Meja, sewa, turnamen</small></span></label>'
+    + '<label class="wc-mod"><input type="checkbox" name="modul" value="warkop"' + modChk('warkop') + '><span class="wc-mod-emoji">☕</span><span class="wc-mod-txt"><b>Warkop</b><small>Kelola menu kopi/makanan</small></span></label>'
+    + '<label class="wc-mod"><input type="checkbox" name="modul" value="sdm"' + modChk('sdm') + '><span class="wc-mod-emoji">👨‍💼</span><span class="wc-mod-txt"><b>SDM</b><small>Karyawan, gaji, shift</small></span></label>'
+    + '<label class="wc-mod"><input type="checkbox" name="modul" value="planning"' + modChk('planning') + '><span class="wc-mod-emoji">🗺️</span><span class="wc-mod-txt"><b>Planning</b><small>Roadmap &amp; target bisnis</small></span></label>'
+    + '</div>'
+    + '<div class="wc-mods-core"><i class="ti ti-lock"></i> Modul inti selalu aktif: Keuangan, Member, Kategori, Stok, Supplier.</div>'
+
+    + '<div class="wc-sec"><i class="ti ti-user-shield"></i> Akun Owner Pertama</div>'
+
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>Username <span class="req">*</span></label>'
+    + '<input type="text" name="ownerUsername" value="' + v('ownerUsername') + '" placeholder="owner" maxlength="20" required>'
+    + '<div class="wc-hint">huruf kecil/angka/underscore</div></div>'
+    + '<div class="wc-field"><label>Nama Tampilan (opsional)</label>'
+    + '<input type="text" name="ownerName" value="' + v('ownerName') + '" placeholder="mis. Pak Budi" maxlength="40"></div>'
+    + '</div>'
+
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>PIN <span class="req">*</span></label>'
+    + '<input type="password" id="wc-pin" name="ownerPin" inputmode="numeric" placeholder="4–8 digit" maxlength="8" required></div>'
+    + '<div class="wc-field"><label>Ulangi PIN <span class="req">*</span></label>'
+    + '<input type="password" id="wc-pin2" name="ownerPinConfirm" inputmode="numeric" placeholder="ketik ulang PIN" maxlength="8" required>'
+    + '<div id="wc-pin-status" class="wc-slug-status"></div></div>'
+    + '</div>'
+
+    + '<div class="wc-sec"><i class="ti ti-address-book"></i> Kontak Pemilik <span style="text-transform:none;font-weight:500;color:#7a8c78;letter-spacing:0">(opsional, untuk penagihan)</span></div>'
+    + '<div class="wc-hint" style="margin:-6px 0 14px">Beda dari "Nomor WA" di atas (yang itu tampil ke customer di kartu member).</div>'
+    + '<div class="wc-row">'
+    + '<div class="wc-field"><label>Nomor WA Pemilik</label>'
+    + '<input type="text" name="ownerWa" value="' + v('ownerWa') + '" placeholder="6281..."></div>'
+    + '<div class="wc-field"><label>Email Pemilik</label>'
+    + '<input type="email" name="ownerEmail" value="' + v('ownerEmail') + '" placeholder="owner@email.com"></div>'
+    + '</div>'
+
+    + '<div class="wc-actions">'
+    + '<a href="' + base + '?tk=' + token + '" class="wc-cancel">Batal</a>'
+    + '<button type="submit" class="wc-btn"><i class="ti ti-check"></i> Buat Warung</button>'
+    + '</div>'
+
+    + '</form>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + (platform ? '' : buildBottomNav(token, 'daftar-warung', user))
+    + '<script>'
+    + '(function(){'
+    + 'var nama=document.getElementById("wc-nama"),slug=document.getElementById("wc-slug"),pfx=document.getElementById("wc-prefix");'
+    + 'var slugTouched=' + (values.slug ? 'true' : 'false') + ';'
+    + 'var prefixTouched=' + (values.kodePrefix ? 'true' : 'false') + ';'
+    + 'function slugify(s){return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}'
+    // Saran prefix dari nama: >=3 kata → inisial 3 kata; 2 kata → 2 huruf kata-1 + inisial kata-2; 1 kata → 3 huruf awal.
+    + 'function suggestPrefix(s){var c=(s||"").toUpperCase().replace(/[^A-Z ]+/g," ").trim();if(!c)return "";var w=c.split(/\\s+/);var p;if(w.length>=3){p=w[0][0]+w[1][0]+w[2][0];}else if(w.length===2){p=w[0].slice(0,2)+w[1][0];}else{p=w[0].slice(0,3);}return p.slice(0,4);}'
+    + 'if(slug)slug.addEventListener("input",function(){slugTouched=true;slug.value=slug.value.toLowerCase().replace(/[^a-z0-9-]/g,"");});'
+    + 'if(pfx)pfx.addEventListener("input",function(){prefixTouched=true;pfx.value=pfx.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);});'
+    + 'if(nama)nama.addEventListener("input",function(){if(!slugTouched&&slug)slug.value=slugify(nama.value);if(!prefixTouched&&pfx)pfx.value=suggestPrefix(nama.value);});'
+    + 'var st=document.getElementById("wc-status"),tw=document.getElementById("wc-trial-wrap");'
+    + 'function upd(){if(tw)tw.style.display=(st&&st.value==="trial")?"":"none";}'
+    + 'if(st)st.addEventListener("change",upd);upd();'
+    + 'var cp=document.getElementById("wc-color-pick"),ch=document.getElementById("wc-color-hex");'
+    + 'if(cp&&ch){'
+    +   'cp.addEventListener("input",function(){ch.value=cp.value;});'
+    +   'ch.addEventListener("input",function(){var hx=ch.value.trim();if(/^#?[0-9a-fA-F]{6}$/.test(hx)){cp.value=(hx[0]==="#"?hx:"#"+hx);}});'
+    + '}'
+    // ── Cek slug real-time ──
+    + 'var slugStatus=document.getElementById("wc-slug-status"),slugTimer=null;'
+    + 'function showSlug(cls,icon,txt){if(!slugStatus)return;slugStatus.style.display="flex";slugStatus.className="wc-slug-status "+cls;slugStatus.innerHTML="<i class=\\"ti "+icon+"\\"></i> "+txt;}'
+    + 'function checkSlug(){'
+    +   'var s=(slug.value||"").trim().toLowerCase();'
+    +   'if(!s){if(slugStatus)slugStatus.style.display="none";return;}'
+    +   'if(!/^[a-z0-9-]{2,40}$/.test(s)){showSlug("bad","ti-alert-circle","Format tidak valid");return;}'
+    +   'showSlug("neutral","ti-loader-2","Cek ketersediaan...");'
+    +   'fetch("' + base + '/cek-slug?tk=' + token + '&slug="+encodeURIComponent(s)).then(function(r){return r.json();}).then(function(d){'
+    +     'if(d.reason==="format"){showSlug("bad","ti-alert-circle","Format tidak valid");}'
+    +     'else if(d.available){showSlug("ok","ti-circle-check","Tersedia");}'
+    +     'else{showSlug("bad","ti-circle-x","Slug sudah dipakai");}'
+    +   '}).catch(function(){if(slugStatus)slugStatus.style.display="none";});'
+    + '}'
+    + 'if(slug){slug.addEventListener("input",function(){clearTimeout(slugTimer);slugTimer=setTimeout(checkSlug,350);});}'
+    + 'if(nama){nama.addEventListener("input",function(){clearTimeout(slugTimer);slugTimer=setTimeout(checkSlug,400);});}'
+    + 'if(slug&&slug.value)checkSlug();'
+    // ── Konfirmasi PIN ──
+    + 'var pin1=document.getElementById("wc-pin"),pin2=document.getElementById("wc-pin2"),pinStatus=document.getElementById("wc-pin-status");'
+    + 'function checkPin(){if(!pin2||!pinStatus)return;if(!pin2.value){pinStatus.style.display="none";return;}pinStatus.style.display="flex";if(pin1.value===pin2.value){pinStatus.className="wc-slug-status ok";pinStatus.innerHTML="<i class=\\"ti ti-circle-check\\"></i> PIN cocok";}else{pinStatus.className="wc-slug-status bad";pinStatus.innerHTML="<i class=\\"ti ti-circle-x\\"></i> PIN belum sama";}}'
+    + 'if(pin1)pin1.addEventListener("input",checkPin);if(pin2)pin2.addEventListener("input",checkPin);'
+    // ── Upload logo ──
+    + 'var lf=document.getElementById("wc-logo-file"),lb=document.getElementById("wc-logo-btn"),lr=document.getElementById("wc-logo-rm"),lp=document.getElementById("wc-logo-preview"),ls=document.getElementById("wc-logo-status"),lu=document.getElementById("wc-logo-url");'
+    + 'function logoSet(url){if(lu)lu.value=url||"";if(lp){if(url){lp.style.backgroundImage="url("+url+")";lp.innerHTML="";}else{lp.style.backgroundImage="";lp.innerHTML="<i class=\\"ti ti-photo\\"></i>";}}if(lr)lr.style.display=url?"inline-flex":"none";}'
+    + 'if(lu&&lu.value)logoSet(lu.value);'
+    + 'if(lb&&lf)lb.addEventListener("click",function(){lf.click();});'
+    + 'if(lr)lr.addEventListener("click",function(){logoSet("");if(lf)lf.value="";if(ls){ls.className="wc-logo-status";ls.textContent="PNG/JPG, maks 2 MB.";}});'
+    + 'if(lf)lf.addEventListener("change",function(){'
+    +   'var f=lf.files&&lf.files[0];if(!f)return;'
+    +   'if(!/^image\\/(png|jpe?g)$/.test(f.type)){ls.className="wc-logo-status bad";ls.textContent="Hanya PNG atau JPG.";lf.value="";return;}'
+    +   'if(f.size>2*1024*1024){ls.className="wc-logo-status bad";ls.textContent="Ukuran maksimal 2 MB.";lf.value="";return;}'
+    +   'ls.className="wc-logo-status";ls.textContent="Mengunggah...";'
+    +   'var rd=new FileReader();rd.onload=function(ev){'
+    +     'fetch("' + base + '/upload-logo?tk=' + token + '",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:ev.target.result})}).then(function(r){return r.json();}).then(function(d){'
+    +       'if(d.url){logoSet(d.url);ls.className="wc-logo-status ok";ls.textContent="Logo terunggah.";}'
+    +       'else if(d.skipped){ls.className="wc-logo-status";ls.textContent="Cloudinary belum aktif — warung tetap bisa dibuat tanpa logo.";}'
+    +       'else{ls.className="wc-logo-status bad";ls.textContent=d.error||"Gagal mengunggah.";}'
+    +     '}).catch(function(){ls.className="wc-logo-status bad";ls.textContent="Gagal mengunggah.";});'
+    +   '};rd.readAsDataURL(f);'
+    + '});'
+    // ── Preset modul ──
+    + 'document.querySelectorAll(".wc-preset").forEach(function(b){b.addEventListener("click",function(){'
+    +   'var mods=(b.getAttribute("data-mods")||"").split(",").filter(Boolean);'
+    +   'document.querySelectorAll(".wc-mod input[name=modul]").forEach(function(c){c.checked=mods.indexOf(c.value)>=0;});'
+    + '});});'
+    + '})();'
+    + '</script>'
+    + '</body></html>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  AREA ADMIN PLATFORM — Dashboard, Detail & Kelola Warung, Langganan
+//  Semua pakai shell platform (sidebar ringkas). TIDAK menampilkan data
+//  operasional warung (transaksi/keuangan/member) — hanya level akun.
+// ════════════════════════════════════════════════════════════════════
+const pEsc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const PF_CSS = ''
+  + '.pf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}'
+  + '@media(max-width:768px){.pf-grid{grid-template-columns:repeat(2,1fr)}.pf-cols{grid-template-columns:1fr!important}}'
+  + '.pf-card{background:#fff;border:1px solid #e6ebe4;border-radius:14px;padding:16px 18px}'
+  + '.pf-card .l{font-size:11px;font-weight:700;color:#5c6e5a;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}'
+  + '.pf-card .v{font-size:26px;font-weight:700;color:#1a2318;font-family:var(--ff-mono,monospace);line-height:1}'
+  + '.pf-card.warn{border-color:#f5dca8;background:#fffaf0}.pf-card.warn .v{color:#b45309}'
+  + '.pf-sec{font-size:12px;font-weight:700;color:#2d6624;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 12px}'
+  + '.pf-log{list-style:none;margin:0;padding:0;border:1px solid #e6ebe4;border-radius:12px;overflow:hidden;background:#fff}'
+  + '.pf-log li{display:flex;gap:10px;align-items:baseline;padding:10px 14px;border-bottom:1px solid #f0f3ee;font-size:13px;flex-wrap:wrap}'
+  + '.pf-log li:last-child{border-bottom:none}'
+  + '.pf-log .t{color:#9aa898;font-size:11px;font-family:var(--ff-mono,monospace);white-space:nowrap}'
+  + '.pf-log .a{font-weight:700;color:#2d6624}.pf-log .d{color:#5c6e5a}'
+  + '.pf-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}'
+  + '.pf-box{background:#fff;border:1px solid #e6ebe4;border-radius:14px;padding:18px}'
+  + '.pf-box h3{font-size:13px;font-weight:700;color:#1a2318;margin:0 0 12px;display:flex;align-items:center;gap:7px}'
+  + '.pf-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f0f3ee;font-size:13px}'
+  + '.pf-kv:last-child{border-bottom:none}.pf-kv .k{color:#7a8c78}.pf-kv .vv{color:#1a2318;font-weight:600;text-align:right;word-break:break-word}'
+  + '.pf-field{margin-bottom:13px}'
+  + '.pf-field label{display:block;font-size:11px;font-weight:700;color:#5c6e5a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}'
+  + '.pf-field input,.pf-field select{width:100%;padding:10px 12px;border:1.5px solid #dbe3d8;border-radius:10px;background:#fbfcfb;color:#1a2318;font-size:14px;font-family:inherit;outline:none}'
+  + '.pf-field input:focus,.pf-field select:focus{border-color:#2d6624;background:#fff}'
+  + '.pf-btn{width:100%;background:#2d6624;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}'
+  + '.pf-btn:hover{background:#255a1e}.pf-btn[disabled]{opacity:.5;cursor:not-allowed}'
+  + '.pf-btn.danger{background:#fff;color:#dc2626;border:1.5px solid #f6cfcc}.pf-btn.danger:hover{background:#fdeceb}'
+  + '.pf-mods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}'
+  + '.pf-mod{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid #dbe3d8;border-radius:10px;cursor:pointer;font-size:13px}'
+  + '.pf-mod input{width:16px;height:16px;accent-color:#2d6624}'
+  + '.pf-pin-new{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:12px 14px;border-radius:11px;background:#fff7ed;border:1px solid #f5dca8;color:#b45309;font-size:13px;font-weight:500}'
+  + '.pf-pin-new b{font-family:var(--ff-mono,monospace);font-size:16px;letter-spacing:1px}'
+  + '.pf-note{font-size:11px;color:#9aa898;margin-top:6px}'
+  + '.pf-back{display:inline-flex;align-items:center;gap:5px;color:#2d6624;text-decoration:none;font-size:13px;font-weight:600;margin-bottom:14px}'
+  + '.pf-warn-box{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:#fef4e6;border:1px solid #f5dca8;color:#b45309;font-size:12px;margin-bottom:12px}'
+  + '.wl-nm{color:#1a2318;font-weight:600;line-height:1.3}.wl-slug{color:#7a8c78;font-size:11px;font-family:var(--ff-mono,monospace);margin-top:2px}'
+  + '.wl-meta{color:#5c6e5a;font-size:12px;font-family:var(--ff-mono,monospace)}.wl-chev{color:#c4d0c0;font-size:16px}'
+  + '.wl-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}'
+  + '.wl-trial{background:#fef4e6;color:#b45309;border:1px solid #f5dca8}.wl-off{background:#fdeceb;color:#dc2626;border:1px solid #f6cfcc}'
+  + '.pf-lg-row{display:grid;grid-template-columns:1fr auto auto 24px;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid #edf0ea;text-decoration:none;color:inherit}'
+  + '.pf-lg-row:last-child{border-bottom:none}.pf-lg-row:hover{background:#f6faf5}';
+
+function platformShell({ token, active = '', title = 'Platform', displayName = '', bodyHtml = '' }) {
+  const now = new Date().toLocaleString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+  return '<!DOCTYPE html><html lang="id"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<title>' + pEsc(title) + ' — Admin Platform</title>'
+    + '<link rel="icon" type="image/svg+xml" href="/favicon.svg">'
+    + '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/admin.css?v=81">'
+    + '<style>' + PF_CSS + '</style>'
+    + '</head><body>'
+    + '<div class="layout">'
+    + buildPlatformSidebar({ token, activePage: active, displayName })
+    + '<div class="main-wrap">'
+    + '<header class="topbar">'
+    + buildOwnerMenuToggle()
+    + '<div class="topbar-brand"><div class="sb-brand-icon" style="width:28px;height:28px;font-size:14px;margin-right:6px"><i class="ti ti-shield-cog"></i></div>'
+    + '<div><div class="topbar-name">Admin Platform</div><div class="topbar-label">' + pEsc(title) + ' · ' + now + '</div></div></div>'
+    + '<div class="topbar-right"><div class="topbar-profile"><div class="tb-avatar" style="background:rgba(45,102,36,.18);color:#22c55e">SA</div>'
+    + '<div class="tb-prof-info"><div class="tb-prof-name">' + pEsc(displayName || 'Super Admin') + '</div><div class="tb-prof-role">Superadmin</div></div></div></div>'
+    + '</header>'
+    + '<div class="page">' + bodyHtml + '</div>'
+    + '</div></div></body></html>';
+}
+
+// ── Dashboard Platform ───────────────────────────────────────────────
+export function platformDashboardPage({ token, displayName = '', warungs = [], log = [] } = {}) {
+  const total  = warungs.length;
+  const nAktif = warungs.filter((w) => w.status_langganan === 'aktif').length;
+  const nTrial = warungs.filter((w) => w.status_langganan === 'trial').length;
+  const nOff   = warungs.filter((w) => w.status_langganan === 'nonaktif').length;
+  const soon   = warungs.filter((w) => {
+    if (w.status_langganan !== 'trial' || !w.trial_selesai) return false;
+    const days = (new Date(w.trial_selesai).getTime() - Date.now()) / 86400000;
+    return days >= 0 && days <= 7;
+  }).length;
+  const card = (l, v, cls) => '<div class="pf-card' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + v + '</div></div>';
+  const logHtml = log.length
+    ? '<ul class="pf-log">' + log.map((e) => {
+        const t = e.ts ? new Date(e.ts).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '';
+        const tgt = e.warung_nama ? pEsc(e.warung_nama) : (e.warung_id ? '#' + e.warung_id : '—');
+        return '<li><span class="t">' + pEsc(t) + '</span><span class="a">' + pEsc(e.action) + '</span><span class="d">' + tgt + (e.detail ? ' — ' + pEsc(e.detail) : '') + ' · oleh ' + pEsc(e.actor) + '</span></li>';
+      }).join('') + '</ul>'
+    : '<div class="empty-state"><i class="ti ti-history"></i>Belum ada aktivitas.</div>';
+  const body = '<div class="dash-topbar"><div><div class="page-title">Dashboard Platform</div>'
+    + '<div class="page-sub">Ringkasan akun warung — tanpa angka keuangan internal.</div></div></div>'
+    + '<div class="pf-grid">' + card('Total Warung', total) + card('Aktif', nAktif) + card('Trial', nTrial) + card('Nonaktif', nOff) + '</div>'
+    + '<div class="pf-grid" style="grid-template-columns:1fr">' + card('Trial berakhir ≤ 7 hari (perlu perhatian)', soon, soon > 0 ? 'warn' : '') + '</div>'
+    + '<div class="pf-sec">Aktivitas Terakhir</div>' + logHtml;
+  return platformShell({ token, active: 'dashboard', title: 'Dashboard', displayName, bodyHtml: body });
+}
+
+// ── Detail & Kelola Warung ───────────────────────────────────────────
+export function warungDetailPage({ token, displayName = '', warung, owner = null, newPin = null } = {}) {
+  const w = warung;
+  const isWarpat = Number(w.id) === 1;
+  const base = '/platform';
+  const dis = isWarpat ? ' disabled' : '';
+  const fmt = (d) => { if (!d) return '—'; try { return formatTanggalPendek(d); } catch (_) { return '—'; } };
+  const kv = (k, v) => '<div class="pf-kv"><span class="k">' + k + '</span><span class="vv">' + v + '</span></div>';
+  const mods = String(w.active_modules || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const OPT = [['billiard', '🎱 Billiard'], ['warkop', '☕ Warkop'], ['sdm', '👨‍💼 SDM'], ['planning', '🗺️ Planning']];
+  const sOpt = (v, l) => '<option value="' + v + '"' + (w.status_langganan === v ? ' selected' : '') + '>' + l + '</option>';
+  const trialDate = w.trial_selesai ? new Date(w.trial_selesai).toISOString().slice(0, 10) : '';
+
+  const pinBanner = newPin
+    ? '<div class="pf-pin-new"><i class="ti ti-key"></i> PIN baru untuk <b>' + pEsc(newPin.username) + '</b>: <b>' + pEsc(newPin.pin) + '</b> — catat & beri tahu owner (hanya tampil sekali).</div>'
+    : '';
+  const warpatNote = isWarpat ? '<div class="pf-warn-box"><i class="ti ti-lock"></i> Warpat (warung utama) dilindungi: status & modul tak bisa diubah. Reset PIN tetap boleh.</div>' : '';
+
+  const infoBox = '<div class="pf-box"><h3><i class="ti ti-building-store"></i> Info Warung</h3>'
+    + kv('Nama', pEsc(w.nama)) + kv('Slug', '/w/' + pEsc(w.slug)) + kv('Prefix kode', pEsc(w.kode_prefix))
+    + kv('Status', pEsc(w.status_langganan)) + kv('Trial berakhir', fmt(w.trial_selesai)) + kv('Dibuat', fmt(w.created_at))
+    + kv('Modul aktif', mods.length ? mods.join(', ') : 'inti saja') + '</div>';
+  const ownerBox = '<div class="pf-box"><h3><i class="ti ti-user-shield"></i> Akun Owner</h3>'
+    + (owner
+        ? kv('Username', pEsc(owner.username)) + kv('Nama', pEsc(owner.display_name || '—')) + kv('Role', pEsc(owner.role))
+          + kv('WA pemilik', pEsc(w.owner_wa || '—')) + kv('Email pemilik', pEsc(w.owner_email || '—'))
+        : '<div class="pf-note">Warung ini belum punya akun owner.</div>')
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/reset-pin?tk=' + token + '" onsubmit="return confirm(\'Reset PIN owner? PIN baru akan dibuat & ditampilkan sekali.\')" style="margin-top:14px">'
+    + '<button class="pf-btn danger" type="submit"><i class="ti ti-key"></i> Reset PIN Owner</button></form>'
+    + '<div class="pf-note">Membuat PIN baru 6 digit. PIN lama tidak pernah ditampilkan.</div></div>';
+  const statusForm = '<div class="pf-box"><h3><i class="ti ti-receipt-2"></i> Status & Langganan</h3>' + warpatNote
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/langganan?tk=' + token + '">'
+    + '<div class="pf-field"><label>Status</label><select name="status"' + dis + '>' + sOpt('aktif', 'Aktif') + sOpt('trial', 'Trial') + sOpt('nonaktif', 'Nonaktif') + '</select></div>'
+    + '<div class="pf-field"><label>Trial berakhir (jika Trial)</label><input type="date" name="trialDate" value="' + trialDate + '"' + dis + '></div>'
+    + '<button class="pf-btn" type="submit"' + dis + '><i class="ti ti-check"></i> Simpan Status</button></form></div>';
+  const modForm = '<div class="pf-box"><h3><i class="ti ti-apps"></i> Modul Aktif</h3>'
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/modul?tk=' + token + '">'
+    + '<div class="pf-mods">' + OPT.map(([v, l]) => '<label class="pf-mod"><input type="checkbox" name="modul" value="' + v + '"' + (mods.includes(v) ? ' checked' : '') + dis + '> ' + l + '</label>').join('') + '</div>'
+    + '<button class="pf-btn" type="submit"' + dis + '><i class="ti ti-check"></i> Simpan Modul</button>'
+    + '<div class="pf-note">Inti (Keuangan, Member, Kategori, Stok, Supplier) selalu aktif.</div></form></div>';
+
+  const body = '<a href="' + base + '/warung?tk=' + token + '" class="pf-back"><i class="ti ti-arrow-left"></i> Daftar Warung</a>'
+    + '<div class="dash-topbar"><div><div class="page-title">' + pEsc(w.nama) + ' <span style="color:#9aa898;font-size:14px">#' + w.id + '</span></div>'
+    + '<div class="page-sub">Kelola akun, langganan & modul. Data operasional warung tidak dapat dibuka dari sini.</div></div></div>'
+    + pinBanner
+    + '<div class="pf-cols">' + infoBox + ownerBox + statusForm + modForm + '</div>';
+  return platformShell({ token, active: 'daftar-warung', title: 'Detail Warung', displayName, bodyHtml: body });
+}
+
+// ── Kelola Langganan (warung at-risk) ────────────────────────────────
+export function langgananPage({ token, displayName = '', warungs = [] } = {}) {
+  const base = '/platform';
+  const fmt = (d) => { if (!d) return '—'; try { return formatTanggalPendek(d); } catch (_) { return '—'; } };
+  const atRisk = warungs.filter((w) => {
+    if (w.status_langganan === 'nonaktif') return true;
+    if (w.status_langganan === 'trial' && w.trial_selesai) {
+      return (new Date(w.trial_selesai).getTime() - Date.now()) / 86400000 <= 7;
+    }
+    return false;
+  });
+  const rows = atRisk.map((w) => {
+    let tag;
+    if (w.status_langganan === 'nonaktif') tag = '<span class="wl-badge wl-off">Nonaktif</span>';
+    else { const lewat = new Date(w.trial_selesai).getTime() < Date.now(); tag = '<span class="wl-badge ' + (lewat ? 'wl-off' : 'wl-trial') + '">' + (lewat ? 'Trial lewat' : 'Trial ≤7h') + '</span>'; }
+    return '<a class="pf-lg-row" href="' + base + '/warung/' + w.id + '?tk=' + token + '">'
+      + '<div><div class="wl-nm">' + pEsc(w.nama) + '</div><div class="wl-slug">/w/' + pEsc(w.slug) + ' · ' + (w.owner_wa ? pEsc(w.owner_wa) : 'tanpa WA') + '</div></div>'
+      + tag + '<div class="wl-meta">' + fmt(w.trial_selesai) + '</div><i class="ti ti-chevron-right wl-chev"></i></a>';
+  }).join('');
+  const body = '<div class="dash-topbar"><div><div class="page-title">Kelola Langganan</div>'
+    + '<div class="page-sub">Warung nonaktif atau trial habis/≤7 hari — perlu ditindaklanjuti (tagih / aktifkan / nonaktifkan).</div></div></div>'
+    + (atRisk.length ? '<div class="table-card">' + rows + '</div>'
+                     : '<div class="empty-state"><i class="ti ti-circle-check"></i>Semua warung aman — tak ada yang perlu perhatian.</div>');
+  return platformShell({ token, active: 'langganan', title: 'Kelola Langganan', displayName, bodyHtml: body });
 }

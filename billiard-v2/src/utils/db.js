@@ -1,9 +1,10 @@
 // src/utils/db.js
 // ── Database helper — PostgreSQL via pg Pool ──────────────────
 
-import { query } from "./postgres.js";
-import { runMigrations } from "./migrate.js";
-import { currentWarungId, DEFAULT_WARUNG_ID } from "./tenant.js";
+import { randomInt } from "crypto";
+import { query, pool } from "./postgres.js";
+import { runMigrations, seedWarungDefaults } from "./migrate.js";
+import { currentWarungId, DEFAULT_WARUNG_ID, OPTIONAL_MODULES } from "./tenant.js";
 
 // ── Multi-tenant: konvensi warung_id ───────────────────────────
 // Setiap fungsi yg menyentuh tabel data menerima `warungId` dan menyertakannya
@@ -44,6 +45,157 @@ export const getWarungBySlug = async (slug) => {
 export const getWarungById = async (id) => {
   const res = await query("SELECT * FROM warung WHERE id = $1", [id]);
   return res.rows[0] ?? null;
+};
+
+// ── Super-admin (platform): daftar SEMUA warung + ringkasan ──────────
+// SENGAJA lintas-tenant: tabel `warung` adalah ROOT tenant (bukan data yg
+// di-scope warung_id), jadi tidak difilter currentWarungId(). Subquery COUNT
+// per warung ringan utk skala puluhan warung. Hanya boleh dipanggil dari
+// jalur yg sudah dipagari super-admin (owner platform / warung 1) di route.
+// PRIVASI: sengaja TIDAK mengambil jumlah member/transaksi (data operasional
+// milik warung). Hanya info level-akun: status, tanggal, modul, jumlah akun.
+export const listWarungsWithStats = async () => {
+  const res = await query(`
+    SELECT
+      w.id, w.nama, w.slug, w.kode_prefix, w.warna, w.nomor_wa, w.logo_url,
+      w.active_modules, w.owner_wa, w.owner_email,
+      w.status_langganan, w.trial_selesai, w.created_at,
+      (SELECT COUNT(*) FROM admin_accounts a WHERE a.warung_id = w.id)::int AS akun_count
+    FROM warung w
+    ORDER BY w.id
+  `);
+  return res.rows;
+};
+
+// ── Super-admin: buat WARUNG BARU + akun owner pertama (onboarding) ──
+// Transaksi: insert warung + akun owner sekali jalan (atomic). Slug dicek unik
+// dulu (+ dijaga UNIQUE constraint). Setelah commit, seed kategori/menu default
+// best-effort (gagal seed TIDAK membatalkan warung — warung tetap bisa dipakai,
+// terbukti dari warung tanpa default pun jalan). Lempar error code SLUG_TAKEN
+// kalau slug bentrok supaya route bisa tampilkan pesan rapi.
+export const createWarung = async ({
+  nama, slug, kodePrefix, warna = "", nomorWa = "",
+  logoUrl = "", ownerWa = "", ownerEmail = "",
+  activeModules = [],
+  status = "trial", trialDays = 14,
+  ownerUsername, ownerPin, ownerName = "",
+}) => {
+  const modulesStr = Array.isArray(activeModules) ? activeModules.join(",") : "";
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const dup = await client.query("SELECT 1 FROM warung WHERE slug = $1", [slug]);
+    if (dup.rowCount) { const e = new Error("SLUG_TAKEN"); e.code = "SLUG_TAKEN"; throw e; }
+
+    let trialSelesai = null;
+    if (status === "trial") {
+      const days = Number(trialDays) > 0 ? Number(trialDays) : 14;
+      trialSelesai = new Date(Date.now() + days * 86400000).toISOString();
+    }
+
+    const w = await client.query(
+      `INSERT INTO warung (nama, slug, kode_prefix, warna, nomor_wa, logo_url, owner_wa, owner_email, active_modules, status_langganan, trial_selesai)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [nama, slug, kodePrefix, warna, nomorWa, logoUrl, ownerWa, ownerEmail, modulesStr, status, trialSelesai]
+    );
+    const warungId = w.rows[0].id;
+
+    await client.query(
+      `INSERT INTO admin_accounts (username, pin, role, display_name, warung_id)
+       VALUES ($1, $2, 'owner', $3, $4)`,
+      [ownerUsername, ownerPin, ownerName || ownerUsername, warungId]
+    );
+
+    await client.query("COMMIT");
+
+    // Seed default di luar transaksi inti (best-effort).
+    try { await seedWarungDefaults(warungId); }
+    catch (e) { console.warn("[WARUNG] seed default gagal (warung tetap dibuat):", e.message); }
+
+    return { id: warungId, slug };
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
+// ── Platform: cari akun SUPERADMIN (login /platform) ─────────────────
+// Lintas-warung by design (akun platform, bukan per-tenant). Cocokkan
+// username+pin pada baris role='superadmin'. Null kalau tak cocok.
+export const findSuperadmin = async (username, pin) => {
+  const res = await query(
+    `SELECT username, display_name, role, warung_id FROM admin_accounts
+     WHERE role = 'superadmin' AND LOWER(username) = LOWER($1) AND pin = $2 LIMIT 1`,
+    [username, pin]
+  );
+  return res.rows[0] ?? null;
+};
+
+// ── Platform: ubah status langganan + akhir trial sebuah warung ──────
+// Dipakai halaman Kelola Langganan (superadmin). Warung 1 dilindungi (skip).
+export const updateWarungLangganan = async (id, status, trialSelesai = null) => {
+  if (Number(id) === DEFAULT_WARUNG_ID) return false; // Warpat tak boleh dinonaktifkan
+  const allowed = new Set(["aktif", "trial", "nonaktif"]);
+  if (!allowed.has(status)) return false;
+  await query(
+    `UPDATE warung SET status_langganan = $2, trial_selesai = $3 WHERE id = $1`,
+    [id, status, status === "trial" ? trialSelesai : null]
+  );
+  return true;
+};
+
+// ── Platform: akun owner sebuah warung (TANPA pin) ──────────────────
+export const getWarungOwner = async (warungId) => {
+  const res = await query(
+    `SELECT username, display_name, role FROM admin_accounts
+     WHERE warung_id = $1 AND role = 'owner' ORDER BY id LIMIT 1`,
+    [warungId]
+  );
+  return res.rows[0] ?? null;
+};
+
+// ── Platform: set modul aktif warung (whitelist opsional). Warung 1 → no-op. ──
+export const updateWarungModules = async (id, mods = []) => {
+  if (Number(id) === DEFAULT_WARUNG_ID) return false; // Warpat selalu penuh
+  const clean = (Array.isArray(mods) ? mods : []).filter((m) => OPTIONAL_MODULES.includes(m));
+  await query(`UPDATE warung SET active_modules = $2 WHERE id = $1`, [id, clean.join(",")]);
+  return true;
+};
+
+// ── Platform: reset PIN akun owner → PIN baru 6 digit (return {username,pin}) ──
+// PIN lama TAK pernah dibaca. Null kalau warung tak punya akun owner.
+export const resetOwnerPin = async (warungId) => {
+  const owner = await getWarungOwner(warungId);
+  if (!owner) return null;
+  const pin = String(randomInt(100000, 1000000)); // 6 digit
+  await query(
+    `UPDATE admin_accounts SET pin = $3 WHERE warung_id = $1 AND username = $2`,
+    [warungId, owner.username, pin]
+  );
+  return { username: owner.username, pin };
+};
+
+// ── Platform: log audit aksi superadmin ─────────────────────────────
+export const logPlatformAction = async ({ actor = "", action = "", warungId = null, detail = "" }) => {
+  try {
+    await query(
+      `INSERT INTO platform_log (actor, action, warung_id, detail) VALUES ($1,$2,$3,$4)`,
+      [actor, action, warungId, detail]
+    );
+  } catch (e) { console.warn("[PLATFORM] log gagal:", e.message); }
+};
+
+export const readPlatformLog = async (limit = 20) => {
+  const res = await query(
+    `SELECT pl.ts, pl.actor, pl.action, pl.warung_id, pl.detail, w.nama AS warung_nama
+     FROM platform_log pl LEFT JOIN warung w ON w.id = pl.warung_id
+     ORDER BY pl.ts DESC LIMIT $1`,
+    [limit]
+  );
+  return res.rows;
 };
 
 // ── Row mapper helpers ────────────────────────────────────────
@@ -128,6 +280,7 @@ export const saveMember = async (m, warungId = currentWarungId()) => {
       tanggal_scan_terakhir = EXCLUDED.tanggal_scan_terakhir,
       bonus_earned_at       = EXCLUDED.bonus_earned_at,
       total_point           = EXCLUDED.total_point
+    WHERE members.warung_id = EXCLUDED.warung_id
   `, [
     m.kode, m.nama, m.telepon ?? "",
     m.totalMain ?? 0, m.tanggalMulai ?? null,
@@ -136,6 +289,14 @@ export const saveMember = async (m, warungId = currentWarungId()) => {
     m.tanggalScanTerakhir ?? null, m.bonusEarnedAt ?? null,
     m.totalPoint ?? 0, warungId,
   ]);
+};
+
+// Daftar SEMUA kode member lintas-warung. Dipakai generateKode() agar kode
+// dijamin unik GLOBAL (members.kode = PK global) → cegah 2 warung dapat kode
+// sama yang bisa memicu konflik lintas-tenant. Ringan: hanya kolom kode.
+export const listAllMemberKodes = async () => {
+  const res = await query("SELECT kode FROM members");
+  return res.rows; // [{ kode }, ...] — kompatibel dgn generateKode(members)
 };
 
 export const checkBonusExpiry = async (warungId = currentWarungId()) => {

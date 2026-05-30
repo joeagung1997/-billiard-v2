@@ -18,6 +18,7 @@ import {
 import { todayBusinessDayISO } from "../utils/format.js";
 import { requireFinanceAuth, requireOwner } from "./finance.js";
 import { subscriptionGate } from "../middleware/subscription.js";
+import { requireModule } from "../middleware/module.js";
 
 const router = Router();
 
@@ -25,6 +26,8 @@ const router = Router();
 router.use(requireFinanceAuth);
 router.use(requireOwner);
 router.use(subscriptionGate);
+// Monitoring (aktivitas kru / shift & setoran) bagian modul SDM.
+router.use(requireModule("sdm"));
 
 // GET /monitoring → redirect to aktivitas
 router.get("/monitoring", (_req, res) => res.redirect("/operasional/monitoring/aktivitas"));

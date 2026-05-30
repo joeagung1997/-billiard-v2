@@ -56,6 +56,51 @@ export async function uploadQrToCloudinary(kode, qrBuf) {
   }
 }
 
+// ── Upload gambar umum (mis. LOGO warung) ke Cloudinary ──────────────
+// BEDA dari uploadQrToCloudinary: mengembalikan URL (secure_url) string —
+// supaya caller bisa menyimpannya (mis. ke warung.logo_url). Return null bila
+// env Cloudinary belum di-set ATAU gagal (caller perlakukan sbg "skip/tanpa logo").
+export async function uploadImageToCloudinary(buf, { publicId = "", mime = "image/png" } = {}) {
+  const CLOUD  = "dlxazwdbu";
+  const KEY    = process.env.CLOUDINARY_KEY    ?? "";
+  const SECRET = process.env.CLOUDINARY_SECRET ?? "";
+  if (!KEY || !SECRET) {
+    console.log("[CDN] CLOUDINARY_KEY/SECRET belum di-set — upload logo dilewati");
+    return null;
+  }
+  try {
+    const { createHash, randomBytes } = await import("crypto");
+    const pid       = publicId || ("warung_logo/logo_" + randomBytes(6).toString("hex"));
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const str       = "overwrite=true&public_id=" + pid + "&timestamp=" + timestamp + SECRET;
+    const signature = createHash("sha1").update(str).digest("hex");
+    const ext       = mime === "image/jpeg" ? "jpg" : "png";
+
+    const form = new FormData();
+    form.append("file",      new Blob([buf], { type: mime }), "logo." + ext);
+    form.append("api_key",   KEY);
+    form.append("timestamp", timestamp);
+    form.append("public_id", pid);
+    form.append("overwrite", "true");
+    form.append("signature", signature);
+
+    const resp = await fetch(
+      "https://api.cloudinary.com/v1_1/" + CLOUD + "/image/upload",
+      { method: "POST", body: form }
+    );
+    const data = await resp.json();
+    if (data.secure_url) {
+      console.log("[CDN] Logo uploaded:", data.public_id);
+      return data.secure_url;
+    }
+    console.error("[CDN] Upload logo gagal:", JSON.stringify(data).slice(0, 120));
+    return null;
+  } catch (err) {
+    console.error("[CDN] Upload logo error:", err.message);
+    return null;
+  }
+}
+
 // ── Cloudinary URL dengan overlay QR + teks ──────────────────
 function makeCloudinaryUrl(kode, nama) {
   const CLOUD = "dlxazwdbu";

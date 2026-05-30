@@ -74,6 +74,19 @@ export const runMigrations = async () => {
   // dgn id=1 yg kita set manual). GREATEST jaga2 kalau sudah ada warung lain.
   await query(`SELECT setval(pg_get_serial_sequence('warung','id'), GREATEST((SELECT MAX(id) FROM warung), 1))`);
 
+  // Kontak PEMILIK warung (utk bisnis/penagihan) — BEDA dari nomor_wa yang
+  // customer-facing di kartu member. Idempotent → aman utk warung 1 (Warpat).
+  await query(`ALTER TABLE warung ADD COLUMN IF NOT EXISTS owner_wa    TEXT NOT NULL DEFAULT ''`);
+  await query(`ALTER TABLE warung ADD COLUMN IF NOT EXISTS owner_email TEXT NOT NULL DEFAULT ''`);
+
+  // Modul OPSIONAL yang aktif per-warung (comma-separated, mis. 'warkop,planning').
+  // Modul INTI (keuangan/member/kategori/stok/supplier) SELALU aktif → tak disimpan.
+  // NULL = warung lama belum di-set → di-backfill ke SEMUA modul opsional supaya
+  // tidak ada fitur yang tiba-tiba hilang. '' (string kosong) = sengaja tanpa modul
+  // opsional. Nilai untuk warung baru di-set eksplisit oleh createWarung().
+  await query(`ALTER TABLE warung ADD COLUMN IF NOT EXISTS active_modules TEXT`);
+  await query(`UPDATE warung SET active_modules = 'billiard,warkop,sdm,planning' WHERE active_modules IS NULL`);
+
   // ── Tabel members ───────────────────────────────────────────
   await query(`
     CREATE TABLE IF NOT EXISTS members (
@@ -718,5 +731,57 @@ export const runMigrations = async () => {
   }
   console.log(`[DB] Multi-tenant: kolom warung_id siap di ${TENANT_TABLES.length} tabel (${totalRows} baris, backfill warung_id=1 OK).`);
 
+  // ── Log aktivitas platform (audit aksi superadmin) ─────────────────
+  // Mencatat aksi sensitif: ubah status langganan, ubah modul, reset PIN,
+  // buat warung. warung_id = sasaran (bukan untuk scoping tenant). Global.
+  await query(`
+    CREATE TABLE IF NOT EXISTS platform_log (
+      id         BIGSERIAL PRIMARY KEY,
+      ts         TIMESTAMPTZ DEFAULT NOW(),
+      actor      TEXT NOT NULL DEFAULT '',
+      action     TEXT NOT NULL DEFAULT '',
+      warung_id  INTEGER,
+      detail     TEXT NOT NULL DEFAULT ''
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_platform_log_ts ON platform_log (ts DESC)`);
+
+  // ── Seed akun SUPERADMIN platform (role terpisah dari owner/karyawan) ──
+  // Hanya bila env SUPERADMIN_PIN di-set (hindari PIN default ter-hardcode).
+  // warung_id=1 = placeholder (login platform tak men-scope ke warung tertentu).
+  // Idempotent via WHERE NOT EXISTS. Dijalankan di akhir (kolom warung_id sudah ada).
+  if (process.env.SUPERADMIN_PIN) {
+    await query(
+      `INSERT INTO admin_accounts (username, pin, role, display_name, warung_id)
+       SELECT 'superadmin', $1, 'superadmin', 'Super Admin', 1
+       WHERE NOT EXISTS (SELECT 1 FROM admin_accounts WHERE username = 'superadmin' AND role = 'superadmin')`,
+      [process.env.SUPERADMIN_PIN]
+    );
+    console.log("[DB] Akun superadmin platform siap (username: superadmin).");
+  }
+
   console.log("[DB] Migrasi tabel PostgreSQL selesai.");
+};
+
+// ── Seed default minimal untuk WARUNG BARU (onboarding) ──────────────
+// Dipanggil createWarung() setelah warung dibuat. Sengaja HANYA kategori
+// (struktur pemasukan/pengeluaran — generik, dibutuhkan utk transaksi) +
+// menu default (titik awal). TIDAK menyalin sub_kategori/fixed_costs Warpat
+// karena angkanya spesifik Warpat (mis. "Gaji 3 orang", nominal listrik) —
+// owner warung baru isi sendiri. Idempotent via ON CONFLICT DO NOTHING.
+export const seedWarungDefaults = async (warungId) => {
+  let idx = 0;
+  for (const k of DEFAULT_KATEGORI) {
+    idx += 1;
+    await query(
+      `INSERT INTO kategori (warung_id, nama, jenis, urutan) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+      [warungId, k.nama, k.jenis, idx]
+    );
+  }
+  for (const m of DEFAULT_MENU_ITEMS) {
+    await query(
+      `INSERT INTO menu_items (warung_id, nama, harga, kategori) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+      [warungId, m.nama, m.harga, m.kategori]
+    );
+  }
 };

@@ -36,6 +36,7 @@ import {
 import { CONFIG } from "../config.js";
 import { setRequestWarung } from "../utils/tenant.js";
 import { subscriptionGate } from "../middleware/subscription.js";
+import { requireModule } from "../middleware/module.js";
 import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
 import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan, SETTING_DANA_CADANGAN } from "../utils/analisis.js";
@@ -180,6 +181,12 @@ router.get("/logout", (_req, res) => {
 // ── Terapkan auth ke SEMUA route di bawah ini ─────────────────────
 router.use(requireFinanceAuth);
 router.use(subscriptionGate);
+
+// ── Gate modul opsional (path-prefix → meng-cover semua sub-route) ──
+// Menu = modul 'warkop'; Planning = modul 'planning'. Modul mati → 403.
+// Dipasang sebelum definisi route /menu* & /planning* di bawah.
+router.use("/menu",     requireModule("warkop"));
+router.use("/planning", requireModule("planning"));
 
 // ── GET /operasional — dashboard ─────────────────────────────────
 // Helper: bangun data utk financeDashboard. Dipake oleh route '/' (Dashboard

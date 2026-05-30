@@ -8,12 +8,13 @@ import {
   saveMember, deleteMember, resetScanHarian,
   createMember, findMember, findMemberIndex,
   resetQrMember, appendLog, checkBonusExpiry,
-  readAdminAccounts,
+  readAdminAccounts, listWarungsWithStats, createWarung,
+  listAllMemberKodes, getWarungBySlug,
 } from "../utils/db.js";
 import { requireAdmin, readFrtCookie } from "../middleware/auth.js";
 import { verifyToken, createToken } from "../utils/session.js";
 import { CONFIG }   from "../config.js";
-import { setRequestWarung, getWarungId } from "../utils/tenant.js";
+import { setRequestWarung, getWarungId, OPTIONAL_MODULES } from "../utils/tenant.js";
 import { isWarungActive } from "../middleware/subscription.js";
 import { resultPage } from "../views/member.js";
 import {
@@ -21,8 +22,8 @@ import {
   getBulanOptions, normalizeTelepon, formatTeleponDisplay, validateTelepon,
 } from "../utils/format.js";
 import { brandedQrCard, qrDataUrl, buildScanUrl, qrBuffer } from "../utils/qr.js";
-import { uploadQrToCloudinary } from "./share.js";
-import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, riwayatKunjunganPage } from "../views/admin.js";
+import { uploadQrToCloudinary, uploadImageToCloudinary } from "./share.js";
+import { adminLoginPage, adminDashboard, memberPage, addMemberPage, addMemberSuccess, riwayatKunjunganPage, warungListPage, warungCreatePage } from "../views/admin.js";
 import { segeraHadirPage } from "../views/segeraHadir.js";
 
 const router = Router();
@@ -159,6 +160,11 @@ router.get("/members", requireAdmin, async (req, res) => {
   }
 });
 
+// ── /admin/warung* DIPINDAH ke Area Admin Platform (/platform) ──────
+// Daftar/Buat/Kelola Warung kini di router platform (routes/platform.js),
+// dengan layout & login superadmin sendiri. Redirect bookmark lama → /platform.
+router.get(["/warung", "/warung/baru"], (_req, res) => res.redirect("/platform"));
+
 // ── GET /admin/riwayat-kunjungan — log scan member ────────────
 router.get("/riwayat-kunjungan", requireAdmin, async (req, res) => {
   try {
@@ -194,7 +200,7 @@ router.get("/tambah", requireAdmin, async (req, res) => {
     const digits    = normalizeTelepon(tlp);
     const telepon   = formatTeleponDisplay(digits);
     const db        = await readDB();
-    const kode      = generateKode(db.members);
+    const kode      = generateKode(await listAllMemberKodes());
     const newMember = createMember(kode, nama, telepon);
 
     await saveMember(newMember);
@@ -360,7 +366,7 @@ router.get("/reset-qr", requireAdmin, async (req, res) => {
     const m  = findMember(db.members, oldKode);
     if (!m) return res.redirect(`/admin/members?tk=${tk}`);
 
-    const newKode = generateKode(db.members);
+    const newKode = generateKode(await listAllMemberKodes());
     await resetQrMember(oldKode, newKode);
 
     // Re-upload QR ke Cloudinary dengan kode baru

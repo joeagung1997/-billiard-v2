@@ -6,7 +6,7 @@ import {
   readDB, readLog, readTransaksi, readKategori,
   saveMember, deleteMember, createMember, findMember, findMemberIndex,
   appendLog, appendTransaksi, voidTransaksi,
-  addKategori, deleteKategori, checkBonusExpiry,
+  addKategori, deleteKategori, checkBonusExpiry, listAllMemberKodes,
 } from "../utils/db.js";
 import { requireApiAuth, signToken } from "../middleware/apiAuth.js";
 import { CONFIG }         from "../config.js";
@@ -86,8 +86,7 @@ router.post("/members", requireApiAuth(["admin"]), async (req, res) => {
       return err(res, "Format telepon tidak valid. Gunakan format 08xx atau +62xx.");
     }
 
-    const { members } = await readDB();
-    const kode      = generateKode(members);
+    const kode      = generateKode(await listAllMemberKodes());
     const teleponFmt = telepon ? formatTeleponDisplay(normalizeTelepon(telepon)) : "";
     const newMember = createMember(kode, nama.trim(), teleponFmt);
 

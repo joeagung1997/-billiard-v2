@@ -87,3 +87,21 @@ export function setRequestBrandFromRow(w) {
     waNotif:    w.wa_notif_number,
   });
 }
+
+// ── Modul aktif per-request ─────────────────────────────────────────
+// Daftar modul OPSIONAL yang bisa nyala/mati per-warung (modul INTI selalu on).
+export const OPTIONAL_MODULES = ["billiard", "warkop", "sdm", "planning"];
+
+// Diisi middleware (subscription.isWarungActive) dari baris warung. Dibaca SINKRON
+// oleh sidebar (filter menu) & guard requireModule. Fallback (tak di-set) = semua
+// opsional aktif (fail-open, aman utk warung 1 & konteks non-request).
+export function setRequestModules(mods) {
+  const store = tenantStore.getStore();
+  if (store) store.modules = Array.isArray(mods) ? mods : [];
+}
+
+export function currentModules() {
+  const store = tenantStore.getStore();
+  if (store && Array.isArray(store.modules)) return store.modules;
+  return OPTIONAL_MODULES.slice();
+}
