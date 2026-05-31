@@ -3400,7 +3400,12 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
           + "<div class=\"mj-ic\"><i class=\"ti ti-circle-number-8\"></i></div>"
           + "<div class=\"mj-info\">"
           + "<div class=\"mj-name\">" + escHtml(m.nama) + " <span class=\"mj-badge " + st.cls + "\">" + st.label + "</span></div>"
-          + "<div class=\"mj-tarif\">Siang <b>" + rp(m.tarif_siang) + "</b> · Malam <b>" + rp(m.tarif_malam) + "</b> · Open <b>" + rp(m.tarif_open) + "</b> <span>/ jam</span></div>"
+          + "<div class=\"mj-tarif\">"
+          +   "<span class=\"mj-chip\"><span class=\"mj-chip-k\">Siang</span> " + rp(m.tarif_siang) + "</span>"
+          +   "<span class=\"mj-chip\"><span class=\"mj-chip-k\">Malam</span> " + rp(m.tarif_malam) + "</span>"
+          +   "<span class=\"mj-chip open\"><span class=\"mj-chip-k\">Open</span> " + rp(m.tarif_open) + "</span>"
+          +   "<span class=\"mj-chip-unit\">/ jam</span>"
+          + "</div>"
           + "</div>"
           + "<div class=\"mj-acts\">"
           + "<button type=\"button\" class=\"mj-act\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i> Edit</button>"
@@ -3410,14 +3415,15 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
       }).join("");
 
   const extraCss = [
-    ".mj-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:500;margin-bottom:16px}",
-    ".mj-note{display:flex;gap:8px;align-items:flex-start;background:rgba(38,96,164,.06);border:1px solid rgba(38,96,164,.18);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--txt2);line-height:1.55;margin-bottom:16px}",
-    ".mj-note i{color:var(--accent);font-size:15px;flex-shrink:0;margin-top:1px}",
+    ".mj-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;margin-bottom:16px}",
+    ".mj-back:hover{color:var(--green-dark)}",
+    ".mj-note{display:flex;gap:9px;align-items:flex-start;background:var(--green-bg);border:1px solid rgba(58,125,44,.22);border-radius:10px;padding:11px 14px;font-size:12px;color:var(--txt2);line-height:1.55;margin-bottom:16px}",
+    ".mj-note i{color:var(--accent);font-size:16px;flex-shrink:0;margin-top:1px}",
     ".mj-alert{display:flex;align-items:center;gap:8px;background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:16px}",
     ".mj-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}",
     ".mj-card-hd{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}",
-    ".mj-card-hd i{color:var(--accent);font-size:15px}",
-    ".mj-count{margin-left:auto;background:var(--surface2);color:var(--txt2);border-radius:10px;padding:2px 9px;font-size:11px;letter-spacing:0}",
+    ".mj-card-hd i{color:var(--accent);font-size:16px}",
+    ".mj-count{margin-left:auto;background:var(--green-bg);color:var(--green-dark);border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;letter-spacing:0}",
     ".mj-form{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:10px;align-items:end;padding:14px 16px}",
     ".mj-fg{display:flex;flex-direction:column;gap:5px;min-width:0}",
     ".mj-fg label{font-size:11px;font-weight:600;color:var(--txt3)}",
@@ -3429,22 +3435,27 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mj-pfx input{flex:1;min-width:0;border:none;background:transparent;padding:9px 11px 9px 4px;font-size:13px;font-family:var(--ff-mono);color:var(--txt);outline:none}",
     ".mj-submit{height:38px;white-space:nowrap;padding:0 16px}",
     ".mj-list{display:flex;flex-direction:column}",
-    ".mj-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}",
+    ".mj-row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);transition:background .12s}",
     ".mj-row:last-child{border-bottom:none}",
-    ".mj-ic{width:36px;height:36px;border-radius:9px;background:rgba(38,96,164,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}",
+    ".mj-row:hover{background:var(--surface2)}",
+    ".mj-ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3a7d2c,#2d6624);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;box-shadow:0 2px 6px rgba(45,102,36,.25)}",
     ".mj-info{flex:1;min-width:0}",
-    ".mj-name{font-size:14px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-    ".mj-tarif{font-size:11.5px;color:var(--txt3);margin-top:2px;font-family:var(--ff-mono)}",
-    ".mj-tarif b{color:var(--txt2);font-weight:600}",
-    ".mj-tarif span{font-family:var(--ff)}",
+    ".mj-name{font-size:14.5px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+    ".mj-tarif{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px}",
+    ".mj-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;color:var(--txt2);font-family:var(--ff-mono)}",
+    ".mj-chip-k{font-family:var(--ff);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3)}",
+    ".mj-chip.open{border-color:rgba(58,125,44,.3);background:var(--green-bg)}",
+    ".mj-chip.open .mj-chip-k{color:var(--accent)}",
+    ".mj-chip-unit{font-size:11px;color:var(--txt3)}",
     ".mj-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em}",
-    ".mj-badge.ok{background:var(--green-bg);color:var(--green)}",
+    ".mj-badge.ok{background:var(--green-bg);color:var(--green-dark)}",
     ".mj-badge.mt{background:#fef3c7;color:#b3791b}",
-    ".mj-badge.off{background:var(--surface2);color:var(--txt3)}",
+    ".mj-badge.off{background:var(--surface2);color:var(--txt3);border:1px solid var(--border)}",
     ".mj-acts{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}",
-    ".mj-act{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--txt2);font-size:11.5px;font-weight:600;font-family:var(--ff);cursor:pointer;text-decoration:none;transition:all .15s}",
-    ".mj-act:hover{border-color:var(--accent);color:var(--accent)}",
-    ".mj-act.ok:hover{border-color:var(--green);color:var(--green)}",
+    ".mj-act{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--txt2);font-size:11.5px;font-weight:600;font-family:var(--ff);cursor:pointer;text-decoration:none;transition:all .15s}",
+    ".mj-act:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
+    ".mj-act.ok{border-color:rgba(58,125,44,.35);color:var(--green-dark);background:var(--green-bg)}",
+    ".mj-act.ok:hover{border-color:var(--green);background:#dff0cf}",
     ".mj-act.del{color:var(--txt3);padding:6px 9px}",
     ".mj-act.del:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}",
     ".mj-empty{display:flex;align-items:center;gap:14px;padding:26px 18px;color:var(--txt3)}",
@@ -3459,9 +3470,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mj-form-modal{grid-template-columns:1fr 1fr}",
     ".mj-form-modal .mj-fg-name{grid-column:1/-1}",
     ".mj-form-modal .mj-submit{grid-column:1/-1;justify-content:center;width:100%}",
-    ".mj-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--accent);color:#fff;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;pointer-events:none;transition:all .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
+    ".mj-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--accent);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(45,102,36,.35);opacity:0;pointer-events:none;transition:all .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
     ".mj-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
-    "@media(max-width:680px){.mj-form{grid-template-columns:1fr 1fr}.mj-form .mj-fg-name{grid-column:1/-1}.mj-form .mj-submit{grid-column:1/-1;width:100%}.mj-row{flex-wrap:wrap}.mj-acts{width:100%;justify-content:flex-start}}",
+    "@media(max-width:680px){.mj-form{grid-template-columns:1fr 1fr;padding:14px}.mj-form .mj-fg-name{grid-column:1/-1}.mj-form .mj-submit{grid-column:1/-1;width:100%}.mj-row{flex-wrap:wrap;gap:10px 12px}.mj-info{flex:1 1 calc(100% - 51px)}.mj-acts{width:100%;justify-content:flex-start;border-top:1px dashed var(--border);padding-top:11px;margin-top:2px}}",
   ].join("");
 
   const js =
@@ -3485,7 +3496,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<header class=\"topbar\">"
     + (role === "owner" ? buildOwnerMenuToggle() : "")
     + "<div class=\"topbar-brand\"><div class=\"sb-brand-icon\" style=\"width:28px;height:28px;font-size:14px;margin-right:6px\"><i class=\"ti ti-layout-grid\"></i></div>"
-    + "<div><div class=\"topbar-name\">Manajemen Meja</div><div class=\"topbar-label\">Operasional</div></div></div></header>"
+    + "<div><div class=\"topbar-name\">Manajemen Meja</div><div class=\"topbar-label\">Billiard</div></div></div></header>"
     + "<div class=\"page\">"
     + "<a href=\"/operasional\" class=\"mj-back\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
     + "<div class=\"dash-topbar\" style=\"margin-bottom:18px\"><div><div class=\"page-title\">Manajemen Meja</div>"
