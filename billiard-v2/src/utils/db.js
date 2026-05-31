@@ -511,8 +511,8 @@ export const appendTransaksi = async (item, warungId = currentWarungId()) => {
   // saat dicatat, NULL kalau belum (akan diisi saat user klik "Tandai Lunas").
   const lunas = item.lunas !== false;
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh, lunas, lunas_at, warung_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh, lunas, lunas_at, warung_id, sesi_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
@@ -525,6 +525,7 @@ export const appendTransaksi = async (item, warungId = currentWarungId()) => {
       lunas,
       lunas ? (item.lunasAt ?? new Date().toISOString()) : null,
       warungId,
+      item.sesiId ?? null,   // null = transaksi biasa (bukan item sesi)
     ]
   );
 };
@@ -686,6 +687,76 @@ export const setMejaStatus = async (id, status, warungId = currentWarungId()) =>
 
 export const deleteMeja = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM meja WHERE id=$1 AND warung_id=$2", [id, warungId]);
+};
+
+// ── Sesi / Bill meja ──────────────────────────────────────────
+// Sesi = wadah transaksi utk satu meja. Item-nya TIDAK disimpan terpisah —
+// item = baris `transaksi` ber-sesi_id (lunas:false sampai dibayar). Jadi saldo
+// otomatis ngikut aturan `lunas` yg sudah ada (item belum bayar tak nambah saldo).
+// Semua scoped per warung_id.
+
+export const createSesi = async (mejaId, namaMeja, dibukaOleh = "", catatan = "", warungId = currentWarungId()) => {
+  // uq_sesi_meja_open (partial unique) menjamin maks 1 sesi 'open' per meja →
+  // INSERT akan gagal kalau meja sudah punya sesi terbuka (ditangani di route).
+  const res = await query(
+    `INSERT INTO sesi (meja_id, nama_meja, status, dibuka_oleh, catatan, warung_id)
+     VALUES ($1, $2, 'open', $3, $4, $5) RETURNING id`,
+    [mejaId ?? null, (namaMeja ?? "").trim(), (dibukaOleh ?? "").trim(), (catatan ?? "").trim(), warungId]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const readSesiOpen = async (warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT id, meja_id, nama_meja, status, dibuka_oleh, catatan, opened_at, closed_at
+       FROM sesi WHERE warung_id = $1 AND status = 'open' ORDER BY opened_at ASC`,
+    [warungId]
+  );
+  return res.rows;
+};
+
+export const readSesiById = async (id, warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT id, meja_id, nama_meja, status, dibuka_oleh, catatan, opened_at, closed_at
+       FROM sesi WHERE id = $1 AND warung_id = $2`,
+    [id, warungId]
+  );
+  return res.rows[0] ?? null;
+};
+
+// Item sesi = transaksi ber-sesi_id (non-void), urut waktu input.
+export const readSesiItems = async (sesiId, warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT * FROM transaksi WHERE sesi_id = $1 AND warung_id = $2 AND voided_at IS NULL ORDER BY created_at ASC`,
+    [sesiId, warungId]
+  );
+  return res.rows.map(rowToTransaksi);
+};
+
+// Meja yang sedang punya sesi 'open' → utk status "Dipakai" di Manajemen Meja.
+export const readMejaOpenSesiIds = async (warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT DISTINCT meja_id FROM sesi WHERE warung_id = $1 AND status = 'open' AND meja_id IS NOT NULL`,
+    [warungId]
+  );
+  return res.rows.map((r) => r.meja_id);
+};
+
+export const hasOpenSesi = async (mejaId, warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT 1 FROM sesi WHERE warung_id = $1 AND meja_id = $2 AND status = 'open' LIMIT 1`,
+    [warungId, mejaId]
+  );
+  return res.rowCount > 0;
+};
+
+export const closeSesi = async (id, warungId = currentWarungId()) => {
+  const res = await query(
+    `UPDATE sesi SET status = 'closed', closed_at = NOW()
+      WHERE id = $1 AND warung_id = $2 AND status = 'open'`,
+    [id, warungId]
+  );
+  return res.rowCount > 0;
 };
 
 export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {

@@ -171,6 +171,24 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Tabel sesi/bill meja ────────────────────────────────────
+  // Satu sesi = satu kumpulan transaksi (sewa + F&B) utk satu meja. Item-nya
+  // tersimpan di tabel `transaksi` (via kolom sesi_id), bukan tabel terpisah —
+  // jadi otomatis muncul di Riwayat & ikut aturan saldo (lunas) yg sudah ada.
+  // status: 'open' (berjalan) | 'closed' (selesai, semua item lunas).
+  await query(`
+    CREATE TABLE IF NOT EXISTS sesi (
+      id          SERIAL PRIMARY KEY,
+      meja_id     INTEGER,
+      nama_meja   TEXT        NOT NULL DEFAULT '',
+      status      TEXT        NOT NULL DEFAULT 'open',
+      dibuka_oleh TEXT        NOT NULL DEFAULT '',
+      catatan     TEXT        NOT NULL DEFAULT '',
+      opened_at   TIMESTAMPTZ DEFAULT NOW(),
+      closed_at   TIMESTAMPTZ
+    )
+  `);
+
   // ── Kolom tambahan (idempotent) ─────────────────────────────
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);
@@ -181,6 +199,10 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bayar       TEXT DEFAULT ''`);
   // Bukti foto (QRIS transfer proof / nota pengeluaran) — path relatif ke public/
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bukti_url   TEXT DEFAULT ''`);
+  // Sesi/Bill: link transaksi ke sesi meja (nullable). NULL = transaksi biasa
+  // (Catat Transaksi cepat) — data lama tak terpengaruh. Diisi hanya utk item sesi.
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS sesi_id INTEGER`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_transaksi_sesi ON transaksi (sesi_id)`);
   // Status lunas — customer kasbon / nota supplier blm dibayar. Default TRUE
   // supaya semua transaksi existing dianggap lunas (backward compat).
   // lunas_at = waktu transaksi dilunaskan (nullable, NULL kalau blm lunas).
@@ -693,7 +715,7 @@ export const runMigrations = async () => {
   // Nama tabel berasal dari whitelist statis di bawah (bukan input user) →
   // interpolasi string aman dari SQL injection.
   const TENANT_TABLES = [
-    "members", "transaksi", "logs", "kategori", "menu_items", "meja", "sub_kategori",
+    "members", "transaksi", "logs", "kategori", "menu_items", "meja", "sesi", "sub_kategori",
     "menu_toppings", "bahan_baku", "supplier", "stok_movement",
     "bahan_harga_history", "menu_resep", "feature_notes", "notifikasi",
     "karyawan", "sdm_transaksi", "admin_accounts", "setoran", "fixed_costs",
@@ -731,6 +753,9 @@ export const runMigrations = async () => {
       );
     }
   }
+
+  // Sesi: maksimal 1 sesi 'open' per meja per warung (guard DB-level, idempotent).
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_sesi_meja_open ON sesi (warung_id, meja_id) WHERE status = 'open'`);
 
   await query(`ALTER TABLE bahan_baku     DROP CONSTRAINT IF EXISTS bahan_baku_nama_key`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_bahan_baku_warung_nama ON bahan_baku (warung_id, nama)`);
