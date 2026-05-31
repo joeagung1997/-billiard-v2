@@ -3353,6 +3353,15 @@ export function financeKategoriPage(role = "owner", kategoriList = [], showErr =
     + "</body></html>";
 }
 
+// ── Jenis meja (ukuran + bola) + preset tarif/jam ────────────
+// Dropdown saat Tambah/Edit. Pilih jenis -> tarif Siang/Malam auto-isi (preset,
+// tetap bisa diedit). Open ikut Siang/Malam, jadi tak ada preset terpisah.
+export const MEJA_JENIS = [
+  { value: "7ft", label: "7 feet (bola tanggung)", short: "7 feet", ball: "bola tanggung", siang: 10000, malam: 12000 },
+  { value: "9ft", label: "9 feet (bola besar)",    short: "9 feet", ball: "bola besar",    siang: 15000, malam: 20000 },
+];
+const jenisMeta = (v) => MEJA_JENIS.find((j) => j.value === v) || MEJA_JENIS[0];
+
 // ── Halaman Manajemen Meja (master meja + tarif per jam) ──────
 // Setup-only: kelola daftar meja, tarif (siang/malam/open), & status. Daftar
 // ini jadi sumber pilihan "Nomor Meja" + tarif auto-calc di Catat Transaksi.
@@ -3384,6 +3393,10 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
   const tarifInput = (name, label, id) =>
     "<div class=\"mj-fg\"><label>" + label + "</label><div class=\"mj-pfx\"><span>Rp</span>"
     + "<input name=\"" + name + "\"" + (id ? " id=\"" + id + "\"" : "") + " type=\"text\" inputmode=\"numeric\" placeholder=\"0\" oninput=\"mjFmt(this)\"></div></div>";
+  const jenisField = (id) =>
+    "<div class=\"mj-fg mj-fg-name\"><label>Jenis Meja</label><select name=\"jenis\"" + (id ? " id=\"" + id + "\"" : "") + " onchange=\"mjPreset(this)\">"
+    + MEJA_JENIS.map((j) => "<option value=\"" + j.value + "\">" + escHtml(j.label) + "</option>").join("")
+    + "</select></div>";
 
   // Helper aksi — semua POST/GET ke endpoint yang SAMA (logika tak berubah).
   // display:contents agar <form> tidak mengganggu layout flex tombol.
@@ -3406,7 +3419,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     : mejaList.map((m) => {
         const eff = isOccupied(m) ? "dipakai" : m.status;
         const st = STMETA[eff] || STMETA.aktif;
-        const payload = escHtml(JSON.stringify({ id: m.id, nama: m.nama, ts: m.tarif_siang, tm: m.tarif_malam, to: m.tarif_open }));
+        const jm = jenisMeta(m.jenis);
+        const payload = escHtml(JSON.stringify({ id: m.id, nama: m.nama, jenis: jm.value, ts: m.tarif_siang, tm: m.tarif_malam, to: m.tarif_open }));
         let primary, quick = "", menu;
         if (m.status === "aktif") {
           primary = "<button type=\"button\" class=\"mjc-btn primary\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i> Edit</button>";
@@ -3424,7 +3438,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
           + "<div class=\"mjc-menu\">" + menu + "</div></div>";
         return "<div class=\"mjc-card" + (m.status !== "aktif" ? " dim" : "") + "\">"
           + "<div class=\"mjc-top\"><div class=\"mjc-id\"><div class=\"mjc-ic " + st.cls + "\"><i class=\"ti " + st.icon + "\"></i></div>"
-          + "<span class=\"mjc-name\">" + escHtml(m.nama) + "</span></div>"
+          + "<div class=\"mjc-id-txt\"><span class=\"mjc-name\">" + escHtml(m.nama) + "</span>"
+          + "<span class=\"mjc-jenis\">" + escHtml(jm.short) + " · " + escHtml(jm.ball) + "</span></div></div>"
           + "<span class=\"mjc-badge " + st.cls + "\">" + st.label + "</span></div>"
           + "<div class=\"mjc-tarif\">" + tRow("ti-sun", "Siang", m.tarif_siang) + tRow("ti-moon", "Malam", m.tarif_malam)
           + "<div class=\"mjc-trow\"><span class=\"mjc-tk\"><i class=\"ti ti-infinity\"></i>Open</span><b class=\"mjc-open-follow\">ikut Siang/Malam</b></div></div>"
@@ -3461,7 +3476,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mjc-ic.mt{background:#fef3c7;color:#b3791b}",
     ".mjc-ic.off{background:var(--surface2);color:var(--txt3)}",
     ".mjc-ic.use{background:linear-gradient(135deg,#3b82f6,#2660a4);color:#fff;box-shadow:0 2px 6px rgba(38,96,164,.25)}",
+    ".mjc-id-txt{display:flex;flex-direction:column;gap:1px;min-width:0}",
     ".mjc-name{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".mjc-jenis{font-size:10.5px;font-weight:600;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".mjc-badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0;letter-spacing:.02em;text-transform:uppercase}",
     ".mjc-badge.ok{background:var(--green-bg);color:var(--green-dark)}",
     ".mjc-badge.mt{background:#fef3c7;color:#b3791b}",
@@ -3495,8 +3512,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mjc-empty div{font-size:12px;line-height:1.7}",
     ".mj-fg{display:flex;flex-direction:column;gap:5px;min-width:0}",
     ".mj-fg label{font-size:11px;font-weight:600;color:var(--txt3)}",
-    ".mj-fg>input{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box;transition:border-color .15s,background .15s}",
-    ".mj-fg>input:focus{border-color:var(--accent);background:var(--surface)}",
+    ".mj-fg>input,.mj-fg>select{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box;transition:border-color .15s,background .15s}",
+    ".mj-fg>input:focus,.mj-fg>select:focus{border-color:var(--accent);background:var(--surface)}",
     ".mj-pfx{display:flex;align-items:center;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);overflow:hidden;transition:border-color .15s,background .15s}",
     ".mj-pfx:focus-within{border-color:var(--accent);background:var(--surface)}",
     ".mj-pfx span{padding:0 4px 0 10px;font-size:12px;font-weight:700;color:var(--txt3)}",
@@ -3516,13 +3533,16 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     "@media(max-width:680px){.mjc-stats{grid-template-columns:repeat(2,1fr)}.mjc-add{width:100%}.mj-form{grid-template-columns:1fr;padding:16px}}",
   ].join("");
 
+  const jenisPreset = "{" + MEJA_JENIS.map((j) => "'" + j.value + "':[" + j.siang + "," + j.malam + "]").join(",") + "}";
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
-    + "function openAddMeja(){document.getElementById('mjAddModal').classList.add('show');}"
+    + "function mjPreset(sel){var p=" + jenisPreset + "[sel.value];if(!p)return;var f=sel.closest('form');if(!f)return;var si=f.querySelector('[name=tarif_siang]');var ma=f.querySelector('[name=tarif_malam]');if(si)si.value=Number(p[0]).toLocaleString('id-ID');if(ma)ma.value=Number(p[1]).toLocaleString('id-ID');}"
+    + "function openAddMeja(){var js=document.getElementById('addJenis');if(js){js.value='7ft';mjPreset(js);}var nm=document.querySelector('#mjAddModal input[name=nama]');if(nm)nm.value='';document.getElementById('mjAddModal').classList.add('show');}"
     + "function closeAddMeja(){document.getElementById('mjAddModal').classList.remove('show');}"
     + "function openEditMeja(d){"
     + "document.getElementById('emId').value=d.id;"
     + "document.getElementById('emNama').value=d.nama;"
+    + "document.getElementById('emJenis').value=d.jenis||'7ft';"
     + "document.getElementById('emSiang').value=d.ts?Number(d.ts).toLocaleString('id-ID'):'';"
     + "document.getElementById('emMalam').value=d.tm?Number(d.tm).toLocaleString('id-ID'):'';"
     + "document.getElementById('mjModal').classList.add('show');}"
@@ -3563,6 +3583,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-plus\"></i> Tambah Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeAddMeja()\"><i class=\"ti ti-x\"></i></button></div>"
     + "<form action=\"/operasional/meja/tambah\" method=\"post\" class=\"mj-form mj-form-modal\">"
     + "<div class=\"mj-fg mj-fg-name\"><label>Nama / Nomor Meja</label><input name=\"nama\" type=\"text\" placeholder=\"mis. Meja 9\" required></div>"
+    + jenisField("addJenis")
     + tarifInput("tarif_siang", "Tarif Siang / jam") + tarifInput("tarif_malam", "Tarif Malam / jam")
     + "<div class=\"mj-fg-note\"><i class=\"ti ti-info-circle\"></i> Durasi <b>Open</b> (main bebas) otomatis pakai tarif <b>Siang/Malam</b> sesuai jam mainnya — tak perlu tarif Open terpisah.</div>"
     + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
@@ -3573,6 +3594,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<form action=\"/operasional/meja/edit\" method=\"post\" class=\"mj-form mj-form-modal\">"
     + "<input type=\"hidden\" name=\"id\" id=\"emId\">"
     + "<div class=\"mj-fg mj-fg-name\"><label>Nama / Nomor Meja</label><input name=\"nama\" id=\"emNama\" type=\"text\" required></div>"
+    + jenisField("emJenis")
     + tarifInput("tarif_siang", "Tarif Siang / jam", "emSiang") + tarifInput("tarif_malam", "Tarif Malam / jam", "emMalam")
     + "<div class=\"mj-fg-note\"><i class=\"ti ti-info-circle\"></i> Durasi <b>Open</b> (main bebas) otomatis pakai tarif <b>Siang/Malam</b> sesuai jam mainnya — tak perlu tarif Open terpisah.</div>"
     + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-device-floppy\"></i> Simpan Perubahan</button>"

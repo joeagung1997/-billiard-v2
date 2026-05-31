@@ -1411,9 +1411,10 @@ router.post("/meja/tambah", requireOwner, async (req, res) => {
   const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
   const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
   const to = ts; // Open ikut tarif Siang/Malam; kolom tarif_open disimpan = Siang utk kompatibilitas
+  const jenis = ["7ft", "9ft"].includes(req.body.jenis) ? req.body.jenis : "7ft";
   if (!nama) return res.redirect("/operasional/meja?err=1");
   try {
-    await addMeja(nama, ts, tm, to);
+    await addMeja(nama, ts, tm, to, jenis);
     res.redirect("/operasional/meja?msg=added");
   } catch (err) {
     console.error("[FINANCE] meja tambah error:", err.message);
@@ -1427,9 +1428,10 @@ router.post("/meja/edit", requireOwner, async (req, res) => {
   const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
   const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
   const to = ts; // Open ikut tarif Siang/Malam; kolom tarif_open disimpan = Siang utk kompatibilitas
+  const jenis = ["7ft", "9ft"].includes(req.body.jenis) ? req.body.jenis : "7ft";
   if (!id || !nama) return res.redirect("/operasional/meja?err=1");
   try {
-    await updateMeja(id, nama, ts, tm, to);
+    await updateMeja(id, nama, ts, tm, to, jenis);
     res.redirect("/operasional/meja?msg=updated");
   } catch (err) {
     console.error("[FINANCE] meja edit error:", err.message);

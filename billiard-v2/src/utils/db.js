@@ -648,7 +648,7 @@ export const deleteMenuItem = async (id, warungId = currentWarungId()) => {
 
 export const readMejas = async (warungId = currentWarungId()) => {
   const res = await query(
-    "SELECT id, nama, tarif_siang, tarif_malam, tarif_open, status, urutan FROM meja WHERE warung_id = $1 ORDER BY urutan ASC, id ASC",
+    "SELECT id, nama, jenis, tarif_siang, tarif_malam, tarif_open, status, urutan FROM meja WHERE warung_id = $1 ORDER BY urutan ASC, id ASC",
     [warungId]
   );
   return res.rows;
@@ -664,19 +664,19 @@ export const readMejaAktif = async (warungId = currentWarungId()) => {
   return res.rows;
 };
 
-export const addMeja = async (nama, tarifSiang, tarifMalam, tarifOpen, warungId = currentWarungId()) => {
+export const addMeja = async (nama, tarifSiang, tarifMalam, tarifOpen, jenis = "7ft", warungId = currentWarungId()) => {
   await query(
-    `INSERT INTO meja (nama, tarif_siang, tarif_malam, tarif_open, urutan, warung_id)
-     VALUES ($1, $2, $3, $4, COALESCE((SELECT MAX(urutan) FROM meja WHERE warung_id=$5),0)+1, $5)
+    `INSERT INTO meja (nama, jenis, tarif_siang, tarif_malam, tarif_open, urutan, warung_id)
+     VALUES ($1, $2, $3, $4, $5, COALESCE((SELECT MAX(urutan) FROM meja WHERE warung_id=$6),0)+1, $6)
      ON CONFLICT (warung_id, nama) DO NOTHING`,
-    [nama.trim(), tarifSiang, tarifMalam, tarifOpen, warungId]
+    [nama.trim(), jenis, tarifSiang, tarifMalam, tarifOpen, warungId]
   );
 };
 
-export const updateMeja = async (id, nama, tarifSiang, tarifMalam, tarifOpen, warungId = currentWarungId()) => {
+export const updateMeja = async (id, nama, tarifSiang, tarifMalam, tarifOpen, jenis = "7ft", warungId = currentWarungId()) => {
   await query(
-    "UPDATE meja SET nama=$1, tarif_siang=$2, tarif_malam=$3, tarif_open=$4 WHERE id=$5 AND warung_id=$6",
-    [nama.trim(), tarifSiang, tarifMalam, tarifOpen, id, warungId]
+    "UPDATE meja SET nama=$1, jenis=$2, tarif_siang=$3, tarif_malam=$4, tarif_open=$5 WHERE id=$6 AND warung_id=$7",
+    [nama.trim(), jenis, tarifSiang, tarifMalam, tarifOpen, id, warungId]
   );
 };
 

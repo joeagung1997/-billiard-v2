@@ -162,6 +162,7 @@ export const runMigrations = async () => {
     CREATE TABLE IF NOT EXISTS meja (
       id          SERIAL PRIMARY KEY,
       nama        TEXT    NOT NULL,
+      jenis       TEXT    NOT NULL DEFAULT '7ft',
       tarif_siang INTEGER NOT NULL DEFAULT 0,
       tarif_malam INTEGER NOT NULL DEFAULT 0,
       tarif_open  INTEGER NOT NULL DEFAULT 0,
@@ -170,6 +171,8 @@ export const runMigrations = async () => {
       created_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Jenis meja (7ft bola tanggung / 9ft bola besar) — utk DB lama yg sudah ada.
+  await query(`ALTER TABLE meja ADD COLUMN IF NOT EXISTS jenis TEXT NOT NULL DEFAULT '7ft'`);
 
   // ── Tabel sesi/bill meja ────────────────────────────────────
   // Satu sesi = satu kumpulan transaksi (sewa + F&B) utk satu meja. Item-nya
