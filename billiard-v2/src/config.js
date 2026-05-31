@@ -76,11 +76,11 @@ export const CONFIG = Object.freeze({
   JWT_SECRET:  requireSecret("JWT_SECRET"),
   JWT_EXPIRES: process.env.JWT_EXPIRES ?? "24h",
 
-  // DEPLOY_ID — stamped ke semua token (JWT _frt, REST API Bearer, SDM HMAC).
-  // Tiap deploy baru → DEPLOY_ID berubah → semua token lama invalid → user
-  // dipaksa login ulang. Prioritas: env var dari platform (Railway/Vercel) yg
-  // stabil per-deploy (lambda warm-start tetep share ID yg sama), fallback ke
-  // random per-process buat local dev.
+  // DEPLOY_ID — stamped ke token REST API Bearer & SDM HMAC. Tiap deploy baru →
+  // DEPLOY_ID berubah → token API/SDM lama invalid. Prioritas: env var platform
+  // (Railway/Vercel) yg stabil per-deploy, fallback random per-process (local dev).
+  // CATATAN: cookie sesi web (_frt) TIDAK lagi pakai ini — pakai SESSION_VERSION
+  // di bawah supaya deploy biasa tidak me-logout user yg sedang login.
   DEPLOY_ID:
     process.env.RAILWAY_DEPLOYMENT_ID ||
     process.env.VERCEL_DEPLOYMENT_ID ||
@@ -88,6 +88,12 @@ export const CONFIG = Object.freeze({
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.GIT_COMMIT ||
     `local-${randomBytes(8).toString("hex")}`,
+
+  // SESSION_VERSION — stempel "boot" untuk cookie sesi web (_frt). STABIL antar
+  // deploy: user tetap login walau aplikasi di-update. Bump nilainya (env var)
+  // HANYA saat sengaja mau paksa semua login ulang (mis. ganti PIN / rotasi
+  // keamanan). Default "v1".
+  SESSION_VERSION: process.env.SESSION_VERSION ?? "v1",
 
   // Nomor WA Warpat Jombang — dipakai untuk tombol booking di kartu member.
   // Bukan rahasia (publish utk customer); default aman karena warpat tunggal.

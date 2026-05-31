@@ -87,7 +87,7 @@ router.post("/login", async (req, res) => {
   if (!acc) return res.redirect("/platform/login?err=1");
 
   const claims = { username: acc.username, role: "superadmin", displayName: acc.display_name || "Super Admin", warungId: 1 };
-  const frt    = jwt.sign({ ...claims, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+  const frt    = jwt.sign({ ...claims, boot: CONFIG.SESSION_VERSION }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   res.setHeader("Set-Cookie", [frtCookie(encodeURIComponent(frt), 24 * 3600, req)]);
   res.redirect("/platform"); // URL bersih — tanpa token
 });

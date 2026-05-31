@@ -66,7 +66,7 @@ function getCookie(req, name) {
 }
 
 function setRoleCookie(res, role, username = "", displayName = "", shift = "siang", warungId = 1) {
-  const token = jwt.sign({ role, username, displayName, shift, warungId, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
+  const token = jwt.sign({ role, username, displayName, shift, warungId, boot: CONFIG.SESSION_VERSION }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
   const maxAge = 24 * 3600; // 24 jam
   // Path=/ supaya cookie juga dikirim ke /admin/* — fallback _frt di
   // middleware/auth.js bisa baca cookie ini saat owner pindah menu.
@@ -90,8 +90,9 @@ function getFinanceUser(req) {
   if (!raw) return null;
   try {
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
-    // DEPLOY_ID mismatch = token dari deploy sebelumnya → invalid (force re-login).
-    if (decoded.boot !== CONFIG.DEPLOY_ID) return null;
+    // SESSION_VERSION mismatch = sesi versi lama → invalid. Deploy biasa TIDAK
+    // mengubah ini (user tetap login); hanya bump SESSION_VERSION yg invalidasi.
+    if (decoded.boot !== CONFIG.SESSION_VERSION) return null;
     return {
       role:        decoded.role        || null,
       username:    decoded.username    || "",
@@ -109,6 +110,13 @@ function getFinanceRole(req) {
 function requireFinanceAuth(req, res, next) {
   const user = getFinanceUser(req);
   if (!user?.role) {
+    // Request fetch/XHR (mis. bell notif) → balikin 401, JANGAN redirect ke HTML.
+    // Tanpa ini, fetch mengikuti redirect ke /admin lalu HTML-nya ke-inject ke UI
+    // (bug: halaman login nyasar di dalam list notif). Klien handle 401/redirect
+    // → arahkan 1x ke /admin dengan bersih. sec-fetch-dest=document = navigasi.
+    if (req.get("sec-fetch-dest") === "empty" || req.xhr) {
+      return res.status(401).json({ error: "unauthorized", login: "/admin" });
+    }
     // Flow utama login via /admin (username+PIN) — kalau cookie _frt expired,
     // arahkan ke /admin (akan auto-set cookie kembali setelah login).
     return res.redirect("/admin");

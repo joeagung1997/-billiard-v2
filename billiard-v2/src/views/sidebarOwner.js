@@ -257,8 +257,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       }
       function fetchUnreadCount() {
         fetch("/operasional/notif/unread-count", { credentials: "same-origin" })
-          .then(function(r){ return r.json(); })
-          .then(function(d){ updateBellBadge(d.count || 0); })
+          .then(function(r){ if(r.redirected || r.status === 401) return null; return r.json(); })
+          .then(function(d){ if(d) updateBellBadge(d.count || 0); })
           .catch(function(){});
       }
       // Initial fetch saat page load
@@ -281,8 +281,8 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       if (body) {
         body.innerHTML = '<div class="ns-loading"><i class="ti ti-loader-2"></i><div>Memuat notifikasi...</div></div>';
         fetch("/operasional/notif/sheet", { credentials: "same-origin" })
-          .then(function(r){ return r.text(); })
-          .then(function(html){ body.innerHTML = html; })
+          .then(function(r){ if(r.redirected || r.status === 401){ window.location.href = "/admin"; return null; } return r.text(); })
+          .then(function(html){ if(html !== null) body.innerHTML = html; })
           .catch(function(){ body.innerHTML = '<div class="ns-loading">Gagal memuat notifikasi.</div>'; });
       }
     }

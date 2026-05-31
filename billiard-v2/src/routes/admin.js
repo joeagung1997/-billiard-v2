@@ -129,7 +129,7 @@ export async function doAdminLogin(req, res, { errRedirect = "/admin?err=1", okB
   // Auto-set cookie _frt (Path=/) supaya /operasional/* & /admin/* tidak minta
   // PIN lagi. Clear dulu cookie legacy Path=/operasional biar tidak dobel.
   const frt = jwt.sign(
-    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, warungId: found.warungId, boot: CONFIG.DEPLOY_ID },
+    { role: found.role, username: found.username, displayName: found.displayName, shift: found.shift, warungId: found.warungId, boot: CONFIG.SESSION_VERSION },
     CONFIG.JWT_SECRET,
     { expiresIn: CONFIG.JWT_EXPIRES }
   );

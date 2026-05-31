@@ -78,7 +78,7 @@ function getFinanceClaims(req) {
   try {
     const raw = decodeURIComponent(entry.slice(FIN_COOKIE.length + 1));
     const decoded = jwt.verify(raw, CONFIG.JWT_SECRET);
-    if (decoded.boot !== CONFIG.DEPLOY_ID) return null;
+    if (decoded.boot !== CONFIG.SESSION_VERSION) return null;
     return decoded;
   } catch { return null; }
 }
