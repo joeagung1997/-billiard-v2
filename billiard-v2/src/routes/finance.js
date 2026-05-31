@@ -19,8 +19,8 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
-  readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja,
-  createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds,
+  readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja, updateMejaTarifMassal,
+  createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds, readMejaOpenSesiInfo,
   hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
@@ -1398,8 +1398,11 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
 // auto-calc di Catat Transaksi. Tidak menyentuh alur/skema transaksi.
 router.get("/meja", requireOwner, async (req, res) => {
   try {
-    const [mejaList, occupiedIds] = await Promise.all([readMejas(), readMejaOpenSesiIds()]);
-    res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || "", occupiedIds));
+    const [mejaList, sesiInfo] = await Promise.all([readMejas(), readMejaOpenSesiInfo()]);
+    const occupiedIds = sesiInfo.map((s) => s.meja_id);
+    const openSesiByMeja = {};
+    for (const s of sesiInfo) openSesiByMeja[s.meja_id] = { opened_at: s.opened_at, waktu: s.waktu };
+    res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || "", occupiedIds, openSesiByMeja));
   } catch (err) {
     console.error("[FINANCE] meja GET error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -1435,6 +1438,21 @@ router.post("/meja/edit", requireOwner, async (req, res) => {
     res.redirect("/operasional/meja?msg=updated");
   } catch (err) {
     console.error("[FINANCE] meja edit error:", err.message);
+    res.redirect("/operasional/meja?err=1");
+  }
+});
+
+// Terapkan tarif Siang/Malam ke banyak meja sekaligus (opsi filter jenis 7ft/9ft).
+router.post("/meja/tarif-massal", requireOwner, async (req, res) => {
+  const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
+  const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
+  const jenis = ["7ft", "9ft"].includes(req.body.jenis) ? req.body.jenis : "all";
+  if (ts <= 0 && tm <= 0) return res.redirect("/operasional/meja?err=1");
+  try {
+    await updateMejaTarifMassal(ts, tm, jenis);
+    res.redirect("/operasional/meja?msg=massal");
+  } catch (err) {
+    console.error("[FINANCE] meja tarif massal error:", err.message);
     res.redirect("/operasional/meja?err=1");
   }
 });

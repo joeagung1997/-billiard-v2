@@ -742,6 +742,34 @@ export const readMejaOpenSesiIds = async (warungId = currentWarungId()) => {
   return res.rows.map((r) => r.meja_id);
 };
 
+// Info sesi terbuka per meja (utk live block Manajemen Meja): kapan dibuka +
+// waktu (siang/malam) dari item sewa-nya. 1 baris per meja (sesi terbaru).
+export const readMejaOpenSesiInfo = async (warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT DISTINCT ON (s.meja_id) s.meja_id, s.opened_at,
+            COALESCE(t.waktu, 'siang') AS waktu
+       FROM sesi s
+       LEFT JOIN transaksi t
+         ON t.sesi_id = s.id AND t.warung_id = s.warung_id AND t.kategori = 'Sewa Meja'
+      WHERE s.warung_id = $1 AND s.status = 'open' AND s.meja_id IS NOT NULL
+      ORDER BY s.meja_id, s.opened_at DESC`,
+    [warungId]
+  );
+  return res.rows;
+};
+
+// Terapkan tarif Siang/Malam ke banyak meja sekaligus (opsi filter jenis).
+// tarif_open ikut Siang (Open mengikuti Siang/Malam). Kembalikan jumlah baris.
+export const updateMejaTarifMassal = async (tarifSiang, tarifMalam, jenis = "all", warungId = currentWarungId()) => {
+  const ts = Math.max(0, parseInt(tarifSiang) || 0);
+  const tm = Math.max(0, parseInt(tarifMalam) || 0);
+  const params = [ts, tm, warungId];
+  let sql = "UPDATE meja SET tarif_siang=$1, tarif_malam=$2, tarif_open=$1 WHERE warung_id=$3";
+  if (jenis === "7ft" || jenis === "9ft") { sql += " AND jenis=$4"; params.push(jenis); }
+  const res = await query(sql, params);
+  return res.rowCount;
+};
+
 export const hasOpenSesi = async (mejaId, warungId = currentWarungId()) => {
   const res = await query(
     `SELECT 1 FROM sesi WHERE warung_id = $1 AND meja_id = $2 AND status = 'open' LIMIT 1`,
