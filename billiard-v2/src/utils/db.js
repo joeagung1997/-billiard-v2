@@ -733,6 +733,19 @@ export const readSesiItems = async (sesiId, warungId = currentWarungId()) => {
   return res.rows.map(rowToTransaksi);
 };
 
+// Void (soft-delete) satu item F&B di sesi. Hanya item NON-sewa & milik sesi
+// itu. Item ter-void otomatis hilang dari sesi (readSesiItems filter voided_at)
+// & dari saldo (revenue engine abaikan voided), jadi pemasukan terkoreksi.
+export const voidSesiItem = async (sesiId, itemId, warungId = currentWarungId()) => {
+  const res = await query(
+    `UPDATE transaksi SET voided_at = NOW(), void_reason = 'Dibatalkan dari sesi'
+       WHERE id = $1 AND sesi_id = $2 AND warung_id = $3
+         AND kategori <> 'Sewa Meja' AND voided_at IS NULL`,
+    [itemId, sesiId, warungId]
+  );
+  return res.rowCount > 0;
+};
+
 // Meja yang sedang punya sesi 'open' → utk status "Dipakai" di Manajemen Meja.
 export const readMejaOpenSesiIds = async (warungId = currentWarungId()) => {
   const res = await query(

@@ -3707,10 +3707,11 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
 const KAT_SEWA_SESI = "Sewa Meja";
 export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "" }) {
   const toastMsg = msg === "dibuka"  ? "Sesi meja dibuka"
-    : msg === "ditambah" ? "Item ditambahkan ke sesi"
-    : msg === "dibayar"  ? "Item ditandai sudah bayar"
-    : msg === "durasi"   ? "Durasi sewa diperbarui"
-    : msg === "ditutup"  ? "Sesi ditutup — semua item tercatat di Riwayat"
+    : msg === "ditambah"  ? "Item ditambahkan ke sesi"
+    : msg === "dibayar"   ? "Item ditandai sudah bayar"
+    : msg === "durasi"    ? "Durasi sewa diperbarui"
+    : msg === "item_hapus" ? "Item dihapus dari sesi"
+    : msg === "ditutup"   ? "Sesi ditutup — semua item tercatat di Riwayat"
     : "";
   const errMsg = msg === "sudah_ada"  ? "Meja itu sudah punya sesi terbuka."
     : msg === "belum_lunas" ? "Tidak bisa tutup: masih ada item F&B yang belum dibayar."
@@ -3736,58 +3737,93 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       + "</div>";
   };
 
-  const renderItem = (s, t) => {
-    const isSewa = t.kategori === KAT_SEWA_SESI;
+  const tableNo = (s) => { const x = String(s.nama_meja || "").match(/\d+/); return x ? x[0] : (String(s.nama_meja || "?").trim().slice(0, 2) || "?"); };
+  const rentalHoursOf = (sewa) => { const dm = String((sewa && sewa.keterangan) || "").match(/(\d+)\s*Jam/); return dm ? parseInt(dm[1]) : 0; };
+
+  // Baris item F&B: nama + nominal + (bayar / Lunas) + tombol hapus.
+  const renderFnbRow = (s, t) => {
     const paid   = t.lunas !== false;
-    const name   = escHtml(t.keterangan || t.kategori || "Item");
-    const amt    = (isSewa && (t.jumlah || 0) === 0) ? "<span class=\"sesi-amt-pending\">Belum diisi</span>" : rp(t.jumlah || 0);
-    let right;
-    if (paid) right = "<span class=\"sesi-paid\"><i class=\"ti ti-circle-check\"></i> Lunas" + (t.bayar ? " · " + (t.bayar === "qris" ? "QRIS" : "Cash") : "") + "</span>";
-    else if (isSewa) {
-      const dm  = String(t.keterangan || "").match(/(\d+)\s*Jam/);
-      const dur = dm ? (dm[1] + " Jam") : "Open";
-      const pl  = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur, w: t.waktu || "siang" }));
-      right = "<button type=\"button\" class=\"sesi-ubah\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>";
-    }
-    else right = payForm(s.id, t.id, rp(t.jumlah || 0), String(t.keterangan || t.kategori || "Item"));
-    return "<div class=\"sesi-item" + (paid ? " paid" : "") + "\">"
-      + "<div class=\"sesi-item-l\"><span class=\"sesi-item-name" + (isSewa ? " sewa" : "") + "\">" + (isSewa ? "<i class=\"ti ti-circle-number-8\"></i> " : "") + name + "</span>"
-      + "<span class=\"sesi-item-amt\">" + amt + "</span></div>"
-      + "<div class=\"sesi-item-r\">" + right + "</div></div>";
+    const line   = t.jumlah || 0;
+    const method = t.bayar === "qris" ? "QRIS" : (t.bayar === "cash" ? "Cash" : "");
+    const right  = paid
+      ? "<span class=\"brow-paid\"><i class=\"ti ti-circle-check\"></i> Lunas" + (method ? " · " + method : "") + "</span>"
+      : payForm(s.id, t.id, rp(line), String(t.keterangan || t.kategori || "Item"));
+    const delMsg = paid
+      ? "Hapus item LUNAS ini? Pemasukan otomatis dikurangi " + rp(line) + "."
+      : "Hapus item ini dari sesi?";
+    const del = "<form method=\"post\" action=\"/operasional/sesi/item/hapus\" style=\"display:contents\" onsubmit=\"return confirm('" + escHtml(delMsg) + "')\">"
+      + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + s.id + "\"><input type=\"hidden\" name=\"id\" value=\"" + escHtml(t.id) + "\">"
+      + "<button type=\"submit\" class=\"brow-void\" title=\"Hapus item\"><i class=\"ti ti-trash\"></i></button></form>";
+    return "<div class=\"brow" + (paid ? " paid" : "") + "\"><div class=\"brow-info\"><div class=\"brow-nm\">" + escHtml(t.keterangan || t.kategori || "Item") + "</div>"
+      + "<div class=\"brow-det\">" + (paid ? ("Dibayar" + (method ? " · " + method : "")) : "Belum bayar") + "</div></div>"
+      + "<div class=\"brow-price\">" + rp(line) + "</div>" + right + del + "</div>";
   };
 
-  const cards = sesiList.length === 0
-    ? "<div class=\"sesi-empty\"><i class=\"ti ti-inbox\"></i><div><strong>Belum ada sesi terbuka</strong><br>"
-      + "<span>Klik <b>Buka Sesi</b> untuk memulai bill sebuah meja. Item belum dibayar tidak menambah saldo sampai ditandai lunas.</span></div></div>"
-    : sesiList.map((s) => {
-        const items   = s.items || [];
-        const total   = items.reduce((a, t) => a + (t.jumlah || 0), 0);
-        const dibayar = items.filter((t) => t.lunas !== false).reduce((a, t) => a + (t.jumlah || 0), 0);
-        const sisa    = total - dibayar;
-        const sewa    = items.find((t) => t.kategori === KAT_SEWA_SESI);
-        const sewaUnpaid = !!(sewa && sewa.lunas === false);
-        const fnbUnpaid  = items.filter((t) => t.kategori !== KAT_SEWA_SESI && t.lunas === false).length;
-        const sewaWaktu = sewa ? (sewa.waktu === "malam" ? "malam" : "siang") : "siang";
-        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid, fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, w: sewaWaktu, sewaJumlah: sewa ? (sewa.jumlah || 0) : 0 }));
-        return "<div class=\"sesi-card\">"
-          + "<div class=\"sesi-card-hd\">"
-          +   "<div class=\"sesi-meja\"><div class=\"sesi-ic\"><i class=\"ti ti-circle-number-8\"></i></div>"
-          +     "<div><div class=\"sesi-meja-nm\">" + escHtml(s.nama_meja || "Meja") + "</div>"
-          +     "<div class=\"sesi-time\">Dibuka <span data-time=\"" + escHtml(String(s.opened_at || "")) + "\">—</span>" + (s.dibuka_oleh ? " · " + escHtml(s.dibuka_oleh) : "") + "</div></div></div>"
-          +   "<span class=\"sesi-badge\"><i class=\"ti ti-player-play\"></i> Berjalan</span>"
-          + "</div>"
-          + "<div class=\"sesi-items\">" + items.map((t) => renderItem(s, t)).join("") + "</div>"
-          + "<div class=\"sesi-totals\">"
-          +   "<div class=\"sesi-tot\"><span>Total</span><b>" + rp(total) + "</b></div>"
-          +   "<div class=\"sesi-tot ok\"><span>Dibayar</span><b>" + rp(dibayar) + "</b></div>"
-          +   "<div class=\"sesi-tot sisa\"><span>Sisa</span><b>" + rp(sisa) + "</b></div>"
-          + "</div>"
-          + (sewaUnpaid ? "<div class=\"sesi-hint\"><i class=\"ti ti-info-circle\"></i> Sewa dibayar saat tutup sesi" + (sewa && (sewa.jumlah || 0) > 0 ? " (harga " + rp(sewa.jumlah) + ", bisa diedit)" : " (harga diisi nanti)") + ".</div>" : "")
-          + "<div class=\"sesi-foot\">"
-          +   "<button type=\"button\" class=\"sesi-btn\" onclick='openAddFnb(" + s.id + ")'><i class=\"ti ti-plus\"></i> Tambah F&amp;B</button>"
-          +   "<button type=\"button\" class=\"sesi-btn close\" onclick='openTutup(" + closePayload + ")'><i class=\"ti ti-receipt\"></i> Tutup Sesi</button>"
-          + "</div>"
-          + "</div>";
+  // Baris sewa meja: durasi + tombol Ubah durasi + status bayar saat tutup.
+  const renderSewaRow = (s, sewa) => {
+    if (!sewa) return "<div class=\"brow brow-none\">Sewa meja belum tercatat.</div>";
+    const rh       = rentalHoursOf(sewa);
+    const durLabel = rh ? (rh + " Jam") : "Open";
+    const rate     = (sewa.waktu === "malam") ? (s.tarif_malam || 0) : (s.tarif_siang || 0);
+    const price    = sewa.jumlah || 0;
+    const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, w: sewa.waktu === "malam" ? "malam" : "siang" }));
+    return "<div class=\"brow brow-sewa\"><div class=\"brow-info\"><div class=\"brow-nm\"><i class=\"ti ti-circle-number-8\"></i> " + escHtml(sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja"))) + "</div>"
+      + "<div class=\"brow-det\">" + rp(rate) + " / jam · " + durLabel + "</div></div>"
+      + "<div class=\"brow-price\">" + (price > 0 ? rp(price) : "<span class=\"brow-pending\">saat tutup</span>") + "</div>"
+      + "<button type=\"button\" class=\"bpill\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
+      + "<span class=\"wait-chip\">Bayar saat tutup</span></div>";
+  };
+
+  const sesiData = sesiList.map((s) => {
+    const items   = s.items || [];
+    const sewa    = items.find((t) => t.kategori === KAT_SEWA_SESI);
+    const fnb     = items.filter((t) => t.kategori !== KAT_SEWA_SESI);
+    const total   = items.reduce((a, t) => a + (t.jumlah || 0), 0);
+    const dibayar = items.filter((t) => t.lunas !== false).reduce((a, t) => a + (t.jumlah || 0), 0);
+    return { s, sewa, fnb, total, dibayar, sisa: total - dibayar,
+      fnbUnpaid: fnb.filter((t) => t.lunas === false).length,
+      sewaUnpaid: !!(sewa && sewa.lunas === false),
+      rh: rentalHoursOf(sewa),
+      paidPct: total > 0 ? Math.round(dibayar / total * 100) : 0 };
+  });
+
+  const railItems = sesiData.length === 0
+    ? "<div class=\"brail-empty\"><i class=\"ti ti-inbox\"></i><span>Belum ada sesi aktif. Klik <b>Buka Sesi</b> untuk memulai.</span></div>"
+    : sesiData.map((d, i) => {
+        const s = d.s;
+        const overAttr = d.rh ? (" data-tmr-over=\"" + (d.rh * 3600) + "\"") : "";
+        return "<button type=\"button\" class=\"brail-item" + (i === 0 ? " active" : "") + "\" data-sel=\"" + s.id + "\" onclick=\"bSelect('" + s.id + "')\">"
+          + "<div class=\"bri-top\"><span class=\"bri-ball\">" + escHtml(tableNo(s)) + "</span><span class=\"bri-nm\">" + escHtml(s.nama_meja || "Meja") + "</span>"
+          + "<span class=\"bri-stat\"><span class=\"bri-bl\"></span><span class=\"bri-stat-t\">Jalan</span></span></div>"
+          + "<div class=\"bri-mid\"><span class=\"bri-tmr\" data-tmr-start=\"" + escHtml(String(s.opened_at || "")) + "\"" + overAttr + ">00:00:00</span><span class=\"bri-amt\">" + rp(d.total) + "</span></div>"
+          + "<div class=\"bri-mini\"><span style=\"width:" + d.paidPct + "%\"></span></div></button>";
+      }).join("");
+
+  const details = sesiData.length === 0
+    ? "<div class=\"bdetail-empty\"><i class=\"ti ti-inbox\" style=\"font-size:30px;opacity:.25;display:block;margin-bottom:10px\"></i>Tidak ada sesi aktif.<br>Klik <b>Buka Sesi</b> untuk memulai bill sebuah meja.</div>"
+    : sesiData.map((d, i) => {
+        const s = d.s;
+        const overAttr = d.rh ? (" data-tmr-over=\"" + (d.rh * 3600) + "\"") : "";
+        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
+        const fnbHtml = d.fnb.length ? d.fnb.map((t) => renderFnbRow(s, t)).join("") : "<div class=\"brow brow-none\">Belum ada pesanan F&amp;B. Klik <b>Tambah</b>.</div>";
+        return "<div class=\"bsesi\" data-detail=\"" + s.id + "\"" + (i > 0 ? " style=\"display:none\"" : "") + ">"
+          + "<div class=\"bhead\"><div class=\"bhead-l\"><span class=\"bball\">" + escHtml(tableNo(s)) + "</span>"
+          + "<div><div class=\"bhead-nm\">" + escHtml(s.nama_meja || "Meja") + "</div>"
+          + "<div class=\"bhead-meta\">Dibuka <b data-time=\"" + escHtml(String(s.opened_at || "")) + "\">—</b>" + (s.dibuka_oleh ? " · " + escHtml(s.dibuka_oleh) : "") + "</div></div></div>"
+          + "<div class=\"bhead-r\"><span class=\"bbadge\"><span class=\"bbl\"></span><span class=\"bbadge-t\">Berjalan</span></span>"
+          + "<div class=\"btimer\" data-tmr-start=\"" + escHtml(String(s.opened_at || "")) + "\"" + overAttr + ">00:00:00</div>"
+          + "<div class=\"btimer-sub\" data-dsub data-rh=\"" + d.rh + "\">" + (d.rh ? ("durasi sewa " + d.rh + " jam") : "Open — tanpa batas") + "</div></div></div>"
+          + "<div class=\"bbody\"><div class=\"bsec-h\">Sewa Meja</div>" + renderSewaRow(s, d.sewa)
+          + "<div class=\"bsec-h\">Makanan &amp; Minuman <button type=\"button\" class=\"bsec-add\" onclick='openAddFnb(" + s.id + ")'><i class=\"ti ti-plus\"></i> Tambah</button></div>"
+          + fnbHtml
+          + "<div class=\"bsummary\"><div class=\"bprogress\"><span style=\"width:" + d.paidPct + "%\"></span></div>"
+          + "<div class=\"btotals\"><div class=\"btot total\"><div class=\"btot-k\">Total</div><div class=\"btot-v\">" + rp(d.total) + "</div></div>"
+          + "<div class=\"btot paid\"><div class=\"btot-k\">Dibayar</div><div class=\"btot-v\">" + rp(d.dibayar) + "</div></div>"
+          + "<div class=\"btot due\"><div class=\"btot-k\">Sisa</div><div class=\"btot-v\">" + rp(d.sisa) + "</div></div></div>"
+          + "<div class=\"bhint\"><i class=\"ti ti-info-circle\"></i> Sewa meja ditagih saat sesi ditutup; durasi bisa diubah kapan saja. Item belum bayar belum menambah saldo.</div></div>"
+          + "<div class=\"bfoot\"><button type=\"button\" class=\"bact\" onclick=\"mjSoon()\"><i class=\"ti ti-printer\"></i> Cetak Struk</button>"
+          + "<button type=\"button\" class=\"bact\" onclick=\"mjSoon()\"><i class=\"ti ti-arrows-exchange\"></i> Pindah Meja</button>"
+          + "<button type=\"button\" class=\"bact close\" onclick='openTutup(" + closePayload + ")'><i class=\"ti ti-receipt\"></i> Tutup &amp; Bayar Sisa " + rp(d.sisa) + "</button></div></div>";
       }).join("");
 
   const extraCss = [
@@ -3838,6 +3874,83 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     ".sesi-empty{display:flex;align-items:center;gap:14px;padding:34px 18px;color:var(--txt3);background:var(--surface);border:1px dashed var(--border2);border-radius:14px}",
     ".sesi-empty i{font-size:32px;opacity:.22;flex-shrink:0}",
     ".sesi-empty div{font-size:12px;line-height:1.7}",
+    // ── Master-detail (rail + detail bill) ──
+    ".bsesi-layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}",
+    ".brail{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;position:sticky;top:16px}",
+    ".brail-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--txt3);display:flex;align-items:center;justify-content:space-between;padding:4px 6px 10px}",
+    ".brail-n{background:var(--green-bg);color:var(--green-dark);padding:2px 9px;border-radius:99px;font-size:12px;font-family:var(--ff-mono)}",
+    ".brail-list{display:flex;flex-direction:column;gap:8px}",
+    ".brail-empty{display:flex;align-items:center;gap:10px;padding:16px 10px;color:var(--txt3);font-size:12px;line-height:1.5}",
+    ".brail-empty i{font-size:22px;opacity:.3;flex-shrink:0}",
+    ".brail-item{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid transparent;border-radius:12px;padding:12px 13px;cursor:pointer;transition:.15s;font-family:var(--ff);color:var(--txt)}",
+    ".brail-item:hover{border-color:var(--border2)}",
+    ".brail-item.active{border-color:var(--accent);background:var(--green-bg)}",
+    ".bri-top{display:flex;align-items:center;gap:9px;margin-bottom:8px}",
+    ".bri-ball{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--ff-mono);font-weight:700;font-size:11px;color:#1a1a1a;background:radial-gradient(circle at 32% 28%,#fff,#f3e9cf 55%,#d8cba6);flex-shrink:0}",
+    ".bri-nm{font-size:14px;font-weight:700;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".bri-stat{font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);display:flex;align-items:center;gap:5px;flex-shrink:0}",
+    ".bri-bl{width:6px;height:6px;border-radius:50%;background:currentColor;animation:bblink 1.4s infinite}",
+    "@keyframes bblink{0%,100%{opacity:1}50%{opacity:.25}}",
+    ".brail-item.is-over .bri-stat,.brail-item.is-over .bri-tmr{color:#b3791b}",
+    ".bri-mid{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}",
+    ".bri-tmr{font-family:var(--ff-mono);font-weight:600;font-size:12.5px;color:var(--txt2)}",
+    ".bri-amt{font-family:var(--ff-mono);font-weight:700;font-size:12.5px;color:var(--txt)}",
+    ".bri-mini{height:5px;border-radius:4px;background:var(--surface);overflow:hidden}",
+    ".bri-mini span{display:block;height:100%;background:var(--green);transition:width .3s}",
+    ".bdetail{min-width:0}",
+    ".bdetail-empty{background:var(--surface);border:1px dashed var(--border2);border-radius:14px;padding:48px 22px;text-align:center;color:var(--txt3);font-size:13px;line-height:1.6}",
+    ".bsesi{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}",
+    ".bhead{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;background:linear-gradient(160deg,var(--surface2),var(--surface))}",
+    ".bhead-l{display:flex;gap:13px;align-items:center;min-width:0}",
+    ".bball{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--ff-mono);font-weight:700;font-size:17px;color:#1a1a1a;background:radial-gradient(circle at 32% 28%,#fff,#f3e9cf 55%,#d8cba6);box-shadow:inset -2px -3px 5px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.2);flex-shrink:0}",
+    ".bhead-nm{font-size:21px;font-weight:700;color:var(--txt);letter-spacing:-.3px}",
+    ".bhead-meta{font-size:12px;color:var(--txt3);margin-top:2px}",
+    ".bhead-meta b{color:var(--txt2);font-weight:600}",
+    ".bhead-r{text-align:right;flex-shrink:0}",
+    ".bbadge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;color:var(--green-dark);background:var(--green-bg)}",
+    ".bbl{width:6px;height:6px;border-radius:50%;background:currentColor;animation:bblink 1.4s infinite}",
+    ".bsesi.is-over .bbadge{color:#b3791b;background:#fef3c7}",
+    ".bsesi.is-over .bbadge-t::after{content:' · Lewat'}",
+    ".btimer{font-family:var(--ff-mono);font-weight:700;font-size:27px;letter-spacing:1px;margin-top:9px;line-height:1;color:var(--txt)}",
+    ".bsesi.is-over .btimer{color:#b3791b}",
+    ".btimer-sub{font-size:11px;color:var(--txt3);margin-top:4px}",
+    ".bbody{padding:6px 20px 0}",
+    ".bsec-h{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);display:flex;align-items:center;justify-content:space-between;padding:16px 2px 8px}",
+    ".bsec-add{text-transform:none;letter-spacing:0;background:var(--surface);border:1px solid var(--border2);color:var(--accent);font-family:var(--ff);font-size:12px;font-weight:600;padding:6px 11px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:.15s}",
+    ".bsec-add:hover{border-color:var(--accent);background:var(--green-bg)}",
+    ".brow{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border)}",
+    ".brow:first-of-type{border-top:none}",
+    ".brow.paid{opacity:.68}",
+    ".brow-none{color:var(--txt3);font-size:12.5px;font-style:italic;padding:12px 0}",
+    ".brow-info{flex:1;min-width:0}",
+    ".brow-nm{font-weight:600;font-size:13.5px;color:var(--txt);display:flex;align-items:center;gap:5px}",
+    ".brow-nm i{color:var(--green-dark)}",
+    ".brow-det{font-size:11.5px;color:var(--txt3);margin-top:2px;font-family:var(--ff-mono)}",
+    ".brow-price{font-family:var(--ff-mono);font-weight:700;font-size:14px;color:var(--txt);white-space:nowrap}",
+    ".brow-pending{font-style:italic;color:var(--txt3);font-family:var(--ff);font-weight:500;font-size:12px}",
+    ".brow-paid{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);padding:6px 11px;border-radius:9px;white-space:nowrap}",
+    ".bpill{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border2);color:var(--txt2);font-family:var(--ff);font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:9px;cursor:pointer;transition:.15s;white-space:nowrap}",
+    ".bpill:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
+    ".wait-chip{font-size:10.5px;font-weight:600;color:#b3791b;background:#fef3c7;padding:6px 10px;border-radius:9px;white-space:nowrap}",
+    ".brow-void{width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--txt3);cursor:pointer;display:grid;place-items:center;transition:.15s;flex-shrink:0;font-size:15px}",
+    ".brow-void:hover{color:var(--red);border-color:rgba(184,48,48,.3);background:var(--red-bg)}",
+    ".bsummary{margin:16px -20px 0;padding:16px 20px;background:var(--surface2);border-top:1px solid var(--border)}",
+    ".bprogress{height:8px;border-radius:6px;background:var(--surface);overflow:hidden;margin-bottom:13px}",
+    ".bprogress span{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--green-dark));transition:width .4s}",
+    ".btotals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}",
+    ".btot{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px}",
+    ".btot-k{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}",
+    ".btot-v{font-family:var(--ff-mono);font-weight:700;font-size:18px;margin-top:5px;color:var(--txt)}",
+    ".btot.paid .btot-v{color:var(--green)}",
+    ".btot.due .btot-v{color:#b3791b}",
+    ".bhint{font-size:11.5px;color:var(--txt3);margin-top:12px;display:flex;align-items:flex-start;gap:7px;line-height:1.5}",
+    ".bhint i{flex-shrink:0;margin-top:1px;color:var(--txt3)}",
+    ".bfoot{padding:14px 20px 18px;display:flex;gap:9px;flex-wrap:wrap}",
+    ".bact{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border2);color:var(--txt2);font-family:var(--ff);font-size:13px;font-weight:600;padding:11px 15px;border-radius:11px;cursor:pointer;transition:.15s}",
+    ".bact:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
+    ".bact.close{flex:1;min-width:170px;background:linear-gradient(135deg,#3a7d2c,#2d6624);border:none;color:#fff}",
+    ".bact.close:hover{filter:brightness(1.06);color:#fff}",
+    "@media(max-width:880px){.bsesi-layout{grid-template-columns:1fr}.brail{position:static}.brail-list{flex-direction:row;overflow-x:auto;padding-bottom:4px}.brail-item{min-width:188px;flex-shrink:0}.btotals{grid-template-columns:1fr}.bact{flex:1}.bact.close{flex:1 1 100%}}",
     // modal + form (sama gaya dgn halaman lain)
     ".mj-fg{display:flex;flex-direction:column;gap:5px;min-width:0}",
     ".mj-fg label{font-size:11px;font-weight:600;color:var(--txt3)}",
@@ -3906,6 +4019,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function openBayar(d){document.getElementById('bySesiId').value=d.sid;document.getElementById('byItemId').value=d.id;document.getElementById('byBayar').value=(d.m==='qris'?'qris':'cash');document.getElementById('byAmt').textContent=d.amt||'';document.getElementById('byNama').textContent=d.nama||'';var cash=d.m!=='qris';document.getElementById('byIcon').className='by-icon '+(cash?'cash':'qris');document.getElementById('byIconI').className='ti '+(cash?'ti-cash':'ti-qrcode');document.getElementById('byMethod').innerHTML='<i class=\"ti '+(cash?'ti-cash':'ti-qrcode')+'\"></i> Bayar via '+(cash?'Cash':'QRIS');document.getElementById('bySubmit').className='btn-primary mj-submit'+(cash?'':' qris');_show('mBayar');}function closeBayar(){_hide('mBayar');}"
     + "document.querySelectorAll('[data-time]').forEach(function(el){var v=el.getAttribute('data-time');if(!v)return;var d=new Date(v);if(!isNaN(d))el.textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});});"
     + "(function(){var bk=new URLSearchParams(location.search).get('buka');if(!bk)return;var sel=document.getElementById('bukaMeja');if(sel){for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===bk){sel.selectedIndex=i;break;}}}openBuka();bukaCalc();})();"
+    + "function bSelect(id){document.querySelectorAll('[data-detail]').forEach(function(d){d.style.display=(d.dataset.detail===String(id))?'':'none';});document.querySelectorAll('[data-sel]').forEach(function(r){r.classList.toggle('active',r.dataset.sel===String(id));});}"
+    + "function bHms(sec){return [Math.floor(sec/3600),Math.floor(sec%3600/60),sec%60].map(function(x){return String(x).padStart(2,'0');}).join(':');}"
+    + "function bTick(){document.querySelectorAll('[data-tmr-start]').forEach(function(el){var st=new Date(el.dataset.tmrStart).getTime();if(isNaN(st))return;var sec=Math.max(0,Math.floor((Date.now()-st)/1000));el.textContent=bHms(sec);var ov=el.dataset.tmrOver?parseInt(el.dataset.tmrOver):0;var isOver=ov>0&&sec>ov;var card=el.closest('[data-detail]')||el.closest('[data-sel]');if(card)card.classList.toggle('is-over',isOver);var sub=card?card.querySelector('[data-dsub]'):null;if(sub){var rh=parseInt(sub.dataset.rh)||0;if(rh>0)sub.textContent=isOver?('lewat '+Math.floor((sec-ov)/60)+' mnt dari '+rh+' jam'):('durasi sewa '+rh+' jam');}});}"
+    + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
+    + "(function(){var first=document.querySelector('[data-sel]');if(first)bSelect(first.dataset.sel);bTick();setInterval(bTick,1000);})();"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
 
   return docHeadV4("Sesi Meja")
@@ -3928,7 +4046,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "</div>"
     + (errMsg ? "<div class=\"sesi-alert\"><i class=\"ti ti-alert-circle\"></i> " + errMsg + "</div>" : "")
     + "<div class=\"sesi-note\"><i class=\"ti ti-info-circle\"></i> <span>Item <b>Belum Bayar</b> tidak menambah saldo/pemasukan — baru dihitung saat ditandai <b>Sudah Bayar</b>. Tiap item tetap muncul di <b>Riwayat Transaksi</b> &amp; ikut Dashboard seperti biasa.</span></div>"
-    + "<div class=\"sesi-grid\">" + cards + "</div>"
+    + "<div class=\"bsesi-layout\">"
+    +   "<aside class=\"brail\"><div class=\"brail-h\">Sesi Aktif <span class=\"brail-n\">" + sesiList.length + "</span></div>"
+    +     "<div class=\"brail-list\">" + railItems + "</div></aside>"
+    +   "<section class=\"bdetail\">" + details + "</section>"
+    + "</div>"
     + "</div></div></div>"
     // Modal Buka Sesi
     + "<div class=\"mj-modal\" id=\"mBuka\" onclick=\"if(event.target===this)closeBuka()\"><div class=\"mj-modal-card\">"
@@ -4001,6 +4123,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "<button type=\"button\" class=\"by-cancel\" onclick=\"closeBayar()\">Batal</button>"
     +   "</form></div></div>"
     + (toastMsg ? "<div class=\"mj-toast\" id=\"sToast\"><i class=\"ti ti-circle-check\"></i> " + escHtml(toastMsg) + "</div>" : "")
+    + "<div class=\"mj-toast\" id=\"soonToast\"><i class=\"ti ti-tools\"></i> Fitur ini segera hadir</div>"
     + "<script>" + js + "</script>"
     + buildFinanceBottomNav(role)
     + "</body></html>";

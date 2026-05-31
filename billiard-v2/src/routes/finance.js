@@ -21,7 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja, updateMejaTarifMassal,
   createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds, readMejaOpenSesiInfo,
-  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa,
+  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -1611,6 +1611,17 @@ router.post("/sesi/item/bayar", async (req, res) => {
     console.error("[FINANCE] sesi item bayar error:", err.message);
   }
   res.redirect("/operasional/sesi?msg=dibayar");
+});
+
+// Hapus (void) item F&B dari sesi — bisa item belum/sudah bayar (saldo
+// terkoreksi otomatis). Item sewa tidak bisa dihapus lewat sini.
+router.post("/sesi/item/hapus", async (req, res) => {
+  const sesiId = parseInt(req.body.sesi_id) || 0;
+  const id     = (req.body.id ?? "").trim();
+  try { if (sesiId && id) await voidSesiItem(sesiId, id); } catch (err) {
+    console.error("[FINANCE] sesi item hapus error:", err.message);
+  }
+  res.redirect("/operasional/sesi?msg=item_hapus");
 });
 
 router.post("/sesi/tutup", async (req, res) => {
