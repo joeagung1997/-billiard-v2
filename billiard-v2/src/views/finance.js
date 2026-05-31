@@ -4937,6 +4937,7 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           + "<div class=\"an-sim-cell\">"
           +   "<div class=\"an-sim-cell-lbl\">Beban tambahan karyawan baru</div>"
           +   "<div class=\"an-sim-cell-val\" style=\"color:#ef4444\">−" + rp(s.tambahanHarian) + " / hari</div>"
+          +   "<div style=\"font-size:10.5px;color:var(--txt3);margin-top:2px\">" + rp(s.gajiTambahan) + " ÷ " + s.hariPerBulan + " hari operasi/bln</div>"
           + "</div>"
           + "<div class=\"an-sim-cell\">"
           +   "<div class=\"an-sim-cell-lbl\">Margin setelah +1 karyawan</div>"
@@ -4957,7 +4958,7 @@ export function financeAnalisisPage({ role = "owner", displayName = "", analisis
           + "</div>"
           + "<div id=\"simBodyAktif\" style=\"display:" + (isAktif ? "block" : "none") + "\">" + simBody(sim.aktif) + "</div>"
           + "<div id=\"simBodyKalender\" style=\"display:" + (!isAktif ? "block" : "none") + "\">" + simBody(sim.kalender) + "</div>"
-          + "<div class=\"an-sim-note\"><i class=\"ti ti-info-circle\"></i> <strong>Hari aktif</strong> = rata-rata hanya dari hari yang ada transaksi (lebih realistis kalau ada hari tutup). <strong>30 hari kalender</strong> = dibagi rata 30 hari."
+          + "<div class=\"an-sim-note\"><i class=\"ti ti-info-circle\"></i> <strong>Hari aktif</strong> = rata-rata hanya dari hari yang ada transaksi (lebih realistis kalau ada hari tutup); di basis ini biaya &amp; gaji dibagi <strong>" + sim.hariOperasiPerBulan + " hari operasi/bln</strong> (estimasi dari frekuensi hari aktif) — bukan 30, supaya satu basis dgn pemasukan. <strong>30 hari kalender</strong> = pemasukan &amp; biaya sama-sama dibagi 30."
           +   (isAktif ? " Default ke hari aktif karena data masih < 14 hari." : "") + "</div>"
           + "</div>";
       })()

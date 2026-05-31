@@ -621,9 +621,20 @@ router.get("/analisis", requireOwner, async (req, res) => {
     const proyeksiBulan = daysElapsed > 0 ? Math.round(inBulan / daysElapsed * daysInMonth) : inBulan;
     const sisaTarget    = Math.max(0, targets.bulan - inBulan);
 
-    // Item 1+2 — simulasi tambah karyawan utk kedua basis
-    const simKalender = evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000);
-    const simAktif    = evaluateAddKaryawan(rataAktif,  costBreakdown.totalMonthly, 900000);
+    // Estimasi HARI OPERASI / BULAN dari frekuensi hari aktif dalam window
+    // pengamatan (= rasio hari-aktif diproyeksikan ke 30 hari). Dipakai sbg
+    // pembagi biaya pada basis "hari aktif" supaya konsisten dgn pemasukan
+    // yg juga dibagi hari aktif. Window = lama mencatat (cap 30); kalau warung
+    // aktif tiap hari → ~30, kalau jarang buka → mengecil otomatis.
+    const windowDays = Math.min(calendarDaysSinceStart > 0 ? calendarDaysSinceStart : 30, 30);
+    const hariOperasiPerBulan = activeDays > 0
+      ? Math.max(1, Math.min(30, Math.round((activeDays * 30) / windowDays)))
+      : 30;
+
+    // Item 1+2 — simulasi tambah karyawan utk kedua basis (pembagi WAJIB selaras
+    // dgn basis pemasukan: kalender→30, aktif→hari operasi/bln).
+    const simKalender = evaluateAddKaryawan(last30Avg, costBreakdown.totalMonthly, 900000, 30);
+    const simAktif    = evaluateAddKaryawan(rataAktif,  costBreakdown.totalMonthly, 900000, hariOperasiPerBulan);
 
     const analisis = {
       targets,
@@ -646,6 +657,7 @@ router.get("/analisis", requireOwner, async (req, res) => {
       },
       simulasi: {
         defaultBasis,
+        hariOperasiPerBulan,
         targetHarian: Math.round(costBreakdown.totalMonthly / 30),
         kalender: { rataPemasukan: last30Avg, ...simKalender },
         aktif:    { rataPemasukan: rataAktif,  ...simAktif },

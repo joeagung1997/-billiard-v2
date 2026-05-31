@@ -71,10 +71,18 @@ export function computeStatus(pemasukan, biaya) {
 }
 
 // ── Rekomendasi tambah karyawan ─────────────────────────────────
-export function evaluateAddKaryawan(rataPemasukanHarian, totalMonthlyBiaya, gajiTambahan = 900000) {
-  const tambahanHarian = gajiTambahan / 30;
-  const totalBiayaBaru = totalMonthlyBiaya / 30 + tambahanHarian;
-  const marginLama  = rataPemasukanHarian - (totalMonthlyBiaya / 30);
+// hariPerBulan = pembagi utk mengubah biaya BULANAN → per-hari. WAJIB sama
+// dengan basis pemasukan harian yang dipakai, biar tidak campur basis:
+//   • basis "30 hari kalender" → rataPemasukan = total/30,    hariPerBulan = 30
+//   • basis "hari aktif"       → rataPemasukan = total/aktif, hariPerBulan = hari
+//     operasi/bln (estimasi dari frekuensi hari aktif). Sebelumnya selalu /30
+//     walau pemasukan /aktif → margin & gaji terlalu optimis (bug campur basis).
+export function evaluateAddKaryawan(rataPemasukanHarian, totalMonthlyBiaya, gajiTambahan = 900000, hariPerBulan = 30) {
+  const div = hariPerBulan > 0 ? hariPerBulan : 30;
+  const biayaHarian    = totalMonthlyBiaya / div;
+  const tambahanHarian = gajiTambahan / div;
+  const totalBiayaBaru = biayaHarian + tambahanHarian;
+  const marginLama  = rataPemasukanHarian - biayaHarian;
   const marginBaru  = rataPemasukanHarian - totalBiayaBaru;
   const layak       = marginBaru > 0;
   const tipis       = marginBaru >= 0 && marginBaru < tambahanHarian * 0.5;
@@ -96,6 +104,8 @@ export function evaluateAddKaryawan(rataPemasukanHarian, totalMonthlyBiaya, gaji
 
   return {
     gajiTambahan,
+    hariPerBulan:   div,
+    biayaHarian:    Math.round(biayaHarian),
     tambahanHarian: Math.round(tambahanHarian),
     marginLama:     Math.round(marginLama),
     marginBaru:     Math.round(marginBaru),
