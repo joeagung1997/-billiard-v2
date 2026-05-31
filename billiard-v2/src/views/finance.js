@@ -3368,115 +3368,148 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ? "<div class=\"mj-alert\"><i class=\"ti ti-alert-circle\"></i> Gagal: nama meja wajib diisi &amp; belum dipakai meja lain.</div>"
     : "";
 
+  // Statistik dari status nyata (okupansi 'Dipakai' belum dilacak → di-skip).
+  const cKosong = mejaList.filter((m) => m.status === "aktif").length;
+  const cMaint  = mejaList.filter((m) => m.status === "maintenance").length;
+  const cOff    = mejaList.filter((m) => m.status === "nonaktif").length;
+
   const STMETA = {
-    aktif:       { label: "Kosong",      cls: "ok"  },
-    maintenance: { label: "Maintenance", cls: "mt"  },
-    nonaktif:    { label: "Nonaktif",    cls: "off" },
+    aktif:       { label: "Kosong",      cls: "ok",  icon: "ti-circle-number-8" },
+    maintenance: { label: "Maintenance", cls: "mt",  icon: "ti-tools" },
+    nonaktif:    { label: "Nonaktif",    cls: "off", icon: "ti-circle-off" },
   };
 
   const tarifInput = (name, label, id) =>
     "<div class=\"mj-fg\"><label>" + label + "</label><div class=\"mj-pfx\"><span>Rp</span>"
     + "<input name=\"" + name + "\"" + (id ? " id=\"" + id + "\"" : "") + " type=\"text\" inputmode=\"numeric\" placeholder=\"0\" oninput=\"mjFmt(this)\"></div></div>";
 
-  const statusForm = (id, status, icon, label, cls) =>
-    "<form method=\"post\" action=\"/operasional/meja/status\" style=\"display:inline\">"
-    + "<input type=\"hidden\" name=\"id\" value=\"" + id + "\">"
-    + "<input type=\"hidden\" name=\"status\" value=\"" + status + "\">"
-    + "<button type=\"submit\" class=\"mj-act" + (cls ? " " + cls : "") + "\"><i class=\"ti " + icon + "\"></i> " + label + "</button></form>";
+  // Helper aksi — semua POST/GET ke endpoint yang SAMA (logika tak berubah).
+  // display:contents agar <form> tidak mengganggu layout flex tombol.
+  const stForm = (id, status, inner) =>
+    "<form method=\"post\" action=\"/operasional/meja/status\" style=\"display:contents\">"
+    + "<input type=\"hidden\" name=\"id\" value=\"" + id + "\"><input type=\"hidden\" name=\"status\" value=\"" + status + "\">"
+    + inner + "</form>";
+  const tRow = (icon, label, val) =>
+    "<div class=\"mjc-trow\"><span class=\"mjc-tk\"><i class=\"ti " + icon + "\"></i>" + label + "</span><b>" + rp(val) + "<span>/jam</span></b></div>";
+  const miStatus = (id, status, icon, label) =>
+    stForm(id, status, "<button type=\"submit\" class=\"mjc-mi\"><i class=\"ti " + icon + "\"></i> " + label + "</button>");
+  const miEdit = (payload) =>
+    "<button type=\"button\" class=\"mjc-mi\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i> Edit tarif</button>";
+  const miDel = (id) =>
+    "<a class=\"mjc-mi del\" href=\"/operasional/meja/hapus?id=" + id + "\" onclick=\"return confirm('Hapus meja ini permanen? Transaksi lama tidak terpengaruh.')\"><i class=\"ti ti-trash\"></i> Hapus</a>";
 
-  const rows = mejaList.length === 0
-    ? "<div class=\"mj-empty\"><i class=\"ti ti-inbox\"></i><div><strong>Belum ada meja</strong><br>"
-      + "<span>Tambah meja lewat form di atas. Meja yang <b>Kosong</b> (aktif) otomatis muncul sebagai pilihan di Catat Transaksi.</span></div></div>"
+  const cards = mejaList.length === 0
+    ? "<div class=\"mjc-empty\"><i class=\"ti ti-inbox\"></i><div><strong>Belum ada meja</strong><br>"
+      + "<span>Klik <b>Tambah Meja</b> untuk menambah. Meja <b>Kosong</b> (aktif) otomatis jadi pilihan di Catat Transaksi.</span></div></div>"
     : mejaList.map((m) => {
         const st = STMETA[m.status] || STMETA.aktif;
         const payload = escHtml(JSON.stringify({ id: m.id, nama: m.nama, ts: m.tarif_siang, tm: m.tarif_malam, to: m.tarif_open }));
-        const maintBtn = m.status === "maintenance"
-          ? statusForm(m.id, "aktif", "ti-circle-check", "Selesai", "ok")
-          : statusForm(m.id, "maintenance", "ti-tools", "Maintenance", "");
-        const offBtn = m.status === "nonaktif"
-          ? statusForm(m.id, "aktif", "ti-plug-connected", "Aktifkan", "ok")
-          : statusForm(m.id, "nonaktif", "ti-ban", "Nonaktif", "");
-        return "<div class=\"mj-row\">"
-          + "<div class=\"mj-ic\"><i class=\"ti ti-circle-number-8\"></i></div>"
-          + "<div class=\"mj-info\">"
-          + "<div class=\"mj-name\">" + escHtml(m.nama) + " <span class=\"mj-badge " + st.cls + "\">" + st.label + "</span></div>"
-          + "<div class=\"mj-tarif\">"
-          +   "<span class=\"mj-chip\"><span class=\"mj-chip-k\">Siang</span> " + rp(m.tarif_siang) + "</span>"
-          +   "<span class=\"mj-chip\"><span class=\"mj-chip-k\">Malam</span> " + rp(m.tarif_malam) + "</span>"
-          +   "<span class=\"mj-chip open\"><span class=\"mj-chip-k\">Open</span> " + rp(m.tarif_open) + "</span>"
-          +   "<span class=\"mj-chip-unit\">/ jam</span>"
-          + "</div>"
-          + "</div>"
-          + "<div class=\"mj-acts\">"
-          + "<button type=\"button\" class=\"mj-act\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i> Edit</button>"
-          + maintBtn + offBtn
-          + "<a class=\"mj-act del\" href=\"/operasional/meja/hapus?id=" + m.id + "\" onclick=\"return confirm('Hapus meja ini permanen? Transaksi lama tidak terpengaruh.')\" title=\"Hapus\"><i class=\"ti ti-trash\"></i></a>"
-          + "</div></div>";
+        let primary, quick = "", menu;
+        if (m.status === "aktif") {
+          primary = "<button type=\"button\" class=\"mjc-btn primary\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i> Edit</button>";
+          quick = stForm(m.id, "maintenance", "<button type=\"submit\" class=\"mjc-btn icon\" title=\"Tandai maintenance\"><i class=\"ti ti-tools\"></i></button>");
+          menu = miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id);
+        } else if (m.status === "maintenance") {
+          primary = stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-btn primary\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>");
+          menu = miEdit(payload) + miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id);
+        } else {
+          primary = stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-btn primary\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>");
+          menu = miEdit(payload) + miStatus(m.id, "maintenance", "ti-tools", "Maintenance") + miDel(m.id);
+        }
+        const overflow = "<div class=\"mjc-menu-wrap\">"
+          + "<button type=\"button\" class=\"mjc-btn icon\" onclick=\"mjcMenu(this)\" aria-label=\"Menu lainnya\"><i class=\"ti ti-dots-vertical\"></i></button>"
+          + "<div class=\"mjc-menu\">" + menu + "</div></div>";
+        return "<div class=\"mjc-card" + (m.status !== "aktif" ? " dim" : "") + "\">"
+          + "<div class=\"mjc-top\"><div class=\"mjc-id\"><div class=\"mjc-ic " + st.cls + "\"><i class=\"ti " + st.icon + "\"></i></div>"
+          + "<span class=\"mjc-name\">" + escHtml(m.nama) + "</span></div>"
+          + "<span class=\"mjc-badge " + st.cls + "\">" + st.label + "</span></div>"
+          + "<div class=\"mjc-tarif\">" + tRow("ti-sun", "Siang", m.tarif_siang) + tRow("ti-moon", "Malam", m.tarif_malam) + tRow("ti-infinity", "Open", m.tarif_open) + "</div>"
+          + "<div class=\"mjc-acts\">" + primary + quick + overflow + "</div>"
+          + "</div>";
       }).join("");
 
   const extraCss = [
-    ".mj-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;margin-bottom:16px}",
+    ".mj-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;margin-bottom:14px}",
     ".mj-back:hover{color:var(--green-dark)}",
-    ".mj-note{display:flex;gap:9px;align-items:flex-start;background:var(--green-bg);border:1px solid rgba(58,125,44,.22);border-radius:10px;padding:11px 14px;font-size:12px;color:var(--txt2);line-height:1.55;margin-bottom:16px}",
+    ".mjc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}",
+    ".mjc-add{flex-shrink:0;height:38px}",
+    ".mj-note{display:flex;gap:9px;align-items:flex-start;background:var(--green-bg);border:1px solid rgba(58,125,44,.22);border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--txt2);line-height:1.55;margin-bottom:16px}",
     ".mj-note i{color:var(--accent);font-size:16px;flex-shrink:0;margin-top:1px}",
     ".mj-alert{display:flex;align-items:center;gap:8px;background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:16px}",
-    ".mj-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}",
-    ".mj-card-hd{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}",
-    ".mj-card-hd i{color:var(--accent);font-size:16px}",
-    ".mj-count{margin-left:auto;background:var(--green-bg);color:var(--green-dark);border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;letter-spacing:0}",
-    ".mj-form{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:10px;align-items:end;padding:14px 16px}",
+    ".mjc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}",
+    ".mjc-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px}",
+    ".mjc-stat-k{font-size:12px;color:var(--txt3);margin:0 0 5px;display:flex;align-items:center;gap:6px}",
+    ".mjc-stat-k i{font-size:14px}",
+    ".mjc-stat-v{font-size:24px;font-weight:700;color:var(--txt);font-family:var(--ff-mono);line-height:1;margin:0}",
+    ".mjc-stat.ok .mjc-stat-v,.mjc-stat.ok .mjc-stat-k i{color:var(--green)}",
+    ".mjc-stat.mt .mjc-stat-v,.mjc-stat.mt .mjc-stat-k i{color:#b3791b}",
+    ".mjc-stat.off .mjc-stat-v{color:var(--txt3)}",
+    ".mjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}",
+    ".mjc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .15s,border-color .15s}",
+    ".mjc-card:hover{border-color:var(--border2);box-shadow:0 4px 14px rgba(26,35,24,.07)}",
+    ".mjc-card.dim{opacity:.72}",
+    ".mjc-card.dim:hover{opacity:1}",
+    ".mjc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}",
+    ".mjc-id{display:flex;align-items:center;gap:9px;min-width:0}",
+    ".mjc-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}",
+    ".mjc-ic.ok{background:linear-gradient(135deg,#3a7d2c,#2d6624);color:#fff;box-shadow:0 2px 6px rgba(45,102,36,.25)}",
+    ".mjc-ic.mt{background:#fef3c7;color:#b3791b}",
+    ".mjc-ic.off{background:var(--surface2);color:var(--txt3)}",
+    ".mjc-name{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".mjc-badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0;letter-spacing:.02em;text-transform:uppercase}",
+    ".mjc-badge.ok{background:var(--green-bg);color:var(--green-dark)}",
+    ".mjc-badge.mt{background:#fef3c7;color:#b3791b}",
+    ".mjc-badge.off{background:var(--surface2);color:var(--txt3);border:1px solid var(--border)}",
+    ".mjc-tarif{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}",
+    ".mjc-trow{display:flex;align-items:center;justify-content:space-between;font-size:13px}",
+    ".mjc-tk{display:inline-flex;align-items:center;gap:7px;color:var(--txt3)}",
+    ".mjc-tk i{font-size:15px}",
+    ".mjc-trow b{color:var(--txt);font-weight:600;font-family:var(--ff-mono)}",
+    ".mjc-trow b span{font-family:var(--ff);font-weight:400;color:var(--txt3);font-size:11px;margin-left:1px}",
+    ".mjc-acts{display:flex;align-items:center;gap:8px}",
+    ".mjc-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 12px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--txt2);font-size:13px;font-weight:600;font-family:var(--ff);cursor:pointer;text-decoration:none;transition:all .15s}",
+    ".mjc-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
+    ".mjc-btn.primary{flex:1}",
+    ".mjc-btn.icon{padding:8px 10px;font-size:15px}",
+    ".mjc-menu-wrap{position:relative;display:inline-flex}",
+    ".mjc-menu{position:absolute;right:0;bottom:calc(100% + 6px);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 26px rgba(26,35,24,.16);padding:5px;min-width:170px;display:none;z-index:30}",
+    ".mjc-menu-wrap.open .mjc-menu{display:block}",
+    ".mjc-menu form{margin:0;display:block}",
+    ".mjc-mi{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:none;background:none;border-radius:7px;font-size:13px;font-weight:500;color:var(--txt2);font-family:var(--ff);cursor:pointer;text-decoration:none;text-align:left;box-sizing:border-box}",
+    ".mjc-mi:hover{background:var(--surface2);color:var(--txt)}",
+    ".mjc-mi i{font-size:16px;color:var(--txt3)}",
+    ".mjc-mi.del:hover{background:var(--red-bg);color:var(--red)}",
+    ".mjc-mi.del:hover i{color:var(--red)}",
+    ".mjc-empty{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:34px 18px;color:var(--txt3);background:var(--surface);border:1px dashed var(--border2);border-radius:14px}",
+    ".mjc-empty i{font-size:32px;opacity:.22;flex-shrink:0}",
+    ".mjc-empty div{font-size:12px;line-height:1.7}",
     ".mj-fg{display:flex;flex-direction:column;gap:5px;min-width:0}",
     ".mj-fg label{font-size:11px;font-weight:600;color:var(--txt3)}",
-    ".mj-fg>input{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box}",
+    ".mj-fg>input{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box;transition:border-color .15s,background .15s}",
     ".mj-fg>input:focus{border-color:var(--accent);background:var(--surface)}",
-    ".mj-pfx{display:flex;align-items:center;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);overflow:hidden}",
+    ".mj-pfx{display:flex;align-items:center;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);overflow:hidden;transition:border-color .15s,background .15s}",
     ".mj-pfx:focus-within{border-color:var(--accent);background:var(--surface)}",
     ".mj-pfx span{padding:0 4px 0 10px;font-size:12px;font-weight:700;color:var(--txt3)}",
     ".mj-pfx input{flex:1;min-width:0;border:none;background:transparent;padding:9px 11px 9px 4px;font-size:13px;font-family:var(--ff-mono);color:var(--txt);outline:none}",
-    ".mj-submit{height:38px;white-space:nowrap;padding:0 16px}",
-    ".mj-list{display:flex;flex-direction:column}",
-    ".mj-row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);transition:background .12s}",
-    ".mj-row:last-child{border-bottom:none}",
-    ".mj-row:hover{background:var(--surface2)}",
-    ".mj-ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3a7d2c,#2d6624);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;box-shadow:0 2px 6px rgba(45,102,36,.25)}",
-    ".mj-info{flex:1;min-width:0}",
-    ".mj-name{font-size:14.5px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-    ".mj-tarif{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px}",
-    ".mj-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;color:var(--txt2);font-family:var(--ff-mono)}",
-    ".mj-chip-k{font-family:var(--ff);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3)}",
-    ".mj-chip.open{border-color:rgba(58,125,44,.3);background:var(--green-bg)}",
-    ".mj-chip.open .mj-chip-k{color:var(--accent)}",
-    ".mj-chip-unit{font-size:11px;color:var(--txt3)}",
-    ".mj-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em}",
-    ".mj-badge.ok{background:var(--green-bg);color:var(--green-dark)}",
-    ".mj-badge.mt{background:#fef3c7;color:#b3791b}",
-    ".mj-badge.off{background:var(--surface2);color:var(--txt3);border:1px solid var(--border)}",
-    ".mj-acts{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}",
-    ".mj-act{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--txt2);font-size:11.5px;font-weight:600;font-family:var(--ff);cursor:pointer;text-decoration:none;transition:all .15s}",
-    ".mj-act:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
-    ".mj-act.ok{border-color:rgba(58,125,44,.35);color:var(--green-dark);background:var(--green-bg)}",
-    ".mj-act.ok:hover{border-color:var(--green);background:#dff0cf}",
-    ".mj-act.del{color:var(--txt3);padding:6px 9px}",
-    ".mj-act.del:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}",
-    ".mj-empty{display:flex;align-items:center;gap:14px;padding:26px 18px;color:var(--txt3)}",
-    ".mj-empty i{font-size:30px;opacity:.25;flex-shrink:0}",
-    ".mj-empty div{font-size:12px;line-height:1.7}",
+    ".mj-submit{height:40px;white-space:nowrap;padding:0 18px}",
     ".mj-modal{position:fixed;inset:0;background:rgba(20,30,18,.5);display:none;align-items:center;justify-content:center;z-index:9998;padding:16px}",
     ".mj-modal.show{display:flex}",
     ".mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow:hidden}",
     ".mj-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--txt)}",
     ".mj-modal-hd i{color:var(--accent)}",
     ".mj-modal-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;display:flex}",
-    ".mj-form-modal{grid-template-columns:1fr 1fr}",
-    ".mj-form-modal .mj-fg-name{grid-column:1/-1}",
-    ".mj-form-modal .mj-submit{grid-column:1/-1;justify-content:center;width:100%}",
+    ".mj-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;padding:18px}",
+    ".mj-form .mj-fg-name{grid-column:1/-1}",
+    ".mj-form .mj-submit{grid-column:1/-1;justify-content:center;width:100%}",
     ".mj-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--accent);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(45,102,36,.35);opacity:0;pointer-events:none;transition:all .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
     ".mj-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
-    "@media(max-width:680px){.mj-form{grid-template-columns:1fr 1fr;padding:14px}.mj-form .mj-fg-name{grid-column:1/-1}.mj-form .mj-submit{grid-column:1/-1;width:100%}.mj-row{flex-wrap:wrap;gap:10px 12px}.mj-info{flex:1 1 calc(100% - 51px)}.mj-acts{width:100%;justify-content:flex-start;border-top:1px dashed var(--border);padding-top:11px;margin-top:2px}}",
+    "@media(max-width:680px){.mjc-stats{grid-template-columns:repeat(2,1fr)}.mjc-add{width:100%}.mj-form{grid-template-columns:1fr;padding:16px}}",
   ].join("");
 
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
+    + "function openAddMeja(){document.getElementById('mjAddModal').classList.add('show');}"
+    + "function closeAddMeja(){document.getElementById('mjAddModal').classList.remove('show');}"
     + "function openEditMeja(d){"
     + "document.getElementById('emId').value=d.id;"
     + "document.getElementById('emNama').value=d.nama;"
@@ -3485,6 +3518,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "document.getElementById('emOpen').value=d.to?Number(d.to).toLocaleString('id-ID'):'';"
     + "document.getElementById('mjModal').classList.add('show');}"
     + "function closeEditMeja(){document.getElementById('mjModal').classList.remove('show');}"
+    + "function mjcMenu(btn){var w=btn.closest('.mjc-menu-wrap');var op=w.classList.contains('open');document.querySelectorAll('.mjc-menu-wrap.open').forEach(function(x){x.classList.remove('open');});if(!op)w.classList.add('open');}"
+    + "document.addEventListener('click',function(e){if(!e.target.closest('.mjc-menu-wrap'))document.querySelectorAll('.mjc-menu-wrap.open').forEach(function(x){x.classList.remove('open');});});"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('mjToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}},150);" : "");
 
   return docHeadV4("Manajemen Meja")
@@ -3499,20 +3534,29 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<div><div class=\"topbar-name\">Manajemen Meja</div><div class=\"topbar-label\">Billiard</div></div></div></header>"
     + "<div class=\"page\">"
     + "<a href=\"/operasional\" class=\"mj-back\"><i class=\"ti ti-arrow-left\" style=\"font-size:14px\"></i> Kembali ke Keuangan</a>"
-    + "<div class=\"dash-topbar\" style=\"margin-bottom:18px\"><div><div class=\"page-title\">Manajemen Meja</div>"
-    + "<div class=\"page-sub\">Atur daftar meja, tarif per jam, &amp; status. Daftar ini jadi pilihan Nomor Meja di Catat Transaksi.</div></div></div>"
+    + "<div class=\"mjc-head\">"
+    +   "<div><div class=\"page-title\">Manajemen Meja</div>"
+    +   "<div class=\"page-sub\">Atur daftar meja, tarif, &amp; status. Dipakai sebagai pilihan Nomor Meja di Catat Transaksi.</div></div>"
+    +   "<button type=\"button\" class=\"btn-primary mjc-add\" onclick=\"openAddMeja()\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
+    + "</div>"
     + errHtml
     + "<div class=\"mj-note\"><i class=\"ti ti-info-circle\"></i> <span>Halaman ini hanya untuk <b>setup &amp; status</b> — input jam main &amp; uang tetap lewat <b>Catat Transaksi</b>. Meja <b>Maintenance</b> / <b>Nonaktif</b> otomatis tidak muncul sebagai pilihan transaksi. Tarif <b>Open</b> hanya acuan (harga tetap diisi manual saat durasi Open).</span></div>"
-    + "<div class=\"mj-card\">"
-    + "<div class=\"mj-card-hd\"><i class=\"ti ti-plus\"></i> Tambah Meja</div>"
-    + "<form action=\"/operasional/meja/tambah\" method=\"post\" class=\"mj-form\">"
+    + "<div class=\"mjc-stats\">"
+    +   "<div class=\"mjc-stat\"><div class=\"mjc-stat-k\"><i class=\"ti ti-layout-grid\"></i> Total meja</div><div class=\"mjc-stat-v\">" + mejaList.length + "</div></div>"
+    +   "<div class=\"mjc-stat ok\"><div class=\"mjc-stat-k\"><i class=\"ti ti-circle-check\"></i> Kosong</div><div class=\"mjc-stat-v\">" + cKosong + "</div></div>"
+    +   "<div class=\"mjc-stat mt\"><div class=\"mjc-stat-k\"><i class=\"ti ti-tools\"></i> Maintenance</div><div class=\"mjc-stat-v\">" + cMaint + "</div></div>"
+    +   "<div class=\"mjc-stat off\"><div class=\"mjc-stat-k\"><i class=\"ti ti-circle-off\"></i> Nonaktif</div><div class=\"mjc-stat-v\">" + cOff + "</div></div>"
+    + "</div>"
+    + "<div class=\"mjc-grid\">" + cards + "</div>"
+    + "</div></div></div>"
+    + "<div class=\"mj-modal\" id=\"mjAddModal\" onclick=\"if(event.target===this)closeAddMeja()\">"
+    + "<div class=\"mj-modal-card\">"
+    + "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-plus\"></i> Tambah Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeAddMeja()\"><i class=\"ti ti-x\"></i></button></div>"
+    + "<form action=\"/operasional/meja/tambah\" method=\"post\" class=\"mj-form mj-form-modal\">"
     + "<div class=\"mj-fg mj-fg-name\"><label>Nama / Nomor Meja</label><input name=\"nama\" type=\"text\" placeholder=\"mis. Meja 9\" required></div>"
     + tarifInput("tarif_siang", "Tarif Siang / jam") + tarifInput("tarif_malam", "Tarif Malam / jam") + tarifInput("tarif_open", "Tarif Open / jam")
-    + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah</button>"
-    + "</form></div>"
-    + "<div class=\"mj-card\"><div class=\"mj-card-hd\"><i class=\"ti ti-list-details\"></i> Daftar Meja <span class=\"mj-count\">" + mejaList.length + " meja</span></div>"
-    + "<div class=\"mj-list\">" + rows + "</div></div>"
-    + "</div></div></div>"
+    + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
+    + "</form></div></div>"
     + "<div class=\"mj-modal\" id=\"mjModal\" onclick=\"if(event.target===this)closeEditMeja()\">"
     + "<div class=\"mj-modal-card\">"
     + "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-pencil\"></i> Edit Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeEditMeja()\"><i class=\"ti ti-x\"></i></button></div>"
