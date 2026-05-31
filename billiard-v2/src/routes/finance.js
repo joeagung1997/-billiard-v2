@@ -1523,17 +1523,33 @@ router.post("/sesi/buka", async (req, res) => {
 
 router.post("/sesi/item/tambah", async (req, res) => {
   const sesiId = parseInt(req.body.sesi_id) || 0;
-  const nama   = (req.body.nama ?? "").trim().slice(0, 100);
-  const qty    = Math.max(1, parseInt(req.body.qty) || 1);
-  const harga  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  // Keranjang: beberapa item -> 1 transaksi gabungan (keterangan + total).
+  let raw = [];
+  try { raw = JSON.parse(req.body.items || "[]"); } catch { raw = []; }
+  // Fallback legacy single-item (nama/qty/harga) — jaga-jaga.
+  if (!Array.isArray(raw) || raw.length === 0) {
+    const nm = (req.body.nama ?? "").trim();
+    const h  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+    if (nm && h > 0) raw = [{ nama: nm, qty: parseInt(req.body.qty) || 1, harga: h }];
+  }
   try {
     const sesi = await readSesiById(sesiId);
-    if (!sesi || sesi.status !== "open" || !nama || harga <= 0) return res.redirect("/operasional/sesi?msg=err");
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    const parts = []; let total = 0;
+    for (const it of raw) {
+      const nm = String(it && it.nama || "").trim().slice(0, 80);
+      const q  = Math.max(1, parseInt(it && it.qty) || 1);
+      const h  = parseInt(it && it.harga) || 0;
+      if (!nm || h <= 0) continue;
+      total += h * q;
+      parts.push((q > 1 ? q + "× " : "") + nm);
+    }
+    if (parts.length === 0 || total <= 0) return res.redirect("/operasional/sesi?msg=err");
     await appendTransaksi({
       id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
       jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
-      kategori: "Kopi / Snack", keterangan: (qty > 1 ? qty + "× " : "") + nama,
-      jumlah: harga * qty, lunas: false, bayar: "",
+      kategori: "Kopi / Snack", keterangan: parts.join(", "),
+      jumlah: total, lunas: false, bayar: "",
       dicatatOleh: res.locals.financeUser || "", sesiId,
     });
     res.redirect("/operasional/sesi?msg=ditambah");

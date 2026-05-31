@@ -3720,6 +3720,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     ".mj-modal-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;display:flex}",
     ".mj-form{display:flex;flex-direction:column;gap:12px;padding:18px}",
     ".mj-row2{display:grid;grid-template-columns:1fr 110px;gap:10px}",
+    ".fnb-row{display:grid;grid-template-columns:1fr 64px 34px;gap:7px;align-items:center;margin-bottom:8px}",
+    ".fnb-sel,.fnb-qty{padding:9px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;min-width:0;box-sizing:border-box}",
+    ".fnb-sel:focus,.fnb-qty:focus{border-color:var(--accent);background:var(--surface)}",
+    ".fnb-rm{height:38px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center}",
+    ".fnb-rm:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}",
+    ".fnb-add{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border:1px dashed var(--border2);border-radius:8px;background:var(--surface);color:var(--txt2);font-size:12.5px;font-weight:600;font-family:var(--ff);cursor:pointer}",
+    ".fnb-add:hover{border-color:var(--accent);color:var(--accent)}",
     ".mj-submit{height:42px;justify-content:center;width:100%}",
     ".mj-tog{display:flex;gap:8px}",
     ".mj-tog label{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--txt2);cursor:pointer}",
@@ -3736,8 +3743,12 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
     + "function openBuka(){bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
     + "function bukaCalc(){var ms=document.getElementById('bukaMeja');if(!ms)return;var o=ms.options[ms.selectedIndex];var dur=document.getElementById('bukaDurasi').value;var w=document.getElementById('bukaWaktu').value;var el=document.getElementById('bukaPrice');if(!o||!o.value){el.textContent='—';return;}if(dur==='Open'){el.textContent='Diisi saat tutup';return;}var m=dur.match(/^(\\d+) Jam$/);if(!m){el.textContent='—';return;}var jam=parseInt(m[1]);var rate=w==='malam'?(parseInt(o.dataset.tm||'0')||0):(parseInt(o.dataset.ts||'0')||0);el.textContent='Rp '+(jam*rate).toLocaleString('id-ID');}"
-    + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;document.getElementById('fnbSel').selectedIndex=0;document.getElementById('fnbQty').value=1;fnbCalc();_show('mFnb');}function closeFnb(){_hide('mFnb');}"
-    + "function fnbCalc(){var s=document.getElementById('fnbSel');var o=s.options[s.selectedIndex];var h=o?parseInt(o.dataset.harga||'0')||0:0;var q=parseInt(document.getElementById('fnbQty').value)||1;document.getElementById('fnbTotal').textContent='Rp '+(h*q).toLocaleString('id-ID');}"
+    + "function fnbRowHtml(){return document.getElementById('fnbTpl').innerHTML;}"
+    + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;document.getElementById('fnbRows').innerHTML=fnbRowHtml();fnbCalc();_show('mFnb');}function closeFnb(){_hide('mFnb');}"
+    + "function fnbAddRow(){var d=document.createElement('div');d.innerHTML=fnbRowHtml();document.getElementById('fnbRows').appendChild(d.firstElementChild);fnbCalc();}"
+    + "function fnbRmRow(b){var rows=document.getElementById('fnbRows');if(rows.children.length<=1)return;var r=b.closest('.fnb-row');if(r)r.remove();fnbCalc();}"
+    + "function fnbCalc(){var tot=0;document.querySelectorAll('#fnbRows .fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');var o=s.options[s.selectedIndex];var h=(o&&s.value)?(parseInt(o.dataset.harga||'0')||0):0;var q=parseInt(r.querySelector('.fnb-qty').value)||1;tot+=h*q;});var el=document.getElementById('fnbTotal');if(el)el.textContent='Rp '+tot.toLocaleString('id-ID');}"
+    + "function fnbSubmit(){var items=[];document.querySelectorAll('#fnbRows .fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');if(!s.value)return;var o=s.options[s.selectedIndex];items.push({nama:s.value,qty:parseInt(r.querySelector('.fnb-qty').value)||1,harga:parseInt(o.dataset.harga||'0')||0});});if(items.length===0){alert('Pilih minimal 1 item.');return false;}document.getElementById('fnbItems').value=JSON.stringify(items);return true;}"
     + "function openTutup(d){document.getElementById('tutSesiId').value=d.id;document.getElementById('tutMeja').textContent=d.meja||'meja';"
     + "var warn=document.getElementById('tutWarn');var sewaWrap=document.getElementById('tutSewaWrap');"
     + "if(d.fnbUnpaid>0){warn.style.display='';warn.textContent='Masih ada '+d.fnbUnpaid+' item F&B belum dibayar. Bayar dulu sebelum tutup.';document.getElementById('tutSubmit').disabled=true;}else{warn.style.display='none';document.getElementById('tutSubmit').disabled=false;}"
@@ -3788,14 +3799,16 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     // Modal Tambah F&B
     + "<div class=\"mj-modal\" id=\"mFnb\" onclick=\"if(event.target===this)closeFnb()\"><div class=\"mj-modal-card\">"
     +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-coffee\"></i> Tambah F&amp;B</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeFnb()\"><i class=\"ti ti-x\"></i></button></div>"
-    +   "<form method=\"post\" action=\"/operasional/sesi/item/tambah\" class=\"mj-form\">"
-    +     "<input type=\"hidden\" name=\"sesi_id\" id=\"fnbSesiId\">"
-    +     "<div class=\"mj-row2\"><div class=\"mj-fg\"><label>Item</label><select name=\"nama\" id=\"fnbSel\" onchange=\"fnbCalc()\" required>" + (menuOpts || "<option value=\"\">(belum ada menu)</option>") + "</select></div>"
-    +       "<div class=\"mj-fg\"><label>Qty</label><input type=\"number\" name=\"qty\" id=\"fnbQty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc()\"></div></div>"
-    +     "<input type=\"hidden\" name=\"harga\" id=\"fnbHarga\">"
-    +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Subtotal item</span><b id=\"fnbTotal\">Rp 0</b></div></div>"
-    +     "<button type=\"submit\" class=\"btn-primary mj-submit\" onclick=\"var s=document.getElementById('fnbSel');var o=s.options[s.selectedIndex];document.getElementById('fnbHarga').value=o?o.dataset.harga:0;\"><i class=\"ti ti-plus\"></i> Tambah (belum bayar)</button>"
-    +   "</form></div></div>"
+    +   "<form method=\"post\" action=\"/operasional/sesi/item/tambah\" class=\"mj-form\" onsubmit=\"return fnbSubmit()\">"
+    +     "<input type=\"hidden\" name=\"sesi_id\" id=\"fnbSesiId\"><input type=\"hidden\" name=\"items\" id=\"fnbItems\">"
+    +     "<div class=\"mj-fg\"><label>Item Pesanan</label><div id=\"fnbRows\"></div></div>"
+    +     "<button type=\"button\" class=\"fnb-add\" onclick=\"fnbAddRow()\"><i class=\"ti ti-plus\"></i> Tambah item lagi</button>"
+    +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total</span><b id=\"fnbTotal\">Rp 0</b></div></div>"
+    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Beberapa item di sini jadi <b>1 transaksi gabungan</b> (dibayar bareng). Mau bayar terpisah? Tambah lewat tombol F&amp;B berulang.</span></div>"
+    +     "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah ke bill (belum bayar)</button>"
+    +   "</form>"
+    +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><select class=\"fnb-sel\" onchange=\"fnbCalc()\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc()\"><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
+    + "</div></div>"
     // Modal Tutup Sesi
     + "<div class=\"mj-modal\" id=\"mTutup\" onclick=\"if(event.target===this)closeTutup()\"><div class=\"mj-modal-card\">"
     +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-receipt\"></i> Tutup Sesi — <span id=\"tutMeja\"></span></span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeTutup()\"><i class=\"ti ti-x\"></i></button></div>"
