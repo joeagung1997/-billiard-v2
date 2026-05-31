@@ -1410,7 +1410,7 @@ router.post("/meja/tambah", requireOwner, async (req, res) => {
   const nama = (req.body.nama ?? "").trim().slice(0, 60);
   const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
   const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
-  const to = parseInt((req.body.tarif_open  ?? "").replace(/\D/g, "")) || 0;
+  const to = ts; // Open ikut tarif Siang/Malam; kolom tarif_open disimpan = Siang utk kompatibilitas
   if (!nama) return res.redirect("/operasional/meja?err=1");
   try {
     await addMeja(nama, ts, tm, to);
@@ -1426,7 +1426,7 @@ router.post("/meja/edit", requireOwner, async (req, res) => {
   const nama = (req.body.nama ?? "").trim().slice(0, 60);
   const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
   const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
-  const to = parseInt((req.body.tarif_open  ?? "").replace(/\D/g, "")) || 0;
+  const to = ts; // Open ikut tarif Siang/Malam; kolom tarif_open disimpan = Siang utk kompatibilitas
   if (!id || !nama) return res.redirect("/operasional/meja?err=1");
   try {
     await updateMeja(id, nama, ts, tm, to);

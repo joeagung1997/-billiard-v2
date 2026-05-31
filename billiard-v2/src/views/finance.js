@@ -3426,7 +3426,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
           + "<div class=\"mjc-top\"><div class=\"mjc-id\"><div class=\"mjc-ic " + st.cls + "\"><i class=\"ti " + st.icon + "\"></i></div>"
           + "<span class=\"mjc-name\">" + escHtml(m.nama) + "</span></div>"
           + "<span class=\"mjc-badge " + st.cls + "\">" + st.label + "</span></div>"
-          + "<div class=\"mjc-tarif\">" + tRow("ti-sun", "Siang", m.tarif_siang) + tRow("ti-moon", "Malam", m.tarif_malam) + tRow("ti-infinity", "Open", m.tarif_open) + "</div>"
+          + "<div class=\"mjc-tarif\">" + tRow("ti-sun", "Siang", m.tarif_siang) + tRow("ti-moon", "Malam", m.tarif_malam)
+          + "<div class=\"mjc-trow\"><span class=\"mjc-tk\"><i class=\"ti ti-infinity\"></i>Open</span><b class=\"mjc-open-follow\">ikut Siang/Malam</b></div></div>"
           + "<div class=\"mjc-acts\">" + primary + quick + overflow + "</div>"
           + "</div>";
       }).join("");
@@ -3472,6 +3473,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mjc-tk i{font-size:15px}",
     ".mjc-trow b{color:var(--txt);font-weight:600;font-family:var(--ff-mono)}",
     ".mjc-trow b span{font-family:var(--ff);font-weight:400;color:var(--txt3);font-size:11px;margin-left:1px}",
+    ".mjc-open-follow{font-family:var(--ff)!important;font-weight:600;color:var(--txt3);font-size:11.5px}",
+    ".mj-fg-note{grid-column:1/-1;display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.45;color:var(--txt3);background:var(--green-bg);border-radius:8px;padding:9px 11px;margin-top:-2px}",
+    ".mj-fg-note i{color:var(--green);font-size:14px;margin-top:1px;flex-shrink:0}",
     ".mjc-acts{display:flex;align-items:center;gap:8px}",
     ".mjc-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 12px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--txt2);font-size:13px;font-weight:600;font-family:var(--ff);cursor:pointer;text-decoration:none;transition:all .15s}",
     ".mjc-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg)}",
@@ -3521,7 +3525,6 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "document.getElementById('emNama').value=d.nama;"
     + "document.getElementById('emSiang').value=d.ts?Number(d.ts).toLocaleString('id-ID'):'';"
     + "document.getElementById('emMalam').value=d.tm?Number(d.tm).toLocaleString('id-ID'):'';"
-    + "document.getElementById('emOpen').value=d.to?Number(d.to).toLocaleString('id-ID'):'';"
     + "document.getElementById('mjModal').classList.add('show');}"
     + "function closeEditMeja(){document.getElementById('mjModal').classList.remove('show');}"
     + "function mjcMenu(btn){var w=btn.closest('.mjc-menu-wrap');var op=w.classList.contains('open');document.querySelectorAll('.mjc-menu-wrap.open').forEach(function(x){x.classList.remove('open');});if(!op)w.classList.add('open');}"
@@ -3560,7 +3563,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-plus\"></i> Tambah Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeAddMeja()\"><i class=\"ti ti-x\"></i></button></div>"
     + "<form action=\"/operasional/meja/tambah\" method=\"post\" class=\"mj-form mj-form-modal\">"
     + "<div class=\"mj-fg mj-fg-name\"><label>Nama / Nomor Meja</label><input name=\"nama\" type=\"text\" placeholder=\"mis. Meja 9\" required></div>"
-    + tarifInput("tarif_siang", "Tarif Siang / jam") + tarifInput("tarif_malam", "Tarif Malam / jam") + tarifInput("tarif_open", "Tarif Open / jam")
+    + tarifInput("tarif_siang", "Tarif Siang / jam") + tarifInput("tarif_malam", "Tarif Malam / jam")
+    + "<div class=\"mj-fg-note\"><i class=\"ti ti-info-circle\"></i> Durasi <b>Open</b> (main bebas) otomatis pakai tarif <b>Siang/Malam</b> sesuai jam mainnya — tak perlu tarif Open terpisah.</div>"
     + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
     + "</form></div></div>"
     + "<div class=\"mj-modal\" id=\"mjModal\" onclick=\"if(event.target===this)closeEditMeja()\">"
@@ -3569,7 +3573,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<form action=\"/operasional/meja/edit\" method=\"post\" class=\"mj-form mj-form-modal\">"
     + "<input type=\"hidden\" name=\"id\" id=\"emId\">"
     + "<div class=\"mj-fg mj-fg-name\"><label>Nama / Nomor Meja</label><input name=\"nama\" id=\"emNama\" type=\"text\" required></div>"
-    + tarifInput("tarif_siang", "Tarif Siang / jam", "emSiang") + tarifInput("tarif_malam", "Tarif Malam / jam", "emMalam") + tarifInput("tarif_open", "Tarif Open / jam", "emOpen")
+    + tarifInput("tarif_siang", "Tarif Siang / jam", "emSiang") + tarifInput("tarif_malam", "Tarif Malam / jam", "emMalam")
+    + "<div class=\"mj-fg-note\"><i class=\"ti ti-info-circle\"></i> Durasi <b>Open</b> (main bebas) otomatis pakai tarif <b>Siang/Malam</b> sesuai jam mainnya — tak perlu tarif Open terpisah.</div>"
     + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-device-floppy\"></i> Simpan Perubahan</button>"
     + "</form></div></div>"
     + (toastMsg ? "<div class=\"mj-toast\" id=\"mjToast\"><i class=\"ti ti-circle-check\"></i> " + escHtml(toastMsg) + "</div>" : "")
@@ -3645,7 +3650,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         const sewa    = items.find((t) => t.kategori === KAT_SEWA_SESI);
         const sewaUnpaid = !!(sewa && sewa.lunas === false);
         const fnbUnpaid  = items.filter((t) => t.kategori !== KAT_SEWA_SESI && t.lunas === false).length;
-        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid, fnbUnpaid, to: s.tarif_open || 0, sewaJumlah: sewa ? (sewa.jumlah || 0) : 0 }));
+        const sewaWaktu = sewa ? (sewa.waktu === "malam" ? "malam" : "siang") : "siang";
+        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid, fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, w: sewaWaktu, sewaJumlah: sewa ? (sewa.jumlah || 0) : 0 }));
         return "<div class=\"sesi-card\">"
           + "<div class=\"sesi-card-hd\">"
           +   "<div class=\"sesi-meja\"><div class=\"sesi-ic\"><i class=\"ti ti-circle-number-8\"></i></div>"
@@ -3778,7 +3784,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "if(d.fnbUnpaid>0){warn.style.display='';warn.textContent='Masih ada '+d.fnbUnpaid+' item F&B belum dibayar. Bayar dulu sebelum tutup.';document.getElementById('tutSubmit').disabled=true;}else{warn.style.display='none';document.getElementById('tutSubmit').disabled=false;}"
     + "sewaWrap.style.display=d.sewaUnpaid?'':'none';"
     + "var sewaInp=document.querySelector('#tutSewaWrap input[name=sewa_harga]');if(sewaInp)sewaInp.value=(d.sewaJumlah>0)?Number(d.sewaJumlah).toLocaleString('id-ID'):'';"
-    + "var hint=document.getElementById('tutOpenHint');if(hint)hint.textContent=((d.sewaJumlah||0)===0&&d.to>0)?('Acuan tarif Open: Rp '+Number(d.to).toLocaleString('id-ID')+'/jam'):'';"
+    + "var hint=document.getElementById('tutOpenHint');if(hint){var oRate=(d.w==='malam'?(d.tm||0):(d.ts||0));hint.textContent=((d.sewaJumlah||0)===0&&oRate>0)?('Acuan tarif Open '+(d.w==='malam'?'Malam':'Siang')+': Rp '+Number(oRate).toLocaleString('id-ID')+'/jam'):'';}"
     + "_show('mTutup');}function closeTutup(){_hide('mTutup');}"
     + "function openBayar(d){document.getElementById('bySesiId').value=d.sid;document.getElementById('byItemId').value=d.id;document.getElementById('byBayar').value=(d.m==='qris'?'qris':'cash');document.getElementById('byAmt').textContent=d.amt||'';document.getElementById('byNama').textContent=d.nama||'';var cash=d.m!=='qris';document.getElementById('byIcon').className='by-icon '+(cash?'cash':'qris');document.getElementById('byIconI').className='ti '+(cash?'ti-cash':'ti-qrcode');document.getElementById('byMethod').innerHTML='<i class=\"ti '+(cash?'ti-cash':'ti-qrcode')+'\"></i> Bayar via '+(cash?'Cash':'QRIS');document.getElementById('bySubmit').className='btn-primary mj-submit'+(cash?'':' qris');_show('mBayar');}function closeBayar(){_hide('mBayar');}"
     + "document.querySelectorAll('[data-time]').forEach(function(el){var v=el.getAttribute('data-time');if(!v)return;var d=new Date(v);if(!isNaN(d))el.textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});});"
