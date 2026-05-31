@@ -3605,11 +3605,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const durasiOpts = "<option value=\"Open\">Open (harga saat tutup)</option>"
     + "<option value=\"1 Jam\">1 Jam</option><option value=\"2 Jam\">2 Jam</option><option value=\"3 Jam\">3 Jam</option><option value=\"4 Jam\">4 Jam</option><option value=\"5 Jam\">5 Jam</option><option value=\"6 Jam\">6 Jam</option><option value=\"7 Jam\">7 Jam</option><option value=\"8 Jam\">8 Jam</option>";
 
-  const payForm = (sesiId, itemId) =>
+  const payForm = (sesiId, itemId, amtStr) =>
     "<form method=\"post\" action=\"/operasional/sesi/item/bayar\" class=\"sesi-pay\">"
     + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + sesiId + "\"><input type=\"hidden\" name=\"id\" value=\"" + escHtml(itemId) + "\">"
-    + "<button type=\"submit\" name=\"bayar\" value=\"cash\" class=\"sesi-pay-btn\" title=\"Tandai dibayar Cash\"><i class=\"ti ti-cash\"></i> Cash</button>"
-    + "<button type=\"submit\" name=\"bayar\" value=\"qris\" class=\"sesi-pay-btn qris\" title=\"Tandai dibayar QRIS\"><i class=\"ti ti-qrcode\"></i> QRIS</button>"
+    + "<button type=\"submit\" name=\"bayar\" value=\"cash\" class=\"sesi-pay-btn\" onclick=\"return confirm('Tandai item ini sudah dibayar CASH? (" + amtStr + ")')\"><i class=\"ti ti-cash\"></i> Cash</button>"
+    + "<button type=\"submit\" name=\"bayar\" value=\"qris\" class=\"sesi-pay-btn qris\" onclick=\"return confirm('Tandai item ini sudah dibayar QRIS? (" + amtStr + ")')\"><i class=\"ti ti-qrcode\"></i> QRIS</button>"
     + "</form>";
 
   const renderItem = (s, t) => {
@@ -3625,7 +3625,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       const pl  = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur, w: t.waktu || "siang" }));
       right = "<button type=\"button\" class=\"sesi-ubah\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>";
     }
-    else right = payForm(s.id, t.id);
+    else right = payForm(s.id, t.id, rp(t.jumlah || 0));
     return "<div class=\"sesi-item" + (paid ? " paid" : "") + "\">"
       + "<div class=\"sesi-item-l\"><span class=\"sesi-item-name" + (isSewa ? " sewa" : "") + "\">" + (isSewa ? "<i class=\"ti ti-circle-number-8\"></i> " : "") + name + "</span>"
       + "<span class=\"sesi-item-amt\">" + amt + "</span></div>"
