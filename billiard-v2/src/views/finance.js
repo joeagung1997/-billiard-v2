@@ -3605,12 +3605,14 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const durasiOpts = "<option value=\"Open\">Open (harga saat tutup)</option>"
     + "<option value=\"1 Jam\">1 Jam</option><option value=\"2 Jam\">2 Jam</option><option value=\"3 Jam\">3 Jam</option><option value=\"4 Jam\">4 Jam</option><option value=\"5 Jam\">5 Jam</option><option value=\"6 Jam\">6 Jam</option><option value=\"7 Jam\">7 Jam</option><option value=\"8 Jam\">8 Jam</option>";
 
-  const payForm = (sesiId, itemId, amtStr) =>
-    "<form method=\"post\" action=\"/operasional/sesi/item/bayar\" class=\"sesi-pay\">"
-    + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + sesiId + "\"><input type=\"hidden\" name=\"id\" value=\"" + escHtml(itemId) + "\">"
-    + "<button type=\"submit\" name=\"bayar\" value=\"cash\" class=\"sesi-pay-btn\" onclick=\"return confirm('Tandai item ini sudah dibayar CASH? (" + amtStr + ")')\"><i class=\"ti ti-cash\"></i> Cash</button>"
-    + "<button type=\"submit\" name=\"bayar\" value=\"qris\" class=\"sesi-pay-btn qris\" onclick=\"return confirm('Tandai item ini sudah dibayar QRIS? (" + amtStr + ")')\"><i class=\"ti ti-qrcode\"></i> QRIS</button>"
-    + "</form>";
+  const payForm = (sesiId, itemId, amtStr, nama) => {
+    const plC = escHtml(JSON.stringify({ sid: sesiId, id: itemId, amt: amtStr, nama, m: "cash" }));
+    const plQ = escHtml(JSON.stringify({ sid: sesiId, id: itemId, amt: amtStr, nama, m: "qris" }));
+    return "<div class=\"sesi-pay\">"
+      + "<button type=\"button\" class=\"sesi-pay-btn\" onclick='openBayar(" + plC + ")'><i class=\"ti ti-cash\"></i> Cash</button>"
+      + "<button type=\"button\" class=\"sesi-pay-btn qris\" onclick='openBayar(" + plQ + ")'><i class=\"ti ti-qrcode\"></i> QRIS</button>"
+      + "</div>";
+  };
 
   const renderItem = (s, t) => {
     const isSewa = t.kategori === KAT_SEWA_SESI;
@@ -3625,7 +3627,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       const pl  = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur, w: t.waktu || "siang" }));
       right = "<button type=\"button\" class=\"sesi-ubah\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>";
     }
-    else right = payForm(s.id, t.id, rp(t.jumlah || 0));
+    else right = payForm(s.id, t.id, rp(t.jumlah || 0), String(t.keterangan || t.kategori || "Item"));
     return "<div class=\"sesi-item" + (paid ? " paid" : "") + "\">"
       + "<div class=\"sesi-item-l\"><span class=\"sesi-item-name" + (isSewa ? " sewa" : "") + "\">" + (isSewa ? "<i class=\"ti ti-circle-number-8\"></i> " : "") + name + "</span>"
       + "<span class=\"sesi-item-amt\">" + amt + "</span></div>"
@@ -3745,6 +3747,16 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     ".mj-tog label:has(input:checked){border-color:var(--green);background:var(--green-bg)}",
     ".mj-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--accent);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(45,102,36,.35);opacity:0;pointer-events:none;transition:all .2s;z-index:9999;display:flex;align-items:center;gap:6px}",
     ".mj-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}",
+    ".by-box{text-align:center;padding:6px 0 2px}",
+    ".by-icon{width:56px;height:56px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px}",
+    ".by-icon.cash{background:var(--green-bg);color:var(--green)}",
+    ".by-icon.qris{background:rgba(38,96,164,.1);color:#2660a4}",
+    ".by-amt{font-size:26px;font-weight:800;color:var(--txt);font-family:var(--ff-mono);letter-spacing:-.4px}",
+    ".by-nama{font-size:13px;color:var(--txt2);margin-top:5px;line-height:1.45}",
+    ".by-method{font-size:12px;color:var(--txt3);margin-top:12px;display:inline-flex;align-items:center;gap:5px;font-weight:700}",
+    ".by-cancel{height:42px;width:100%;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--txt2);font-size:13px;font-weight:600;font-family:var(--ff);cursor:pointer}",
+    ".by-cancel:hover{border-color:var(--txt3);color:var(--txt)}",
+    ".mj-submit.qris{background:#2660a4;border-color:#2660a4}",
     "@media(max-width:680px){.sesi-grid{grid-template-columns:1fr}.sesi-add{width:100%}}",
   ].join("");
 
@@ -3768,6 +3780,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "var sewaInp=document.querySelector('#tutSewaWrap input[name=sewa_harga]');if(sewaInp)sewaInp.value=(d.sewaJumlah>0)?Number(d.sewaJumlah).toLocaleString('id-ID'):'';"
     + "var hint=document.getElementById('tutOpenHint');if(hint)hint.textContent=((d.sewaJumlah||0)===0&&d.to>0)?('Acuan tarif Open: Rp '+Number(d.to).toLocaleString('id-ID')+'/jam'):'';"
     + "_show('mTutup');}function closeTutup(){_hide('mTutup');}"
+    + "function openBayar(d){document.getElementById('bySesiId').value=d.sid;document.getElementById('byItemId').value=d.id;document.getElementById('byBayar').value=(d.m==='qris'?'qris':'cash');document.getElementById('byAmt').textContent=d.amt||'';document.getElementById('byNama').textContent=d.nama||'';var cash=d.m!=='qris';document.getElementById('byIcon').className='by-icon '+(cash?'cash':'qris');document.getElementById('byIconI').className='ti '+(cash?'ti-cash':'ti-qrcode');document.getElementById('byMethod').innerHTML='<i class=\"ti '+(cash?'ti-cash':'ti-qrcode')+'\"></i> Bayar via '+(cash?'Cash':'QRIS');document.getElementById('bySubmit').className='btn-primary mj-submit'+(cash?'':' qris');_show('mBayar');}function closeBayar(){_hide('mBayar');}"
     + "document.querySelectorAll('[data-time]').forEach(function(el){var v=el.getAttribute('data-time');if(!v)return;var d=new Date(v);if(!isNaN(d))el.textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});});"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
 
@@ -3847,6 +3860,21 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "</div>"
     +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Sesi hanya bisa ditutup kalau semua F&amp;B sudah dibayar. Setelah tutup, item tetap tercatat di Riwayat Transaksi.</span></div>"
     +     "<button type=\"submit\" class=\"btn-primary mj-submit\" id=\"tutSubmit\"><i class=\"ti ti-check\"></i> Tutup Sesi</button>"
+    +   "</form></div></div>"
+    // Modal Konfirmasi Bayar Item
+    + "<div class=\"mj-modal\" id=\"mBayar\" onclick=\"if(event.target===this)closeBayar()\"><div class=\"mj-modal-card\">"
+    +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-circle-check\"></i> Konfirmasi Pembayaran</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeBayar()\"><i class=\"ti ti-x\"></i></button></div>"
+    +   "<form method=\"post\" action=\"/operasional/sesi/item/bayar\" class=\"mj-form\">"
+    +     "<input type=\"hidden\" name=\"sesi_id\" id=\"bySesiId\"><input type=\"hidden\" name=\"id\" id=\"byItemId\"><input type=\"hidden\" name=\"bayar\" id=\"byBayar\">"
+    +     "<div class=\"by-box\">"
+    +       "<div class=\"by-icon cash\" id=\"byIcon\"><i class=\"ti ti-cash\" id=\"byIconI\"></i></div>"
+    +       "<div class=\"by-amt\" id=\"byAmt\">Rp 0</div>"
+    +       "<div class=\"by-nama\" id=\"byNama\"></div>"
+    +       "<div class=\"by-method\" id=\"byMethod\"></div>"
+    +     "</div>"
+    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Item ditandai <b>Sudah Bayar</b> dan langsung dihitung ke saldo/pemasukan. Pastikan uang sudah diterima.</span></div>"
+    +     "<button type=\"submit\" class=\"btn-primary mj-submit\" id=\"bySubmit\"><i class=\"ti ti-circle-check\"></i> Ya, tandai sudah bayar</button>"
+    +     "<button type=\"button\" class=\"by-cancel\" onclick=\"closeBayar()\">Batal</button>"
     +   "</form></div></div>"
     + (toastMsg ? "<div class=\"mj-toast\" id=\"sToast\"><i class=\"ti ti-circle-check\"></i> " + escHtml(toastMsg) + "</div>" : "")
     + "<script>" + js + "</script>"
