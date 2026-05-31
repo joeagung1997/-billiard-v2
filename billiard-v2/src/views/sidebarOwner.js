@@ -476,13 +476,15 @@ export function buildOwnerHeader({ breadcrumb = [], actionsHtml = "", hasNotifDo
 // ── Sidebar AREA ADMIN PLATFORM (superadmin) ─────────────────────────
 // Ringkas & TERPISAH dari sidebar owner warung: tanpa menu operasional
 // (billiard/warkop/stok/member/dll). Reuse CSS .own-sidebar agar konsisten.
-export function buildPlatformSidebar({ token = "", activePage = "", displayName = "" } = {}) {
-  const tk = token ? "?tk=" + encodeURIComponent(token) : "";
+export function buildPlatformSidebar({ activePage = "", displayName = "" } = {}) {
+  // Auth via cookie httpOnly _frt — TIDAK ada token di URL (?tk=) lagi.
   const items = [
-    { id: "dashboard",     href: "/platform" + tk,           icon: "ti ti-layout-dashboard", label: "Dashboard" },
-    { id: "daftar-warung", href: "/platform/warung" + tk,    icon: "ti ti-building-store",    label: "Daftar Warung" },
-    { id: "buat-warung",   href: "/platform/baru" + tk,      icon: "ti ti-plus",             label: "Buat Warung" },
-    { id: "langganan",     href: "/platform/langganan" + tk, icon: "ti ti-receipt-2",        label: "Kelola Langganan" },
+    { id: "dashboard",     href: "/platform",           icon: "ti ti-layout-dashboard", label: "Dashboard" },
+    { id: "daftar-warung", href: "/platform/warung",    icon: "ti ti-building-store",    label: "Daftar Warung" },
+    { id: "buat-warung",   href: "/platform/baru",      icon: "ti ti-plus",             label: "Buat Warung" },
+    { id: "langganan",     href: "/platform/langganan", icon: "ti ti-receipt-2",        label: "Kelola Langganan" },
+    { id: "pengaturan",    href: "/platform/pengaturan",icon: "ti ti-settings",         label: "Pengaturan" },
+    { id: "kelola-admin",  href: "/platform/admin",     icon: "ti ti-user-shield",      label: "Kelola Admin" },
   ];
   const nav = items.map((it) =>
     `<a href="${it.href}" class="own-item${it.id === activePage ? " active" : ""}">`

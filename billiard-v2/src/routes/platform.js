@@ -2,8 +2,11 @@
 // ── AREA ADMIN PLATFORM (superadmin) — terpisah dari area owner warung ──
 //
 // Hanya akun role 'superadmin' yang boleh akses. Login sendiri di /platform/login
-// (BUKAN per-warung /w/:slug). Menu ringkas: Daftar Warung, Buat Warung, Kelola
-// Langganan. TANPA menu operasional warung. Pindahan dari /admin/warung* dulu.
+// (BUKAN per-warung /w/:slug). Menu: Dashboard, Daftar Warung, Buat Warung,
+// Kelola Langganan, Pengaturan, Kelola Admin. TANPA menu operasional warung.
+//
+// KEAMANAN SESI: autentikasi MURNI dari cookie httpOnly `_frt` (JWT). TIDAK ada
+// token di URL (?tk=) — token sesi rentan bocor lewat history/referer/screenshot.
 
 import { Router } from "express";
 import jwt from "jsonwebtoken";
@@ -11,9 +14,11 @@ import {
   listWarungsWithStats, createWarung, getWarungBySlug, getWarungById,
   findSuperadmin, updateWarungLangganan, getWarungOwner, updateWarungModules,
   resetOwnerPin, logPlatformAction, readPlatformLog,
+  getPlatformSettings, updatePlatformSettings,
+  listSuperadmins, createSuperadmin, setSuperadminActive, resetSuperadminPin,
+  getActiveSuperadmin,
 } from "../utils/db.js";
 import { CONFIG } from "../config.js";
-import { createToken, verifyToken } from "../utils/session.js";
 import { readFrtCookie } from "../middleware/auth.js";
 import { OPTIONAL_MODULES } from "../utils/tenant.js";
 import { invalidateWarung } from "../middleware/subscription.js";
@@ -22,44 +27,53 @@ import { uploadImageToCloudinary } from "./share.js";
 import {
   warungListPage, warungCreatePage, adminLoginPage,
   platformDashboardPage, warungDetailPage, langgananPage,
+  pengaturanPlatformPage, kelolaAdminPage,
 } from "../views/admin.js";
 import { resultPage } from "../views/member.js";
 
 const router = Router();
 const BASE = "/platform";
 
-// ── Auth: hanya role 'superadmin' ───────────────────────────────────
-// Pola sama dgn requireAdmin (token ?tk= → fallback cookie _frt → redirect),
-// tapi role WAJIB 'superadmin'. Tak menyentuh konteks warung (lintas-tenant).
-function requirePlatformAuth(req, res, next) {
-  const tk   = req.query.tk ?? req.body.tk ?? "";
-  const user = verifyToken(tk);
-  if (!user) {
-    const frt = readFrtCookie(req);
-    if (frt && frt.role === "superadmin" && frt.username) {
-      const newTk = createToken({ username: frt.username, role: "superadmin", displayName: frt.displayName || "Super Admin", warungId: 1 });
-      const u = new URL(req.originalUrl, "http://x");
-      u.searchParams.set("tk", newTk);
-      return res.redirect(u.pathname + u.search);
-    }
+// ── Cookie helper: httpOnly + SameSite=Lax + Secure (hanya saat HTTPS) ──
+// Railway berada di balik proxy TLS → `req.protocol` tetap http; deteksi HTTPS
+// lewat header X-Forwarded-Proto supaya Secure aktif di prod tanpa merusak
+// dev lokal (HTTP). SameSite=Lax memblokir POST lintas-situs → proteksi CSRF.
+const isHttps = (req) => (req.headers["x-forwarded-proto"] || "").split(",")[0].trim() === "https";
+const frtCookie = (value, maxAgeSec, req) =>
+  `_frt=${value}; HttpOnly; Path=/; Max-Age=${maxAgeSec}; SameSite=Lax` + (isHttps(req) ? "; Secure" : "");
+const clearFrt = (req) =>
+  `_frt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax` + (isHttps(req) ? "; Secure" : "");
+
+// ── Auth: hanya role 'superadmin' — dari COOKIE saja (tanpa ?tk=) ────
+// Verifikasi akun masih ada & aktif di DB tiap request → nonaktif berlaku
+// langsung (tak menunggu cookie 24 jam kedaluwarsa). Tak menyentuh konteks
+// warung (lintas-tenant).
+async function requirePlatformAuth(req, res, next) {
+  const frt = readFrtCookie(req);
+  if (!frt || frt.role !== "superadmin" || !frt.username) {
     return res.redirect("/platform/login");
   }
-  if (user.role !== "superadmin") {
-    return res.status(403).send(resultPage("error", {
-      judul: "Akses Ditolak",
-      pesan: "Halaman ini khusus superadmin platform.",
-    }));
+  let acc = null;
+  try { acc = await getActiveSuperadmin(frt.username); }
+  catch (err) { console.error("[PLATFORM] auth lookup error:", err.message); }
+  if (!acc) {
+    res.setHeader("Set-Cookie", [clearFrt(req)]); // akun dihapus/dinonaktifkan → tendang
+    return res.redirect("/platform/login");
   }
-  res.locals.tk           = tk;
-  res.locals.adminUser    = user.username;
-  res.locals.adminRole    = user.role;
-  res.locals.adminDisplay = user.displayName || "Super Admin";
+  res.locals.adminUser    = acc.username;
+  res.locals.adminRole    = "superadmin";
+  res.locals.adminDisplay = acc.display_name || frt.displayName || "Super Admin";
   next();
 }
 
 const platformUser = (res) => ({
   username: res.locals.adminUser, role: res.locals.adminRole, displayName: res.locals.adminDisplay,
 });
+
+// Origin kanonik untuk membangun URL lengkap warung: pakai base_url dari
+// Pengaturan Platform bila di-set (hindari kebingungan www/apex), fallback origin.
+const originOf = (req, settings) =>
+  (settings && settings.base_url && settings.base_url.trim()) || (req.protocol + "://" + req.get("host"));
 
 // ── Login ───────────────────────────────────────────────────────────
 router.get("/login", (req, res) => res.send(adminLoginPage(!!req.query.err, "/platform/login")));
@@ -73,14 +87,13 @@ router.post("/login", async (req, res) => {
   if (!acc) return res.redirect("/platform/login?err=1");
 
   const claims = { username: acc.username, role: "superadmin", displayName: acc.display_name || "Super Admin", warungId: 1 };
-  const token  = createToken(claims);
   const frt    = jwt.sign({ ...claims, boot: CONFIG.DEPLOY_ID }, CONFIG.JWT_SECRET, { expiresIn: CONFIG.JWT_EXPIRES });
-  res.setHeader("Set-Cookie", [`_frt=${encodeURIComponent(frt)}; HttpOnly; Path=/; Max-Age=${24 * 3600}; SameSite=Lax`]);
-  res.redirect("/platform?tk=" + token);
+  res.setHeader("Set-Cookie", [frtCookie(encodeURIComponent(frt), 24 * 3600, req)]);
+  res.redirect("/platform"); // URL bersih — tanpa token
 });
 
-router.get("/logout", (_req, res) => {
-  res.setHeader("Set-Cookie", [`_frt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`]);
+router.get("/logout", (req, res) => {
+  res.setHeader("Set-Cookie", [clearFrt(req)]);
   res.redirect("/platform/login");
 });
 
@@ -88,7 +101,7 @@ router.get("/logout", (_req, res) => {
 router.get("/", requirePlatformAuth, async (req, res) => {
   try {
     const [warungs, log] = await Promise.all([listWarungsWithStats(), readPlatformLog(15)]);
-    res.send(platformDashboardPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warungs, log }));
+    res.send(platformDashboardPage({ displayName: res.locals.adminDisplay, warungs, log }));
   } catch (err) {
     console.error("[PLATFORM] dashboard error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -99,7 +112,7 @@ router.get("/", requirePlatformAuth, async (req, res) => {
 router.get("/warung", requirePlatformAuth, async (req, res) => {
   try {
     const warungs = await listWarungsWithStats();
-    res.send(warungListPage({ warungs, token: res.locals.tk, req, user: platformUser(res), platform: true, base: BASE }));
+    res.send(warungListPage({ warungs, req, user: platformUser(res), platform: true, base: BASE }));
   } catch (err) {
     console.error("[PLATFORM] daftar warung error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -110,7 +123,7 @@ router.get("/warung", requirePlatformAuth, async (req, res) => {
 router.get("/langganan", requirePlatformAuth, async (req, res) => {
   try {
     const warungs = await listWarungsWithStats();
-    res.send(langgananPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warungs }));
+    res.send(langgananPage({ displayName: res.locals.adminDisplay, warungs }));
   } catch (err) {
     console.error("[PLATFORM] langganan error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -123,9 +136,8 @@ router.get("/warung/:id", requirePlatformAuth, async (req, res) => {
   try {
     const warung = await getWarungById(parseInt(req.params.id, 10));
     if (!warung) return res.status(404).send(resultPage("error", { judul: "Warung Tidak Ada", pesan: "Warung tidak ditemukan." }));
-    const owner = await getWarungOwner(warung.id);
-    const hostBase = req.protocol + "://" + req.get("host");
-    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner, hostBase }));
+    const [owner, settings] = await Promise.all([getWarungOwner(warung.id), getPlatformSettings()]);
+    res.send(warungDetailPage({ displayName: res.locals.adminDisplay, warung, owner, hostBase: originOf(req, settings) }));
   } catch (err) {
     console.error("[PLATFORM] detail warung error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -134,7 +146,6 @@ router.get("/warung/:id", requirePlatformAuth, async (req, res) => {
 
 // ── Ubah modul aktif warung ─────────────────────────────────────────
 router.post("/warung/:id/modul", requirePlatformAuth, async (req, res) => {
-  const token = res.locals.tk;
   const id = parseInt(req.params.id, 10);
   const b = req.body || {};
   const mods = b.modul == null ? [] : (Array.isArray(b.modul) ? b.modul : [b.modul]);
@@ -144,7 +155,7 @@ router.post("/warung/:id/modul", requirePlatformAuth, async (req, res) => {
     invalidateWarung(id); // efek langsung ke sidebar/gate owner (tak tunggu cache 60s)
     await logPlatformAction({ actor: res.locals.adminUser, action: "ubah modul", warungId: id, detail: clean.join(",") || "(kosong)" });
   }
-  res.redirect(BASE + "/warung/" + id + "?tk=" + token);
+  res.redirect(BASE + "/warung/" + id);
 });
 
 // ── Reset PIN owner ─────────────────────────────────────────────────
@@ -156,9 +167,8 @@ router.post("/warung/:id/reset-pin", requirePlatformAuth, async (req, res) => {
     if (!warung) return res.status(404).send(resultPage("error", { judul: "Warung Tidak Ada", pesan: "Warung tidak ditemukan." }));
     const newPin = await resetOwnerPin(id);
     if (newPin) await logPlatformAction({ actor: res.locals.adminUser, action: "reset PIN owner", warungId: id, detail: "user " + newPin.username });
-    const owner = await getWarungOwner(id);
-    const hostBase = req.protocol + "://" + req.get("host");
-    res.send(warungDetailPage({ token: res.locals.tk, displayName: res.locals.adminDisplay, warung, owner, newPin, hostBase }));
+    const [owner, settings] = await Promise.all([getWarungOwner(id), getPlatformSettings()]);
+    res.send(warungDetailPage({ displayName: res.locals.adminDisplay, warung, owner, newPin, hostBase: originOf(req, settings) }));
   } catch (err) {
     console.error("[PLATFORM] reset-pin error:", err.message);
     res.status(500).send("Kesalahan server. Coba lagi.");
@@ -197,13 +207,14 @@ router.post("/upload-logo", requirePlatformAuth, async (req, res) => {
 });
 
 // ── Form Buat Warung ────────────────────────────────────────────────
-router.get("/baru", requirePlatformAuth, (req, res) => {
-  res.send(warungCreatePage({ token: res.locals.tk, user: platformUser(res), platform: true, base: BASE }));
+router.get("/baru", requirePlatformAuth, async (req, res) => {
+  let trialDays = 14;
+  try { trialDays = (await getPlatformSettings()).default_trial_days; } catch {}
+  res.send(warungCreatePage({ user: platformUser(res), values: { status: "trial", trialDays: String(trialDays) }, platform: true, base: BASE }));
 });
 
 // ── Proses Buat Warung + akun owner pertama ─────────────────────────
 router.post("/baru", requirePlatformAuth, async (req, res) => {
-  const token = res.locals.tk;
   const b = req.body || {};
   const values = {
     nama:          (b.nama || "").trim(),
@@ -224,7 +235,7 @@ router.post("/baru", requirePlatformAuth, async (req, res) => {
   const rawModul = b.modul == null ? [] : (Array.isArray(b.modul) ? b.modul : [b.modul]);
   const activeModules = rawModul.filter((mm) => OPTIONAL_MODULES.includes(mm));
   values.modul = activeModules;
-  const fail = (msg) => res.status(400).send(warungCreatePage({ token, user: platformUser(res), values, error: msg, platform: true, base: BASE }));
+  const fail = (msg) => res.status(400).send(warungCreatePage({ user: platformUser(res), values, error: msg, platform: true, base: BASE }));
 
   if (!values.nama)                                    return fail("Nama warung wajib diisi.");
   if (!/^[a-z0-9-]{2,40}$/.test(values.slug))          return fail("Slug tidak valid — huruf kecil, angka, & strip (2–40 karakter).");
@@ -253,7 +264,7 @@ router.post("/baru", requirePlatformAuth, async (req, res) => {
       ownerUsername: values.ownerUsername, ownerPin: pin, ownerName: values.ownerName,
     });
     await logPlatformAction({ actor: res.locals.adminUser, action: "buat warung", warungId: w.id, detail: values.slug });
-    return res.redirect(BASE + "/warung?tk=" + token + "&created=" + encodeURIComponent(w.slug));
+    return res.redirect(BASE + "/warung?created=" + encodeURIComponent(w.slug));
   } catch (err) {
     if (err.code === "SLUG_TAKEN") return fail('Slug "/w/' + values.slug + '" sudah dipakai. Pilih slug lain.');
     console.error("[PLATFORM] createWarung error:", err.message);
@@ -263,7 +274,6 @@ router.post("/baru", requirePlatformAuth, async (req, res) => {
 
 // ── Ubah status langganan + tanggal trial ───────────────────────────
 router.post("/warung/:id/langganan", requirePlatformAuth, async (req, res) => {
-  const token  = res.locals.tk;
   const id     = parseInt(req.params.id, 10);
   const status = req.body.status;
   let trialSelesai = null;
@@ -282,7 +292,127 @@ router.post("/warung/:id/langganan", requirePlatformAuth, async (req, res) => {
   } catch (err) {
     console.error("[PLATFORM] langganan error:", err.message);
   }
-  res.redirect(BASE + "/warung/" + id + "?tk=" + token);
+  res.redirect(BASE + "/warung/" + id);
+});
+
+// ── Pengaturan Platform (global) ────────────────────────────────────
+router.get("/pengaturan", requirePlatformAuth, async (req, res) => {
+  try {
+    const settings = await getPlatformSettings();
+    res.send(pengaturanPlatformPage({ displayName: res.locals.adminDisplay, settings, saved: req.query.ok === "1" }));
+  } catch (err) {
+    console.error("[PLATFORM] pengaturan error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
+router.post("/pengaturan", requirePlatformAuth, async (req, res) => {
+  const b = req.body || {};
+  const settings = {
+    productName:  (b.productName || "").trim().slice(0, 80),
+    baseUrl:      (b.baseUrl || "").trim().replace(/\/+$/, ""),
+    supportWa:    (b.supportWa || "").trim(),
+    supportEmail: (b.supportEmail || "").trim(),
+    defaultTrialDays: parseInt(b.defaultTrialDays, 10),
+  };
+  const reErr = (msg) => res.status(400).send(pengaturanPlatformPage({
+    displayName: res.locals.adminDisplay,
+    settings: {
+      product_name: settings.productName, base_url: settings.baseUrl, support_wa: settings.supportWa,
+      support_email: settings.supportEmail, default_trial_days: b.defaultTrialDays,
+    },
+    error: msg,
+  }));
+  if (!settings.productName) return reErr("Nama produk wajib diisi.");
+  if (settings.baseUrl && !/^https?:\/\/[^\s]+$/i.test(settings.baseUrl)) return reErr("Base URL harus diawali http:// atau https://");
+  if (settings.supportEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(settings.supportEmail)) return reErr("Email support tidak valid.");
+  if (!(settings.defaultTrialDays >= 1 && settings.defaultTrialDays <= 365)) return reErr("Default trial harus 1–365 hari.");
+  try {
+    await updatePlatformSettings(settings);
+    await logPlatformAction({ actor: res.locals.adminUser, action: "ubah pengaturan platform", warungId: null, detail: "trial=" + settings.defaultTrialDays });
+    res.redirect(BASE + "/pengaturan?ok=1");
+  } catch (err) {
+    console.error("[PLATFORM] simpan pengaturan error:", err.message);
+    return reErr("Gagal menyimpan pengaturan: " + err.message);
+  }
+});
+
+// ── Kelola Admin (akun superadmin platform) ─────────────────────────
+const NOTICE = {
+  "admin-baru": "Akun superadmin baru berhasil dibuat.",
+  "aktif":      "Akun diaktifkan.",
+  "nonaktif":   "Akun dinonaktifkan.",
+};
+const ERRTXT = {
+  "last":     "Tidak bisa menonaktifkan akun superadmin aktif terakhir.",
+  "notfound": "Akun tidak ditemukan.",
+};
+
+router.get("/admin", requirePlatformAuth, async (req, res) => {
+  try {
+    const admins = await listSuperadmins();
+    res.send(kelolaAdminPage({
+      displayName: res.locals.adminDisplay, admins, currentUser: res.locals.adminUser,
+      notice: NOTICE[req.query.ok] || "", error: ERRTXT[req.query.err] || "",
+    }));
+  } catch (err) {
+    console.error("[PLATFORM] kelola admin error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
+});
+
+router.post("/admin/baru", requirePlatformAuth, async (req, res) => {
+  const b = req.body || {};
+  const username    = (b.username || "").trim().toLowerCase();
+  const displayName = (b.displayName || "").trim();
+  const pin  = (b.pin || "").trim();
+  const pin2 = (b.pinConfirm || "").trim();
+  const reErr = async (msg) => {
+    const admins = await listSuperadmins();
+    res.status(400).send(kelolaAdminPage({
+      displayName: res.locals.adminDisplay, admins, currentUser: res.locals.adminUser,
+      error: msg, formValues: { username, displayName },
+    }));
+  };
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) return reErr("Username tidak valid — 3–20 huruf kecil/angka/underscore.");
+  if (!/^\d{4,8}$/.test(pin))              return reErr("PIN harus 4–8 digit angka.");
+  if (pin !== pin2)                        return reErr("PIN dan ulangi PIN tidak sama.");
+  try {
+    await createSuperadmin({ username, pin, displayName });
+    await logPlatformAction({ actor: res.locals.adminUser, action: "tambah admin platform", warungId: null, detail: username });
+    res.redirect(BASE + "/admin?ok=admin-baru");
+  } catch (err) {
+    if (err.code === "USERNAME_TAKEN") return reErr('Username "' + username + '" sudah dipakai. Pilih lain.');
+    console.error("[PLATFORM] createSuperadmin error:", err.message);
+    return reErr("Gagal membuat akun: " + err.message);
+  }
+});
+
+router.post("/admin/:username/aktif", requirePlatformAuth, async (req, res) => {
+  const username = String(req.params.username || "").toLowerCase();
+  const active   = req.body.active === "1";
+  const r = await setSuperadminActive(username, active);
+  if (r.ok) {
+    await logPlatformAction({ actor: res.locals.adminUser, action: (active ? "aktifkan" : "nonaktifkan") + " admin platform", warungId: null, detail: username });
+    return res.redirect(BASE + "/admin?ok=" + (active ? "aktif" : "nonaktif"));
+  }
+  res.redirect(BASE + "/admin?err=" + (r.reason || "notfound"));
+});
+
+router.post("/admin/:username/reset-pin", requirePlatformAuth, async (req, res) => {
+  const username = String(req.params.username || "").toLowerCase();
+  try {
+    const newPin = await resetSuperadminPin(username);
+    if (newPin) await logPlatformAction({ actor: res.locals.adminUser, action: "reset PIN admin platform", warungId: null, detail: username });
+    const admins = await listSuperadmins();
+    res.send(kelolaAdminPage({
+      displayName: res.locals.adminDisplay, admins, currentUser: res.locals.adminUser,
+      newPin: newPin || null, error: newPin ? "" : "Akun tidak ditemukan.",
+    }));
+  } catch (err) {
+    console.error("[PLATFORM] reset admin pin error:", err.message);
+    res.status(500).send("Kesalahan server. Coba lagi.");
+  }
 });
 
 export default router;

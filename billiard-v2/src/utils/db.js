@@ -130,10 +130,100 @@ export const createWarung = async ({
 export const findSuperadmin = async (username, pin) => {
   const res = await query(
     `SELECT username, display_name, role, warung_id FROM admin_accounts
-     WHERE role = 'superadmin' AND LOWER(username) = LOWER($1) AND pin = $2 LIMIT 1`,
+     WHERE role = 'superadmin' AND active = TRUE AND LOWER(username) = LOWER($1) AND pin = $2 LIMIT 1`,
     [username, pin]
   );
   return res.rows[0] ?? null;
+};
+
+// ── Platform: akun superadmin aktif by username (utk verifikasi sesi cookie) ──
+// Dipakai requirePlatformAuth tiap request → nonaktif berlaku langsung
+// (tak menunggu cookie expired). Return {username, display_name} atau null.
+export const getActiveSuperadmin = async (username) => {
+  const res = await query(
+    `SELECT username, display_name FROM admin_accounts
+     WHERE role = 'superadmin' AND active = TRUE AND LOWER(username) = LOWER($1) LIMIT 1`,
+    [username]
+  );
+  return res.rows[0] ?? null;
+};
+
+// ── Platform: daftar semua akun superadmin (TANPA pin) ──────────────
+export const listSuperadmins = async () => {
+  const res = await query(
+    `SELECT username, display_name, active, last_login FROM admin_accounts
+     WHERE role = 'superadmin' ORDER BY (username = 'superadmin') DESC, username`
+  );
+  return res.rows;
+};
+
+// ── Platform: tambah akun superadmin baru (warung_id=1, tak terikat warung) ──
+// Lempar Error code USERNAME_TAKEN bila username bentrok (unik per warung_id).
+export const createSuperadmin = async ({ username, pin, displayName = "" }) => {
+  const u = String(username || "").trim().toLowerCase();
+  const exists = await query(
+    `SELECT 1 FROM admin_accounts WHERE LOWER(username) = LOWER($1) AND warung_id = 1 LIMIT 1`,
+    [u]
+  );
+  if (exists.rows.length) { const e = new Error("USERNAME_TAKEN"); e.code = "USERNAME_TAKEN"; throw e; }
+  await query(
+    `INSERT INTO admin_accounts (username, pin, role, display_name, warung_id, active)
+     VALUES ($1, $2, 'superadmin', $3, 1, TRUE)`,
+    [u, String(pin), displayName || u]
+  );
+  return { username: u };
+};
+
+// ── Platform: aktif/nonaktif akun superadmin ────────────────────────
+// GUARD: tak boleh menonaktifkan superadmin AKTIF terakhir (cegah terkunci).
+// Return {ok:true} | {ok:false, reason:'last'|'notfound'}.
+export const setSuperadminActive = async (username, active) => {
+  const u = String(username || "").trim().toLowerCase();
+  const target = await query(
+    `SELECT username, active FROM admin_accounts WHERE role='superadmin' AND LOWER(username)=LOWER($1) LIMIT 1`,
+    [u]
+  );
+  if (!target.rows.length) return { ok: false, reason: "notfound" };
+  if (!active) {
+    const cnt = await query(`SELECT COUNT(*)::int AS n FROM admin_accounts WHERE role='superadmin' AND active=TRUE`);
+    // Bila target masih aktif & ini satu-satunya yg aktif → tolak.
+    if (target.rows[0].active && cnt.rows[0].n <= 1) return { ok: false, reason: "last" };
+  }
+  await query(
+    `UPDATE admin_accounts SET active = $2 WHERE role='superadmin' AND LOWER(username)=LOWER($1)`,
+    [u, !!active]
+  );
+  return { ok: true };
+};
+
+// ── Platform: reset PIN akun superadmin → PIN baru 6 digit (tampil sekali) ──
+// PIN lama TAK pernah dibaca. Null kalau akun tak ada.
+export const resetSuperadminPin = async (username) => {
+  const u = String(username || "").trim().toLowerCase();
+  const acc = await query(
+    `SELECT username FROM admin_accounts WHERE role='superadmin' AND LOWER(username)=LOWER($1) LIMIT 1`,
+    [u]
+  );
+  if (!acc.rows.length) return null;
+  const pin = String(randomInt(100000, 1000000)); // 6 digit
+  await query(`UPDATE admin_accounts SET pin = $2 WHERE role='superadmin' AND LOWER(username)=LOWER($1)`, [u, pin]);
+  return { username: acc.rows[0].username, pin };
+};
+
+// ── Platform: pengaturan global (satu baris id=1) ───────────────────
+export const getPlatformSettings = async () => {
+  const res = await query(`SELECT product_name, base_url, support_wa, support_email, default_trial_days FROM platform_settings WHERE id = 1`);
+  return res.rows[0] ?? { product_name: "Warpat SaaS", base_url: "", support_wa: "", support_email: "", default_trial_days: 14 };
+};
+
+export const updatePlatformSettings = async ({ productName = "", baseUrl = "", supportWa = "", supportEmail = "", defaultTrialDays = 14 }) => {
+  await query(
+    `UPDATE platform_settings
+       SET product_name = $1, base_url = $2, support_wa = $3, support_email = $4, default_trial_days = $5, updated_at = NOW()
+     WHERE id = 1`,
+    [productName, baseUrl, supportWa, supportEmail, defaultTrialDays]
+  );
+  return true;
 };
 
 // ── Platform: ubah status langganan + akhir trial sebuah warung ──────

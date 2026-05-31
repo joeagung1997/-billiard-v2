@@ -516,6 +516,9 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS shift TEXT NOT NULL DEFAULT 'siang'`);
   // Terakhir login (utk panel platform: tahu warung aktif dipakai/tidak). Nullable.
   await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ`);
+  // Aktif/nonaktif akun (dipakai Kelola Admin superadmin). Default TRUE → semua
+  // akun lama tetap bisa login; nonaktif hanya bila di-set superadmin.
+  await query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE`);
   // Seed akun awal dari config — hanya jika tabel masih kosong
   const akunCount = await query("SELECT COUNT(*) FROM admin_accounts");
   if (parseInt(akunCount.rows[0].count) === 0) {
@@ -747,6 +750,24 @@ export const runMigrations = async () => {
     )
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_platform_log_ts ON platform_log (ts DESC)`);
+
+  // ── Pengaturan GLOBAL platform (superadmin) — satu baris (id=1) ────────
+  // BUKAN per-warung (app_settings yg per-tenant). Idempotent: tabel + 1 baris
+  // default. default_trial_days dipakai form Buat Warung; base_url dipakai
+  // membangun URL lengkap warung di Detail Warung (kanonik, hindari www/apex).
+  await query(`
+    CREATE TABLE IF NOT EXISTS platform_settings (
+      id                 INTEGER PRIMARY KEY DEFAULT 1,
+      product_name       TEXT    NOT NULL DEFAULT 'Warpat SaaS',
+      base_url           TEXT    NOT NULL DEFAULT '',
+      support_wa         TEXT    NOT NULL DEFAULT '',
+      support_email      TEXT    NOT NULL DEFAULT '',
+      default_trial_days INTEGER NOT NULL DEFAULT 14,
+      updated_at         TIMESTAMPTZ DEFAULT NOW(),
+      CONSTRAINT platform_settings_singleton CHECK (id = 1)
+    )
+  `);
+  await query(`INSERT INTO platform_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
 
   // ── Seed akun SUPERADMIN platform (role terpisah dari owner/karyawan) ──
   // Hanya bila env SUPERADMIN_PIN di-set (hindari PIN default ter-hardcode).

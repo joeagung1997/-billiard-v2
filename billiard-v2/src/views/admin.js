@@ -2193,8 +2193,8 @@ export function warungListPage({ warungs = [], token, req, user = {}, platform =
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   const createdSlug = (req && req.query && req.query.created) ? String(req.query.created).slice(0, 60) : '';
-  const buatBtnHeader = '<a href="' + base + '/baru?tk=' + token + '" class="own-header-btn own-header-btn-primary"><i class="ti ti-plus"></i> Buat Warung</a>';
-  const buatBtnTopbar = '<a href="' + base + '/baru?tk=' + token + '" class="btn-primary"><i class="ti ti-plus" style="font-size:14px"></i> Buat Warung</a>';
+  const buatBtnHeader = '<a href="' + base + '/baru" class="own-header-btn own-header-btn-primary"><i class="ti ti-plus"></i> Buat Warung</a>';
+  const buatBtnTopbar = '<a href="' + base + '/baru" class="btn-primary"><i class="ti ti-plus" style="font-size:14px"></i> Buat Warung</a>';
 
   const total  = warungs.length;
   const nAktif = warungs.filter((w) => w.status_langganan === 'aktif').length;
@@ -2241,7 +2241,7 @@ export function warungListPage({ warungs = [], token, req, user = {}, platform =
     const dot    = w.logo_url
       ? '<img class="wl-logo" src="' + esc(w.logo_url) + '" alt="" loading="lazy">'
       : '<span class="wl-dot" style="background:' + warna + '"></span>';
-    const href = base + '/warung/' + w.id + '?tk=' + token;
+    const href = base + '/warung/' + w.id;
     const data = ' data-s="' + esc((w.nama + ' ' + w.slug).toLowerCase()) + '" data-status="' + esc(w.status_langganan) + '"';
     const desk = '<a class="wl-row" href="' + href + '"' + data + '>'
       + '<div class="wl-cell-nm">' + dot + '<div><div class="wl-nm">' + nama + ' <span class="wl-id">#' + w.id + '</span></div>'
@@ -2334,7 +2334,7 @@ export function warungListPage({ warungs = [], token, req, user = {}, platform =
 
     + '<div class="layout">'
     + (platform
-        ? buildPlatformSidebar({ token, activePage: 'daftar-warung', displayName: user.displayName })
+        ? buildPlatformSidebar({ activePage: 'daftar-warung', displayName: user.displayName })
         : buildSidebar(token, 'daftar-warung', user))
 
     + '<div class="main-wrap">'
@@ -2425,13 +2425,13 @@ export function warungListPage({ warungs = [], token, req, user = {}, platform =
 
 // ── Form Buat Warung (SUPER-ADMIN) ───────────────────────────────────
 // values: sticky input saat re-render karena error. error: pesan (string).
-export function warungCreatePage({ token, user = {}, values = {}, error = '', base = '/admin/warung', platform = false } = {}) {
+export function warungCreatePage({ token = '', user = {}, values = {}, error = '', base = '/admin/warung', platform = false } = {}) {
   const esc = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const v = (k) => esc(values[k] || '');
   const status = values.status === 'aktif' ? 'aktif' : 'trial';
   const trialDays = values.trialDays ? esc(values.trialDays) : '14';
-  const action = base + '/baru?tk=' + token;
+  const action = base + '/baru';
 
   // Modul opsional terpilih (sticky saat re-render). Default form baru = semua aktif.
   const selMods = values.modul != null
@@ -2523,7 +2523,7 @@ export function warungCreatePage({ token, user = {}, values = {}, error = '', ba
 
     + '<div class="layout">'
     + (platform
-        ? buildPlatformSidebar({ token, activePage: 'buat-warung', displayName: user.displayName })
+        ? buildPlatformSidebar({ activePage: 'buat-warung', displayName: user.displayName })
         : buildSidebar(token, 'daftar-warung', user))
 
     + '<div class="main-wrap">'
@@ -2560,7 +2560,6 @@ export function warungCreatePage({ token, user = {}, values = {}, error = '', ba
     + '<div class="wc-intro">Warung baru langsung bisa diakses di <b>/w/&lt;slug&gt;</b> dan login pakai akun owner yang kamu buat di bawah.</div>'
     + errHtml
     + '<form method="POST" action="' + action + '" autocomplete="off">'
-    + '<input type="hidden" name="tk" value="' + token + '">'
 
     + '<div class="wc-sec" style="margin-top:0;padding-top:0;border-top:none"><i class="ti ti-building-store"></i> Data Warung</div>'
 
@@ -2653,7 +2652,7 @@ export function warungCreatePage({ token, user = {}, values = {}, error = '', ba
     + '</div>'
 
     + '<div class="wc-actions">'
-    + '<a href="' + base + '?tk=' + token + '" class="wc-cancel">Batal</a>'
+    + '<a href="' + base + '" class="wc-cancel">Batal</a>'
     + '<button type="submit" class="wc-btn"><i class="ti ti-check"></i> Buat Warung</button>'
     + '</div>'
 
@@ -2693,7 +2692,7 @@ export function warungCreatePage({ token, user = {}, values = {}, error = '', ba
     +   'if(!s){if(slugStatus)slugStatus.style.display="none";return;}'
     +   'if(!/^[a-z0-9-]{2,40}$/.test(s)){showSlug("bad","ti-alert-circle","Format tidak valid");return;}'
     +   'showSlug("neutral","ti-loader-2","Cek ketersediaan...");'
-    +   'fetch("' + base + '/cek-slug?tk=' + token + '&slug="+encodeURIComponent(s)).then(function(r){return r.json();}).then(function(d){'
+    +   'fetch("' + base + '/cek-slug?slug="+encodeURIComponent(s)).then(function(r){return r.json();}).then(function(d){'
     +     'if(d.reason==="format"){showSlug("bad","ti-alert-circle","Format tidak valid");}'
     +     'else if(d.available){showSlug("ok","ti-circle-check","Tersedia");}'
     +     'else{showSlug("bad","ti-circle-x","Slug sudah dipakai");}'
@@ -2718,7 +2717,7 @@ export function warungCreatePage({ token, user = {}, values = {}, error = '', ba
     +   'if(f.size>2*1024*1024){ls.className="wc-logo-status bad";ls.textContent="Ukuran maksimal 2 MB.";lf.value="";return;}'
     +   'ls.className="wc-logo-status";ls.textContent="Mengunggah...";'
     +   'var rd=new FileReader();rd.onload=function(ev){'
-    +     'fetch("' + base + '/upload-logo?tk=' + token + '",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:ev.target.result})}).then(function(r){return r.json();}).then(function(d){'
+    +     'fetch("' + base + '/upload-logo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:ev.target.result})}).then(function(r){return r.json();}).then(function(d){'
     +       'if(d.url){logoSet(d.url);ls.className="wc-logo-status ok";ls.textContent="Logo terunggah.";}'
     +       'else if(d.skipped){ls.className="wc-logo-status";ls.textContent="Cloudinary belum aktif — warung tetap bisa dibuat tanpa logo.";}'
     +       'else{ls.className="wc-logo-status bad";ls.textContent=d.error||"Gagal mengunggah.";}'
@@ -2787,7 +2786,7 @@ const PF_CSS = ''
   + '.pf-lg-row{display:grid;grid-template-columns:1fr auto auto 24px;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid #edf0ea;text-decoration:none;color:inherit}'
   + '.pf-lg-row:last-child{border-bottom:none}.pf-lg-row:hover{background:#f6faf5}';
 
-function platformShell({ token, active = '', title = 'Platform', displayName = '', bodyHtml = '' }) {
+function platformShell({ active = '', title = 'Platform', displayName = '', bodyHtml = '' }) {
   const now = new Date().toLocaleString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
   return '<!DOCTYPE html><html lang="id"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
@@ -2799,7 +2798,7 @@ function platformShell({ token, active = '', title = 'Platform', displayName = '
     + '<style>' + PF_CSS + '</style>'
     + '</head><body>'
     + '<div class="layout">'
-    + buildPlatformSidebar({ token, activePage: active, displayName })
+    + buildPlatformSidebar({ activePage: active, displayName })
     + '<div class="main-wrap">'
     + '<header class="topbar">'
     + buildOwnerMenuToggle()
@@ -2813,7 +2812,7 @@ function platformShell({ token, active = '', title = 'Platform', displayName = '
 }
 
 // ── Dashboard Platform ───────────────────────────────────────────────
-export function platformDashboardPage({ token, displayName = '', warungs = [], log = [] } = {}) {
+export function platformDashboardPage({ displayName = '', warungs = [], log = [] } = {}) {
   const total  = warungs.length;
   const nAktif = warungs.filter((w) => w.status_langganan === 'aktif').length;
   const nTrial = warungs.filter((w) => w.status_langganan === 'trial').length;
@@ -2836,11 +2835,11 @@ export function platformDashboardPage({ token, displayName = '', warungs = [], l
     + '<div class="pf-grid">' + card('Total Warung', total) + card('Aktif', nAktif) + card('Trial', nTrial) + card('Nonaktif', nOff) + '</div>'
     + '<div class="pf-grid" style="grid-template-columns:1fr">' + card('Trial berakhir ≤ 7 hari (perlu perhatian)', soon, soon > 0 ? 'warn' : '') + '</div>'
     + '<div class="pf-sec">Aktivitas Terakhir</div>' + logHtml;
-  return platformShell({ token, active: 'dashboard', title: 'Dashboard', displayName, bodyHtml: body });
+  return platformShell({ active: 'dashboard', title: 'Dashboard', displayName, bodyHtml: body });
 }
 
 // ── Detail & Kelola Warung ───────────────────────────────────────────
-export function warungDetailPage({ token, displayName = '', warung, owner = null, newPin = null, hostBase = '' } = {}) {
+export function warungDetailPage({ displayName = '', warung, owner = null, newPin = null, hostBase = '' } = {}) {
   const w = warung;
   const isWarpat = Number(w.id) === 1;
   const base = '/platform';
@@ -2885,19 +2884,19 @@ export function warungDetailPage({ token, displayName = '', warung, owner = null
           + kv('WA pemilik', pEsc(w.owner_wa || '—')) + kv('Email pemilik', pEsc(w.owner_email || '—'))
           + (waNum ? '<a class="pf-btn" style="margin-top:10px;background:#16a34a;box-shadow:none" target="_blank" rel="noopener" href="https://wa.me/' + waNum + '"><i class="ti ti-brand-whatsapp"></i> Hubungi via WA</a>' : '')
         : '<div class="pf-note">Warung ini belum punya akun owner.</div>')
-    + '<form method="POST" action="' + base + '/warung/' + w.id + '/reset-pin?tk=' + token + '" onsubmit="return confirm(\'Yakin reset PIN milik ' + pEsc(owner ? owner.username : 'owner') + '? PIN baru dibuat & ditampilkan sekali.\')" style="margin-top:12px">'
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/reset-pin" onsubmit="return confirm(\'Yakin reset PIN milik ' + pEsc(owner ? owner.username : 'owner') + '? PIN baru dibuat & ditampilkan sekali.\')" style="margin-top:12px">'
     + '<button class="pf-btn danger" type="submit"><i class="ti ti-key"></i> Reset PIN Owner</button></form>'
     + '<div class="pf-note">PIN baru 6 digit. PIN lama tidak pernah ditampilkan.</div></div>';
 
   const statusForm = '<div class="pf-box"><h3><i class="ti ti-receipt-2"></i> Status & Langganan</h3>' + warpatNote
-    + '<form method="POST" action="' + base + '/warung/' + w.id + '/langganan?tk=' + token + '" onsubmit="return pfStatusConfirm(this)">'
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/langganan" onsubmit="return pfStatusConfirm(this)">'
     + '<div class="pf-field"><label>Status</label><select name="status" id="pf-status"' + dis + '>' + sOpt('aktif', 'Aktif') + sOpt('trial', 'Trial') + sOpt('nonaktif', 'Nonaktif') + '</select></div>'
     + '<div class="pf-field" id="pf-trial-wrap"><label>Trial berakhir</label><input type="date" name="trialDate" value="' + trialDate + '"' + dis + '></div>'
     + '<div class="pf-note">Nonaktif TIDAK menghapus data — warung hanya tak bisa diakses owner sampai diaktifkan lagi.</div>'
     + '<button class="pf-btn" type="submit" style="margin-top:10px"' + dis + '><i class="ti ti-check"></i> Simpan Status</button></form></div>';
 
   const modForm = '<div class="pf-box"><h3><i class="ti ti-apps"></i> Modul Aktif</h3>'
-    + '<form method="POST" action="' + base + '/warung/' + w.id + '/modul?tk=' + token + '">'
+    + '<form method="POST" action="' + base + '/warung/' + w.id + '/modul">'
     + '<div class="pf-mods">' + OPT.map(([v, l]) => '<label class="pf-mod"><input type="checkbox" name="modul" value="' + v + '"' + (mods.includes(v) ? ' checked' : '') + dis + '> ' + l + '</label>').join('') + '</div>'
     + '<button class="pf-btn" type="submit"' + dis + '><i class="ti ti-check"></i> Simpan Modul</button>'
     + '<div class="pf-note">Inti (Keuangan, Member, Kategori, Stok, Supplier) selalu aktif. Mematikan modul TIDAK menghapus datanya — dinyalakan lagi, data lama kembali.</div></form></div>';
@@ -2910,17 +2909,17 @@ export function warungDetailPage({ token, displayName = '', warung, owner = null
     + 'function pfStatusConfirm(f){if(f.status&&f.status.value==="nonaktif")return confirm("Nonaktifkan warung ini? Owner tak bisa akses sampai diaktifkan lagi (data TIDAK dihapus).");return true;}'
     + '</script>';
 
-  const body = '<a href="' + base + '/warung?tk=' + token + '" class="pf-back"><i class="ti ti-arrow-left"></i> Daftar Warung</a>'
+  const body = '<a href="' + base + '/warung" class="pf-back"><i class="ti ti-arrow-left"></i> Daftar Warung</a>'
     + '<div class="dash-topbar"><div><div class="page-title">' + pEsc(w.nama) + ' <span style="color:#9aa898;font-size:14px">#' + w.id + '</span></div>'
     + '<div class="page-sub">Kelola akun, langganan & modul. Data operasional warung tidak dapat dibuka dari sini.</div></div></div>'
     + trialBanner + pinBanner
     + '<div class="pf-cols">' + infoBox + ownerBox + statusForm + modForm + '</div>'
     + js;
-  return platformShell({ token, active: 'daftar-warung', title: 'Detail Warung', displayName, bodyHtml: body });
+  return platformShell({ active: 'daftar-warung', title: 'Detail Warung', displayName, bodyHtml: body });
 }
 
 // ── Kelola Langganan (warung at-risk) ────────────────────────────────
-export function langgananPage({ token, displayName = '', warungs = [] } = {}) {
+export function langgananPage({ displayName = '', warungs = [] } = {}) {
   const base = '/platform';
   const fmt = (d) => { if (!d) return '—'; try { return formatTanggalPendek(d); } catch (_) { return '—'; } };
   const atRisk = warungs.filter((w) => {
@@ -2934,7 +2933,7 @@ export function langgananPage({ token, displayName = '', warungs = [] } = {}) {
     let tag;
     if (w.status_langganan === 'nonaktif') tag = '<span class="wl-badge wl-off">Nonaktif</span>';
     else { const lewat = new Date(w.trial_selesai).getTime() < Date.now(); tag = '<span class="wl-badge ' + (lewat ? 'wl-off' : 'wl-trial') + '">' + (lewat ? 'Trial lewat' : 'Trial ≤7h') + '</span>'; }
-    return '<a class="pf-lg-row" href="' + base + '/warung/' + w.id + '?tk=' + token + '">'
+    return '<a class="pf-lg-row" href="' + base + '/warung/' + w.id + '">'
       + '<div><div class="wl-nm">' + pEsc(w.nama) + '</div><div class="wl-slug">/w/' + pEsc(w.slug) + ' · ' + (w.owner_wa ? pEsc(w.owner_wa) : 'tanpa WA') + '</div></div>'
       + tag + '<div class="wl-meta">' + fmt(w.trial_selesai) + '</div><i class="ti ti-chevron-right wl-chev"></i></a>';
   }).join('');
@@ -2942,5 +2941,92 @@ export function langgananPage({ token, displayName = '', warungs = [] } = {}) {
     + '<div class="page-sub">Warung nonaktif atau trial habis/≤7 hari — perlu ditindaklanjuti (tagih / aktifkan / nonaktifkan).</div></div></div>'
     + (atRisk.length ? '<div class="table-card">' + rows + '</div>'
                      : '<div class="empty-state"><i class="ti ti-circle-check"></i>Semua warung aman — tak ada yang perlu perhatian.</div>');
-  return platformShell({ token, active: 'langganan', title: 'Kelola Langganan', displayName, bodyHtml: body });
+  return platformShell({ active: 'langganan', title: 'Kelola Langganan', displayName, bodyHtml: body });
+}
+
+// ── Pengaturan Platform (global, superadmin) ─────────────────────────
+export function pengaturanPlatformPage({ displayName = '', settings = {}, saved = false, error = '' } = {}) {
+  const s = settings || {};
+  const val = (k) => pEsc(s[k] == null ? '' : String(s[k]));
+  const banner = error
+    ? '<div class="pf-warn-box" style="background:#fdeceb;border-color:#f6cfcc;color:#dc2626"><i class="ti ti-alert-triangle"></i> ' + pEsc(error) + '</div>'
+    : (saved ? '<div class="pf-warn-box" style="background:#e8f6ec;border-color:#bfe6cb;color:#15803d"><i class="ti ti-circle-check"></i> Pengaturan tersimpan.</div>' : '');
+  const body = '<div class="dash-topbar"><div><div class="page-title">Pengaturan Platform</div>'
+    + '<div class="page-sub">Konfigurasi global SaaS — berlaku lintas warung, bukan per-warung.</div></div></div>'
+    + banner
+    + '<div class="pf-box" style="max-width:620px">'
+    + '<form method="POST" action="/platform/pengaturan">'
+    + '<div class="pf-field"><label>Nama Produk / Brand</label><input type="text" name="productName" value="' + val('product_name') + '" maxlength="80" placeholder="mis. Warpat SaaS" required></div>'
+    + '<div class="pf-field"><label>Base URL Platform</label><input type="text" name="baseUrl" value="' + val('base_url') + '" placeholder="https://www.warpatjombang.com">'
+    + '<div class="pf-note">Dipakai membangun URL lengkap warung di halaman Detail Warung (kanonik). Kosongkan untuk memakai domain yang sedang diakses.</div></div>'
+    + '<div class="pf-field"><label>Kontak Support — WA</label><input type="text" name="supportWa" value="' + val('support_wa') + '" placeholder="6281..."></div>'
+    + '<div class="pf-field"><label>Kontak Support — Email</label><input type="email" name="supportEmail" value="' + val('support_email') + '" placeholder="support@email.com"></div>'
+    + '<div class="pf-field"><label>Default Durasi Trial (hari)</label><input type="number" name="defaultTrialDays" value="' + (val('default_trial_days') || '14') + '" min="1" max="365" required>'
+    + '<div class="pf-note">Nilai awal yang otomatis terisi di form Buat Warung.</div></div>'
+    + '<button class="pf-btn" type="submit" style="margin-top:6px"><i class="ti ti-check"></i> Simpan Pengaturan</button>'
+    + '</form></div>';
+  return platformShell({ active: 'pengaturan', title: 'Pengaturan', displayName, bodyHtml: body });
+}
+
+// ── Kelola Admin (akun superadmin platform) ──────────────────────────
+export function kelolaAdminPage({ displayName = '', admins = [], currentUser = '', newPin = null, error = '', notice = '', formValues = {} } = {}) {
+  const fv = (k) => pEsc(formValues[k] == null ? '' : String(formValues[k]));
+  const copyBtn = (v) => '<button type="button" class="pf-copy" data-copy="' + pEsc(v) + '" title="Salin"><i class="ti ti-copy"></i></button>';
+  const pinBanner = newPin
+    ? '<div class="pf-pin-new"><i class="ti ti-key"></i> PIN baru untuk <b>' + pEsc(newPin.username) + '</b>: <b>' + pEsc(newPin.pin) + '</b> — catat & beri tahu (tampil sekali). ' + copyBtn(newPin.pin) + '</div>'
+    : '';
+  const errB = error ? '<div class="pf-warn-box" style="background:#fdeceb;border-color:#f6cfcc;color:#dc2626"><i class="ti ti-alert-triangle"></i> ' + pEsc(error) + '</div>' : '';
+  const okB  = notice ? '<div class="pf-warn-box" style="background:#e8f6ec;border-color:#bfe6cb;color:#15803d"><i class="ti ti-circle-check"></i> ' + pEsc(notice) + '</div>' : '';
+  const nActive = admins.filter((a) => a.active).length;
+
+  const rows = admins.map((a) => {
+    const isSelf  = String(a.username).toLowerCase() === String(currentUser).toLowerCase();
+    const badge   = a.active ? '<span class="wl-badge wl-ok"><i class="ti ti-circle-check"></i> Aktif</span>' : '<span class="wl-badge wl-off"><i class="ti ti-ban"></i> Nonaktif</span>';
+    const last    = a.last_login ? formatTanggalWIB(a.last_login) : 'Belum pernah';
+    const u       = encodeURIComponent(a.username);
+    const canDeact = a.active && nActive > 1; // jangan nonaktifkan superadmin aktif terakhir
+    const toggle = a.active
+      ? (canDeact
+          ? '<form method="POST" action="/platform/admin/' + u + '/aktif" onsubmit="return confirm(\'Nonaktifkan ' + pEsc(a.username) + '?' + (isSelf ? ' Ini akun Anda — Anda akan otomatis keluar.' : '') + '\')" style="display:inline"><input type="hidden" name="active" value="0"><button class="pf-mini danger" type="submit"><i class="ti ti-ban"></i> Nonaktifkan</button></form>'
+          : '<span class="pf-note" style="margin:0;align-self:center">aktif terakhir</span>')
+      : '<form method="POST" action="/platform/admin/' + u + '/aktif" style="display:inline"><input type="hidden" name="active" value="1"><button class="pf-mini" type="submit"><i class="ti ti-check"></i> Aktifkan</button></form>';
+    const resetBtn = '<form method="POST" action="/platform/admin/' + u + '/reset-pin" onsubmit="return confirm(\'Reset PIN ' + pEsc(a.username) + '? PIN baru tampil sekali.\')" style="display:inline"><button class="pf-mini" type="submit"><i class="ti ti-key"></i> Reset PIN</button></form>';
+    return '<div class="pf-adm-row">'
+      + '<div><div class="wl-nm">' + pEsc(a.display_name || a.username) + (isSelf ? ' <span class="wl-id">(Anda)</span>' : '') + '</div><div class="wl-slug">' + pEsc(a.username) + '</div></div>'
+      + '<div>' + badge + '</div>'
+      + '<div class="wl-meta">' + last + '</div>'
+      + '<div class="pf-adm-act">' + resetBtn + toggle + '</div>'
+      + '</div>';
+  }).join('');
+
+  const addForm = '<div class="pf-box" style="max-width:620px"><h3><i class="ti ti-user-plus"></i> Tambah Admin Baru</h3>'
+    + '<form method="POST" action="/platform/admin/baru" autocomplete="off">'
+    + '<div class="pf-field"><label>Username</label><input type="text" name="username" value="' + fv('username') + '" placeholder="mis. partner1" required></div>'
+    + '<div class="pf-field"><label>Nama Tampilan</label><input type="text" name="displayName" value="' + fv('displayName') + '" placeholder="mis. Partner Satu"></div>'
+    + '<div class="pf-field"><label>PIN (4–8 digit)</label><input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="••••" required></div>'
+    + '<div class="pf-field"><label>Ulangi PIN</label><input type="password" name="pinConfirm" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="••••" required></div>'
+    + '<button class="pf-btn" type="submit"><i class="ti ti-plus"></i> Tambah Admin</button>'
+    + '<div class="pf-note">Akun superadmin tidak terikat warung mana pun. PIN tak pernah ditampilkan lagi setelah dibuat — gunakan Reset bila lupa.</div>'
+    + '</form></div>';
+
+  const css = '<style>'
+    + '.wl-ok{background:#e8f6ec;color:#15803d;border:1px solid #bfe6cb}'
+    + '.wl-id{color:#9aa898;font-size:11px;font-weight:500}'
+    + '.pf-adm-row{display:grid;grid-template-columns:1fr 110px 150px auto;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid #edf0ea}'
+    + '.pf-adm-row:last-child{border-bottom:none}'
+    + '.pf-adm-act{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}'
+    + '.pf-mini{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border:1px solid #cfe0f6;border-radius:8px;background:#eef4fb;color:#2563eb;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}'
+    + '.pf-mini:hover{background:#dfeafa}.pf-mini.danger{background:#fdeceb;color:#dc2626;border-color:#f6cfcc}.pf-mini.danger:hover{background:#fbdcd9}'
+    + '@media(max-width:600px){.pf-adm-row{grid-template-columns:1fr auto}.pf-adm-row .wl-meta{display:none}.pf-adm-act{grid-column:1/-1;justify-content:flex-start}}'
+    + '</style>';
+
+  const body = '<div class="dash-topbar"><div><div class="page-title">Kelola Admin</div>'
+    + '<div class="page-sub">Akun superadmin platform — terpisah dari akun owner/karyawan warung.</div></div></div>'
+    + errB + okB + pinBanner
+    + addForm
+    + '<div class="pf-sec">Daftar Admin (' + admins.length + ')</div>'
+    + '<div class="table-card">' + (rows || '<div class="empty-state"><i class="ti ti-user-shield"></i>Belum ada admin.</div>') + '</div>'
+    + css
+    + '<script>document.querySelectorAll(".pf-copy").forEach(function(b){b.addEventListener("click",function(){navigator.clipboard.writeText(b.getAttribute("data-copy")||"").then(function(){var i=b.querySelector("i");if(i){var c=i.className;i.className="ti ti-check";setTimeout(function(){i.className=c;},1200);}});});});</script>';
+  return platformShell({ active: 'kelola-admin', title: 'Kelola Admin', displayName, bodyHtml: body });
 }
