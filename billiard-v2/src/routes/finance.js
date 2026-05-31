@@ -204,10 +204,13 @@ router.use("/planning", requireModule("planning"));
 // Keuangan) dan '/transaksi' (Riwayat Transaksi — same data, beda view).
 async function buildDashboardData(req, res) {
   const role = res.locals.financeRole;
-  const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList, mejaList] = await Promise.all([
+  const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList, mejaAktif, occupiedIds] = await Promise.all([
     readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
-    readAdminAccounts(), readKaryawan(true), readMejaAktif(),
+    readAdminAccounts(), readKaryawan(true), readMejaAktif(), readMejaOpenSesiIds(),
   ]);
+  // Sembunyikan meja yang sedang dipakai (punya sesi terbuka) dari dropdown
+  // Catat Transaksi cepat — biar tidak dobel dgn pencatatan via Sesi Meja.
+  const mejaList = mejaAktif.filter((m) => !occupiedIds.includes(m.id));
 
   // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
   // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
@@ -1395,8 +1398,8 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
 // auto-calc di Catat Transaksi. Tidak menyentuh alur/skema transaksi.
 router.get("/meja", requireOwner, async (req, res) => {
   try {
-    const mejaList = await readMejas();
-    res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || ""));
+    const [mejaList, occupiedIds] = await Promise.all([readMejas(), readMejaOpenSesiIds()]);
+    res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || "", occupiedIds));
   } catch (err) {
     console.error("[FINANCE] meja GET error:", err.message);
     res.status(500).send("Kesalahan server.");

@@ -3358,7 +3358,7 @@ export function financeKategoriPage(role = "owner", kategoriList = [], showErr =
 // Setup-only: kelola daftar meja, tarif (siang/malam/open), & status. Daftar
 // ini jadi sumber pilihan "Nomor Meja" + tarif auto-calc di Catat Transaksi.
 // TIDAK ada input durasi/uang di sini (tetap satu pintu di Catat Transaksi).
-export function financeMejaPage(role = "owner", mejaList = [], showErr = false, msg = "") {
+export function financeMejaPage(role = "owner", mejaList = [], showErr = false, msg = "", occupiedMejaIds = []) {
   const toastMsg = msg === "added"   ? "Meja berhasil ditambah"
     : msg === "updated" ? "Perubahan meja tersimpan"
     : msg === "deleted" ? "Meja dihapus"
@@ -3368,13 +3368,16 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ? "<div class=\"mj-alert\"><i class=\"ti ti-alert-circle\"></i> Gagal: nama meja wajib diisi &amp; belum dipakai meja lain.</div>"
     : "";
 
-  // Statistik dari status nyata (okupansi 'Dipakai' belum dilacak → di-skip).
-  const cKosong = mejaList.filter((m) => m.status === "aktif").length;
-  const cMaint  = mejaList.filter((m) => m.status === "maintenance").length;
-  const cOff    = mejaList.filter((m) => m.status === "nonaktif").length;
+  // 'Dipakai' diturunkan dari sesi terbuka (occupiedMejaIds). Kosong = aktif &
+  // tidak punya sesi terbuka.
+  const isOccupied = (m) => m.status === "aktif" && occupiedMejaIds.includes(m.id);
+  const cDipakai = mejaList.filter(isOccupied).length;
+  const cKosong  = mejaList.filter((m) => m.status === "aktif").length - cDipakai;
+  const cMaint   = mejaList.filter((m) => m.status === "maintenance").length;
 
   const STMETA = {
     aktif:       { label: "Kosong",      cls: "ok",  icon: "ti-circle-number-8" },
+    dipakai:     { label: "Dipakai",     cls: "use", icon: "ti-player-play" },
     maintenance: { label: "Maintenance", cls: "mt",  icon: "ti-tools" },
     nonaktif:    { label: "Nonaktif",    cls: "off", icon: "ti-circle-off" },
   };
@@ -3402,7 +3405,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ? "<div class=\"mjc-empty\"><i class=\"ti ti-inbox\"></i><div><strong>Belum ada meja</strong><br>"
       + "<span>Klik <b>Tambah Meja</b> untuk menambah. Meja <b>Kosong</b> (aktif) otomatis jadi pilihan di Catat Transaksi.</span></div></div>"
     : mejaList.map((m) => {
-        const st = STMETA[m.status] || STMETA.aktif;
+        const eff = isOccupied(m) ? "dipakai" : m.status;
+        const st = STMETA[eff] || STMETA.aktif;
         const payload = escHtml(JSON.stringify({ id: m.id, nama: m.nama, ts: m.tarif_siang, tm: m.tarif_malam, to: m.tarif_open }));
         let primary, quick = "", menu;
         if (m.status === "aktif") {
@@ -3444,6 +3448,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mjc-stat.ok .mjc-stat-v,.mjc-stat.ok .mjc-stat-k i{color:var(--green)}",
     ".mjc-stat.mt .mjc-stat-v,.mjc-stat.mt .mjc-stat-k i{color:#b3791b}",
     ".mjc-stat.off .mjc-stat-v{color:var(--txt3)}",
+    ".mjc-stat.use .mjc-stat-v,.mjc-stat.use .mjc-stat-k i{color:#2660a4}",
     ".mjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}",
     ".mjc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .15s,border-color .15s}",
     ".mjc-card:hover{border-color:var(--border2);box-shadow:0 4px 14px rgba(26,35,24,.07)}",
@@ -3455,11 +3460,13 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ".mjc-ic.ok{background:linear-gradient(135deg,#3a7d2c,#2d6624);color:#fff;box-shadow:0 2px 6px rgba(45,102,36,.25)}",
     ".mjc-ic.mt{background:#fef3c7;color:#b3791b}",
     ".mjc-ic.off{background:var(--surface2);color:var(--txt3)}",
+    ".mjc-ic.use{background:linear-gradient(135deg,#3b82f6,#2660a4);color:#fff;box-shadow:0 2px 6px rgba(38,96,164,.25)}",
     ".mjc-name{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".mjc-badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0;letter-spacing:.02em;text-transform:uppercase}",
     ".mjc-badge.ok{background:var(--green-bg);color:var(--green-dark)}",
     ".mjc-badge.mt{background:#fef3c7;color:#b3791b}",
     ".mjc-badge.off{background:var(--surface2);color:var(--txt3);border:1px solid var(--border)}",
+    ".mjc-badge.use{background:rgba(38,96,164,.1);color:#2660a4}",
     ".mjc-tarif{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}",
     ".mjc-trow{display:flex;align-items:center;justify-content:space-between;font-size:13px}",
     ".mjc-tk{display:inline-flex;align-items:center;gap:7px;color:var(--txt3)}",
@@ -3540,12 +3547,12 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     +   "<button type=\"button\" class=\"btn-primary mjc-add\" onclick=\"openAddMeja()\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
     + "</div>"
     + errHtml
-    + "<div class=\"mj-note\"><i class=\"ti ti-info-circle\"></i> <span>Halaman ini hanya untuk <b>setup &amp; status</b> — input jam main &amp; uang tetap lewat <b>Catat Transaksi</b>. Meja <b>Maintenance</b> / <b>Nonaktif</b> otomatis tidak muncul sebagai pilihan transaksi. Tarif <b>Open</b> hanya acuan (harga tetap diisi manual saat durasi Open).</span></div>"
+    + "<div class=\"mj-note\"><i class=\"ti ti-info-circle\"></i> <span>Halaman ini hanya untuk <b>setup &amp; status</b> — input jam main &amp; uang tetap lewat <b>Catat Transaksi</b> / <b>Sesi Meja</b>. Meja <b>Dipakai</b> (ada sesi berjalan), <b>Maintenance</b>, atau <b>Nonaktif</b> otomatis tidak muncul sebagai pilihan transaksi cepat. Tarif <b>Open</b> hanya acuan (diisi manual saat durasi Open).</span></div>"
     + "<div class=\"mjc-stats\">"
     +   "<div class=\"mjc-stat\"><div class=\"mjc-stat-k\"><i class=\"ti ti-layout-grid\"></i> Total meja</div><div class=\"mjc-stat-v\">" + mejaList.length + "</div></div>"
     +   "<div class=\"mjc-stat ok\"><div class=\"mjc-stat-k\"><i class=\"ti ti-circle-check\"></i> Kosong</div><div class=\"mjc-stat-v\">" + cKosong + "</div></div>"
+    +   "<div class=\"mjc-stat use\"><div class=\"mjc-stat-k\"><i class=\"ti ti-player-play\"></i> Dipakai</div><div class=\"mjc-stat-v\">" + cDipakai + "</div></div>"
     +   "<div class=\"mjc-stat mt\"><div class=\"mjc-stat-k\"><i class=\"ti ti-tools\"></i> Maintenance</div><div class=\"mjc-stat-v\">" + cMaint + "</div></div>"
-    +   "<div class=\"mjc-stat off\"><div class=\"mjc-stat-k\"><i class=\"ti ti-circle-off\"></i> Nonaktif</div><div class=\"mjc-stat-v\">" + cOff + "</div></div>"
     + "</div>"
     + "<div class=\"mjc-grid\">" + cards + "</div>"
     + "</div></div></div>"
