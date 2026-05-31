@@ -21,7 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja,
   createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds,
-  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah,
+  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -1471,7 +1471,7 @@ router.get("/sesi", async (req, res) => {
     const sesiList = await Promise.all(sesiOpen.map(async (s) => {
       const items = await readSesiItems(s.id);
       const meja  = mejaAktif.find((m) => m.id === s.meja_id);
-      return { ...s, items, tarif_open: meja?.tarif_open || 0 };
+      return { ...s, items, tarif_open: meja?.tarif_open || 0, tarif_siang: meja?.tarif_siang || 0, tarif_malam: meja?.tarif_malam || 0 };
     }));
     const occupied = new Set(sesiOpen.map((s) => s.meja_id));
     const mejaTersedia = mejaAktif.filter((m) => !occupied.has(m.id));
@@ -1517,6 +1517,31 @@ router.post("/sesi/buka", async (req, res) => {
     res.redirect("/operasional/sesi?msg=dibuka");
   } catch (err) {
     console.error("[FINANCE] sesi buka error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
+// Ubah durasi sewa saat sesi berjalan (mis. customer perpanjang 2->3 jam).
+router.post("/sesi/sewa/durasi", async (req, res) => {
+  const sesiId = parseInt(req.body.sesi_id) || 0;
+  const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
+  const waktu  = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : (res.locals.financeShift || "siang");
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    const meja = (await readMejas()).find((m) => m.id === sesi.meja_id);
+    const mJam = durasi.match(/^(\d+) Jam$/);
+    let jumlah = 0, ket = "Sewa " + (sesi.nama_meja || "Meja");
+    if (mJam && meja) {
+      const jam  = parseInt(mJam[1]);
+      const rate = waktu === "malam" ? (meja.tarif_malam || 0) : (meja.tarif_siang || 0);
+      jumlah = jam * rate;
+      ket    = "Sewa " + (sesi.nama_meja || "Meja") + " · " + durasi;
+    }
+    await updateSesiSewa(sesiId, jumlah, ket);
+    res.redirect("/operasional/sesi?msg=durasi");
+  } catch (err) {
+    console.error("[FINANCE] sesi sewa durasi error:", err.message);
     res.redirect("/operasional/sesi?msg=err");
   }
 });

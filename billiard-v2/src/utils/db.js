@@ -780,6 +780,18 @@ export const setSesiItemJumlah = async (id, jumlah, warungId = currentWarungId()
   );
 };
 
+// Update item SEWA sebuah sesi (jumlah + keterangan) — utk "Ubah durasi" saat
+// sesi masih jalan. Hanya item sewa yg belum dibayar (lunas=FALSE).
+export const updateSesiSewa = async (sesiId, jumlah, keterangan, warungId = currentWarungId()) => {
+  const res = await query(
+    `UPDATE transaksi SET jumlah = $1, keterangan = $2
+      WHERE sesi_id = $3 AND warung_id = $4 AND kategori = 'Sewa Meja'
+        AND lunas = FALSE AND voided_at IS NULL`,
+    [Math.max(0, parseInt(jumlah) || 0), String(keterangan || "").slice(0, 200), sesiId, warungId]
+  );
+  return res.rowCount > 0;
+};
+
 export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_toppings (item_id, nama, harga, warung_id) VALUES ($1, $2, $3, $4)",
