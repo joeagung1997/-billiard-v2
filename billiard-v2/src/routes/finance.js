@@ -20,6 +20,8 @@ import {
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja,
+  createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds,
+  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -45,7 +47,7 @@ import { addFixedCost, updateFixedCost, deleteFixedCost, writeSetting } from "..
 import {
   financeDashboard,
   financeLoginPage,
-  financeKategoriPage, financeMenuPage, financeMejaPage,
+  financeKategoriPage, financeMenuPage, financeMejaPage, financeSesiPage,
   financeAnalisisPage,
 } from "../views/finance.js";
 import { planningPage } from "../views/planning.js";
@@ -1451,6 +1453,116 @@ router.get("/meja/hapus", requireOwner, async (req, res) => {
     }
   }
   res.redirect("/operasional/meja?msg=deleted");
+});
+
+// ── Sesi / Bill Meja (owner & karyawan) ──────────────────────────
+// Sesi = wadah transaksi 1 meja (sewa + F&B). Tiap item = baris transaksi
+// ber-sesi_id + lunas (engine saldo lama otomatis: belum bayar = tak nambah).
+const _genTrxId = () => Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+
+router.get("/sesi", async (req, res) => {
+  try {
+    const [sesiOpen, mejaAktif, menuItems] = await Promise.all([
+      readSesiOpen(), readMejaAktif(), readMenuItems(),
+    ]);
+    const sesiList = await Promise.all(sesiOpen.map(async (s) => {
+      const items = await readSesiItems(s.id);
+      const meja  = mejaAktif.find((m) => m.id === s.meja_id);
+      return { ...s, items, tarif_open: meja?.tarif_open || 0 };
+    }));
+    const occupied = new Set(sesiOpen.map((s) => s.meja_id));
+    const mejaTersedia = mejaAktif.filter((m) => !occupied.has(m.id));
+    res.send(financeSesiPage({
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      sesiList, mejaTersedia, menuItems,
+      msg: req.query.msg || "",
+    }));
+  } catch (err) {
+    console.error("[FINANCE] sesi GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+router.post("/sesi/buka", async (req, res) => {
+  const mejaId = parseInt(req.body.meja_id) || 0;
+  if (!mejaId) return res.redirect("/operasional/sesi?msg=err");
+  try {
+    const meja = (await readMejas()).find((m) => m.id === mejaId);
+    if (!meja || meja.status !== "aktif") return res.redirect("/operasional/sesi?msg=err");
+    if (await hasOpenSesi(mejaId)) return res.redirect("/operasional/sesi?msg=sudah_ada");
+    const sesiId = await createSesi(mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "");
+    // Item sewa otomatis (harga 0 = pending, diisi saat tutup). lunas:false.
+    await appendTransaksi({
+      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+      jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
+      kategori: "Sewa Meja", keterangan: "Sewa " + meja.nama,
+      jumlah: 0, lunas: false, bayar: "",
+      dicatatOleh: res.locals.financeUser || "", sesiId,
+    });
+    res.redirect("/operasional/sesi?msg=dibuka");
+  } catch (err) {
+    console.error("[FINANCE] sesi buka error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
+router.post("/sesi/item/tambah", async (req, res) => {
+  const sesiId = parseInt(req.body.sesi_id) || 0;
+  const nama   = (req.body.nama ?? "").trim().slice(0, 100);
+  const qty    = Math.max(1, parseInt(req.body.qty) || 1);
+  const harga  = parseInt((req.body.harga ?? "").replace(/\D/g, "")) || 0;
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open" || !nama || harga <= 0) return res.redirect("/operasional/sesi?msg=err");
+    await appendTransaksi({
+      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+      jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
+      kategori: "Kopi / Snack", keterangan: (qty > 1 ? qty + "× " : "") + nama,
+      jumlah: harga * qty, lunas: false, bayar: "",
+      dicatatOleh: res.locals.financeUser || "", sesiId,
+    });
+    res.redirect("/operasional/sesi?msg=ditambah");
+  } catch (err) {
+    console.error("[FINANCE] sesi item tambah error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
+router.post("/sesi/item/bayar", async (req, res) => {
+  const id    = (req.body.id ?? "").trim();
+  const bayar = ["cash", "qris"].includes(req.body.bayar) ? req.body.bayar : "cash";
+  try { if (id) await setSesiItemPaid(id, bayar); } catch (err) {
+    console.error("[FINANCE] sesi item bayar error:", err.message);
+  }
+  res.redirect("/operasional/sesi?msg=dibayar");
+});
+
+router.post("/sesi/tutup", async (req, res) => {
+  const sesiId    = parseInt(req.body.sesi_id) || 0;
+  const sewaHarga = parseInt((req.body.sewa_harga ?? "").replace(/\D/g, "")) || 0;
+  const sewaBayar = ["cash", "qris"].includes(req.body.sewa_bayar) ? req.body.sewa_bayar : "cash";
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    const items = await readSesiItems(sesiId);
+    // Semua F&B wajib lunas dulu.
+    if (items.some((t) => t.kategori !== "Sewa Meja" && t.lunas === false)) {
+      return res.redirect("/operasional/sesi?msg=belum_lunas");
+    }
+    // Finalisasi item sewa: isi harga (manual utk Open) + tandai lunas.
+    const sewa = items.find((t) => t.kategori === "Sewa Meja");
+    if (sewa && sewa.lunas === false) {
+      if (sewaHarga <= 0) return res.redirect("/operasional/sesi?msg=sewa_kosong");
+      await setSesiItemJumlah(sewa.id, sewaHarga);
+      await setSesiItemPaid(sewa.id, sewaBayar);
+    }
+    await closeSesi(sesiId);
+    res.redirect("/operasional/sesi?msg=ditutup");
+  } catch (err) {
+    console.error("[FINANCE] sesi tutup error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
 });
 
 // ── /operasional/catatan-fitur — note pengembangan aplikasi (owner only) ───

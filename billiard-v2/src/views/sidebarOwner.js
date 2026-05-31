@@ -73,6 +73,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       label: "Billiard",
       module: "billiard",
       items: [
+        { id: "sesi",           href: "/operasional/sesi",    icon: "ti ti-receipt",    label: "Sesi Meja (Bill)", tk: true },
         { id: "meja",           href: "/operasional/meja",    icon: "ti ti-grid-dots",  label: "Manajemen Meja", tk: true },
         { id: "riwayat-sewa",   href: soon("Riwayat Sewa"),   icon: "ti ti-receipt-2",  label: "Riwayat Sewa",   soon: true },
         { id: "turnamen",       href: soon("Turnamen"),       icon: "ti ti-trophy",     label: "Turnamen",       soon: true },

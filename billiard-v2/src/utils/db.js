@@ -759,6 +759,27 @@ export const closeSesi = async (id, warungId = currentWarungId()) => {
   return res.rowCount > 0;
 };
 
+// Tandai item sesi lunas + set metode bayar. Dibatasi ke item sesi (sesi_id NOT
+// NULL) & belum void — tidak bisa mengenai transaksi biasa (aman by design).
+export const setSesiItemPaid = async (id, bayar = "cash", warungId = currentWarungId()) => {
+  const b = ["cash", "qris"].includes(bayar) ? bayar : "cash";
+  const res = await query(
+    `UPDATE transaksi SET lunas = TRUE, lunas_at = NOW(), bayar = $1
+      WHERE id = $2 AND warung_id = $3 AND sesi_id IS NOT NULL AND voided_at IS NULL`,
+    [b, id, warungId]
+  );
+  return res.rowCount > 0;
+};
+
+// Set nominal item sesi (utk harga sewa Open yg diisi manual saat tutup sesi).
+export const setSesiItemJumlah = async (id, jumlah, warungId = currentWarungId()) => {
+  await query(
+    `UPDATE transaksi SET jumlah = $1
+      WHERE id = $2 AND warung_id = $3 AND sesi_id IS NOT NULL AND voided_at IS NULL`,
+    [Math.max(0, parseInt(jumlah) || 0), id, warungId]
+  );
+};
+
 export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_toppings (item_id, nama, harga, warung_id) VALUES ($1, $2, $3, $4)",
