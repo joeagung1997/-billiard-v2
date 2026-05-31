@@ -1494,13 +1494,24 @@ router.post("/sesi/buka", async (req, res) => {
     const meja = (await readMejas()).find((m) => m.id === mejaId);
     if (!meja || meja.status !== "aktif") return res.redirect("/operasional/sesi?msg=err");
     if (await hasOpenSesi(mejaId)) return res.redirect("/operasional/sesi?msg=sudah_ada");
+    // Durasi: 'Open' -> harga 0 (diisi saat tutup). 'N Jam' -> harga = jam x tarif
+    // (ikut siang/malam), tetap bisa diedit saat tutup. lunas:false (dibayar di akhir).
+    const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
+    const waktu  = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : (res.locals.financeShift || "siang");
+    const mJam   = durasi.match(/^(\d+) Jam$/);
+    let sewaJumlah = 0, sewaKet = "Sewa " + meja.nama;
+    if (mJam) {
+      const jam  = parseInt(mJam[1]);
+      const rate = waktu === "malam" ? (meja.tarif_malam || 0) : (meja.tarif_siang || 0);
+      sewaJumlah = jam * rate;
+      sewaKet    = "Sewa " + meja.nama + " · " + durasi;
+    }
     const sesiId = await createSesi(mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "");
-    // Item sewa otomatis (harga 0 = pending, diisi saat tutup). lunas:false.
     await appendTransaksi({
       id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
-      jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
-      kategori: "Sewa Meja", keterangan: "Sewa " + meja.nama,
-      jumlah: 0, lunas: false, bayar: "",
+      jenis: "pemasukan", waktu,
+      kategori: "Sewa Meja", keterangan: sewaKet,
+      jumlah: sewaJumlah, lunas: false, bayar: "",
       dicatatOleh: res.locals.financeUser || "", sesiId,
     });
     res.redirect("/operasional/sesi?msg=dibuka");

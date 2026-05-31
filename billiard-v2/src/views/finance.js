@@ -3617,7 +3617,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     const amt    = (isSewa && (t.jumlah || 0) === 0) ? "<span class=\"sesi-amt-pending\">Belum diisi</span>" : rp(t.jumlah || 0);
     let right;
     if (paid) right = "<span class=\"sesi-paid\"><i class=\"ti ti-circle-check\"></i> Lunas" + (t.bayar ? " · " + (t.bayar === "qris" ? "QRIS" : "Cash") : "") + "</span>";
-    else if (isSewa) right = "<span class=\"sesi-pending\"><i class=\"ti ti-clock-hour-4\"></i> diisi saat tutup</span>";
+    else if (isSewa) right = "<span class=\"sesi-pending\"><i class=\"ti ti-clock-hour-4\"></i> dibayar saat tutup</span>";
     else right = payForm(sesiId, t.id);
     return "<div class=\"sesi-item" + (paid ? " paid" : "") + "\">"
       + "<div class=\"sesi-item-l\"><span class=\"sesi-item-name" + (isSewa ? " sewa" : "") + "\">" + (isSewa ? "<i class=\"ti ti-circle-number-8\"></i> " : "") + name + "</span>"
@@ -3636,7 +3636,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         const sewa    = items.find((t) => t.kategori === KAT_SEWA_SESI);
         const sewaUnpaid = !!(sewa && sewa.lunas === false);
         const fnbUnpaid  = items.filter((t) => t.kategori !== KAT_SEWA_SESI && t.lunas === false).length;
-        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid, fnbUnpaid, to: s.tarif_open || 0 }));
+        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid, fnbUnpaid, to: s.tarif_open || 0, sewaJumlah: sewa ? (sewa.jumlah || 0) : 0 }));
         return "<div class=\"sesi-card\">"
           + "<div class=\"sesi-card-hd\">"
           +   "<div class=\"sesi-meja\"><div class=\"sesi-ic\"><i class=\"ti ti-circle-number-8\"></i></div>"
@@ -3650,7 +3650,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +   "<div class=\"sesi-tot ok\"><span>Dibayar</span><b>" + rp(dibayar) + "</b></div>"
           +   "<div class=\"sesi-tot sisa\"><span>Sisa</span><b>" + rp(sisa) + "</b></div>"
           + "</div>"
-          + (sewaUnpaid ? "<div class=\"sesi-hint\"><i class=\"ti ti-info-circle\"></i> Harga sewa diisi saat tutup sesi.</div>" : "")
+          + (sewaUnpaid ? "<div class=\"sesi-hint\"><i class=\"ti ti-info-circle\"></i> Sewa dibayar saat tutup sesi" + (sewa && (sewa.jumlah || 0) > 0 ? " (harga " + rp(sewa.jumlah) + ", bisa diedit)" : " (harga diisi nanti)") + ".</div>" : "")
           + "<div class=\"sesi-foot\">"
           +   "<button type=\"button\" class=\"sesi-btn\" onclick='openAddFnb(" + s.id + ")'><i class=\"ti ti-plus\"></i> Tambah F&amp;B</button>"
           +   "<button type=\"button\" class=\"sesi-btn close\" onclick='openTutup(" + closePayload + ")'><i class=\"ti ti-receipt\"></i> Tutup Sesi</button>"
@@ -3735,14 +3735,16 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
-    + "function openBuka(){_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function openBuka(){bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function bukaCalc(){var ms=document.getElementById('bukaMeja');if(!ms)return;var o=ms.options[ms.selectedIndex];var dur=document.getElementById('bukaDurasi').value;var w=document.getElementById('bukaWaktu').value;var el=document.getElementById('bukaPrice');if(!o||!o.value){el.textContent='—';return;}if(dur==='Open'){el.textContent='Diisi saat tutup';return;}var m=dur.match(/^(\\d+) Jam$/);if(!m){el.textContent='—';return;}var jam=parseInt(m[1]);var rate=w==='malam'?(parseInt(o.dataset.tm||'0')||0):(parseInt(o.dataset.ts||'0')||0);el.textContent='Rp '+(jam*rate).toLocaleString('id-ID');}"
     + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;document.getElementById('fnbSel').selectedIndex=0;document.getElementById('fnbQty').value=1;fnbCalc();_show('mFnb');}function closeFnb(){_hide('mFnb');}"
     + "function fnbCalc(){var s=document.getElementById('fnbSel');var o=s.options[s.selectedIndex];var h=o?parseInt(o.dataset.harga||'0')||0:0;var q=parseInt(document.getElementById('fnbQty').value)||1;document.getElementById('fnbTotal').textContent='Rp '+(h*q).toLocaleString('id-ID');}"
     + "function openTutup(d){document.getElementById('tutSesiId').value=d.id;document.getElementById('tutMeja').textContent=d.meja||'meja';"
     + "var warn=document.getElementById('tutWarn');var sewaWrap=document.getElementById('tutSewaWrap');"
     + "if(d.fnbUnpaid>0){warn.style.display='';warn.textContent='Masih ada '+d.fnbUnpaid+' item F&B belum dibayar. Bayar dulu sebelum tutup.';document.getElementById('tutSubmit').disabled=true;}else{warn.style.display='none';document.getElementById('tutSubmit').disabled=false;}"
     + "sewaWrap.style.display=d.sewaUnpaid?'':'none';"
-    + "var hint=document.getElementById('tutOpenHint');if(hint)hint.textContent=d.to>0?('Acuan tarif Open: Rp '+Number(d.to).toLocaleString('id-ID')+'/jam'):'';"
+    + "var sewaInp=document.querySelector('#tutSewaWrap input[name=sewa_harga]');if(sewaInp)sewaInp.value=(d.sewaJumlah>0)?Number(d.sewaJumlah).toLocaleString('id-ID'):'';"
+    + "var hint=document.getElementById('tutOpenHint');if(hint)hint.textContent=((d.sewaJumlah||0)===0&&d.to>0)?('Acuan tarif Open: Rp '+Number(d.to).toLocaleString('id-ID')+'/jam'):'';"
     + "_show('mTutup');}function closeTutup(){_hide('mTutup');}"
     + "document.querySelectorAll('[data-time]').forEach(function(el){var v=el.getAttribute('data-time');if(!v)return;var d=new Date(v);if(!isNaN(d))el.textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});});"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
@@ -3775,8 +3777,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +   (mejaTersedia.length === 0
         ? "<div class=\"mj-form\"><div class=\"sesi-empty\" style=\"border:none;padding:8px\"><i class=\"ti ti-mood-empty\"></i><div>Semua meja aktif sedang dipakai (punya sesi terbuka), atau belum ada meja. Atur di <b>Manajemen Meja</b>.</div></div></div>"
         : "<form method=\"post\" action=\"/operasional/sesi/buka\" class=\"mj-form\">"
-          + "<div class=\"mj-fg\"><label>Pilih Meja</label><select name=\"meja_id\" required><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select></div>"
-          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Item <b>sewa</b> dibuat otomatis (harga diisi saat tutup). Tambah F&amp;B setelah sesi terbuka.</span></div>"
+          + "<div class=\"mj-fg\"><label>Pilih Meja</label><select name=\"meja_id\" id=\"bukaMeja\" onchange=\"bukaCalc()\" required><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select></div>"
+          + "<div class=\"mj-row2\"><div class=\"mj-fg\"><label>Durasi</label><select name=\"durasi\" id=\"bukaDurasi\" onchange=\"bukaCalc()\">"
+          +   "<option value=\"Open\">Open (harga saat tutup)</option>"
+          +   "<option value=\"1 Jam\">1 Jam</option><option value=\"2 Jam\">2 Jam</option><option value=\"3 Jam\">3 Jam</option><option value=\"4 Jam\">4 Jam</option><option value=\"5 Jam\">5 Jam</option><option value=\"6 Jam\">6 Jam</option><option value=\"7 Jam\">7 Jam</option><option value=\"8 Jam\">8 Jam</option></select></div>"
+          + "<div class=\"mj-fg\"><label>Sesi</label><select name=\"waktu\" id=\"bukaWaktu\" onchange=\"bukaCalc()\"><option value=\"siang\">Siang</option><option value=\"malam\">Malam</option></select></div></div>"
+          + "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Harga sewa</span><b id=\"bukaPrice\">—</b></div></div>"
+          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Durasi <b>fixed</b> → harga sewa otomatis dari tarif meja (bisa diedit saat tutup). <b>Open</b> → diisi saat tutup. Sewa dibayar saat tutup; F&amp;B ditambah setelah sesi terbuka.</span></div>"
           + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button></form>")
     + "</div></div>"
     // Modal Tambah F&B
@@ -3797,7 +3804,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "<input type=\"hidden\" name=\"sesi_id\" id=\"tutSesiId\">"
     +     "<div class=\"sesi-alert\" id=\"tutWarn\" style=\"display:none\"></div>"
     +     "<div id=\"tutSewaWrap\">"
-    +       "<div class=\"mj-fg\"><label>Harga Sewa Meja (diisi manual)</label><div class=\"mj-pfx\"><span>Rp</span><input type=\"text\" name=\"sewa_harga\" inputmode=\"numeric\" placeholder=\"0\" oninput=\"mjFmt(this)\"></div>"
+    +       "<div class=\"mj-fg\"><label>Harga Sewa Meja <span style=\"font-weight:400;color:var(--txt3)\">(durasi fixed terisi otomatis · bisa diedit)</span></label><div class=\"mj-pfx\"><span>Rp</span><input type=\"text\" name=\"sewa_harga\" inputmode=\"numeric\" placeholder=\"0\" oninput=\"mjFmt(this)\"></div>"
     +         "<div id=\"tutOpenHint\" style=\"font-size:11px;color:#2660a4;margin-top:4px\"></div></div>"
     +       "<div class=\"mj-fg\"><label>Metode Bayar Sewa</label><div class=\"mj-tog\">"
     +         "<label><input type=\"radio\" name=\"sewa_bayar\" value=\"cash\" checked><span><i class=\"ti ti-cash\"></i> Cash</span></label>"
