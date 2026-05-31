@@ -61,7 +61,10 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 
 /* ── Layout ──────────────────────────────────────────────────────── */
 .layout    { display:flex; min-height:100vh; width:100%; }
-.main-wrap { flex:1; margin-left:240px; min-height:100vh; display:flex; flex-direction:column; }
+/* min-width:0 wajib: tanpa ini flex item nggak bisa menyusut di bawah min-content
+   anaknya (mis. canvas chart / grid kartu), bikin .page melebar > viewport &
+   ke-clip overflow-x:hidden → kartu "ketutupan" di mobile. */
+.main-wrap { flex:1; min-width:0; margin-left:240px; min-height:100vh; display:flex; flex-direction:column; }
 
 /* ════════════════════════════════════════════════════════════════
    SIDEBAR — Revamp v2 (logo glow, nav groups, submenu guide, profile)

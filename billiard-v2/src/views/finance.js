@@ -1180,6 +1180,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-kas-card{padding:12px 14px!important;gap:10px!important}"
     +   ".fin-kas-lbl{font-size:13px}"
     +   ".fin-kas-sub{font-size:10.5px}"
+        // Input Rp + tombol Simpan: bikin baris kanan full-width & input fleksibel
+        // (default width:170px fixed → overflow di layar ≤340px).
+    +   ".fin-kas-right{width:100%}"
+    +   ".fin-kas-inp{flex:1;min-width:0;width:auto}"
         // Cash / QRIS row pertahankan 2 col tapi padding compact
     +   ".fin-bayar-card{grid-template-columns:1fr 1fr!important;gap:0!important}"
     +   ".fin-bayar-item{padding:14px 14px!important}"
@@ -1203,7 +1207,14 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   ".fin-cs-lbl{font-size:9px}"
     + "}",
     // ── Chart cards redesign ─────────────────────────────────────
-    ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden}",
+    // Constrain CONTAINER (bukan canvas): canvas Chart.js responsive ngikut lebar
+    // parent-nya. Beri min-width:0 ke row + card biar grid track bisa menyusut <
+    // intrinsic canvas → Chart.js otomatis sizing canvas pas, tanpa overflow.
+    // CATATAN: JANGAN set max-width pada <canvas> langsung — memicu resize-loop
+    // Chart.js (canvas tumbuh→resize→menyusut→…) yang nyaturasi main-thread.
+    ".fin-charts-row{min-width:0}",
+    ".fin-charts-row>*{min-width:0}",
+    ".fin-chart-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;min-width:0}",
     ".fin-chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 8px;gap:12px;flex-wrap:wrap}",
     ".fin-chart-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}",
     ".fin-chart-sub{font-size:11px;color:var(--txt3);font-family:var(--ff-mono);margin-top:2px}",
