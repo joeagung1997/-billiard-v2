@@ -55,7 +55,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
         { id: "transaksi", href: "/operasional/transaksi", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
         { id: "analisis",  href: "/operasional/analisis",  icon: "ti ti-target",    label: "Analisis Target",    tk: true },
         { id: "planning",  href: "/operasional/planning",  icon: "ti ti-route",     label: "Planning & Roadmap", tk: true, module: "planning" },
-        { id: "meja",      href: "/operasional/meja",      icon: "ti ti-layout-grid", label: "Manajemen Meja",   tk: true },
         { id: "kategori",  href: "/operasional/kategori",  icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
@@ -74,7 +73,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
       label: "Billiard",
       module: "billiard",
       items: [
-        { id: "manajemen-meja", href: soon("Manajemen Meja"), icon: "ti ti-grid-dots",  label: "Manajemen Meja", soon: true },
+        { id: "meja",           href: "/operasional/meja",    icon: "ti ti-grid-dots",  label: "Manajemen Meja", tk: true },
         { id: "riwayat-sewa",   href: soon("Riwayat Sewa"),   icon: "ti ti-receipt-2",  label: "Riwayat Sewa",   soon: true },
         { id: "turnamen",       href: soon("Turnamen"),       icon: "ti ti-trophy",     label: "Turnamen",       soon: true },
       ],
