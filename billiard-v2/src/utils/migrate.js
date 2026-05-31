@@ -34,6 +34,12 @@ const DEFAULT_KATEGORI = [
   { nama: "Tukar Uang",              jenis: "pengeluaran" },
 ];
 
+// Meja default — samakan dgn dropdown hardcoded lama (Meja 1–8) + tarif lama
+// (10rb siang / 12rb malam). Open = acuan, default samakan tarif siang.
+const DEFAULT_MEJA = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({
+  nama: "Meja " + n, tarif_siang: 10000, tarif_malam: 12000, tarif_open: 10000,
+}));
+
 // Kategori pengeluaran lama yang digantikan oleh struktur baru
 const OLD_PENGELUARAN = [
   "Listrik / Air", "Gaji / Honor", "Stok / Perlengkapan",
@@ -144,6 +150,24 @@ export const runMigrations = async () => {
       id    SERIAL PRIMARY KEY,
       nama  TEXT NOT NULL UNIQUE,
       harga INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
+  // ── Tabel meja billiard (master + tarif per meja) ───────────
+  // Setup-only: sumber pilihan "Nomor Meja" + tarif auto-calc di Catat Transaksi.
+  // status: 'aktif' (kosong/tersedia) | 'maintenance' | 'nonaktif'. Hanya 'aktif'
+  // yg muncul sbg pilihan transaksi. UNIQUE komposit (warung_id, nama) dibuat di
+  // bagian multi-tenant (idempotent), jadi nama TIDAK UNIQUE global di sini.
+  await query(`
+    CREATE TABLE IF NOT EXISTS meja (
+      id          SERIAL PRIMARY KEY,
+      nama        TEXT    NOT NULL,
+      tarif_siang INTEGER NOT NULL DEFAULT 0,
+      tarif_malam INTEGER NOT NULL DEFAULT 0,
+      tarif_open  INTEGER NOT NULL DEFAULT 0,
+      status      TEXT    NOT NULL DEFAULT 'aktif',
+      urutan      INTEGER NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `);
 
@@ -669,7 +693,7 @@ export const runMigrations = async () => {
   // Nama tabel berasal dari whitelist statis di bawah (bukan input user) →
   // interpolasi string aman dari SQL injection.
   const TENANT_TABLES = [
-    "members", "transaksi", "logs", "kategori", "menu_items", "sub_kategori",
+    "members", "transaksi", "logs", "kategori", "menu_items", "meja", "sub_kategori",
     "menu_toppings", "bahan_baku", "supplier", "stok_movement",
     "bahan_harga_history", "menu_resep", "feature_notes", "notifikasi",
     "karyawan", "sdm_transaksi", "admin_accounts", "setoran", "fixed_costs",
@@ -692,6 +716,21 @@ export const runMigrations = async () => {
 
   await query(`ALTER TABLE menu_items     DROP CONSTRAINT IF EXISTS menu_items_nama_key`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_menu_items_warung_nama ON menu_items (warung_id, nama)`);
+
+  await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_meja_warung_nama ON meja (warung_id, nama)`);
+  // Seed Meja 1–8 utk Warpat (warung 1) — preserve perilaku dropdown+tarif lama.
+  // Dijalankan setelah kolom warung_id + unique index siap. Idempotent.
+  {
+    let _mu = 0;
+    for (const mj of DEFAULT_MEJA) {
+      _mu += 1;
+      await query(
+        `INSERT INTO meja (warung_id, nama, tarif_siang, tarif_malam, tarif_open, urutan)
+         VALUES (1, $1, $2, $3, $4, $5) ON CONFLICT (warung_id, nama) DO NOTHING`,
+        [mj.nama, mj.tarif_siang, mj.tarif_malam, mj.tarif_open, _mu]
+      );
+    }
+  }
 
   await query(`ALTER TABLE bahan_baku     DROP CONSTRAINT IF EXISTS bahan_baku_nama_key`);
   await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_bahan_baku_warung_nama ON bahan_baku (warung_id, nama)`);
@@ -805,6 +844,15 @@ export const seedWarungDefaults = async (warungId) => {
     await query(
       `INSERT INTO menu_items (warung_id, nama, harga, kategori) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
       [warungId, m.nama, m.harga, m.kategori]
+    );
+  }
+  let mejaUrut = 0;
+  for (const mj of DEFAULT_MEJA) {
+    mejaUrut += 1;
+    await query(
+      `INSERT INTO meja (warung_id, nama, tarif_siang, tarif_malam, tarif_open, urutan)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+      [warungId, mj.nama, mj.tarif_siang, mj.tarif_malam, mj.tarif_open, mejaUrut]
     );
   }
 };

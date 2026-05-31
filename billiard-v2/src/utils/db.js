@@ -640,6 +640,54 @@ export const deleteMenuItem = async (id, warungId = currentWarungId()) => {
   await query("DELETE FROM menu_items WHERE id=$1 AND warung_id=$2", [id, warungId]);
 };
 
+// ── Meja billiard (master + tarif per meja) ───────────────────
+// status: 'aktif' (kosong/tersedia) | 'maintenance' | 'nonaktif'.
+// Hanya 'aktif' yg jadi pilihan di Catat Transaksi (readMejaAktif).
+// Semua scoped per warung_id (currentWarungId() dari async-context tenant).
+
+export const readMejas = async (warungId = currentWarungId()) => {
+  const res = await query(
+    "SELECT id, nama, tarif_siang, tarif_malam, tarif_open, status, urutan FROM meja WHERE warung_id = $1 ORDER BY urutan ASC, id ASC",
+    [warungId]
+  );
+  return res.rows;
+};
+
+// Hanya meja status 'aktif' — dipakai sbg pilihan di form Catat Transaksi.
+// Maintenance / nonaktif otomatis tidak muncul.
+export const readMejaAktif = async (warungId = currentWarungId()) => {
+  const res = await query(
+    "SELECT id, nama, tarif_siang, tarif_malam, tarif_open FROM meja WHERE warung_id = $1 AND status = 'aktif' ORDER BY urutan ASC, id ASC",
+    [warungId]
+  );
+  return res.rows;
+};
+
+export const addMeja = async (nama, tarifSiang, tarifMalam, tarifOpen, warungId = currentWarungId()) => {
+  await query(
+    `INSERT INTO meja (nama, tarif_siang, tarif_malam, tarif_open, urutan, warung_id)
+     VALUES ($1, $2, $3, $4, COALESCE((SELECT MAX(urutan) FROM meja WHERE warung_id=$5),0)+1, $5)
+     ON CONFLICT (warung_id, nama) DO NOTHING`,
+    [nama.trim(), tarifSiang, tarifMalam, tarifOpen, warungId]
+  );
+};
+
+export const updateMeja = async (id, nama, tarifSiang, tarifMalam, tarifOpen, warungId = currentWarungId()) => {
+  await query(
+    "UPDATE meja SET nama=$1, tarif_siang=$2, tarif_malam=$3, tarif_open=$4 WHERE id=$5 AND warung_id=$6",
+    [nama.trim(), tarifSiang, tarifMalam, tarifOpen, id, warungId]
+  );
+};
+
+export const setMejaStatus = async (id, status, warungId = currentWarungId()) => {
+  const s = ["aktif", "maintenance", "nonaktif"].includes(status) ? status : "aktif";
+  await query("UPDATE meja SET status=$1 WHERE id=$2 AND warung_id=$3", [s, id, warungId]);
+};
+
+export const deleteMeja = async (id, warungId = currentWarungId()) => {
+  await query("DELETE FROM meja WHERE id=$1 AND warung_id=$2", [id, warungId]);
+};
+
 export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_toppings (item_id, nama, harga, warung_id) VALUES ($1, $2, $3, $4)",

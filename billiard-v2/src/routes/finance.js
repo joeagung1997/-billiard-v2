@@ -19,6 +19,7 @@ import {
   readSubKategori, addSubKategori, deleteSubKategori,
   readMenuItems, readMenuToppings, addMenuItem, updateMenuItem, deleteMenuItem,
   addMenuTopping, deleteMenuTopping,
+  readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -44,7 +45,7 @@ import { addFixedCost, updateFixedCost, deleteFixedCost, writeSetting } from "..
 import {
   financeDashboard,
   financeLoginPage,
-  financeKategoriPage, financeMenuPage,
+  financeKategoriPage, financeMenuPage, financeMejaPage,
   financeAnalisisPage,
 } from "../views/finance.js";
 import { planningPage } from "../views/planning.js";
@@ -193,9 +194,9 @@ router.use("/planning", requireModule("planning"));
 // Keuangan) dan '/transaksi' (Riwayat Transaksi — same data, beda view).
 async function buildDashboardData(req, res) {
   const role = res.locals.financeRole;
-  const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList] = await Promise.all([
+  const [transaksi, kategoriList, subKategoriList, menuItems, toppings, accounts, karyawanList, mejaList] = await Promise.all([
     readTransaksi(), readKategori(), readSubKategori(), readMenuItems(), readMenuToppings(),
-    readAdminAccounts(), readKaryawan(true),
+    readAdminAccounts(), readKaryawan(true), readMejaAktif(),
   ]);
 
   // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
@@ -275,6 +276,7 @@ async function buildDashboardData(req, res) {
     shift:       effectiveShift,
     bulanFilter, jenisFilter, tglDari, tglSampai,
     kategoriList, subKategoriList, menuItems, toppings,
+    mejaList,
     accountsAll:  accounts,
     karyawanAll:  karyawanList,
     analisis,
@@ -1376,6 +1378,71 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
     }
   }
   res.redirect("/operasional/menu");
+});
+
+// ── Manajemen Meja (master meja + tarif) — owner only ────────────
+// Setup-only: CRUD meja + tarif + status. Sumber pilihan Nomor Meja & tarif
+// auto-calc di Catat Transaksi. Tidak menyentuh alur/skema transaksi.
+router.get("/meja", requireOwner, async (req, res) => {
+  try {
+    const mejaList = await readMejas();
+    res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || ""));
+  } catch (err) {
+    console.error("[FINANCE] meja GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+router.post("/meja/tambah", requireOwner, async (req, res) => {
+  const nama = (req.body.nama ?? "").trim().slice(0, 60);
+  const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
+  const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
+  const to = parseInt((req.body.tarif_open  ?? "").replace(/\D/g, "")) || 0;
+  if (!nama) return res.redirect("/operasional/meja?err=1");
+  try {
+    await addMeja(nama, ts, tm, to);
+    res.redirect("/operasional/meja?msg=added");
+  } catch (err) {
+    console.error("[FINANCE] meja tambah error:", err.message);
+    res.redirect("/operasional/meja?err=1");
+  }
+});
+
+router.post("/meja/edit", requireOwner, async (req, res) => {
+  const id = parseInt(req.body.id) || 0;
+  const nama = (req.body.nama ?? "").trim().slice(0, 60);
+  const ts = parseInt((req.body.tarif_siang ?? "").replace(/\D/g, "")) || 0;
+  const tm = parseInt((req.body.tarif_malam ?? "").replace(/\D/g, "")) || 0;
+  const to = parseInt((req.body.tarif_open  ?? "").replace(/\D/g, "")) || 0;
+  if (!id || !nama) return res.redirect("/operasional/meja?err=1");
+  try {
+    await updateMeja(id, nama, ts, tm, to);
+    res.redirect("/operasional/meja?msg=updated");
+  } catch (err) {
+    console.error("[FINANCE] meja edit error:", err.message);
+    res.redirect("/operasional/meja?err=1");
+  }
+});
+
+router.post("/meja/status", requireOwner, async (req, res) => {
+  const id = parseInt(req.body.id) || 0;
+  const status = (req.body.status ?? "").trim();
+  if (id) {
+    try { await setMejaStatus(id, status); } catch (err) {
+      console.error("[FINANCE] meja status error:", err.message);
+    }
+  }
+  res.redirect("/operasional/meja?msg=status");
+});
+
+router.get("/meja/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.query.id) || 0;
+  if (id) {
+    try { await deleteMeja(id); } catch (err) {
+      console.error("[FINANCE] meja hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/meja?msg=deleted");
 });
 
 // ── /operasional/catatan-fitur — note pengembangan aplikasi (owner only) ───

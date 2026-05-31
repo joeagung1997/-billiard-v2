@@ -55,6 +55,7 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
         { id: "transaksi", href: "/operasional/transaksi", icon: "ti ti-receipt",   label: "Transaksi",          tk: true },
         { id: "analisis",  href: "/operasional/analisis",  icon: "ti ti-target",    label: "Analisis Target",    tk: true },
         { id: "planning",  href: "/operasional/planning",  icon: "ti ti-route",     label: "Planning & Roadmap", tk: true, module: "planning" },
+        { id: "meja",      href: "/operasional/meja",      icon: "ti ti-layout-grid", label: "Manajemen Meja",   tk: true },
         { id: "kategori",  href: "/operasional/kategori",  icon: "ti ti-tag",       label: "Kelola Kategori",    tk: true },
       ],
     },
