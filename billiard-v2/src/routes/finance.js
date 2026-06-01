@@ -1549,6 +1549,10 @@ router.post("/sesi/buka", async (req, res) => {
     const mulaiMs = parseInt(req.body.mulai) || 0;
     const startMs = (mulaiMs > 0 && mulaiMs <= nowMs && mulaiMs >= nowMs - 86400000) ? mulaiMs : nowMs;
     const waktu   = wibSiang(startMs) ? "siang" : "malam";
+    // Bayar di depan: tandai sewa (durasi fix) & F&B langsung lunas dgn metode
+    // dipilih. Durasi Open: sewa nominal belum tahu → tetap dibayar saat tutup.
+    const bayarDidepan = req.body.bayar_didepan === "1";
+    const metode       = ["cash", "qris"].includes(req.body.metode) ? req.body.metode : "cash";
     const mJam    = durasi.match(/^(\d+) Jam$/);
     let sewaJumlah = 0, sewaKet = "Sewa " + meja.nama;
     if (mJam) {
@@ -1556,6 +1560,7 @@ router.post("/sesi/buka", async (req, res) => {
       sewaJumlah = tarifSplit(startMs, startMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
       sewaKet    = "Sewa " + meja.nama + " · " + durasi;
     }
+    const sewaPaid = bayarDidepan && sewaJumlah > 0;
     const sesiId = await createSesi(
       mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "",
       "", undefined, startMs === nowMs ? null : new Date(startMs)
@@ -1564,7 +1569,7 @@ router.post("/sesi/buka", async (req, res) => {
       id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
       jenis: "pemasukan", waktu,
       kategori: "Sewa Meja", keterangan: sewaKet,
-      jumlah: sewaJumlah, lunas: false, bayar: "",
+      jumlah: sewaJumlah, lunas: sewaPaid, bayar: sewaPaid ? metode : "",
       dicatatOleh: res.locals.financeUser || "", sesiId,
     });
     // F&B opsional yang diinput sekalian saat buka sesi -> 1 transaksi gabungan
@@ -1586,7 +1591,7 @@ router.post("/sesi/buka", async (req, res) => {
           id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
           jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
           kategori: "Kopi / Snack", keterangan: parts.join(", "),
-          jumlah: total, lunas: false, bayar: "",
+          jumlah: total, lunas: bayarDidepan, bayar: bayarDidepan ? metode : "",
           dicatatOleh: res.locals.financeUser || "", sesiId,
         });
       }

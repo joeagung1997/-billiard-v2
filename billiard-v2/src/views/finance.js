@@ -4080,7 +4080,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
-    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}var bd=document.querySelector('#mBuka input[name=bayar_didepan][value=\"0\"]');if(bd)bd.checked=true;bukaBayarToggle();bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function bukaBayarToggle(){var on=document.querySelector('#mBuka input[name=bayar_didepan]:checked');var w=document.getElementById('bukaMetodeWrap');if(w)w.style.display=(on&&on.value==='1')?'':'none';}"
     + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
     + "function bukaStartMs(){var t=document.getElementById('bukaMulai');if(!t||!t.value)return Date.now();var p=t.value.split(':');var d=new Date();d.setHours(parseInt(p[0])||0,parseInt(p[1])||0,0,0);var ms=d.getTime();if(ms>Date.now())ms-=86400000;return ms;}"
@@ -4160,7 +4161,15 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +     "<button type=\"button\" class=\"fnb-add\" onclick=\"fnbAddRow(this)\"><i class=\"ti ti-plus\"></i> Tambah makanan / minuman</button>"
           +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total F&amp;B</span><b class=\"fnb-total\">Rp 0</b></div></div>"
           +   "</div></div>"
-          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b>: 08.00–18.00 = Siang, sisanya Malam (otomatis; sesi lewat batas dihitung terpisah). <b>Jam mulai</b> bisa dimundurkan kalau telat dicatat — timer &amp; tarif ikut. Durasi <b>Open</b> → harga diisi saat tutup. F&amp;B masuk sebagai <b>belum bayar</b>.</span></div>"
+          + "<div class=\"mj-fg\"><label>Status Bayar</label><div class=\"mj-tog\">"
+          +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"0\" checked onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-clock\"></i> Bayar saat tutup</span></label>"
+          +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"1\" onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-cash\"></i> Bayar di depan</span></label>"
+          + "</div></div>"
+          + "<div class=\"mj-fg\" id=\"bukaMetodeWrap\" style=\"display:none\"><label>Metode bayar</label><div class=\"mj-tog\">"
+          +   "<label><input type=\"radio\" name=\"metode\" value=\"cash\" checked><span><i class=\"ti ti-cash\"></i> Cash</span></label>"
+          +   "<label><input type=\"radio\" name=\"metode\" value=\"qris\"><span><i class=\"ti ti-qrcode\"></i> QRIS</span></label>"
+          + "</div></div>"
+          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b> (08.00–18.00 Siang, sisanya Malam). <b>Jam mulai</b> bisa dimundurkan kalau telat dicatat. <b>Bayar di depan</b> → sewa &amp; F&amp;B langsung lunas (durasi <b>Open</b>: sewa tetap saat tutup). Default: bayar saat tutup, F&amp;B belum bayar.</span></div>"
           + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button></form>")
     + "</div></div>"
     // Modal Ubah Durasi Sewa
