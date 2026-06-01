@@ -3774,9 +3774,17 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     : msg === "err"         ? "Gagal memproses. Coba lagi."
     : "";
 
-  const menuOpts = menuItems.map((m) =>
-    "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + (m.harga || 0) + "\">" + escHtml(m.nama) + " — " + rp(m.harga || 0) + "</option>"
-  ).join("");
+  const _menuOpt = (m) =>
+    "<option value=\"" + escHtml(m.nama) + "\" data-harga=\"" + (m.harga || 0) + "\">" + escHtml(m.nama) + " — " + rp(m.harga || 0) + "</option>";
+  // Item Best Seller (ditandai owner di Kelola Menu) tampil di grup paling atas —
+  // minuman didahulukan — biar yang laris cepat dipilih. Sisanya di grup bawah.
+  const _bsItems = menuItems.filter((m) => m.best_seller)
+    .sort((a, b) => (a.kategori === "minuman" ? 0 : 1) - (b.kategori === "minuman" ? 0 : 1));
+  const _lainItems = menuItems.filter((m) => !m.best_seller);
+  const menuOpts = _bsItems.length
+    ? "<optgroup label=\"⭐ Best Seller\">" + _bsItems.map(_menuOpt).join("") + "</optgroup>"
+      + (_lainItems.length ? "<optgroup label=\"Menu lain\">" + _lainItems.map(_menuOpt).join("") + "</optgroup>" : "")
+    : menuItems.map(_menuOpt).join("");
   const mejaOpts = mejaTersedia.map((m) =>
     "<option value=\"" + m.id + "\" data-ts=\"" + (m.tarif_siang || 0) + "\" data-tm=\"" + (m.tarif_malam || 0) + "\" data-to=\"" + (m.tarif_open || 0) + "\">" + escHtml(m.nama) + "</option>"
   ).join("");
