@@ -4145,6 +4145,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .mip-item{display:block;width:100%;text-align:left;padding:12px 14px;background:transparent;border:none;border-radius:9px;font-family:var(--ff);font-size:13.5px;color:var(--txt);cursor:pointer;transition:background .12s;line-height:1.4}
     .mip-item:hover{background:var(--surface2)}
     .mip-item.active{background:var(--green-bg);color:var(--green-dark);font-weight:600}
+    .buka-prog{height:5px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-bottom:9px}
+    .buka-prog-fill{height:100%;background:var(--green);border-radius:4px;transition:width .3s ease}
+    .buka-steplbl{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--green-dark);margin:-2px 0 4px}
+    .buka-foot{display:flex;gap:10px;align-items:center;margin-top:4px}
+    .buka-foot .mj-submit{flex:1;width:auto;margin:0}
+    .buka-back{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:0 16px;height:42px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--txt2);font-size:13px;font-weight:700;font-family:var(--ff);cursor:pointer;transition:.15s}
+    .buka-back:hover{border-color:var(--accent);color:var(--accent)}
     .mj-modal{position:fixed;inset:0;background:rgba(20,30,18,.5);display:none;align-items:center;justify-content:center;z-index:9998;padding:16px}
     .mj-modal.show{display:flex}
     .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);-webkit-overflow-scrolling:touch}
@@ -4202,8 +4209,12 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
-    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}window._bukaMulaiEdited=false;var bd=document.querySelector('#mBuka input[name=bayar_didepan][value=\"1\"]');if(bd)bd.checked=true;bukaBayarToggle();mipSync(document.getElementById('bukaMeja'));mipSync(document.getElementById('bukaDurasi'));bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}window._bukaMulaiEdited=false;var bd=document.querySelector('#mBuka input[name=bayar_didepan][value=\"1\"]');if(bd)bd.checked=true;bukaBayarToggle();mipSync(document.getElementById('bukaMeja'));mipSync(document.getElementById('bukaDurasi'));bukaCalc();bukaGoStep(1);_show('mBuka');}function closeBuka(){_hide('mBuka');}"
     + "function bukaBayarToggle(){var on=document.querySelector('#mBuka input[name=bayar_didepan]:checked');var w=document.getElementById('bukaMetodeWrap');if(w)w.style.display=(on&&on.value==='1')?'':'none';}"
+    // Buka Sesi dibagi 3 langkah (Meja&Durasi / F&B / Pembayaran) biar tak penuh
+    // 1 dialog. Validasi meja saat lanjut dari langkah 1.
+    + "function bukaStep(dir){var cur=window._bukaStep||1;if(dir>0&&cur===1){var mj=document.getElementById('bukaMeja');if(mj&&!mj.value){alert('Pilih meja dulu.');return;}}var n=cur+dir;if(n<1)n=1;if(n>3)n=3;bukaGoStep(n);}"
+    + "function bukaGoStep(n){window._bukaStep=n;[1,2,3].forEach(function(i){var el=document.getElementById('bukaStep'+i);if(el)el.style.display=i===n?'':'none';});var lbls={1:'Langkah 1 dari 3 · Meja & Durasi',2:'Langkah 2 dari 3 · Pesanan F&B',3:'Langkah 3 dari 3 · Pembayaran'};var pf=document.getElementById('bukaProg');if(pf)pf.style.width=(n/3*100)+'%';var sl=document.getElementById('bukaStepLbl');if(sl)sl.textContent=lbls[n];var bk=document.getElementById('bukaBack');if(bk)bk.style.display=n>1?'':'none';var nx=document.getElementById('bukaNext');if(nx)nx.style.display=n<3?'':'none';var sb=document.getElementById('bukaSubmitBtn');if(sb)sb.style.display=n===3?'':'none';if(n===3)bukaTotal();var card=document.querySelector('#mBuka .mj-modal-card');if(card)card.scrollTop=0;}"
     + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
     + "function bukaStartMs(){var t=document.getElementById('bukaMulai');"
@@ -4295,18 +4306,25 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-circle-number-8\"></i> Buka Sesi Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeBuka()\"><i class=\"ti ti-x\"></i></button></div>"
     +   (mejaTersedia.length === 0
         ? "<div class=\"mj-form\"><div class=\"sesi-empty\" style=\"border:none;padding:8px\"><i class=\"ti ti-mood-empty\"></i><div>Semua meja aktif sedang dipakai (punya sesi terbuka), atau belum ada meja. Atur di <b>Manajemen Meja</b>.</div></div></div>"
-        : "<form method=\"post\" action=\"/operasional/sesi/buka\" class=\"mj-form\" onsubmit=\"return bukaSubmit(this)\">"
+        : "<form method=\"post\" action=\"/operasional/sesi/buka\" class=\"mj-form buka-form\" onsubmit=\"return bukaSubmit(this)\">"
+          + "<div class=\"buka-prog\"><div class=\"buka-prog-fill\" id=\"bukaProg\" style=\"width:33.33%\"></div></div>"
+          + "<div class=\"buka-steplbl\" id=\"bukaStepLbl\">Langkah 1 dari 3 · Meja &amp; Durasi</div>"
+          + "<div id=\"bukaStep1\">"
           + "<div class=\"mj-fg\"><label>Pilih Meja</label><div class=\"mip-wrap\"><select name=\"meja_id\" id=\"bukaMeja\" class=\"mip-sel\" onchange=\"bukaCalc()\"><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Meja',true)\"><span class=\"mip-text\">— pilih meja —</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div></div>"
           + "<div class=\"mj-fg\"><label>Durasi</label><div class=\"mip-wrap\"><select name=\"durasi\" id=\"bukaDurasi\" class=\"mip-sel\" onchange=\"bukaCalc()\">"
           +   durasiOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Durasi',true)\"><span class=\"mip-text mip-text-filled\" id=\"bukaDurasiText\">Open (harga saat tutup)</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div></div>"
           + "<div class=\"mj-fg\"><label>Jam mulai <span style=\"font-weight:400;color:var(--txt3)\">(default: sekarang — mundur kalau telat dicatat)</span></label><input type=\"time\" id=\"bukaMulai\" onchange=\"window._bukaMulaiEdited=true;bukaCalc()\"><input type=\"hidden\" name=\"mulai\" id=\"bukaMulaiMs\"></div>"
           + "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Harga sewa</span><b id=\"bukaPrice\">—</b></div></div>"
+          + "</div>"
+          + "<div id=\"bukaStep2\" style=\"display:none\">"
           + "<div class=\"mj-fg\"><label>Pesanan F&amp;B <span style=\"font-weight:400;color:var(--txt3)\">(opsional — makanan / minuman)</span></label>"
           +   "<div class=\"fnb-block\"><input type=\"hidden\" name=\"items\" class=\"fnb-items\">"
           +     "<div class=\"fnb-rows\" id=\"bukaFnbRows\"></div>"
           +     "<button type=\"button\" class=\"fnb-add\" onclick=\"fnbAddRow(this)\"><i class=\"ti ti-plus\"></i> Tambah makanan / minuman</button>"
           +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total F&amp;B</span><b class=\"fnb-total\">Rp 0</b></div></div>"
           +   "</div></div>"
+          + "</div>"
+          + "<div id=\"bukaStep3\" style=\"display:none\">"
           + "<div class=\"sesi-totals\" style=\"border:none;background:var(--green-bg);border-radius:8px\"><div class=\"sesi-tot\"><span>Total (sewa + F&amp;B)</span><b id=\"bukaGrandTotal\" style=\"color:var(--green-dark)\">Rp 0</b><small id=\"bukaTotalHint\" style=\"font-size:10px;color:var(--txt3);font-weight:500\"></small></div></div>"
           + "<div class=\"mj-fg\"><label>Shift <span style=\"font-weight:400;color:var(--txt3)\">(untuk laporan / serah terima — tarif tetap ikut jam main)</span></label><div class=\"mj-tog\">"
           +   "<label><input type=\"radio\" name=\"shift\" value=\"siang\"" + (shift === "malam" ? "" : " checked") + "><span><i class=\"ti ti-sun\"></i> Siang</span></label>"
@@ -4321,7 +4339,12 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +   "<label><input type=\"radio\" name=\"metode\" value=\"qris\"><span><i class=\"ti ti-qrcode\"></i> QRIS</span></label>"
           + "</div></div>"
           + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b> (08.00–18.00 Siang, sisanya Malam). <b>Jam mulai</b> bisa dimundurkan kalau telat dicatat. <b>Bayar sekarang</b> (default) → sewa &amp; F&amp;B langsung lunas (durasi <b>Open</b>: sewa tetap dibayar saat selesai). Pilih <b>Bayar saat selesai</b> kalau mau ditagih nanti.</span></div>"
-          + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button></form>")
+          + "</div>"
+          + "<div class=\"buka-foot\">"
+          +   "<button type=\"button\" class=\"buka-back\" id=\"bukaBack\" onclick=\"bukaStep(-1)\" style=\"display:none\"><i class=\"ti ti-arrow-left\"></i> Kembali</button>"
+          +   "<button type=\"button\" class=\"btn-primary mj-submit\" id=\"bukaNext\" onclick=\"bukaStep(1)\">Lanjut <i class=\"ti ti-arrow-right\"></i></button>"
+          +   "<button type=\"submit\" class=\"btn-primary mj-submit\" id=\"bukaSubmitBtn\" style=\"display:none\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button>"
+          + "</div></form>")
     + "</div></div>"
     // Modal Ubah Durasi Sewa
     + "<div class=\"mj-modal\" id=\"mDurasi\" onclick=\"if(event.target===this)closeDurasi()\"><div class=\"mj-modal-card\">"
