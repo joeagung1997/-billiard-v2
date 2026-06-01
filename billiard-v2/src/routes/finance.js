@@ -1608,6 +1608,11 @@ router.post("/sesi/buka", async (req, res) => {
 router.post("/sesi/sewa/durasi", async (req, res) => {
   const sesiId = parseInt(req.body.sesi_id) || 0;
   const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
+  // Status bayar dipilih saat perpanjang: "1" = sudah dibayar (lunas + metode),
+  // "0" = belum (bayar saat tutup). Kalau field absen -> jangan ubah status lama.
+  const bayarRaw = req.body.bayar_status;
+  const paid     = bayarRaw === "1" ? true : (bayarRaw === "0" ? false : undefined);
+  const metode   = ["cash", "qris"].includes(req.body.metode) ? req.body.metode : "cash";
   try {
     const sesi = await readSesiById(sesiId);
     if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
@@ -1634,7 +1639,7 @@ router.post("/sesi/sewa/durasi", async (req, res) => {
       const rinci = parts.length > 1 ? " (" + parts.map((h) => h + " Jam").join(" + ") + ")" : "";
       ket = "Sewa " + (sesi.nama_meja || "Meja") + " · " + jam + " Jam" + rinci;
     }
-    await updateSesiSewa(sesiId, jumlah, ket);
+    await updateSesiSewa(sesiId, jumlah, ket, paid, metode);
     res.redirect("/operasional/sesi?msg=durasi&d=" + encodeURIComponent(durasi));
   } catch (err) {
     console.error("[FINANCE] sesi sewa durasi error:", err.message);

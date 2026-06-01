@@ -824,15 +824,28 @@ export const setSesiItemJumlah = async (id, jumlah, warungId = currentWarungId()
 
 // Update item SEWA sebuah sesi (jumlah + keterangan) — utk "Ubah durasi" saat
 // sesi masih jalan. Hanya item sewa yg belum dibayar (lunas=FALSE).
-export const updateSesiSewa = async (sesiId, jumlah, keterangan, warungId = currentWarungId()) => {
+export const updateSesiSewa = async (sesiId, jumlah, keterangan, paid = undefined, metode = "cash", warungId = currentWarungId()) => {
   // Update jumlah/keterangan sewa TANPA guard lunas — perpanjang durasi tetap
-  // bisa walau sewa sudah dibayar (Bayar sekarang). Status lunas/bayar dibiarkan:
-  // sewa lunas tetap lunas di nominal baru (tambahan ditagih saat perpanjang).
+  // bisa walau sewa sudah dibayar. Status bayar OPSIONAL:
+  //  paid === undefined -> lunas/bayar dibiarkan apa adanya (mis. undo).
+  //  paid === true       -> tandai lunas + metode (tambahan dibayar saat perpanjang).
+  //  paid === false      -> set belum bayar (ditagih saat tutup).
+  const sets = ["jumlah = $1", "keterangan = $2"];
+  const params = [Math.max(0, parseInt(jumlah) || 0), String(keterangan || "").slice(0, 200)];
+  if (paid === true) {
+    const b = ["cash", "qris"].includes(metode) ? metode : "cash";
+    params.push(b);
+    sets.push("lunas = TRUE", "lunas_at = NOW()", `bayar = $${params.length}`);
+  } else if (paid === false) {
+    sets.push("lunas = FALSE", "lunas_at = NULL", "bayar = ''");
+  }
+  params.push(sesiId);   const sesiIdx   = params.length;
+  params.push(warungId); const warungIdx = params.length;
   const res = await query(
-    `UPDATE transaksi SET jumlah = $1, keterangan = $2
-      WHERE sesi_id = $3 AND warung_id = $4 AND kategori = 'Sewa Meja'
+    `UPDATE transaksi SET ${sets.join(", ")}
+      WHERE sesi_id = $${sesiIdx} AND warung_id = $${warungIdx} AND kategori = 'Sewa Meja'
         AND voided_at IS NULL`,
-    [Math.max(0, parseInt(jumlah) || 0), String(keterangan || "").slice(0, 200), sesiId, warungId]
+    params
   );
   return res.rowCount > 0;
 };
