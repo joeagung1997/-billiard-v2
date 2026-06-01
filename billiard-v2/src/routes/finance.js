@@ -1541,16 +1541,23 @@ router.post("/sesi/buka", async (req, res) => {
     // ikut jam main (Siang 08–18 WIB, sisanya Malam), bisa diedit saat tutup.
     // waktu disimpan utk bucket laporan = jam saat sesi dibuka. lunas:false.
     const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
-    const nowMs  = Date.now();
-    const waktu  = wibSiang(nowMs) ? "siang" : "malam";
-    const mJam   = durasi.match(/^(\d+) Jam$/);
+    // Jam mulai: default sekarang. Bisa dimundurkan (sesi telat dicatat) — dibatasi
+    // tidak di masa depan & maksimal 24 jam ke belakang. Tarif & timer ikut jam ini.
+    const nowMs   = Date.now();
+    const mulaiMs = parseInt(req.body.mulai) || 0;
+    const startMs = (mulaiMs > 0 && mulaiMs <= nowMs && mulaiMs >= nowMs - 86400000) ? mulaiMs : nowMs;
+    const waktu   = wibSiang(startMs) ? "siang" : "malam";
+    const mJam    = durasi.match(/^(\d+) Jam$/);
     let sewaJumlah = 0, sewaKet = "Sewa " + meja.nama;
     if (mJam) {
       const jam  = parseInt(mJam[1]);
-      sewaJumlah = tarifSplit(nowMs, nowMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
+      sewaJumlah = tarifSplit(startMs, startMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
       sewaKet    = "Sewa " + meja.nama + " · " + durasi;
     }
-    const sesiId = await createSesi(mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "");
+    const sesiId = await createSesi(
+      mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "",
+      "", undefined, startMs === nowMs ? null : new Date(startMs)
+    );
     await appendTransaksi({
       id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
       jenis: "pemasukan", waktu,

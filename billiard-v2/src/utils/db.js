@@ -695,13 +695,14 @@ export const deleteMeja = async (id, warungId = currentWarungId()) => {
 // otomatis ngikut aturan `lunas` yg sudah ada (item belum bayar tak nambah saldo).
 // Semua scoped per warung_id.
 
-export const createSesi = async (mejaId, namaMeja, dibukaOleh = "", catatan = "", warungId = currentWarungId()) => {
+export const createSesi = async (mejaId, namaMeja, dibukaOleh = "", catatan = "", warungId = currentWarungId(), openedAt = null) => {
   // uq_sesi_meja_open (partial unique) menjamin maks 1 sesi 'open' per meja →
   // INSERT akan gagal kalau meja sudah punya sesi terbuka (ditangani di route).
+  // openedAt: null → NOW() (default). Diisi utk sesi yang telat dicatat (mundur).
   const res = await query(
-    `INSERT INTO sesi (meja_id, nama_meja, status, dibuka_oleh, catatan, warung_id)
-     VALUES ($1, $2, 'open', $3, $4, $5) RETURNING id`,
-    [mejaId ?? null, (namaMeja ?? "").trim(), (dibukaOleh ?? "").trim(), (catatan ?? "").trim(), warungId]
+    `INSERT INTO sesi (meja_id, nama_meja, status, dibuka_oleh, catatan, warung_id, opened_at)
+     VALUES ($1, $2, 'open', $3, $4, $5, COALESCE($6::timestamptz, NOW())) RETURNING id`,
+    [mejaId ?? null, (namaMeja ?? "").trim(), (dibukaOleh ?? "").trim(), (catatan ?? "").trim(), warungId, openedAt]
   );
   return res.rows[0]?.id ?? null;
 };
