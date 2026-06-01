@@ -3770,6 +3770,24 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
 // baris `transaksi` ber-sesi_id, status bayar per-item (lunas). Saldo otomatis
 // ngikut lunas (engine lama). Harga sewa diisi manual saat tutup.
 const KAT_SEWA_SESI = "Sewa Meja";
+
+// Tarif split (server-side, utk rincian segmen di view) — Siang 08:00–18:00 WIB,
+// sisanya Malam; per detik. Sama persis dgn versi route & client.
+function _siangSecV(aMs, bMs) {
+  const off = 25200;
+  const s = Math.floor(aMs / 1000) + off, e = Math.floor(bMs / 1000) + off;
+  let t = 0;
+  for (let d = Math.floor(s / 86400) * 86400; d < e; d += 86400) {
+    const lo = Math.max(s, d + 28800), hi = Math.min(e, d + 64800);
+    if (hi > lo) t += hi - lo;
+  }
+  return t;
+}
+function _tarifSplitV(aMs, bMs, siang, malam) {
+  if (bMs <= aMs) return 0;
+  const tot = (bMs - aMs) / 1000, ss = _siangSecV(aMs, bMs);
+  return Math.round((ss / 3600) * siang + ((tot - ss) / 3600) * malam);
+}
 export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "", durBaru = "" }) {
   const toastMsg = msg === "dibuka"  ? "Sesi meja dibuka"
     : msg === "ditambah"  ? "Item ditambahkan ke sesi"
@@ -3840,36 +3858,52 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     // Jam selesai (estimasi) = jam buka + total durasi sewa. Hanya utk durasi fixed.
     const endISO   = (rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + rh * 3600000).toISOString() : "";
     const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, start: s.opened_at || "", w: sewa.waktu === "malam" ? "malam" : "siang" }));
+    const startMs  = s.opened_at ? new Date(s.opened_at).getTime() : 0;
     const ketRaw = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
-    // Rincian durasi disimpan di keterangan sbg "(a Jam + b Jam ...)". Ditampilkan
-    // jadi "Awal a Jam · +b Jam · ..."; judul tetap ringkas (tanpa kurung).
+    // Rincian durasi disimpan di keterangan sbg "(a Jam + b Jam ...)" — judul
+    // ditampilkan tanpa kurung; segmen dirinci di kotak terpisah di bawah.
     const _bm   = ketRaw.match(/\(([^)]+)\)\s*$/);
     const _segs = _bm ? _bm[1].split("+").map((x) => parseInt(x)).filter((n) => n > 0) : [];
     const sewaTitle = _bm ? ketRaw.slice(0, _bm.index).trim() : ketRaw;
-    const durLine = (_segs.length > 1)
-      ? _segs.map((h, i) => (i === 0 ? "Awal " + h + " Jam" : "+" + h + " Jam")).join(" · ")
-      : durLabel;
     const paid   = sewa.lunas !== false;
     const method = sewa.bayar === "qris" ? "QRIS" : (sewa.bayar === "cash" ? "Cash" : "");
-    // +1 Jam / Ubah durasi tetap tersedia walau sewa SUDAH dibayar — tambahan jam
-    // ditagih saat itu (sewa lunas tetap lunas di nominal baru). Tag "Bayar saat
-    // tutup" hanya muncul kalau belum dibayar.
-    const plus1 = rh > 0
-      ? "<form method=\"post\" action=\"/operasional/sesi/sewa/durasi\" style=\"display:contents\">"
-        + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + s.id + "\"><input type=\"hidden\" name=\"durasi\" value=\"" + (rh + 1) + " Jam\">"
-        + "<button type=\"submit\" class=\"chip-btn\" title=\"Perpanjang 1 jam — langsung tersimpan\"><i class=\"ti ti-plus\"></i> 1 Jam</button></form>"
-      : "";
-    const sewaRight = plus1
-      + "<button type=\"button\" class=\"chip-btn\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
-      + (paid ? "" : "<span class=\"tag-amber\">Bayar saat tutup</span>");
+    // Subline: tampilkan HANYA tarif yang benar-benar dipakai (siang/malam).
+    const _ss = (rh && startMs) ? _siangSecV(startMs, startMs + rh * 3600000) : 0;
+    const _ms = (rh && startMs) ? ((rh * 3600) - _ss) : 0;
+    const _fmtH = (sec) => { const h = sec / 3600; return Number.isInteger(h) ? String(h) : h.toFixed(1).replace(".", ","); };
+    const _tp = [];
+    if (_ss > 0) _tp.push(_fmtH(_ss) + " jam siang @" + rp(s.tarif_siang || 0));
+    if (_ms > 0) _tp.push(_fmtH(_ms) + " jam malam @" + rp(s.tarif_malam || 0));
+    const tarifLine = _tp.length ? _tp.join(" · ") : ("Tarif ikut jam · Siang " + rp(s.tarif_siang || 0) + " / Malam " + rp(s.tarif_malam || 0));
+    // Kotak rincian per segmen (kalau ada perpanjangan). Harga tiap segmen di-split
+    // siang/malam; segmen terakhir disesuaikan agar total = harga sewa (konsisten).
+    let rincian = "";
+    if (_segs.length > 1 && startMs) {
+      let cum = 0, acc = 0; const rows = [];
+      _segs.forEach((h, i) => {
+        const segS = startMs + cum * 3600000, segE = segS + h * 3600000; cum += h;
+        const segP = _tarifSplitV(segS, segE, s.tarif_siang || 0, s.tarif_malam || 0);
+        rows.push({ i: i, h: h, segS: segS, segE: segE, segP: segP }); acc += segP;
+      });
+      rows[rows.length - 1].segP += (price - acc); // jamin total = jumlah sewa
+      rincian = "<div class=\"sewa-rincian\">" + rows.map(function (r) {
+        const lbl  = r.i === 0 ? ("Awal · " + r.h + " jam") : ("Perpanjangan · +" + r.h + " jam");
+        const baru = (r.i === rows.length - 1) ? " <span class=\"tag-baru\">baru</span>" : "";
+        return "<div class=\"rinci-row\"><span class=\"rinci-lbl\">" + lbl
+          + " <span class=\"rinci-dim\">· <b data-time=\"" + new Date(r.segS).toISOString() + "\">—</b>–<b data-time=\"" + new Date(r.segE).toISOString() + "\">—</b></span>" + baru + "</span>"
+          + "<span class=\"rinci-val\">" + rp(r.segP) + "</span></div>";
+      }).join("") + "</div>";
+    }
+    const sewaRight = "<button type=\"button\" class=\"chip-btn add\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Perpanjang</button>"
+      + (paid ? "" : "<span class=\"tag-calm\">Bayar saat tutup</span>");
     const paidSub = paid
       ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
       : "";
     return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
-      + "<div class=\"line-sub\">" + durLine + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>"
-      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + "</div>" + paidSub + "</div>"
+      + "<div class=\"line-sub\">" + tarifLine + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>" + paidSub + "</div>"
       + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
-      + sewaRight + "</div></div>";
+      + sewaRight + "</div></div>"
+      + rincian;
   };
 
   const sesiData = sesiList.map((s) => {
@@ -4007,6 +4041,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .chip-btn.add{color:var(--green-dark);border-color:#cce8b8;background:var(--green-bg)}
     .chip-btn.add:hover{background:#dcfae6}
     .tag-amber{font-size:10px;font-weight:800;letter-spacing:.03em;background:#fef6e7;color:#b45309;border:1px solid #f6dca6;padding:6px 10px;border-radius:8px;white-space:nowrap}
+    .tag-calm{font-size:10.5px;font-weight:600;background:var(--surface2);color:var(--txt3);border:1px solid var(--border2);padding:6px 10px;border-radius:8px;white-space:nowrap}
+    .sewa-rincian{margin:10px 0 2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:7px}
+    .rinci-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+    .rinci-lbl{color:var(--txt2);font-weight:600;min-width:0}
+    .rinci-dim{color:var(--txt3);font-weight:500}
+    .rinci-val{font-family:var(--ff-mono);font-weight:700;color:var(--txt);flex:0 0 auto}
+    .tag-baru{font-size:8.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--green-bg);color:var(--green-dark);border:1px solid #cce8b8;padding:2px 6px;border-radius:6px;margin-left:5px;vertical-align:1px}
     .line-void{width:34px;height:34px;flex:0 0 34px;border:1px solid var(--border2);background:var(--surface);border-radius:9px;display:grid;place-items:center;cursor:pointer;color:var(--txt3);transition:.15s;font-size:15px}
     .line-void:hover{border-color:#f0a9a9;color:var(--red);background:#fef2f2}
 
