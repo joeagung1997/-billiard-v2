@@ -1677,6 +1677,10 @@ router.post("/sesi/sewa/undo", async (req, res) => {
 
 router.post("/sesi/item/tambah", async (req, res) => {
   const sesiId = parseInt(req.body.sesi_id) || 0;
+  // Status bayar dipilih saat menambah: "1" = langsung lunas (+ metode),
+  // selain itu = belum bayar (ditagih saat tutup) — perilaku default lama.
+  const bayarNow = req.body.bayar_status === "1";
+  const metode   = ["cash", "qris"].includes(req.body.metode) ? req.body.metode : "cash";
   // Keranjang: beberapa item -> 1 transaksi gabungan (keterangan + total).
   let raw = [];
   try { raw = JSON.parse(req.body.items || "[]"); } catch { raw = []; }
@@ -1703,10 +1707,10 @@ router.post("/sesi/item/tambah", async (req, res) => {
       id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
       jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
       kategori: "Kopi / Snack", keterangan: parts.join(", "),
-      jumlah: total, lunas: false, bayar: "",
+      jumlah: total, lunas: bayarNow, bayar: bayarNow ? metode : "",
       dicatatOleh: res.locals.financeUser || "", sesiId,
     });
-    res.redirect("/operasional/sesi?msg=ditambah");
+    res.redirect("/operasional/sesi?msg=" + (bayarNow ? "ditambah_lunas" : "ditambah"));
   } catch (err) {
     console.error("[FINANCE] sesi item tambah error:", err.message);
     res.redirect("/operasional/sesi?msg=err");

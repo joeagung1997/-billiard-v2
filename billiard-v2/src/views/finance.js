@@ -3533,6 +3533,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     /* ── Card ──────────────────────────────────────────── */
     .mjc-card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:transform .16s,border-color .16s,box-shadow .16s;opacity:0;animation:mjcRise .42s ease forwards;box-shadow:0 1px 2px rgba(20,40,28,.04),0 6px 16px -10px rgba(20,40,28,.14)}
     @keyframes mjcRise{to{opacity:1}}
+    @keyframes mjspin{to{transform:rotate(360deg)}}
+    .mj-spin{display:inline-block;animation:mjspin .7s linear infinite}
+    .is-loading{opacity:.75;cursor:progress!important}
     .mjc-card:hover{transform:translateY(-3px);border-color:#cdd8ca;box-shadow:0 2px 4px rgba(20,40,28,.05),0 16px 32px -16px rgba(20,40,28,.22)}
     .mjc-card.dim{opacity:.72}
     .mjc-card.s-use{border-color:#bcdfa6;box-shadow:0 1px 2px rgba(45,102,36,.05),0 12px 26px -14px rgba(45,102,36,.3)}
@@ -3681,6 +3684,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var sec=Math.max(0,Math.floor((Date.now()-start)/1000));var h=String(Math.floor(sec/3600)).padStart(2,'0');var m=String(Math.floor(sec%3600/60)).padStart(2,'0');var s=String(sec%60).padStart(2,'0');el.textContent=h+':'+m+':'+s;var cost=tarifSplit(start,Date.now(),+el.dataset.siang||0,+el.dataset.malam||0);tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "mjTick();setInterval(mjTick,1000);"
     + "function openBulk(){document.getElementById('mjBulkModal').classList.add('show');}function closeBulk(){document.getElementById('mjBulkModal').classList.remove('show');}"
+    // Loading state pada submit form (POST) — spinner + 'Menyimpan…' & cegah
+    // double-submit. Skip kalau submit dibatalkan (confirm batal / validasi gagal).
+    + "(function(){function mark(b){if(!b||b.dataset.ld)return;b.dataset.ld='1';var html=b.innerHTML;b.disabled=true;b.classList.add('is-loading');b.innerHTML='<i class=\"ti ti-loader-2 mj-spin\"></i> Menyimpan\\u2026';setTimeout(function(){if(b.dataset.ld){b.disabled=false;b.classList.remove('is-loading');b.removeAttribute('data-ld');b.innerHTML=html;}},8000);}document.addEventListener('submit',function(e){var f=e.target;if(!f||f.tagName!=='FORM'||e.defaultPrevented)return;if((f.getAttribute('method')||'get').toLowerCase()!=='post')return;var b=e.submitter||f.querySelector('button[type=submit],button:not([type])');setTimeout(function(){mark(b);},0);});})();"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('mjToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}},150);" : "");
 
   return docHeadV4("Manajemen Meja")
@@ -3790,7 +3796,8 @@ function _tarifSplitV(aMs, bMs, siang, malam) {
 }
 export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "", durBaru = "" }) {
   const toastMsg = msg === "dibuka"  ? "Sesi meja dibuka"
-    : msg === "ditambah"  ? "Item ditambahkan ke sesi"
+    : msg === "ditambah"  ? "Item ditambahkan ke sesi (belum bayar)"
+    : msg === "ditambah_lunas" ? "Item ditambahkan & ditandai lunas"
     : msg === "dibayar"   ? "Item ditandai sudah bayar"
     : msg === "durasi"    ? (durBaru ? ("Durasi sewa jadi " + durBaru) : "Durasi sewa diperbarui")
     : msg === "undo"      ? (durBaru ? ("Perpanjangan dibatalkan — durasi jadi " + durBaru) : "Perpanjangan terakhir dibatalkan")
@@ -3989,6 +3996,9 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .brail-hint{display:none}
     .brail-scroll{position:relative}
     @keyframes brailNudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+    @keyframes mjspin{to{transform:rotate(360deg)}}
+    .mj-spin{display:inline-block;animation:mjspin .7s linear infinite}
+    .is-loading{opacity:.75;cursor:progress!important}
     .brail-list{display:flex;flex-direction:column;gap:9px}
     .brail-empty{display:flex;align-items:center;gap:10px;padding:16px 10px;color:var(--txt3);font-size:12px;line-height:1.5}
     .brail-empty i{font-size:22px;opacity:.3;flex-shrink:0}
@@ -4183,7 +4193,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function fnbRowHtml(){return document.getElementById('fnbTpl').innerHTML;}"
     + "function fnbBlock(el){return el?el.closest('.fnb-block'):null;}"
     + "function fnbRowsOf(scope){return scope?scope.querySelector('.fnb-rows'):null;}"
-    + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;var rows=document.getElementById('fnbRows');rows.innerHTML=fnbRowHtml();fnbCalc(rows);_show('mFnb');}function closeFnb(){_hide('mFnb');}"
+    + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;var rows=document.getElementById('fnbRows');rows.innerHTML=fnbRowHtml();fnbCalc(rows);var r0=document.querySelector('#mFnb input[name=bayar_status][value=\"0\"]');if(r0)r0.checked=true;var mc=document.querySelector('#mFnb input[name=metode][value=cash]');if(mc)mc.checked=true;fnbBayarToggle();_show('mFnb');}function closeFnb(){_hide('mFnb');}"
+    + "function fnbBayarToggle(){var on=document.querySelector('#mFnb input[name=bayar_status]:checked');var paid=!!(on&&on.value==='1');var w=document.getElementById('fnbMetodeWrap');if(w)w.style.display=paid?'':'none';var b=document.getElementById('fnbSubmitBtn');if(b)b.innerHTML='<i class=\"ti ti-plus\"></i> '+(paid?'Tambah \\u0026 tandai lunas':'Tambah ke bill (belum bayar)');}"
     + "function fnbAddRow(btn){var rows=fnbRowsOf(fnbBlock(btn));if(!rows)return;var d=document.createElement('div');d.innerHTML=fnbRowHtml();rows.appendChild(d.firstElementChild);fnbCalc(rows);}"
     + "function fnbRmRow(b){var r=b.closest('.fnb-row');var rows=r?r.parentNode:null;if(r)r.remove();fnbCalc(rows);}"
     + "function fnbStep(btn,d){var r=btn.closest('.fnb-row');if(!r)return;var q=r.querySelector('.fnb-qty');var v=(parseInt(q.value)||1)+d;if(v<1)v=1;q.value=v;fnbCalc(q);}"
@@ -4209,6 +4220,10 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
     + "(function(){var mq=new URLSearchParams(location.search).get('meja');var pick=mq?document.querySelector('.brail-item[data-meja=\"'+mq+'\"]'):null;if(!pick)pick=document.querySelector('[data-sel]');if(pick){bSelect(pick.dataset.sel);if(mq)pick.scrollIntoView({block:'nearest',inline:'nearest'});}bTick();setInterval(bTick,1000);})();"
     + "(function(){var br=document.querySelector('.brail');var bl=document.querySelector('.brail-list');if(!br||!bl)return;function upd(){var more=(bl.scrollWidth-bl.clientWidth-bl.scrollLeft)>4;br.classList.toggle('scroll-end',!more);}bl.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();})();"
+    // Loading state pada setiap submit form (POST): kasih spinner + 'Menyimpan…',
+    // disable tombol (cegah double-submit). Skip kalau submit dibatalkan (mis.
+    // confirm batal / validasi gagal). Halaman reload setelah redirect -> bersih.
+    + "(function(){function mark(b){if(!b||b.dataset.ld)return;b.dataset.ld='1';var html=b.innerHTML;b.disabled=true;b.classList.add('is-loading');b.innerHTML='<i class=\"ti ti-loader-2 mj-spin\"></i> Menyimpan\\u2026';setTimeout(function(){if(b.dataset.ld){b.disabled=false;b.classList.remove('is-loading');b.removeAttribute('data-ld');b.innerHTML=html;}},8000);}document.addEventListener('submit',function(e){var f=e.target;if(!f||f.tagName!=='FORM'||e.defaultPrevented)return;if((f.getAttribute('method')||'get').toLowerCase()!=='post')return;var b=e.submitter||f.querySelector('button[type=submit],button:not([type])');setTimeout(function(){mark(b);},0);});})();"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
 
   return docHeadV4("Sesi Meja")
@@ -4303,8 +4318,16 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +       "<button type=\"button\" class=\"fnb-add\" onclick=\"fnbAddRow(this)\"><i class=\"ti ti-plus\"></i> Tambah item lagi</button>"
     +       "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total</span><b class=\"fnb-total\">Rp 0</b></div></div>"
     +     "</div>"
-    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Beberapa item di sini jadi <b>1 transaksi gabungan</b> (dibayar bareng). Mau bayar terpisah? Tambah lewat tombol F&amp;B berulang.</span></div>"
-    +     "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah ke bill (belum bayar)</button>"
+    +     "<div class=\"mj-fg\"><label>Status bayar</label><div class=\"mj-tog\">"
+    +       "<label><input type=\"radio\" name=\"bayar_status\" value=\"0\" checked onchange=\"fnbBayarToggle()\"><span><i class=\"ti ti-clock\"></i> Belum bayar</span></label>"
+    +       "<label><input type=\"radio\" name=\"bayar_status\" value=\"1\" onchange=\"fnbBayarToggle()\"><span><i class=\"ti ti-cash\"></i> Sudah bayar</span></label>"
+    +     "</div></div>"
+    +     "<div class=\"mj-fg\" id=\"fnbMetodeWrap\" style=\"display:none\"><label>Metode bayar</label><div class=\"mj-tog\">"
+    +       "<label><input type=\"radio\" name=\"metode\" value=\"cash\" checked><span><i class=\"ti ti-cash\"></i> Cash</span></label>"
+    +       "<label><input type=\"radio\" name=\"metode\" value=\"qris\"><span><i class=\"ti ti-qrcode\"></i> QRIS</span></label>"
+    +     "</div></div>"
+    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Beberapa item di sini jadi <b>1 transaksi gabungan</b> (dibayar bareng). <b>Belum bayar</b> = ditagih saat tutup; <b>Sudah bayar</b> = langsung lunas (pilih metode).</span></div>"
+    +     "<button type=\"submit\" id=\"fnbSubmitBtn\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah ke bill (belum bayar)</button>"
     +   "</form>"
     +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><select class=\"fnb-sel\" onchange=\"fnbCalc(this)\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><div class=\"fnb-stepper\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,-1)\" aria-label=\"Kurangi jumlah\"><i class=\"ti ti-minus\"></i></button><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc(this)\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,1)\" aria-label=\"Tambah jumlah\"><i class=\"ti ti-plus\"></i></button></div><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
     + "</div></div>"
