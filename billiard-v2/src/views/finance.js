@@ -84,6 +84,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   const isSdm  = page === "sdm";
   const isMon  = page === "monitoring";
   const isAna  = page === "analisis";
+  const isSesi = page === "sesi";
+  const isMeja = page === "meja";
   const isMalam = shift === "malam";
   const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
   const opsItemCls = "nav-item open";
@@ -142,6 +144,8 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     + "<div class=\"submenu-wrap\">"
     + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
     + subItem("/operasional", "Dashboard Keuangan", isKeu)
+    + subItem("/operasional/sesi", "Sesi Meja (Bill)", isSesi)
+    + subItem("/operasional/meja", "Manajemen Meja", isMeja)
     + (isOwner ? subItem("/operasional/analisis", "Analisis Target", isAna) : "")
     + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
     + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
@@ -3377,6 +3381,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     ? "<div class=\"mj-alert\"><i class=\"ti ti-alert-circle\"></i> Gagal: nama meja wajib diisi &amp; belum dipakai meja lain.</div>"
     : "";
 
+  // Owner = kelola penuh. Karyawan = read-only (lihat status + Buka/Lihat Sesi);
+  // kontrol Tambah/Edit/Hapus/Tarif disembunyikan & route mutasinya tetap owner-only.
+  const isOwner = role === "owner";
   // 'Dipakai' diturunkan dari sesi terbuka (occupiedMejaIds). Kosong = aktif &
   // tidak punya sesi terbuka.
   const isOccupied = (m) => m.status === "aktif" && occupiedMejaIds.includes(m.id);
@@ -3439,26 +3446,32 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
         const jm   = jenisMeta(m.jenis);
         const fkey = eff === "dipakai" ? "use" : eff === "aktif" ? "empty" : eff === "maintenance" ? "mtc" : "off";
         const payload = escHtml(JSON.stringify({ id: m.id, nama: m.nama, jenis: jm.value, ts: m.tarif_siang, tm: m.tarif_malam, to: m.tarif_open }));
-        const editIcon = "<button type=\"button\" class=\"mjc-iconbtn\" title=\"Edit tarif\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i></button>";
-        let primary, quick = "", menu;
+        const editIcon = isOwner ? "<button type=\"button\" class=\"mjc-iconbtn\" title=\"Edit tarif\" onclick='openEditMeja(" + payload + ")'><i class=\"ti ti-pencil\"></i></button>" : "";
+        let primary, quick = "", menu = "";
         if (m.status === "aktif" && isOccupied(m)) {
           primary = "<a class=\"mjc-act view\" href=\"/operasional/sesi?meja=" + m.id + "\"><i class=\"ti ti-eye\"></i> Lihat Sesi</a>";
           quick = editIcon;
-          menu = miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id);
+          menu = isOwner ? (miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id)) : "";
         } else if (m.status === "aktif") {
           primary = "<a class=\"mjc-act open\" href=\"/operasional/sesi?buka=" + m.id + "\"><i class=\"ti ti-player-play\"></i> Buka Sesi</a>";
           quick = editIcon;
-          menu = miStatus(m.id, "maintenance", "ti-tools", "Maintenance") + miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id);
+          menu = isOwner ? (miStatus(m.id, "maintenance", "ti-tools", "Maintenance") + miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id)) : "";
         } else if (m.status === "maintenance") {
-          primary = stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-act open\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>");
-          menu = miEdit(payload) + miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id);
+          primary = isOwner
+            ? stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-act open\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>")
+            : "<span class=\"mjc-act view\" style=\"cursor:default;background:#fef6e7;color:#b45309\"><i class=\"ti ti-tools\"></i> Maintenance</span>";
+          menu = isOwner ? (miEdit(payload) + miStatus(m.id, "nonaktif", "ti-ban", "Nonaktifkan") + miDel(m.id)) : "";
         } else {
-          primary = stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-act open\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>");
-          menu = miEdit(payload) + miStatus(m.id, "maintenance", "ti-tools", "Maintenance") + miDel(m.id);
+          primary = isOwner
+            ? stForm(m.id, "aktif", "<button type=\"submit\" class=\"mjc-act open\"><i class=\"ti ti-rotate-clockwise-2\"></i> Aktifkan</button>")
+            : "<span class=\"mjc-act view\" style=\"cursor:default;color:var(--txt3)\"><i class=\"ti ti-circle-off\"></i> Nonaktif</span>";
+          menu = isOwner ? (miEdit(payload) + miStatus(m.id, "maintenance", "ti-tools", "Maintenance") + miDel(m.id)) : "";
         }
-        const overflow = "<div class=\"mjc-menu-wrap\">"
-          + "<button type=\"button\" class=\"mjc-iconbtn\" onclick=\"mjcMenu(this)\" aria-label=\"Menu lainnya\"><i class=\"ti ti-dots-vertical\"></i></button>"
-          + "<div class=\"mjc-menu\">" + menu + "</div></div>";
+        const overflow = isOwner
+          ? "<div class=\"mjc-menu-wrap\">"
+            + "<button type=\"button\" class=\"mjc-iconbtn\" onclick=\"mjcMenu(this)\" aria-label=\"Menu lainnya\"><i class=\"ti ti-dots-vertical\"></i></button>"
+            + "<div class=\"mjc-menu\">" + menu + "</div></div>"
+          : "";
         return "<div class=\"mjc-card s-" + st.cls + (m.status !== "aktif" ? " dim" : "") + "\" data-status=\"" + fkey + "\" data-name=\"" + escHtml(String(m.nama || "").toLowerCase()) + "\" style=\"animation-delay:" + (i * 40) + "ms\">"
           + "<div class=\"mjc-top\">"
           + "<div class=\"mjc-chip\">" + escHtml(ballTxt(m)) + "</div>"
@@ -3688,7 +3701,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "<div class=\"mjc-head\">"
     +   "<div><div class=\"page-title\">Manajemen Meja</div>"
     +   "<div class=\"page-sub\">Atur daftar meja, tarif, &amp; status. Dipakai sebagai pilihan Nomor Meja di Catat Transaksi.</div></div>"
-    +   "<button type=\"button\" class=\"btn-primary mjc-add\" onclick=\"openAddMeja()\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>"
+    +   (isOwner ? "<button type=\"button\" class=\"btn-primary mjc-add\" onclick=\"openAddMeja()\"><i class=\"ti ti-plus\"></i> Tambah Meja</button>" : "")
     + "</div>"
     + errHtml
     + "<div class=\"mj-note\"><i class=\"ti ti-info-circle\"></i> <span>Halaman ini hanya untuk <b>setup &amp; status</b> — input jam main &amp; uang tetap lewat <b>Catat Transaksi</b> / <b>Sesi Meja</b>. Meja <b>Dipakai</b> (ada sesi berjalan), <b>Maintenance</b>, atau <b>Nonaktif</b> otomatis tidak muncul sebagai pilihan transaksi cepat. Tarif <b>Open</b> hanya acuan (diisi manual saat durasi Open).</span></div>"
@@ -3710,7 +3723,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     +     "<button type=\"button\" class=\"mjc-tab\" data-f=\"off\" onclick=\"mjPill(this)\">Nonaktif <span class=\"c\">" + cNonaktif + "</span></button>"
     +   "</div>"
     +   "<div class=\"mjc-right\">"
-    +     "<button type=\"button\" class=\"mjc-bulk\" onclick=\"openBulk()\"><i class=\"ti ti-adjustments\"></i> Terapkan Tarif</button>"
+    +     (isOwner ? "<button type=\"button\" class=\"mjc-bulk\" onclick=\"openBulk()\"><i class=\"ti ti-adjustments\"></i> Terapkan Tarif</button>" : "")
     +     "<div class=\"mjc-view\">"
     +       "<button type=\"button\" class=\"mjc-vt active\" data-v=\"grid\" onclick=\"mjView(this)\" title=\"Tampilan grid\" aria-label=\"Tampilan grid\"><i class=\"ti ti-layout-grid\"></i></button>"
     +       "<button type=\"button\" class=\"mjc-vt\" data-v=\"list\" onclick=\"mjView(this)\" title=\"Tampilan daftar\" aria-label=\"Tampilan daftar\"><i class=\"ti ti-list\"></i></button>"
@@ -3719,7 +3732,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "</div>" : "")
     + "<div class=\"mjc-grid\">" + cards + "</div>"
     + "</div></div></div>"
-    + "<div class=\"mj-modal\" id=\"mjAddModal\" onclick=\"if(event.target===this)closeAddMeja()\">"
+    + (isOwner ? ("<div class=\"mj-modal\" id=\"mjAddModal\" onclick=\"if(event.target===this)closeAddMeja()\">"
     + "<div class=\"mj-modal-card\">"
     + "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-plus\"></i> Tambah Meja</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeAddMeja()\"><i class=\"ti ti-x\"></i></button></div>"
     + "<form action=\"/operasional/meja/tambah\" method=\"post\" class=\"mj-form mj-form-modal\">"
@@ -3748,10 +3761,10 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + tarifInput("tarif_siang", "Tarif Siang / jam") + tarifInput("tarif_malam", "Tarif Malam / jam")
     + "<div class=\"mj-fg-note\"><i class=\"ti ti-info-circle\"></i> Tarif <b>Open</b> otomatis ikut Siang/Malam. Pilih jenis untuk isi cepat (preset) — tetap bisa diedit sebelum diterapkan.</div>"
     + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-check\"></i> Terapkan Tarif</button>"
-    + "</form></div></div>"
+    + "</form></div></div>") : "")
     + (toastMsg ? "<div class=\"mj-toast\" id=\"mjToast\"><i class=\"ti ti-circle-check\"></i> " + escHtml(toastMsg) + "</div>" : "")
     + "<script>" + js + "</script>"
-    + buildFinanceBottomNav("owner")
+    + buildFinanceBottomNav(role)
     + "</body></html>";
 }
 

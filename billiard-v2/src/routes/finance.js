@@ -1396,7 +1396,9 @@ router.get("/menu/topping/hapus", requireOwner, async (req, res) => {
 // ── Manajemen Meja (master meja + tarif) — owner only ────────────
 // Setup-only: CRUD meja + tarif + status. Sumber pilihan Nomor Meja & tarif
 // auto-calc di Catat Transaksi. Tidak menyentuh alur/skema transaksi.
-router.get("/meja", requireOwner, async (req, res) => {
+// GET /meja: owner = kelola penuh, karyawan = read-only (lihat status + buka/lihat
+// sesi). Semua route mutasi /meja/* di bawah tetap requireOwner.
+router.get("/meja", async (req, res) => {
   try {
     const [mejaList, sesiInfo] = await Promise.all([readMejas(), readMejaOpenSesiInfo()]);
     const occupiedIds = sesiInfo.map((s) => s.meja_id);
