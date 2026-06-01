@@ -3985,6 +3985,10 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .brail{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:14px;position:sticky;top:16px;box-shadow:0 1px 2px rgba(20,40,28,.04),0 6px 16px -10px rgba(20,40,28,.12)}
     .brail-h{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--txt3);padding:2px 4px 12px}
     .brail-n{font-size:11px;font-weight:800;background:var(--green-bg);color:var(--green-dark);border:1px solid #cce8b8;padding:2px 9px;border-radius:20px;letter-spacing:0;font-family:var(--ff-mono)}
+    .brail-h-l{display:inline-flex;align-items:center;min-width:0}
+    .brail-hint{display:none}
+    .brail-scroll{position:relative}
+    @keyframes brailNudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
     .brail-list{display:flex;flex-direction:column;gap:9px}
     .brail-empty{display:flex;align-items:center;gap:10px;padding:16px 10px;color:var(--txt3);font-size:12px;line-height:1.5}
     .brail-empty i{font-size:22px;opacity:.3;flex-shrink:0}
@@ -4082,7 +4086,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .bact i{font-size:16px}
     .bact.close{flex:1;min-width:200px;background:var(--accent);border:none;color:#fff;font-size:13.5px;font-weight:800}
     .bact.close:hover{background:var(--green-dark);color:#fff}
-    @media(max-width:880px){.bsesi-layout{grid-template-columns:minmax(0,1fr)}.brail{position:static;min-width:0}.brail-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}.brail-item{min-width:172px;flex-shrink:0}.btotals{grid-template-columns:1fr}.btot{border-right:none;border-bottom:1px solid var(--line)}.btot:last-child{border-bottom:none}.bact{flex:1}.bact.close{flex:1 1 100%}}
+    @media(max-width:880px){.bsesi-layout{grid-template-columns:minmax(0,1fr)}.brail{position:relative;min-width:0}.brail-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scroll-snap-type:x proximity}.brail-item{min-width:172px;flex-shrink:0;scroll-snap-align:start}.brail-hint{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;letter-spacing:.02em;text-transform:none;color:var(--green-dark);background:var(--green-bg);border:1px solid #cce8b8;padding:2px 7px;border-radius:20px;margin-left:7px;animation:brailNudge 1.6s ease-in-out infinite}.brail.scroll-end .brail-hint{display:none}.brail-scroll::after{content:'';position:absolute;top:0;right:0;bottom:7px;width:40px;background:linear-gradient(to right,rgba(255,255,255,0),var(--surface));pointer-events:none;opacity:1;transition:opacity .2s}.brail.scroll-end .brail-scroll::after{opacity:0}.btotals{grid-template-columns:1fr}.btot{border-right:none;border-bottom:1px solid var(--line)}.btot:last-child{border-bottom:none}.bact{flex:1}.bact.close{flex:1 1 100%}}
     @media(max-width:560px){.bhead{padding:16px;gap:11px}.bnum{width:40px;height:40px;border-radius:11px;font-size:16px}.bhead-meta h2{font-size:17px}.btimer{font-size:25px}.bbody{padding:4px 16px}.bfoot{padding:16px}.line{flex-wrap:wrap;gap:8px}.line-right{width:100%;justify-content:space-between;flex-wrap:wrap}.sec-row{flex-wrap:wrap;gap:8px}}
 
     /* ── Modal totals (reused inside modals) ───────────── */
@@ -4204,6 +4208,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function bTick(){var now=Date.now();document.querySelectorAll('[data-tmr-start]').forEach(function(el){var st=new Date(el.dataset.tmrStart).getTime();if(isNaN(st))return;var elapsed=Math.max(0,Math.floor((now-st)/1000));var ov=el.dataset.tmrOver?parseInt(el.dataset.tmrOver):0;var card=el.closest('[data-detail]')||el.closest('[data-sel]');if(ov>0){var sisa=ov-elapsed;var over=sisa<0;el.textContent=(over?'Lewat ':'Sisa ')+bHmsH(over?-sisa:sisa);if(card){card.classList.toggle('is-over',over);card.classList.toggle('is-soon',!over&&sisa<=600);}}else{el.textContent=bHms(elapsed);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}});}"
     + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
     + "(function(){var mq=new URLSearchParams(location.search).get('meja');var pick=mq?document.querySelector('.brail-item[data-meja=\"'+mq+'\"]'):null;if(!pick)pick=document.querySelector('[data-sel]');if(pick){bSelect(pick.dataset.sel);if(mq)pick.scrollIntoView({block:'nearest',inline:'nearest'});}bTick();setInterval(bTick,1000);})();"
+    + "(function(){var br=document.querySelector('.brail');var bl=document.querySelector('.brail-list');if(!br||!bl)return;function upd(){var more=(bl.scrollWidth-bl.clientWidth-bl.scrollLeft)>4;br.classList.toggle('scroll-end',!more);}bl.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();})();"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
 
   return docHeadV4("Sesi Meja")
@@ -4227,8 +4232,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + (errMsg ? "<div class=\"sesi-alert\"><i class=\"ti ti-alert-circle\"></i> " + errMsg + "</div>" : "")
     + "<div class=\"sesi-note\"><i class=\"ti ti-info-circle\"></i> <span>Item <b>Belum Bayar</b> tidak menambah saldo/pemasukan — baru dihitung saat ditandai <b>Sudah Bayar</b>. Tiap item tetap muncul di <b>Riwayat Transaksi</b> &amp; ikut Dashboard seperti biasa.</span></div>"
     + "<div class=\"bsesi-layout\">"
-    +   "<aside class=\"brail\"><div class=\"brail-h\">Sesi Aktif <span class=\"brail-n\">" + sesiList.length + "</span></div>"
-    +     "<div class=\"brail-list\">" + railItems + "</div></aside>"
+    +   "<aside class=\"brail\"><div class=\"brail-h\"><span class=\"brail-h-l\">Sesi Aktif" + (sesiList.length > 1 ? " <span class=\"brail-hint\"><i class=\"ti ti-arrows-horizontal\"></i> Geser</span>" : "") + "</span> <span class=\"brail-n\">" + sesiList.length + "</span></div>"
+    +     "<div class=\"brail-scroll\"><div class=\"brail-list\">" + railItems + "</div></div></aside>"
     +   "<section class=\"bdetail\">" + details + "</section>"
     + "</div>"
     + "</div></div></div>"
