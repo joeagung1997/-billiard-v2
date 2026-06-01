@@ -3840,7 +3840,15 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     // Jam selesai (estimasi) = jam buka + total durasi sewa. Hanya utk durasi fixed.
     const endISO   = (rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + rh * 3600000).toISOString() : "";
     const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, start: s.opened_at || "", w: sewa.waktu === "malam" ? "malam" : "siang" }));
-    const sewaTitle = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
+    const ketRaw = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
+    // Rincian durasi disimpan di keterangan sbg "(a Jam + b Jam ...)". Ditampilkan
+    // jadi "Awal a Jam · +b Jam · ..."; judul tetap ringkas (tanpa kurung).
+    const _bm   = ketRaw.match(/\(([^)]+)\)\s*$/);
+    const _segs = _bm ? _bm[1].split("+").map((x) => parseInt(x)).filter((n) => n > 0) : [];
+    const sewaTitle = _bm ? ketRaw.slice(0, _bm.index).trim() : ketRaw;
+    const durLine = (_segs.length > 1)
+      ? _segs.map((h, i) => (i === 0 ? "Awal " + h + " Jam" : "+" + h + " Jam")).join(" · ")
+      : durLabel;
     const paid   = sewa.lunas !== false;
     const method = sewa.bayar === "qris" ? "QRIS" : (sewa.bayar === "cash" ? "Cash" : "");
     // +1 Jam / Ubah durasi tetap tersedia walau sewa SUDAH dibayar — tambahan jam
@@ -3858,7 +3866,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
       : "";
     return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
-      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + " · " + durLabel + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>" + paidSub + "</div>"
+      + "<div class=\"line-sub\">" + durLine + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>"
+      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + "</div>" + paidSub + "</div>"
       + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
       + sewaRight + "</div></div>";
   };
