@@ -565,8 +565,10 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     : msg === "tukar"     ? "Tukar uang berhasil dicatat: 2 entry (cash keluar + QRIS masuk). Tidak masuk total revenue."
     : msg === "err"       ? "Gagal menyimpan. Cek isian form lalu coba lagi."
     : msg === "no_access" ? "Akses ditolak — fitur ini hanya untuk Owner."
+    : msg === "manual_ok" ? "Transaksi manual tersimpan & ditandai Manual. Total tanggal tsb sudah diperbarui."
+    : msg === "manual_future" ? "Gagal: tanggal transaksi tidak boleh di masa depan."
     : "";
-  const toastType = (msg === "err" || msg === "no_access") ? "err" : "ok";
+  const toastType = (msg === "err" || msg === "no_access" || msg === "manual_future") ? "err" : "ok";
   const now = new Date();
   const curBulan = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const bFilter  = bulanFilter || curBulan;
@@ -1025,6 +1027,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
               + "</span>";
           })()
         : "")
+      + (t.isManual
+        ? "<span class=\"fr-manual-badge\" title=\"Ditambahkan manual oleh " + escHtml(userNameMap[t.dicatatOleh] || t.dicatatOleh || "Owner")
+          + (t.createdAt ? " · " + escHtml(new Date(t.createdAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })) : "")
+          + "\"><i class=\"ti ti-pencil\" style=\"font-size:9px\"></i> Manual</span>"
+        : "")
       + "</div>"
       + reasonHt
       + "</div>"
@@ -1094,6 +1101,35 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".fin-row-out{border-left:3px solid rgba(239,68,68,.4)}",
     ".fin-row-in:hover{background:#f0fdf4!important}",
     ".fin-row-out:hover{background:#fff5f5!important}",
+    ".fr-manual-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:var(--txt3);background:var(--surface2);border:1px solid var(--border2);padding:1px 7px;border-radius:20px;letter-spacing:.02em;cursor:help}",
+    ".mm-overlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px}",
+    ".mm-overlay.open{display:flex}",
+    ".mm-card{background:var(--surface);border-radius:16px;width:100%;max-width:440px;margin:auto;box-shadow:0 18px 50px rgba(0,0,0,.25);overflow:hidden}",
+    ".mm-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border)}",
+    ".mm-hd-l{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--txt)}",
+    ".mm-hd-l i{color:var(--green)}",
+    ".mm-owner{font-size:9.5px;font-weight:800;letter-spacing:.02em;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bg);padding:2px 8px;border-radius:20px}",
+    ".mm-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:19px;display:flex}",
+    ".mm-form{padding:16px 18px;display:flex;flex-direction:column}",
+    ".mm-desc{font-size:12px;color:var(--txt3);margin:0 0 12px;line-height:1.5}",
+    ".mm-lbl{font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:5px;display:block}",
+    ".mm-opt{font-weight:400;color:var(--txt3)}",
+    ".mm-inp{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:9px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box;margin-bottom:12px;transition:border-color .15s,background .15s}",
+    ".mm-inp:focus{border-color:var(--green);background:var(--surface)}",
+    ".mm-ta{resize:vertical;min-height:54px}",
+    ".mm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
+    ".mm-tog{display:flex;gap:8px;margin-bottom:12px}",
+    ".mm-tog-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--txt2);font-size:12.5px;font-weight:700;font-family:var(--ff);cursor:pointer;transition:.12s}",
+    ".mm-tog-btn.active{border-color:var(--green);background:var(--green-bg);color:var(--green)}",
+    ".mm-tog-btn.out.active{border-color:var(--red);background:var(--red-bg);color:var(--red)}",
+    ".mm-info{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;line-height:1.5;color:var(--txt2);background:var(--green-bg);border-radius:9px;padding:9px 11px;margin:2px 0 14px}",
+    ".mm-info i{color:var(--green);font-size:14px;margin-top:1px;flex-shrink:0}",
+    ".mm-foot{display:flex;gap:10px}",
+    ".mm-batal{flex:0 0 auto;padding:0 18px;height:42px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--txt2);font-size:13px;font-weight:700;font-family:var(--ff);cursor:pointer}",
+    ".mm-batal:hover{border-color:var(--txt3)}",
+    ".mm-simpan{flex:1;height:42px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:13.5px;font-weight:800;font-family:var(--ff);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}",
+    ".mm-simpan:hover{filter:brightness(.93)}",
+    ".mm-simpan:disabled{opacity:.6;cursor:progress}",
     // ── Tabel 5-kolom (merge Jumlah+Tipe) ───────────────────────
     ".fin-tbl-head,.fin-row{grid-template-columns:74px 96px minmax(0,1fr) 130px 130px 48px!important;gap:14px}",
     ".fr-amount-col{flex-direction:column;align-items:flex-start;gap:4px;justify-content:center}",
@@ -1423,6 +1459,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         actionsHtml:
           '<a href="/operasional/kategori" class="own-header-btn"><i class="ti ti-tag"></i> Kategori</a>'
         + (transaksiOnly ? '<button type="button" class="own-header-btn" onclick="openTukarModal()" title="Tukar uang Cash → QRIS (1-klik, otomatis bikin 2 entry berpasangan)"><i class="ti ti-arrows-exchange-2"></i> Tukar Uang</button>' : '')
+        + '<button type="button" class="own-header-btn" onclick="openManual()" title="Tambah transaksi yang terlewat (backdate) — khusus Owner, ditandai Manual"><i class="ti ti-pencil-plus"></i> Transaksi Manual</button>'
         + '<button type="button" class="own-header-btn own-header-btn-primary" onclick="openTrxModal()"><i class="ti ti-plus"></i> Catat Transaksi</button>',
       }) : "")
 
@@ -1871,6 +1908,36 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-pgbar\" id=\"finPgBar\"></div>"
     + "<div class=\"toast\" id=\"toast\"></div>"
 
+    // ── Modal Tambah Transaksi Manual (KHUSUS OWNER) ─────────────
+    + (isOwner
+      ? "<div class=\"mm-overlay\" id=\"mManual\" onclick=\"if(event.target===this)closeManual()\"><div class=\"mm-card\">"
+        + "<div class=\"mm-hd\"><div class=\"mm-hd-l\"><i class=\"ti ti-pencil-plus\"></i> Tambah Transaksi Manual <span class=\"mm-owner\">🔒 Khusus Owner</span></div>"
+        +   "<button type=\"button\" class=\"mm-x\" onclick=\"closeManual()\"><i class=\"ti ti-x\"></i></button></div>"
+        + "<form method=\"post\" action=\"/operasional/transaksi/manual\" class=\"mm-form\" onsubmit=\"return manualSubmit(this)\">"
+        +   "<p class=\"mm-desc\">Masukkan transaksi yang terlewat. Tercatat sesuai tanggal yang dipilih &amp; ditandai <b>manual</b>.</p>"
+        +   "<label class=\"mm-lbl\">Jenis</label>"
+        +   "<div class=\"mm-tog\" id=\"mmJenisTog\">"
+        +     "<button type=\"button\" class=\"mm-tog-btn in active\" data-v=\"pemasukan\" onclick=\"manualSetJenis('pemasukan')\"><i class=\"ti ti-arrow-down-left\"></i> Pemasukan</button>"
+        +     "<button type=\"button\" class=\"mm-tog-btn out\" data-v=\"pengeluaran\" onclick=\"manualSetJenis('pengeluaran')\"><i class=\"ti ti-arrow-up-right\"></i> Pengeluaran</button>"
+        +   "</div><input type=\"hidden\" name=\"jenis\" id=\"mmJenis\" value=\"pemasukan\">"
+        +   "<label class=\"mm-lbl\">Tanggal &amp; jam transaksi <span class=\"mm-opt\">(boleh tanggal lampau)</span></label>"
+        +   "<input type=\"datetime-local\" name=\"datetime\" id=\"mmDatetime\" class=\"mm-inp\" onchange=\"manualInfo()\">"
+        +   "<div class=\"mm-row\">"
+        +     "<div><label class=\"mm-lbl\">Kategori</label><select name=\"kategori\" id=\"mmKategori\" class=\"mm-inp\">" + modalGrpIn + "</select></div>"
+        +     "<div><label class=\"mm-lbl\">Nominal</label><input type=\"text\" name=\"jumlah\" id=\"mmJumlah\" class=\"mm-inp\" inputmode=\"numeric\" placeholder=\"Rp 0\" oninput=\"manualRupiah(this);manualInfo()\"></div>"
+        +   "</div>"
+        +   "<label class=\"mm-lbl\">Metode bayar</label>"
+        +   "<div class=\"mm-tog\" id=\"mmBayarTog\">"
+        +     "<button type=\"button\" class=\"mm-tog-btn active\" data-b=\"cash\" onclick=\"manualSetBayar('cash')\"><i class=\"ti ti-cash\"></i> Cash</button>"
+        +     "<button type=\"button\" class=\"mm-tog-btn\" data-b=\"qris\" onclick=\"manualSetBayar('qris')\"><i class=\"ti ti-qrcode\"></i> QRIS</button>"
+        +   "</div><input type=\"hidden\" name=\"bayar\" id=\"mmBayar\" value=\"cash\">"
+        +   "<label class=\"mm-lbl\">Catatan / alasan <span class=\"mm-opt\">(opsional)</span></label>"
+        +   "<textarea name=\"keterangan\" id=\"mmKet\" class=\"mm-inp mm-ta\" maxlength=\"200\" placeholder=\"mis. Karyawan lupa input sesi malam Meja 1\"></textarea>"
+        +   "<div class=\"mm-info\" id=\"mmInfo\"><i class=\"ti ti-info-circle\"></i> <span>Lengkapi tanggal &amp; nominal dulu.</span></div>"
+        +   "<div class=\"mm-foot\"><button type=\"button\" class=\"mm-batal\" onclick=\"closeManual()\">Batal</button>"
+        +     "<button type=\"submit\" class=\"mm-simpan\" id=\"mmSubmit\"><i class=\"ti ti-device-floppy\"></i> Simpan transaksi</button></div>"
+        + "</form></div></div>"
+      : "")
     // ── Modal Catat Transaksi (3-step wizard) ────────────────────
     + "<div class=\"overlay\" id=\"trxOverlay\" onclick=\"if(event.target===this)closeTrxModal()\">"
     + "<div class=\"over-modal fin-wiz-modal\">"
@@ -2446,6 +2513,15 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     // Auto-open trx modal via URL param ?openModal=trx (utk Aksi Cepat 'Transaksi Baru' di sidebar)
     + "(function(){try{var u=new URL(window.location.href);if(u.searchParams.get('openModal')==='trx'){setTimeout(openTrxModal,100);u.searchParams.delete('openModal');history.replaceState(null,'',u.toString());}}catch(_){}})();"
     + "function closeTrxModal(){document.getElementById('trxOverlay').classList.remove('open');}"
+    // ── Transaksi Manual (khusus Owner) — modal terpisah ──
+    + "var MM_KAT_IN=" + safeJson(modalGrpIn) + ";var MM_KAT_OUT=" + safeJson(modalGrpOut) + ";"
+    + "function openManual(){var ov=document.getElementById('mManual');if(!ov)return;var dt=document.getElementById('mmDatetime');if(dt){var lz=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);dt.value=lz;dt.max=lz;}manualSetJenis('pemasukan');manualSetBayar('cash');var j=document.getElementById('mmJumlah');if(j)j.value='';var k=document.getElementById('mmKet');if(k)k.value='';manualInfo();ov.classList.add('open');}"
+    + "function closeManual(){var ov=document.getElementById('mManual');if(ov)ov.classList.remove('open');}"
+    + "function manualSetJenis(v){var h=document.getElementById('mmJenis');if(h)h.value=v;document.querySelectorAll('#mmJenisTog .mm-tog-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-v')===v);});var sel=document.getElementById('mmKategori');if(sel)sel.innerHTML=(v==='pengeluaran')?MM_KAT_OUT:MM_KAT_IN;manualInfo();}"
+    + "function manualSetBayar(b){var h=document.getElementById('mmBayar');if(h)h.value=b;document.querySelectorAll('#mmBayarTog .mm-tog-btn').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-b')===b);});}"
+    + "function manualRupiah(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
+    + "function manualInfo(){var info=document.getElementById('mmInfo');if(!info)return;var dt=(document.getElementById('mmDatetime')||{}).value||'';var amt=parseInt(((document.getElementById('mmJumlah')||{}).value||'').replace(/\\D/g,''))||0;var tgl=dt?new Date(dt).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'\\u2014';info.innerHTML='<i class=\"ti ti-info-circle\"></i> <span>Tercatat di <b>'+tgl+'</b> \\u00b7 <b>Rp '+amt.toLocaleString('id-ID')+'</b>. Ditandai <b>manual</b> oleh kamu (Owner). Total tanggal tsb akan ikut berubah.</span>';}"
+    + "function manualSubmit(form){var dt=(document.getElementById('mmDatetime')||{}).value||'';var amt=parseInt(((document.getElementById('mmJumlah')||{}).value||'').replace(/\\D/g,''))||0;if(!dt){alert('Pilih tanggal & jam transaksi.');return false;}if(new Date(dt).getTime()>Date.now()+60000){alert('Tanggal transaksi tidak boleh di masa depan.');return false;}if(amt<=0){alert('Nominal harus lebih dari 0.');return false;}var tgl=new Date(dt).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});if(!confirm('Simpan transaksi manual?\\n\\nTercatat di '+tgl+' \\u00b7 Rp '+amt.toLocaleString('id-ID')+'\\nDitandai manual oleh kamu (Owner). Total tanggal tsb akan berubah.'))return false;var btn=document.getElementById('mmSubmit');if(btn){btn.disabled=true;btn.textContent='Menyimpan\\u2026';}return true;}"
     // ── Tukar Uang modal (Cash → QRIS shortcut) ─────────────────
     + "function openTukarModal(){"
     +   "var o=document.getElementById('tukarOverlay');if(!o)return;"

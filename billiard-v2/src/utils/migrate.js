@@ -211,6 +211,9 @@ export const runMigrations = async () => {
   // lunas_at = waktu transaksi dilunaskan (nullable, NULL kalau blm lunas).
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS lunas       BOOLEAN DEFAULT TRUE`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS lunas_at    TIMESTAMPTZ`);
+  // Transaksi manual: ditambah Owner utk membackfill data yg terlewat (backdate).
+  // Default FALSE -> semua transaksi lama/POS dianggap non-manual (backward compat).
+  await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS is_manual   BOOLEAN DEFAULT FALSE`);
 
   // Point lifetime — 1 point tiap check-in. Beda dgn total_main yg
   // reset tiap siklus. Backfill dari logs (SCAN + SCAN_RESET +

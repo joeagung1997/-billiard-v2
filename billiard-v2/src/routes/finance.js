@@ -455,6 +455,62 @@ router.post("/tambah", async (req, res) => {
   }
 });
 
+// ── POST /operasional/transaksi/manual — entri manual KHUSUS OWNER ──
+// Owner membackfill transaksi yang terlewat karyawan. Bisa backdate (tanggal
+// lampau, tidak boleh masa depan). Ditandai is_manual=true + dicatat_oleh=owner
+// + created_at=waktu input asli. Masuk Riwayat & dashboard sesuai `tanggal`.
+// requireOwner: role selain owner ditolak (redirect no_access) — gating server.
+router.post("/transaksi/manual", requireOwner, async (req, res) => {
+  const jenis     = req.body.jenis;
+  const datetime  = (req.body.datetime ?? "").slice(0, 16);
+  const kategori  = (req.body.kategori ?? "").trim();
+  const tanggal   = datetime.slice(0, 10);
+  const jam       = datetime.slice(11, 16);
+  const bayar     = ["cash", "qris"].includes(req.body.bayar) ? req.body.bayar : "";
+  const jumlahNum = parseInt((req.body.jumlah ?? "").replace(/\D/g, "")) || 0;
+  // Validasi: jenis valid, field wajib, nominal > 0.
+  if (!["pemasukan", "pengeluaran"].includes(jenis) || !tanggal || !kategori || jumlahNum <= 0) {
+    return res.redirect("/operasional?msg=err");
+  }
+  // Tanggal/jam tidak boleh di masa depan (toleransi 1 menit utk skew jam).
+  const picked = new Date(datetime);
+  if (isNaN(picked.getTime()) || picked.getTime() > Date.now() + 60000) {
+    return res.redirect("/operasional?msg=manual_future");
+  }
+  try {
+    const tanggalBiz = applyBusinessDay(tanggal, jam);
+    const jamHr   = parseInt(jam.slice(0, 2)) || 0;
+    const waktuSafe = (jamHr >= 8 && jamHr < 18) ? "siang" : "malam";
+    const trx = {
+      id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      tanggal:     tanggalBiz,
+      jam:         jam,
+      jenis,
+      waktu:       waktuSafe,
+      kategori,
+      subKategori: "",
+      keterangan:  (req.body.keterangan ?? "").trim().slice(0, 200),
+      jumlah:      jumlahNum,
+      createdAt:   new Date().toISOString(),
+      bayar,
+      dicatatOleh: res.locals.financeUser || "",
+      lunas:       true,
+      isManual:    true,
+    };
+    await appendTransaksi(trx);
+    notifyNewTransaksi(trx).catch((err) =>
+      console.error("[FINANCE] notifyNewTransaksi manual error:", err.message));
+    if (jenis === "pemasukan") {
+      checkAndNotifyTarget(tanggalBiz).catch((err) =>
+        console.error("[FINANCE] manual target notif error:", err.message));
+    }
+    res.redirect("/operasional?msg=manual_ok");
+  } catch (err) {
+    console.error("[FINANCE] transaksi manual error:", err.message);
+    res.redirect("/operasional?msg=err");
+  }
+});
+
 // ── POST /operasional/tukar-uang — shortcut tukar cash → QRIS ──────
 // Customer kasih cash ke laci (kita catat sbg pengeluaran cash), lalu transfer
 // QRIS senilai sama (kita catat sbg pemasukan qris). Kedua entry pakai kategori

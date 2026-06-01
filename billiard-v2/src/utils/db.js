@@ -347,6 +347,7 @@ const rowToTransaksi = (row) => ({
   // Default TRUE — data lama (sebelum kolom lunas ditambah) dianggap lunas.
   lunas:        row.lunas        !== false,
   lunasAt:      row.lunas_at     ?? null,
+  isManual:     row.is_manual    === true,
 });
 
 // ── readDB — ambil semua members + transaksi ──────────────────
@@ -511,8 +512,8 @@ export const appendTransaksi = async (item, warungId = currentWarungId()) => {
   // saat dicatat, NULL kalau belum (akan diisi saat user klik "Tandai Lunas").
   const lunas = item.lunas !== false;
   await query(
-    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh, lunas, lunas_at, warung_id, sesi_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+    `INSERT INTO transaksi (id, tanggal, jam, jenis, waktu, kategori, sub_kategori, keterangan, jumlah, created_at, bayar, bukti_url, dicatat_oleh, lunas, lunas_at, warung_id, sesi_id, is_manual)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
     [
       item.id, item.tanggal, item.jam ?? "",
       item.jenis, item.waktu ?? "siang",
@@ -526,6 +527,7 @@ export const appendTransaksi = async (item, warungId = currentWarungId()) => {
       lunas ? (item.lunasAt ?? new Date().toISOString()) : null,
       warungId,
       item.sesiId ?? null,   // null = transaksi biasa (bukan item sesi)
+      item.isManual === true, // true = ditambah manual oleh Owner (backfill)
     ]
   );
 };
