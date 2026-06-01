@@ -314,75 +314,57 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
    SIDEBAR OWNER — clean & spacious redesign
    ═══════════════════════════════════════════════════════════════════ */
 
-.own-sidebar { display:flex; flex-direction:column; }
+/* Flat redesign — solid panel, no radial glow (matches mockup) */
+.own-sidebar { display:flex; flex-direction:column; background:#0e1f16; }
+.own-sidebar::before { display:none; }
 
 /* ── Brand area (logo + bell) ─────────────────────────────────── */
-.own-brand { display:flex; align-items:center; gap:11px; padding:18px 16px 14px;
-  border-bottom:1px solid rgba(255,255,255,0.05); }
-.own-brand-logo { position:relative; width:36px; height:36px; border-radius:10px;
-  background:linear-gradient(135deg,#3a7d2c,#2d6624); display:flex; align-items:center;
-  justify-content:center; color:#fff; font-size:18px; flex-shrink:0; box-shadow:0 4px 10px rgba(45,102,36,.25); }
+.own-brand { display:flex; align-items:center; gap:10px; padding:20px 18px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.07); }
+.own-brand-logo { position:relative; width:34px; height:34px; border-radius:9px;
+  background:#16a34a; display:flex; align-items:center;
+  justify-content:center; color:#fff; font-size:17px; flex-shrink:0; box-shadow:0 4px 10px rgba(22,163,74,.28); }
 .own-brand-online { position:absolute; bottom:-2px; right:-2px; width:10px; height:10px;
-  border-radius:50%; background:#22c55e; border:2px solid #0a1a0c; box-shadow:0 0 6px rgba(34,197,94,.6); }
+  border-radius:50%; background:#22c55e; border:2px solid #0e1f16; box-shadow:0 0 6px rgba(34,197,94,.6); }
 .own-brand-text { flex:1; min-width:0; }
-.own-brand-name { font-size:13px; font-weight:800; color:#fff; line-height:1.2;
+.own-brand-name { font-size:13px; font-weight:800; color:#e9f2ec; line-height:1.2;
   letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.own-brand-sub { font-size:9.5px; font-weight:600; color:rgba(255,255,255,0.45);
-  text-transform:uppercase; letter-spacing:.1em; margin-top:3px; }
+.own-brand-sub { font-size:9px; font-weight:700; color:#6f857a;
+  text-transform:uppercase; letter-spacing:.16em; margin-top:3px; }
 
 /* ── Nav scroll area (sections + items) ───────────────────────── */
-.own-nav-scroll { flex:1; overflow-y:auto; padding:6px 10px;
+.own-nav-scroll { flex:1; overflow-y:auto; padding:8px 12px;
   scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; }
 .own-nav-scroll::-webkit-scrollbar { width:5px; }
 .own-nav-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
 
-/* ── Section (group of items) ─────────────────────────────────── */
-.own-section { margin:2px 0; }
-/* Subtle divider antara section — biar section closed tdk keliatan nyambung */
-.own-section + .own-section { position:relative; margin-top:10px; padding-top:10px; }
-.own-section + .own-section::before { content:''; position:absolute;
-  top:0; left:12px; right:12px; height:1px;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent); }
-
-.own-section-hdr { display:flex; align-items:center; gap:9px; width:100%;
-  padding:11px 12px; background:transparent; border:none; cursor:pointer;
-  font-family:var(--ff); font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.12em; color:rgba(255,255,255,0.42);
-  border-radius:8px; transition:background .12s, color .12s; user-select:none; }
-.own-section-hdr:hover { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.78); }
-.own-section.open .own-section-hdr { color:rgba(255,255,255,0.92); background:rgba(255,255,255,0.02); }
-.own-section-emoji { font-size:14px; line-height:1; }
-.own-section-label { flex:1; text-align:left; }
-.own-section-chev { font-size:14px; opacity:.5; transition:transform .25s; }
-.own-section.open .own-section-chev { transform:rotate(180deg); opacity:.9; }
-
-/* Section body — animated expand */
-.own-section-body { max-height:0; overflow:hidden;
-  transition:max-height .3s cubic-bezier(.4,0,.2,1); padding:0 4px; }
-.own-section.open .own-section-body { max-height:600px; padding:6px 4px 8px; }
+/* ── Section (group of items) — flat, non-collapsible ─────────── */
+.own-section { margin:0; }
+/* Header = static uppercase label (no chevron / no collapse) */
+.own-section-hdr { display:block; padding:16px 12px 7px;
+  font-family:var(--ff); font-size:8.5px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.18em; color:#52675c; user-select:none; }
+.own-section:first-child .own-section-hdr { padding-top:6px; }
+.own-section-body { display:block; }
 
 /* ── Item (nav link) ──────────────────────────────────────────── */
 .own-item { position:relative; display:flex; align-items:center; gap:11px;
-  padding:9px 12px; margin:1px 0;
-  color:rgba(255,255,255,0.62); font-size:13px; font-weight:500;
-  text-decoration:none; border-radius:8px;
+  padding:8.5px 12px; margin-bottom:1px;
+  color:#9eaea3; font-size:12.5px; font-weight:500;
+  text-decoration:none; border-radius:9px;
   transition:background .15s, color .15s; }
-.own-item:hover { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.95); }
-.own-item.active { background:rgba(45,102,36,0.22); color:#7dcf6a; font-weight:600; }
-.own-item.active::before { content:''; position:absolute; left:-4px; top:8px; bottom:8px;
-  width:3px; background:#3a7d2c; border-radius:0 3px 3px 0; box-shadow:0 0 6px rgba(58,125,44,.5); }
-.own-item-icon { font-size:16px; width:18px; text-align:center; flex-shrink:0; opacity:.85; }
-.own-item.active .own-item-icon { opacity:1; }
+.own-item:hover { background:rgba(255,255,255,0.04); color:#dde8e1; }
+.own-item.active { background:rgba(255,255,255,0.06); color:#fff; font-weight:700; }
+.own-item-icon { font-size:16px; width:16px; text-align:center; flex-shrink:0; opacity:.8; }
+.own-item.active .own-item-icon { opacity:1; color:#22c55e; }
 .own-item-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-/* Soon (Segera Hadir) — subtle dot indicator, no loud badge */
-.own-item-soon { opacity:.55; }
-.own-item-soon:hover { opacity:.85; }
-.own-item-dot { width:6px; height:6px; border-radius:50%;
-  background:#f59e0b; opacity:.7; flex-shrink:0; }
+/* Soon (Segera Hadir) — subtle amber dot indicator, no loud badge */
+.own-item-dot { width:5px; height:5px; border-radius:50%;
+  background:#d97706; flex-shrink:0; margin-left:auto; }
 
 /* ── Quick Actions ────────────────────────────────────────────── */
-.own-quick { padding:14px 14px 12px; border-top:1px solid rgba(255,255,255,0.05); }
+.own-quick { padding:14px 14px 12px; border-top:1px solid rgba(255,255,255,0.07); }
 .own-quick-label { font-size:9.5px; font-weight:700; text-transform:uppercase;
   letter-spacing:.12em; color:rgba(255,255,255,0.4); margin-bottom:9px; padding:0 2px;
   display:flex; align-items:center; gap:6px; }
@@ -401,12 +383,12 @@ body { font-family:var(--ff); font-size:var(--fs-base); color:var(--txt); backgr
 .own-quick-btn-primary i { color:#7dcf6a; }
 
 /* ── Profile card ─────────────────────────────────────────────── */
-.own-profile { display:flex; align-items:center; gap:10px; padding:11px 14px;
-  border-top:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.02); }
-.own-profile-avatar { width:34px; height:34px; border-radius:9px;
-  background:rgba(45,102,36,.22); color:#7dcf6a;
+.own-profile { display:flex; align-items:center; gap:10px; padding:12px 16px;
+  border-top:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02); }
+.own-profile-avatar { width:30px; height:30px; border-radius:8px;
+  background:#1a4530; color:#bff0cf;
   display:flex; align-items:center; justify-content:center;
-  font-size:11.5px; font-weight:800; letter-spacing:.04em; flex-shrink:0; }
+  font-size:11px; font-weight:800; letter-spacing:.04em; flex-shrink:0; }
 .own-profile-info { flex:1; min-width:0; line-height:1.2; }
 .own-profile-name { font-size:12.5px; font-weight:700; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

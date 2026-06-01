@@ -40,7 +40,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
   const sections = [
     {
       key: "utama",
-      emoji: "🏠",
       label: "Utama",
       items: [
         { id: "dashboard", href: "/admin?tk=" + token, icon: "ti ti-layout-dashboard", label: "Dashboard" },
@@ -48,7 +47,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "operasional",
-      emoji: "💰",
       label: "Operasional",
       items: [
         { id: "keuangan",  href: "/operasional",           icon: "ti ti-chart-pie", label: "Dashboard Keuangan", tk: true },
@@ -60,7 +58,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "member",
-      emoji: "👥",
       label: "Member",
       items: [
         { id: "members",           href: "/admin/members?tk=" + token,           icon: "ti ti-user-circle", label: "Kelola Member" },
@@ -69,7 +66,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "billiard",
-      emoji: "🎱",
       label: "Billiard",
       module: "billiard",
       items: [
@@ -81,7 +77,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "warkop",
-      emoji: "☕",
       label: "Warkop",
       module: "warkop",
       items: [
@@ -91,7 +86,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     {
       // Inventori = INTI (semua jenis usaha butuh stok & supplier) → selalu tampil.
       key: "inventori",
-      emoji: "📦",
       label: "Inventori",
       items: [
         { id: "stok",     href: "/operasional/stok",      icon: "ti ti-package",          label: "Stok & Inventory", tk: true },
@@ -100,7 +94,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "sdm",
-      emoji: "👨‍💼",
       label: "SDM",
       module: "sdm",
       items: [
@@ -112,7 +105,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "laporan",
-      emoji: "📊",
       label: "Laporan",
       items: [
         { id: "laporan-untung-rugi",  href: soon("Laporan Untung Rugi"),  icon: "ti ti-trending-up",     label: "Untung Rugi",  soon: true },
@@ -123,7 +115,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     },
     {
       key: "pengaturan",
-      emoji: "⚙️",
       label: "Pengaturan",
       items: [
         { id: "catatan-fitur", href: "/operasional/catatan-fitur", icon: "ti ti-notes",         label: "Catatan Fitur",         tk: true },
@@ -143,19 +134,14 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
   // utama harian, biar 1-klik akses ke Dashboard Keuangan / Transaksi).
   const activeModules = currentModules();
   const modOK = (m) => !m || activeModules.includes(m);
-  const alwaysOpenKeys = new Set(["operasional"]);
   let navHtml = "";
   for (const sec of sections) {
     if (!modOK(sec.module)) continue;                 // modul section mati → sembunyikan
     const visItems = sec.items.filter((it) => modOK(it.module));
     if (visItems.length === 0) continue;              // semua item ter-filter → skip section
-    const isOpen = alwaysOpenKeys.has(sec.key) || visItems.some((i) => i.id === activePage);
-    navHtml += `<div class="own-section${isOpen ? " open" : ""}" data-key="${sec.key}">`;
-    navHtml += `<button type="button" class="own-section-hdr" onclick="ownToggle(this)">`
-      +   `<span class="own-section-emoji">${sec.emoji}</span>`
-      +   `<span class="own-section-label">${sec.label}</span>`
-      +   `<i class="ti ti-chevron-down own-section-chev"></i>`
-      + `</button>`;
+    // Flat (non-collapsible): header = label statis, body selalu tampil.
+    navHtml += `<div class="own-section" data-key="${sec.key}">`;
+    navHtml += `<div class="own-section-hdr">${sec.label}</div>`;
     navHtml += `<div class="own-section-body">`;
     for (const it of visItems) {
       const isActive = it.id === activePage;
@@ -233,10 +219,6 @@ export function buildOwnerSidebar({ token = "", activePage = "", displayName = "
     </div>
   </div>
   <script>
-    function ownToggle(btn) {
-      var sec = btn.parentElement;
-      if (sec) sec.classList.toggle("open");
-    }
     function ownerLogout() {
       if (!confirm("Keluar dari sesi owner?")) return;
       try { localStorage.removeItem("warpat_atk"); } catch (_) {}
