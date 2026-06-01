@@ -825,10 +825,13 @@ export const setSesiItemJumlah = async (id, jumlah, warungId = currentWarungId()
 // Update item SEWA sebuah sesi (jumlah + keterangan) — utk "Ubah durasi" saat
 // sesi masih jalan. Hanya item sewa yg belum dibayar (lunas=FALSE).
 export const updateSesiSewa = async (sesiId, jumlah, keterangan, warungId = currentWarungId()) => {
+  // Update jumlah/keterangan sewa TANPA guard lunas — perpanjang durasi tetap
+  // bisa walau sewa sudah dibayar (Bayar sekarang). Status lunas/bayar dibiarkan:
+  // sewa lunas tetap lunas di nominal baru (tambahan ditagih saat perpanjang).
   const res = await query(
     `UPDATE transaksi SET jumlah = $1, keterangan = $2
       WHERE sesi_id = $3 AND warung_id = $4 AND kategori = 'Sewa Meja'
-        AND lunas = FALSE AND voided_at IS NULL`,
+        AND voided_at IS NULL`,
     [Math.max(0, parseInt(jumlah) || 0), String(keterangan || "").slice(0, 200), sesiId, warungId]
   );
   return res.rowCount > 0;

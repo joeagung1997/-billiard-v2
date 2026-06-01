@@ -3841,19 +3841,17 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     const sewaTitle = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
     const paid   = sewa.lunas !== false;
     const method = sewa.bayar === "qris" ? "QRIS" : (sewa.bayar === "cash" ? "Cash" : "");
-    // Tombol +1 Jam / Ubah durasi hanya saat sewa BELUM lunas. Sewa yang sudah
-    // dibayar (Bayar sekarang) tak bisa diubah (updateSesiSewa guard lunas=FALSE),
-    // jadi cukup tampilkan status "Dibayar".
-    const plus1 = (!paid && rh > 0)
+    // +1 Jam / Ubah durasi tetap tersedia walau sewa SUDAH dibayar — tambahan jam
+    // ditagih saat itu (sewa lunas tetap lunas di nominal baru). Tag "Bayar saat
+    // tutup" hanya muncul kalau belum dibayar.
+    const plus1 = rh > 0
       ? "<form method=\"post\" action=\"/operasional/sesi/sewa/durasi\" style=\"display:contents\">"
         + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + s.id + "\"><input type=\"hidden\" name=\"durasi\" value=\"" + (rh + 1) + " Jam\">"
         + "<button type=\"submit\" class=\"chip-btn\" title=\"Perpanjang 1 jam — langsung tersimpan\"><i class=\"ti ti-plus\"></i> 1 Jam</button></form>"
       : "";
-    const sewaRight = paid
-      ? ""
-      : plus1
-        + "<button type=\"button\" class=\"chip-btn\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
-        + "<span class=\"tag-amber\">Bayar saat tutup</span>";
+    const sewaRight = plus1
+      + "<button type=\"button\" class=\"chip-btn\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
+      + (paid ? "" : "<span class=\"tag-amber\">Bayar saat tutup</span>");
     const paidSub = paid
       ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
       : "";
