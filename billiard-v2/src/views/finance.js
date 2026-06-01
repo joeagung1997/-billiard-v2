@@ -3824,7 +3824,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const mejaOpts = mejaTersedia.map((m) =>
     "<option value=\"" + m.id + "\" data-ts=\"" + (m.tarif_siang || 0) + "\" data-tm=\"" + (m.tarif_malam || 0) + "\" data-to=\"" + (m.tarif_open || 0) + "\">" + escHtml(m.nama) + "</option>"
   ).join("");
-  const durasiOpts = "<option value=\"Open\">Open (harga saat tutup)</option>"
+  const durasiOpts = "<option value=\"\" disabled hidden></option><option value=\"Open\" selected>Open (harga saat tutup)</option>"
     + "<option value=\"1 Jam\">1 Jam</option><option value=\"2 Jam\">2 Jam</option><option value=\"3 Jam\">3 Jam</option><option value=\"4 Jam\">4 Jam</option><option value=\"5 Jam\">5 Jam</option><option value=\"6 Jam\">6 Jam</option><option value=\"7 Jam\">7 Jam</option><option value=\"8 Jam\">8 Jam</option>";
 
   const payForm = (sesiId, itemId, amtStr, nama) => {
@@ -4119,6 +4119,32 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .mj-pfx:focus-within{border-color:var(--accent);background:var(--surface)}
     .mj-pfx span{padding:0 4px 0 10px;font-size:12px;font-weight:700;color:var(--txt3)}
     .mj-pfx input{flex:1;min-width:0;border:none;background:transparent;padding:9px 11px 9px 4px;font-size:13px;font-family:var(--ff-mono);color:var(--txt);outline:none}
+    /* Picker bottom-sheet (disamakan dgn Catat Transaksi) — dipakai utk Pilih
+       Meja, Durasi, & item F&B di dalam modal. z-index di atas .mj-modal (9998). */
+    .mip-wrap{position:relative;width:100%}
+    .mip-sel{display:none}
+    .mip-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);font-family:var(--ff);font-size:13px;color:var(--txt3);cursor:pointer;text-align:left;min-height:38px;min-width:0;box-sizing:border-box;transition:border-color .15s,background .15s}
+    .mip-btn:hover{border-color:var(--accent);background:var(--surface)}
+    .mip-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mip-text-filled{color:var(--txt);font-weight:500}
+    .mip-overlay{display:none;position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:10000;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;animation:mipFadeIn .2s ease}
+    @keyframes mipFadeIn{from{opacity:0}to{opacity:1}}
+    .mip-overlay.open{display:flex}
+    .mip-sheet{width:100%;max-width:520px;background:var(--surface);border-radius:18px 18px 0 0;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;animation:mipSlideUp .25s cubic-bezier(.32,.72,.55,1)}
+    @keyframes mipSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    @media(min-width:641px){.mip-overlay{align-items:center;padding:16px}.mip-sheet{border-radius:14px;max-height:75vh;max-height:75dvh}}
+    .mip-sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+    .mip-sheet-title{font-size:15px;font-weight:700;color:var(--txt)}
+    .mip-close{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:20px;padding:4px 6px;display:flex;align-items:center}
+    .mip-search-wrap{position:relative;padding:12px 16px 8px;background:var(--surface)}
+    .mip-search-wrap i{position:absolute;left:26px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:15px}
+    .mip-search{width:100%;padding:11px 12px 11px 38px;border:1px solid var(--border2);border-radius:10px;font-size:14px;color:var(--txt);outline:none;background:var(--surface2);font-family:var(--ff)}
+    .mip-search:focus{border-color:var(--accent);background:var(--surface)}
+    .mip-list{flex:1;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch}
+    .mip-group-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;padding:14px 8px 6px}
+    .mip-item{display:block;width:100%;text-align:left;padding:12px 14px;background:transparent;border:none;border-radius:9px;font-family:var(--ff);font-size:13.5px;color:var(--txt);cursor:pointer;transition:background .12s;line-height:1.4}
+    .mip-item:hover{background:var(--surface2)}
+    .mip-item.active{background:var(--green-bg);color:var(--green-dark);font-weight:600}
     .mj-modal{position:fixed;inset:0;background:rgba(20,30,18,.5);display:none;align-items:center;justify-content:center;z-index:9998;padding:16px}
     .mj-modal.show{display:flex}
     .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);-webkit-overflow-scrolling:touch}
@@ -4176,7 +4202,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
   const js =
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
-    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}window._bukaMulaiEdited=false;var bd=document.querySelector('#mBuka input[name=bayar_didepan][value=\"1\"]');if(bd)bd.checked=true;bukaBayarToggle();bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
+    + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}var t=document.getElementById('bukaMulai');if(t){var d=new Date();t.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}window._bukaMulaiEdited=false;var bd=document.querySelector('#mBuka input[name=bayar_didepan][value=\"1\"]');if(bd)bd.checked=true;bukaBayarToggle();mipSync(document.getElementById('bukaMeja'));mipSync(document.getElementById('bukaDurasi'));bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
     + "function bukaBayarToggle(){var on=document.querySelector('#mBuka input[name=bayar_didepan]:checked');var w=document.getElementById('bukaMetodeWrap');if(w)w.style.display=(on&&on.value==='1')?'':'none';}"
     + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
@@ -4201,7 +4227,19 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function fnbCalc(elInScope){var scope=fnbBlock(elInScope);if(!scope)return;var tot=0;scope.querySelectorAll('.fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');var o=s.options[s.selectedIndex];var h=(o&&s.value)?(parseInt(o.dataset.harga||'0')||0):0;var q=parseInt(r.querySelector('.fnb-qty').value)||1;tot+=h*q;});var el=scope.querySelector('.fnb-total');if(el)el.textContent='Rp '+tot.toLocaleString('id-ID');if(scope.closest('#mBuka'))bukaTotal();}"
     + "function fnbSerialize(scope){var items=[];if(!scope)return items;scope.querySelectorAll('.fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');if(!s.value)return;var o=s.options[s.selectedIndex];items.push({nama:s.value,qty:parseInt(r.querySelector('.fnb-qty').value)||1,harga:parseInt(o.dataset.harga||'0')||0});});var inp=scope.querySelector('.fnb-items');if(inp)inp.value=JSON.stringify(items);return items;}"
     + "function fnbSubmit(form){var items=fnbSerialize(form.querySelector('.fnb-block'));if(items.length===0){alert('Pilih minimal 1 item.');return false;}return true;}"
-    + "function bukaSubmit(form){var h=document.getElementById('bukaMulaiMs');if(h)h.value=bukaStartMs();fnbSerialize(form.querySelector('.fnb-block'));return true;}"
+    + "function bukaSubmit(form){var mj=document.getElementById('bukaMeja');if(mj&&!mj.value){alert('Pilih meja dulu.');return false;}var h=document.getElementById('bukaMulaiMs');if(h)h.value=bukaStartMs();fnbSerialize(form.querySelector('.fnb-block'));return true;}"
+    // Picker bottom-sheet (port dari Catat Transaksi) — utk select meja/durasi/F&B
+    // di modal. Native select disembunyikan (.mip-sel), tombol .mip-btn buka sheet.
+    + "var _mipSel=null;"
+    + "function openItemPicker(btn,title,hideSearch){var wrap=btn.parentElement;var sel=wrap.querySelector('select');if(!sel)return;_mipSel=sel;var list=document.getElementById('mipList');if(!list)return;list.innerHTML='';var currentVal=sel.value;var groups={};var groupOrder=[];for(var i=1;i<sel.options.length;i++){var o=sel.options[i];if(!o.value)continue;var kat=(o.dataset.kategori||'lainnya').toLowerCase();if(!groups[kat]){groups[kat]=[];groupOrder.push(kat);}groups[kat].push(o);}var skipLabels=groupOrder.length===1&&groupOrder[0]==='lainnya';var html='';var katLabel={minuman:'Minuman',snack:'Snack',rokok:'Rokok',lainnya:'Lainnya'};groupOrder.forEach(function(kat){if(!skipLabels)html+='<div class=\"mip-group-lbl\">'+(katLabel[kat]||kat)+'</div>';groups[kat].forEach(function(o){var sel2=o.value===currentVal?' active':'';html+='<button type=\"button\" class=\"mip-item'+sel2+'\" data-v=\"'+o.value.replace(/\"/g,'&quot;')+'\" data-l=\"'+o.text.replace(/\"/g,'&quot;')+'\" onclick=\"pickItem(this)\">'+o.text+'</button>';});});list.innerHTML=html;var titleEl=document.getElementById('mipSheetTitle');if(titleEl)titleEl.textContent=title||'Pilih Item';var searchWrap=document.getElementById('mipSearchWrap');if(searchWrap)searchWrap.style.display=hideSearch?'none':'';document.getElementById('mipOv').classList.add('open');_mipBindKeyboardAdjust();if(!hideSearch)setTimeout(function(){var s=document.getElementById('mipSearch');if(s){s.value='';filterItemPicker();s.focus();}},150);}"
+    + "function _mipApplyVv(){var ov=document.getElementById('mipOv');if(!ov||!ov.classList.contains('open'))return;if(window.visualViewport)ov.style.height=window.visualViewport.height+'px';}"
+    + "function _mipBindKeyboardAdjust(){if(!window.visualViewport||window._mipVvBound)return;window._mipVvBound=true;window.visualViewport.addEventListener('resize',_mipApplyVv);window.visualViewport.addEventListener('scroll',_mipApplyVv);}"
+    + "function pickItem(itBtn){if(!_mipSel)return;var v=itBtn.getAttribute('data-v');var l=itBtn.getAttribute('data-l');_mipSel.value=v;var wrap=_mipSel.parentElement;var disp=wrap.querySelector('.mip-text');if(disp){disp.textContent=l;if(v)disp.classList.add('mip-text-filled');else disp.classList.remove('mip-text-filled');}_mipSel.dispatchEvent(new Event('change',{bubbles:true}));closeItemPicker();}"
+    + "function closeItemPicker(){var ov=document.getElementById('mipOv');if(ov){ov.classList.remove('open');ov.style.height='';}_mipSel=null;}"
+    // Sinkronkan teks .mip-btn dgn nilai select tersembunyi (mis. setelah deep-link
+    // ?buka= set selectedIndex, atau saat modal dibuka ulang).
+    + "function mipSync(sel){if(!sel)return;var wrap=sel.parentElement;if(!wrap)return;var disp=wrap.querySelector('.mip-text');if(!disp)return;var o=sel.options[sel.selectedIndex];if(sel.value&&o){disp.textContent=o.text;disp.classList.add('mip-text-filled');}else{disp.textContent=(sel.options[0]?sel.options[0].text:'')||'pilih';disp.classList.remove('mip-text-filled');}}"
+    + "function filterItemPicker(){var q=(document.getElementById('mipSearch').value||'').toLowerCase();var items=document.querySelectorAll('#mipList .mip-item');items.forEach(function(it){var match=!q||it.textContent.toLowerCase().indexOf(q)>=0;it.style.display=match?'':'none';});var labels=document.querySelectorAll('#mipList .mip-group-lbl');labels.forEach(function(lbl){var nxt=lbl.nextElementSibling;var hasVis=false;while(nxt&&!nxt.classList.contains('mip-group-lbl')){if(nxt.style.display!=='none'){hasVis=true;break;}nxt=nxt.nextElementSibling;}lbl.style.display=hasVis?'':'none';});}"
     + "function openTutup(d){document.getElementById('tutSesiId').value=d.id;document.getElementById('tutMeja').textContent=d.meja||'meja';"
     + "var warn=document.getElementById('tutWarn');var sewaWrap=document.getElementById('tutSewaWrap');"
     + "if(d.fnbUnpaid>0){warn.style.display='';warn.textContent='Masih ada '+d.fnbUnpaid+' item F&B belum dibayar. Bayar dulu sebelum tutup.';document.getElementById('tutSubmit').disabled=true;}else{warn.style.display='none';document.getElementById('tutSubmit').disabled=false;}"
@@ -4258,9 +4296,9 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +   (mejaTersedia.length === 0
         ? "<div class=\"mj-form\"><div class=\"sesi-empty\" style=\"border:none;padding:8px\"><i class=\"ti ti-mood-empty\"></i><div>Semua meja aktif sedang dipakai (punya sesi terbuka), atau belum ada meja. Atur di <b>Manajemen Meja</b>.</div></div></div>"
         : "<form method=\"post\" action=\"/operasional/sesi/buka\" class=\"mj-form\" onsubmit=\"return bukaSubmit(this)\">"
-          + "<div class=\"mj-fg\"><label>Pilih Meja</label><select name=\"meja_id\" id=\"bukaMeja\" onchange=\"bukaCalc()\" required><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select></div>"
-          + "<div class=\"mj-fg\"><label>Durasi</label><select name=\"durasi\" id=\"bukaDurasi\" onchange=\"bukaCalc()\">"
-          +   durasiOpts + "</select></div>"
+          + "<div class=\"mj-fg\"><label>Pilih Meja</label><div class=\"mip-wrap\"><select name=\"meja_id\" id=\"bukaMeja\" class=\"mip-sel\" onchange=\"bukaCalc()\"><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Meja',true)\"><span class=\"mip-text\">— pilih meja —</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div></div>"
+          + "<div class=\"mj-fg\"><label>Durasi</label><div class=\"mip-wrap\"><select name=\"durasi\" id=\"bukaDurasi\" class=\"mip-sel\" onchange=\"bukaCalc()\">"
+          +   durasiOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Durasi',true)\"><span class=\"mip-text mip-text-filled\" id=\"bukaDurasiText\">Open (harga saat tutup)</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div></div>"
           + "<div class=\"mj-fg\"><label>Jam mulai <span style=\"font-weight:400;color:var(--txt3)\">(default: sekarang — mundur kalau telat dicatat)</span></label><input type=\"time\" id=\"bukaMulai\" onchange=\"window._bukaMulaiEdited=true;bukaCalc()\"><input type=\"hidden\" name=\"mulai\" id=\"bukaMulaiMs\"></div>"
           + "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Harga sewa</span><b id=\"bukaPrice\">—</b></div></div>"
           + "<div class=\"mj-fg\"><label>Pesanan F&amp;B <span style=\"font-weight:400;color:var(--txt3)\">(opsional — makanan / minuman)</span></label>"
@@ -4329,7 +4367,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Beberapa item di sini jadi <b>1 transaksi gabungan</b> (dibayar bareng). <b>Belum bayar</b> = ditagih saat tutup; <b>Sudah bayar</b> = langsung lunas (pilih metode).</span></div>"
     +     "<button type=\"submit\" id=\"fnbSubmitBtn\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah ke bill (belum bayar)</button>"
     +   "</form>"
-    +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><select class=\"fnb-sel\" onchange=\"fnbCalc(this)\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><div class=\"fnb-stepper\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,-1)\" aria-label=\"Kurangi jumlah\"><i class=\"ti ti-minus\"></i></button><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc(this)\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,1)\" aria-label=\"Tambah jumlah\"><i class=\"ti ti-plus\"></i></button></div><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
+    +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><div class=\"mip-wrap\"><select class=\"fnb-sel mip-sel\" onchange=\"fnbCalc(this)\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Item')\"><span class=\"mip-text\">pilih item</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div><div class=\"fnb-stepper\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,-1)\" aria-label=\"Kurangi jumlah\"><i class=\"ti ti-minus\"></i></button><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc(this)\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,1)\" aria-label=\"Tambah jumlah\"><i class=\"ti ti-plus\"></i></button></div><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
+    + "</div></div>"
+    // Picker bottom-sheet — 1 overlay dipakai semua select (meja/durasi/F&B)
+    + "<div class=\"mip-overlay\" id=\"mipOv\" onclick=\"if(event.target===this)closeItemPicker()\"><div class=\"mip-sheet\">"
+    +   "<div class=\"mip-sheet-hdr\"><div class=\"mip-sheet-title\" id=\"mipSheetTitle\">Pilih Item</div><button type=\"button\" class=\"mip-close\" onclick=\"closeItemPicker()\"><i class=\"ti ti-x\"></i></button></div>"
+    +   "<div class=\"mip-search-wrap\" id=\"mipSearchWrap\"><i class=\"ti ti-search\"></i><input type=\"text\" id=\"mipSearch\" class=\"mip-search\" placeholder=\"Cari item...\" oninput=\"filterItemPicker()\" autocomplete=\"off\"></div>"
+    +   "<div class=\"mip-list\" id=\"mipList\"></div>"
     + "</div></div>"
     // Modal Tutup Sesi
     + "<div class=\"mj-modal\" id=\"mTutup\" onclick=\"if(event.target===this)closeTutup()\"><div class=\"mj-modal-card\">"
