@@ -3899,8 +3899,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       + "<button type=\"submit\" class=\"rinci-undo\"><i class=\"ti ti-arrow-back-up\"></i> Batalkan tambahan terakhir</button></form>"
       + "</div>";
     }
-    const sewaRight = "<button type=\"button\" class=\"chip-btn add\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Perpanjang</button>"
-      + (paid ? "" : "<span class=\"tag-calm\">Bayar saat tutup</span>");
+    // Open (harga saat tutup): tak ada durasi tetap -> tak bisa diperpanjang.
+    // Tombol Perpanjang hanya utk sewa berdurasi (rh > 0); utk Open, nominal
+    // "saat tutup" sudah cukup jelas (badge "Bayar saat tutup" jadi redundan).
+    const sewaRight = rh > 0
+      ? "<button type=\"button\" class=\"chip-btn add\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Perpanjang</button>"
+        + (paid ? "" : "<span class=\"tag-calm\">Bayar saat tutup</span>")
+      : "";
     const paidSub = paid
       ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
       : "";
