@@ -86,6 +86,7 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   const isAna  = page === "analisis";
   const isSesi = page === "sesi";
   const isMeja = page === "meja";
+  const isTrx  = page === "transaksi";
   const isMalam = shift === "malam";
   const subOpen = true; // selalu terbuka — tidak perlu klik untuk expand
   const opsItemCls = "nav-item open";
@@ -93,6 +94,11 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
   const subItem = (href, label, active) =>
     "<a href=\"" + href + "\" class=\"submenu-item" + (active ? " active" : "") + "\">"
     + "<div class=\"sub-dot\"></div>" + label + "</a>";
+  // Link nav flat (dipakai sidebar karyawan — grup datar, langsung tampil).
+  const navLink = (href, icon, label, active) =>
+    "<a href=\"" + href + "\" class=\"nav-item" + (active ? " active" : "") + "\">"
+    + "<div class=\"nav-item-icon\"><i class=\"" + icon + "\"></i></div>"
+    + "<span class=\"nav-item-text\">" + label + "</span></a>";
 
   // Label & avatar — pakai displayName jika ada, fallback ke role label
   const fallbackName  = isOwner ? "Owner" : "Partner";
@@ -119,40 +125,26 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     // ── Nav scroll ─────────────────────────────────
     + "<div class=\"nav-scroll\">"
 
-    // GROUP: UTAMA (Dashboard + Kelola Member — semua role bisa lihat)
-    + "<div class=\"nav-group\">"
-    + "<div class=\"nav-group-label\">Utama</div>"
-    + (isOwner
-      ? "<a href=\"#\" class=\"nav-item\" onclick=\"goAdmin()\">"
-        + "<div class=\"nav-item-icon\"><i class=\"ti ti-layout-dashboard\"></i></div>"
-        + "<span class=\"nav-item-text\">Dashboard</span>"
-        + "</a>"
-      : "")
-    + "<a href=\"#\" class=\"nav-item\" onclick=\"goMembers()\">"
-    + "<div class=\"nav-item-icon\"><i class=\"ti ti-users\"></i></div>"
-    + "<span class=\"nav-item-text\">Kelola Member</span>"
-    + "</a>"
-    + "</div>"
-
-    // GROUP: OPERASIONAL
+    // GROUP: OPERASIONAL — Dashboard Keuangan + Transaksi (Transaksi: filter
+    // dikunci hari ini di server; aksi lain bebas).
     + "<div class=\"nav-group\">"
     + "<div class=\"nav-group-label\">Operasional</div>"
-    + "<div class=\"" + opsItemCls + "\">"
-    + "<div class=\"nav-item-icon\"><i class=\"ti ti-briefcase\"></i></div>"
-    + "<span class=\"nav-item-text\">Operasional</span>"
+    + navLink("/operasional", "ti ti-chart-pie", "Dashboard Keuangan", isKeu)
+    + navLink("/operasional/transaksi", "ti ti-receipt", "Transaksi", isTrx)
     + "</div>"
-    + "<div class=\"submenu-wrap\">"
-    + "<div class=\"submenu" + (subOpen ? " open" : "") + "\" id=\"sub-ops\">"
-    + subItem("/operasional", "Dashboard Keuangan", isKeu)
-    + subItem("/operasional/sesi", "Sesi Meja (Bill)", isSesi)
-    + subItem("/operasional/meja", "Manajemen Meja", isMeja)
-    + (isOwner ? subItem("/operasional/analisis", "Analisis Target", isAna) : "")
-    + (isOwner ? subItem("/operasional/kategori", "Kelola Kategori", isKat) : "")
-    + (isOwner ? subItem("/operasional/menu",     "Kelola Menu",     isMenu) : "")
-    + (isOwner ? subItem("/operasional/sdm",      "SDM & Penggajian", isSdm) : "")
-    + (isOwner ? subItem("/operasional/monitoring/aktivitas", "Monitoring Karyawan", isMon) : "")
+
+    // GROUP: MEMBER — akses penuh (route /admin/* terima sesi karyawan)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Member</div>"
+    + navLink("/admin/members", "ti ti-user-circle", "Kelola Member", false)
+    + navLink("/admin/riwayat-kunjungan", "ti ti-history", "Riwayat Kunjungan", false)
     + "</div>"
-    + "</div>"
+
+    // GROUP: BILLIARD — Sesi Meja + Manajemen Meja (Manajemen Meja read-only)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Billiard</div>"
+    + navLink("/operasional/sesi", "ti ti-receipt", "Sesi Meja (Bill)", isSesi)
+    + navLink("/operasional/meja", "ti ti-grid-dots", "Manajemen Meja", isMeja)
     + "</div>"
 
     + "</div>"
@@ -1602,7 +1594,6 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
           const fmt = (d) => d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
           return "<div class=\"kya-day-bar\">"
             + "<div class=\"kya-day-bar-lbl\"><i class=\"ti ti-calendar\"></i> Tampilkan</div>"
-            + _dayChip(_yesterIso, "Kemarin",  fmt(new Date(_today.getTime() - 86400000)))
             + _dayChip(_todayIso,  "Hari ini", fmt(_today))
             + "</div>";
         })())
@@ -1789,11 +1780,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + "<div class=\"trx-filter-row\">"
         +   "<select class=\"trx-fdrop\" id=\"filterDate\" onchange=\"setTblFilter(this.value)\">"
         +     "<option value=\"today\" selected>📅 Hari Ini</option>"
-        +     "<option value=\"yesterday\">Kemarin</option>"
-        +     "<option value=\"this-week\">Minggu Ini</option>"
-        +     "<option value=\"this-month\">Bulan Ini</option>"
+        +     (isOwner ? "<option value=\"yesterday\">Kemarin</option>" : "")
+        +     (isOwner ? "<option value=\"this-week\">Minggu Ini</option>" : "")
+        +     (isOwner ? "<option value=\"this-month\">Bulan Ini</option>" : "")
         +     (isOwner ? "<option value=\"custom\">Custom...</option>" : "")
-        +     "<option value=\"all\">Semua Tanggal</option>"
+        +     (isOwner ? "<option value=\"all\">Semua Tanggal</option>" : "")
         +   "</select>"
         +   "<div id=\"tblCustomRange\" class=\"trx-custom-range\" style=\"display:none\">"
         +     "<input type=\"date\" class=\"trx-fdate\" id=\"tblDari\" onchange=\"setTblFilter('custom')\">"

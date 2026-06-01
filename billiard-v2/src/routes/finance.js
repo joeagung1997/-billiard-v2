@@ -212,13 +212,13 @@ async function buildDashboardData(req, res) {
   // Catat Transaksi cepat — biar tidak dobel dgn pencatatan via Sesi Meja.
   const mejaList = mejaAktif.filter((m) => !occupiedIds.includes(m.id));
 
-  // Karyawan: hanya boleh lihat kemarin atau hari ini (1 hari saja, bukan range).
+  // Karyawan: hanya boleh lihat transaksi HARI INI (bukan range, bukan kemarin).
   // Pakai business day (cutoff jam 06:00 WIB) — bukan calendar day — supaya shift
   // tutup tengah malam tetap dianggap "hari ini" sampai pagi.
   const today      = todayBusinessDayISO();
   const todayD     = new Date(today + "T00:00:00Z");
   const yesterday  = new Date(todayD.getTime() - 86400000).toISOString().slice(0, 10);
-  const allowedKy  = [yesterday, today];
+  const allowedKy  = [today];
 
   let tglDari, tglSampai, bulanFilter, jenisFilter;
   if (role === "karyawan") {
