@@ -3900,6 +3900,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     : sesiData.map((d, i) => {
         const s = d.s;
         const overAttr = d.rh ? (" data-tmr-over=\"" + (d.rh * 3600) + "\"") : "";
+        const endISO   = (d.rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + d.rh * 3600000).toISOString() : "";
         const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, start: s.opened_at || "", w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
         const fnbHtml = d.fnb.length ? d.fnb.map((t) => renderFnbRow(s, t)).join("") : "<div class=\"line line-none\">Belum ada pesanan F&amp;B. Klik <b>Tambah</b>.</div>";
         return "<div class=\"bsesi\" data-detail=\"" + s.id + "\"" + (i > 0 ? " style=\"display:none\"" : "") + ">"
@@ -3908,7 +3909,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           + "<div class=\"bhead-sub\">Dibuka <b data-time=\"" + escHtml(String(s.opened_at || "")) + "\">—</b>" + (s.dibuka_oleh ? " · " + escHtml(s.dibuka_oleh) : "") + "</div></div>"
           + "<div class=\"bhead-r\"><span class=\"bbadge\"><span class=\"bbl\"></span><span class=\"bbadge-t\">Berjalan</span></span>"
           + "<div class=\"btimer\" data-tmr-start=\"" + escHtml(String(s.opened_at || "")) + "\"" + overAttr + ">00:00:00</div>"
-          + "<div class=\"btimer-sub\" data-dsub data-rh=\"" + d.rh + "\">" + (d.rh ? ("durasi sewa " + d.rh + " jam") : "Open — tanpa batas") + "</div></div></div>"
+          + "<div class=\"btimer-sub\">" + (d.rh ? ("selesai <b data-time=\"" + endISO + "\">—</b> · sewa " + d.rh + " jam") : "Open — tanpa batas") + "</div></div></div>"
           + "<div class=\"bbody\">"
           + "<div class=\"sec\"><div class=\"sec-row\"><span class=\"sec-label\">Sewa Meja</span></div>" + renderSewaRow(s, d.sewa) + "</div>"
           + "<div class=\"sec\"><div class=\"sec-row\"><span class=\"sec-label\">Makanan &amp; Minuman</span><button type=\"button\" class=\"chip-btn add\" onclick='openAddFnb(" + s.id + ")'><i class=\"ti ti-plus\"></i> Tambah</button></div>"
@@ -3952,7 +3953,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .bri-stat{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--green);flex-shrink:0}
     .bri-bl{width:6px;height:6px;border-radius:50%;background:currentColor;animation:bblink 1.6s infinite}
     @keyframes bblink{0%,100%{opacity:1}50%{opacity:.3}}
-    .brail-item.is-over .bri-stat,.brail-item.is-over .bri-tmr{color:#b45309}
+    .brail-item.is-over .bri-stat,.brail-item.is-over .bri-tmr,.brail-item.is-soon .bri-stat,.brail-item.is-soon .bri-tmr{color:#b45309}
     .bri-bot{display:flex;align-items:baseline;justify-content:space-between;margin-top:11px;padding-top:11px;border-top:1px solid var(--border)}
     .brail-item.active .bri-bot{border-top-color:#cce8b8}
     .bri-tmr{font-family:var(--ff-mono);font-weight:600;font-size:15px;color:var(--txt2)}
@@ -3973,8 +3974,10 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .bbl{width:5px;height:5px;border-radius:50%;background:currentColor;animation:bblink 1.6s infinite}
     .bsesi.is-over .bbadge{color:#b45309;background:#fef6e7;border-color:#f6dca6}
     .bsesi.is-over .bbadge-t::after{content:' · Lewat'}
-    .btimer{font-family:var(--ff-mono);font-weight:600;font-size:30px;letter-spacing:.01em;line-height:1.05;margin-top:6px;color:var(--txt)}
-    .bsesi.is-over .btimer{color:#d97706}
+    .bsesi.is-soon .bbadge{color:#b45309;background:#fef6e7;border-color:#f6dca6}
+    .bsesi.is-soon .bbadge-t::after{content:' · Hampir selesai'}
+    .btimer{font-family:var(--ff-mono);font-weight:600;font-size:28px;letter-spacing:.01em;line-height:1.05;margin-top:6px;color:var(--txt)}
+    .bsesi.is-over .btimer,.bsesi.is-soon .btimer{color:#d97706}
     .btimer-sub{font-size:11px;color:var(--txt3);font-weight:500;margin-top:2px}
 
     .bbody{padding:8px 24px}
@@ -4141,8 +4144,9 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "(function(){var bk=new URLSearchParams(location.search).get('buka');if(!bk)return;var sel=document.getElementById('bukaMeja');if(sel){for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===bk){sel.selectedIndex=i;break;}}}openBuka();bukaCalc();})();"
     + "function bSelect(id){document.querySelectorAll('[data-detail]').forEach(function(d){d.style.display=(d.dataset.detail===String(id))?'':'none';});document.querySelectorAll('[data-sel]').forEach(function(r){r.classList.toggle('active',r.dataset.sel===String(id));});}"
     + "function bHms(sec){return [Math.floor(sec/3600),Math.floor(sec%3600/60),sec%60].map(function(x){return String(x).padStart(2,'0');}).join(':');}"
+    + "function bHmsH(sec){var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}"
     + "function bOverTxt(min){var h=Math.floor(min/60),m=min%60;if(h<=0)return m+' menit';return h+' jam'+(m>0?(' '+m+' menit'):'');}"
-    + "function bTick(){document.querySelectorAll('[data-tmr-start]').forEach(function(el){var st=new Date(el.dataset.tmrStart).getTime();if(isNaN(st))return;var sec=Math.max(0,Math.floor((Date.now()-st)/1000));el.textContent=bHms(sec);var ov=el.dataset.tmrOver?parseInt(el.dataset.tmrOver):0;var isOver=ov>0&&sec>ov;var card=el.closest('[data-detail]')||el.closest('[data-sel]');if(card)card.classList.toggle('is-over',isOver);var sub=card?card.querySelector('[data-dsub]'):null;if(sub){var rh=parseInt(sub.dataset.rh)||0;if(rh>0)sub.textContent=isOver?('lewat '+bOverTxt(Math.floor((sec-ov)/60))+' dari '+rh+' jam'):('durasi sewa '+rh+' jam');}});}"
+    + "function bTick(){var now=Date.now();document.querySelectorAll('[data-tmr-start]').forEach(function(el){var st=new Date(el.dataset.tmrStart).getTime();if(isNaN(st))return;var elapsed=Math.max(0,Math.floor((now-st)/1000));var ov=el.dataset.tmrOver?parseInt(el.dataset.tmrOver):0;var card=el.closest('[data-detail]')||el.closest('[data-sel]');if(ov>0){var sisa=ov-elapsed;var over=sisa<0;el.textContent=(over?'Lewat ':'Sisa ')+bHmsH(over?-sisa:sisa);if(card){card.classList.toggle('is-over',over);card.classList.toggle('is-soon',!over&&sisa<=600);}}else{el.textContent=bHms(elapsed);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}});}"
     + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
     + "(function(){var mq=new URLSearchParams(location.search).get('meja');var pick=mq?document.querySelector('.brail-item[data-meja=\"'+mq+'\"]'):null;if(!pick)pick=document.querySelector('[data-sel]');if(pick){bSelect(pick.dataset.sel);if(mq)pick.scrollIntoView({block:'nearest',inline:'nearest'});}bTick();setInterval(bTick,1000);})();"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('sToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}},150);" : "");
