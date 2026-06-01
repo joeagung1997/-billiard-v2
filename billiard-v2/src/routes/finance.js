@@ -1619,7 +1619,20 @@ router.post("/sesi/sewa/durasi", async (req, res) => {
       // Dihitung dari jam buka sesi -> split Siang/Malam ikut jam main.
       const startMs = new Date(sesi.opened_at).getTime() || Date.now();
       jumlah = tarifSplit(startMs, startMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
-      ket    = "Sewa " + (sesi.nama_meja || "Meja") + " · " + durasi;
+      // Rincian durasi: bawa riwayat penambahan (mis. 2 Jam -> +2 -> "4 Jam (2 Jam + 2 Jam)").
+      const items  = await readSesiItems(sesiId);
+      const sewaIt = items.find((t) => t.kategori === "Sewa Meja" && !t.voidedAt);
+      const oldKet = sewaIt ? String(sewaIt.keterangan || "") : "";
+      const bm     = oldKet.match(/\(([^)]+)\)/);
+      let parts    = bm ? bm[1].split("+").map((x) => parseInt(x)).filter((n) => n > 0) : [];
+      if (!parts.length) {
+        const oldTot = parseInt((oldKet.match(/·\s*(\d+)\s*Jam/) || [])[1]) || 0;
+        if (oldTot > 0) parts = [oldTot];
+      }
+      const added = jam - parts.reduce((a, b) => a + b, 0);
+      if (parts.length && added > 0) parts.push(added); else parts = [jam];
+      const rinci = parts.length > 1 ? " (" + parts.map((h) => h + " Jam").join(" + ") + ")" : "";
+      ket = "Sewa " + (sesi.nama_meja || "Meja") + " · " + jam + " Jam" + rinci;
     }
     await updateSesiSewa(sesiId, jumlah, ket);
     res.redirect("/operasional/sesi?msg=durasi&d=" + encodeURIComponent(durasi));

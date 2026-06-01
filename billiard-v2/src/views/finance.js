@@ -3837,6 +3837,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     const rh       = rentalHoursOf(sewa);
     const durLabel = rh ? (rh + " Jam") : "Open";
     const price    = sewa.jumlah || 0;
+    // Jam selesai (estimasi) = jam buka + total durasi sewa. Hanya utk durasi fixed.
+    const endISO   = (rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + rh * 3600000).toISOString() : "";
     const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, start: s.opened_at || "", w: sewa.waktu === "malam" ? "malam" : "siang" }));
     const sewaTitle = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
     const paid   = sewa.lunas !== false;
@@ -3856,7 +3858,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
       ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
       : "";
     return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
-      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + " · " + durLabel + "</div>" + paidSub + "</div>"
+      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + " · " + durLabel + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>" + paidSub + "</div>"
       + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
       + sewaRight + "</div></div>";
   };
