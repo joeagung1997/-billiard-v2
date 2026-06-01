@@ -1534,6 +1534,30 @@ router.post("/sesi/buka", async (req, res) => {
       jumlah: sewaJumlah, lunas: false, bayar: "",
       dicatatOleh: res.locals.financeUser || "", sesiId,
     });
+    // F&B opsional yang diinput sekalian saat buka sesi -> 1 transaksi gabungan
+    // (belum bayar), persis seperti /sesi/item/tambah. Sewa tetap transaksi terpisah.
+    let rawItems = [];
+    try { rawItems = JSON.parse(req.body.items || "[]"); } catch { rawItems = []; }
+    if (Array.isArray(rawItems) && rawItems.length) {
+      const parts = []; let total = 0;
+      for (const it of rawItems) {
+        const nm = String(it && it.nama || "").trim().slice(0, 80);
+        const q  = Math.max(1, parseInt(it && it.qty) || 1);
+        const h  = parseInt(it && it.harga) || 0;
+        if (!nm || h <= 0) continue;
+        total += h * q;
+        parts.push((q > 1 ? q + "× " : "") + nm);
+      }
+      if (parts.length && total > 0) {
+        await appendTransaksi({
+          id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+          jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
+          kategori: "Kopi / Snack", keterangan: parts.join(", "),
+          jumlah: total, lunas: false, bayar: "",
+          dicatatOleh: res.locals.financeUser || "", sesiId,
+        });
+      }
+    }
     res.redirect("/operasional/sesi?msg=dibuka");
   } catch (err) {
     console.error("[FINANCE] sesi buka error:", err.message);
