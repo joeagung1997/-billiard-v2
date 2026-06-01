@@ -1507,6 +1507,29 @@ router.get("/sesi", async (req, res) => {
   }
 });
 
+// ── Tarif sesi berbasis jam (WIB) ─────────────────────────────────
+// Siang = pukul 08:00–18:00 WIB (UTC+7), sisanya Malam. Sesi yang melewati
+// batas dihitung split per detik. siang/malam = tarif per jam (rupiah).
+function _siangSec(aMs, bMs) {
+  const off = 25200; // +7 jam (WIB) dalam detik
+  const s = Math.floor(aMs / 1000) + off, e = Math.floor(bMs / 1000) + off;
+  let t = 0;
+  for (let d = Math.floor(s / 86400) * 86400; d < e; d += 86400) {
+    const lo = Math.max(s, d + 28800), hi = Math.min(e, d + 64800); // [08:00,18:00)
+    if (hi > lo) t += hi - lo;
+  }
+  return t;
+}
+function tarifSplit(aMs, bMs, siang, malam) {
+  if (bMs <= aMs) return 0;
+  const tot = (bMs - aMs) / 1000, ss = _siangSec(aMs, bMs);
+  return Math.round((ss / 3600) * siang + ((tot - ss) / 3600) * malam);
+}
+function wibSiang(ms) {
+  const mod = Math.floor(((Math.floor(ms / 1000) + 25200) % 86400) / 60);
+  return mod >= 480 && mod < 1080; // 08:00–18:00
+}
+
 router.post("/sesi/buka", async (req, res) => {
   const mejaId = parseInt(req.body.meja_id) || 0;
   if (!mejaId) return res.redirect("/operasional/sesi?msg=err");
@@ -1514,16 +1537,17 @@ router.post("/sesi/buka", async (req, res) => {
     const meja = (await readMejas()).find((m) => m.id === mejaId);
     if (!meja || meja.status !== "aktif") return res.redirect("/operasional/sesi?msg=err");
     if (await hasOpenSesi(mejaId)) return res.redirect("/operasional/sesi?msg=sudah_ada");
-    // Durasi: 'Open' -> harga 0 (diisi saat tutup). 'N Jam' -> harga = jam x tarif
-    // (ikut siang/malam), tetap bisa diedit saat tutup. lunas:false (dibayar di akhir).
+    // Durasi: 'Open' -> harga 0 (diisi saat tutup). 'N Jam' -> harga = split tarif
+    // ikut jam main (Siang 08–18 WIB, sisanya Malam), bisa diedit saat tutup.
+    // waktu disimpan utk bucket laporan = jam saat sesi dibuka. lunas:false.
     const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
-    const waktu  = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : (res.locals.financeShift || "siang");
+    const nowMs  = Date.now();
+    const waktu  = wibSiang(nowMs) ? "siang" : "malam";
     const mJam   = durasi.match(/^(\d+) Jam$/);
     let sewaJumlah = 0, sewaKet = "Sewa " + meja.nama;
     if (mJam) {
       const jam  = parseInt(mJam[1]);
-      const rate = waktu === "malam" ? (meja.tarif_malam || 0) : (meja.tarif_siang || 0);
-      sewaJumlah = jam * rate;
+      sewaJumlah = tarifSplit(nowMs, nowMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
       sewaKet    = "Sewa " + meja.nama + " · " + durasi;
     }
     const sesiId = await createSesi(mejaId, meja.nama, res.locals.financeDisplay || res.locals.financeUser || "");
@@ -1569,7 +1593,6 @@ router.post("/sesi/buka", async (req, res) => {
 router.post("/sesi/sewa/durasi", async (req, res) => {
   const sesiId = parseInt(req.body.sesi_id) || 0;
   const durasi = (req.body.durasi ?? "Open").trim().slice(0, 20);
-  const waktu  = ["siang", "malam"].includes(req.body.waktu) ? req.body.waktu : (res.locals.financeShift || "siang");
   try {
     const sesi = await readSesiById(sesiId);
     if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
@@ -1577,9 +1600,10 @@ router.post("/sesi/sewa/durasi", async (req, res) => {
     const mJam = durasi.match(/^(\d+) Jam$/);
     let jumlah = 0, ket = "Sewa " + (sesi.nama_meja || "Meja");
     if (mJam && meja) {
-      const jam  = parseInt(mJam[1]);
-      const rate = waktu === "malam" ? (meja.tarif_malam || 0) : (meja.tarif_siang || 0);
-      jumlah = jam * rate;
+      const jam     = parseInt(mJam[1]);
+      // Dihitung dari jam buka sesi -> split Siang/Malam ikut jam main.
+      const startMs = new Date(sesi.opened_at).getTime() || Date.now();
+      jumlah = tarifSplit(startMs, startMs + jam * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
       ket    = "Sewa " + (sesi.nama_meja || "Meja") + " · " + durasi;
     }
     await updateSesiSewa(sesiId, jumlah, ket);

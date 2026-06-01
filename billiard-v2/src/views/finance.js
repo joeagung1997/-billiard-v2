@@ -3423,12 +3423,11 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
   const liveBlockFor = (m) => {
     const info = openSesiByMeja[m.id];
     if (!info) return "";
-    const malam = info.waktu === "malam";
-    const rate  = malam ? (m.tarif_malam || 0) : (m.tarif_siang || 0);
+    const si = m.tarif_siang || 0, ma = m.tarif_malam || 0;
     return "<div class=\"mjc-session\"><div class=\"mjc-session-r1\">"
-      + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-rate=\"" + rate + "\">00:00:00</span>"
+      + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-siang=\"" + si + "\" data-malam=\"" + ma + "\">00:00:00</span>"
       + "<div class=\"mjc-session-cost\"><small>Estimasi</small><b data-cost>" + rp(0) + "</b></div></div>"
-      + "<div class=\"mjc-session-note\"><i class=\"ti ti-clock-play\"></i> Tarif " + (malam ? "Malam" : "Siang") + " · " + rp(rate) + "/jam</div></div>";
+      + "<div class=\"mjc-session-note\"><i class=\"ti ti-clock-play\"></i> Tarif ikut jam · Siang " + rp(si) + " / Malam " + rp(ma) + "</div></div>";
   };
 
   const cards = mejaList.length === 0
@@ -3667,7 +3666,9 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "function mjApply(){var qel=document.getElementById('mjQ');var q=(qel?qel.value:'').toLowerCase().trim();document.querySelectorAll('.mjc-card').forEach(function(c){var okF=mjFilterKey==='all'||c.dataset.status===mjFilterKey;var okQ=(c.dataset.name||'').indexOf(q)>=0;c.style.display=(okF&&okQ)?'':'none';});}"
     + "function mjPill(el){document.querySelectorAll('.mjc-tab').forEach(function(x){x.classList.remove('active');});el.classList.add('active');mjFilterKey=el.dataset.f;mjApply();}"
     + "function mjView(el){document.querySelectorAll('.mjc-vt').forEach(function(x){x.classList.remove('active');});el.classList.add('active');var g=document.querySelector('.mjc-grid');if(g)g.classList.toggle('list',el.dataset.v==='list');}"
-    + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var rate=+el.dataset.rate||0;var sec=Math.max(0,Math.floor((Date.now()-start)/1000));var h=String(Math.floor(sec/3600)).padStart(2,'0');var m=String(Math.floor(sec%3600/60)).padStart(2,'0');var s=String(sec%60).padStart(2,'0');el.textContent=h+':'+m+':'+s;var cost=Math.round(sec/3600*rate);tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
+    + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
+    + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
+    + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var sec=Math.max(0,Math.floor((Date.now()-start)/1000));var h=String(Math.floor(sec/3600)).padStart(2,'0');var m=String(Math.floor(sec%3600/60)).padStart(2,'0');var s=String(sec%60).padStart(2,'0');el.textContent=h+':'+m+':'+s;var cost=tarifSplit(start,Date.now(),+el.dataset.siang||0,+el.dataset.malam||0);tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "mjTick();setInterval(mjTick,1000);"
     + "function openBulk(){document.getElementById('mjBulkModal').classList.add('show');}function closeBulk(){document.getElementById('mjBulkModal').classList.remove('show');}"
     + (toastMsg ? "setTimeout(function(){var t=document.getElementById('mjToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}},150);" : "");
@@ -3817,12 +3818,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     if (!sewa) return "<div class=\"line line-none\">Sewa meja belum tercatat.</div>";
     const rh       = rentalHoursOf(sewa);
     const durLabel = rh ? (rh + " Jam") : "Open";
-    const rate     = (sewa.waktu === "malam") ? (s.tarif_malam || 0) : (s.tarif_siang || 0);
     const price    = sewa.jumlah || 0;
-    const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, w: sewa.waktu === "malam" ? "malam" : "siang" }));
+    const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, start: s.opened_at || "", w: sewa.waktu === "malam" ? "malam" : "siang" }));
     const sewaTitle = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
     return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
-      + "<div class=\"line-sub\">" + rp(rate) + " / jam · " + durLabel + "</div></div>"
+      + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + " · " + durLabel + "</div></div>"
       + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
       + "<button type=\"button\" class=\"chip-btn\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
       + "<span class=\"tag-amber\">Bayar saat tutup</span></div></div>";
@@ -3856,7 +3856,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     : sesiData.map((d, i) => {
         const s = d.s;
         const overAttr = d.rh ? (" data-tmr-over=\"" + (d.rh * 3600) + "\"") : "";
-        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
+        const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, start: s.opened_at || "", w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
         const fnbHtml = d.fnb.length ? d.fnb.map((t) => renderFnbRow(s, t)).join("") : "<div class=\"line line-none\">Belum ada pesanan F&amp;B. Klik <b>Tambah</b>.</div>";
         return "<div class=\"bsesi\" data-detail=\"" + s.id + "\"" + (i > 0 ? " style=\"display:none\"" : "") + ">"
           + "<div class=\"bhead\"><div class=\"bnum\">" + escHtml(tableNo(s)) + "</div>"
@@ -4063,10 +4063,12 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     "function mjFmt(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
     + "function _show(id){document.getElementById(id).classList.add('show');}function _hide(id){document.getElementById(id).classList.remove('show');}"
     + "function openBuka(){var r=document.getElementById('bukaFnbRows');if(r){r.innerHTML='';fnbCalc(r);}bukaCalc();_show('mBuka');}function closeBuka(){_hide('mBuka');}"
-    + "function bukaCalc(){var ms=document.getElementById('bukaMeja');if(!ms)return;var o=ms.options[ms.selectedIndex];var dur=document.getElementById('bukaDurasi').value;var w=document.getElementById('bukaWaktu').value;var el=document.getElementById('bukaPrice');if(!o||!o.value){el.textContent='—';return;}if(dur==='Open'){el.textContent='Diisi saat tutup';return;}var m=dur.match(/^(\\d+) Jam$/);if(!m){el.textContent='—';return;}var jam=parseInt(m[1]);var rate=w==='malam'?(parseInt(o.dataset.tm||'0')||0):(parseInt(o.dataset.ts||'0')||0);el.textContent='Rp '+(jam*rate).toLocaleString('id-ID');}"
-    + "function openUbahDurasi(d){document.getElementById('durSesiId').value=d.sid;window._durTs=d.ts||0;window._durTm=d.tm||0;var m=String(d.dur||'').match(/^(\\d+) Jam$/);window._durBase=m?parseInt(m[1]):0;window._durHours=window._durBase||1;document.getElementById('durNowLbl').textContent=window._durBase?(window._durBase+' Jam'):'Open';document.getElementById('durWaktu').value=(d.w==='malam'?'malam':'siang');durCalc();_show('mDurasi');}function closeDurasi(){_hide('mDurasi');}"
+    + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
+    + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
+    + "function bukaCalc(){var ms=document.getElementById('bukaMeja');if(!ms)return;var o=ms.options[ms.selectedIndex];var dur=document.getElementById('bukaDurasi').value;var el=document.getElementById('bukaPrice');if(!o||!o.value){el.textContent='—';return;}if(dur==='Open'){el.textContent='Diisi saat tutup';return;}var m=dur.match(/^(\\d+) Jam$/);if(!m){el.textContent='—';return;}var jam=parseInt(m[1]);var si=parseInt(o.dataset.ts||'0')||0,ma=parseInt(o.dataset.tm||'0')||0;var now=Date.now();el.textContent='Rp '+tarifSplit(now,now+jam*3600000,si,ma).toLocaleString('id-ID');}"
+    + "function openUbahDurasi(d){document.getElementById('durSesiId').value=d.sid;window._durTs=d.ts||0;window._durTm=d.tm||0;window._durStart=d.start?new Date(d.start).getTime():Date.now();var m=String(d.dur||'').match(/^(\\d+) Jam$/);window._durBase=m?parseInt(m[1]):0;window._durHours=window._durBase||1;document.getElementById('durNowLbl').textContent=window._durBase?(window._durBase+' Jam'):'Open';durCalc();_show('mDurasi');}function closeDurasi(){_hide('mDurasi');}"
     + "function durStep(delta){var v=(window._durHours||1)+delta;if(v<1)v=1;if(v>12)v=12;window._durHours=v;durCalc();}"
-    + "function durCalc(){var jam=window._durHours||1;var base=window._durBase||0;var w=document.getElementById('durWaktu').value;document.getElementById('durHours').value=jam;document.getElementById('durValue').value=jam+' Jam';var dl=document.getElementById('durDelta');var diff=jam-base;if(base===0)dl.textContent='dari Open';else if(diff>0)dl.textContent='+'+diff+' jam';else if(diff<0)dl.textContent=diff+' jam';else dl.textContent='tetap';dl.className='dur-delta'+(diff>0?' up':(diff<0?' down':''));var rate=w==='malam'?(window._durTm||0):(window._durTs||0);document.getElementById('durPrice').textContent='Rp '+(jam*rate).toLocaleString('id-ID');}"
+    + "function durCalc(){var jam=window._durHours||1;var base=window._durBase||0;document.getElementById('durHours').value=jam;document.getElementById('durValue').value=jam+' Jam';var dl=document.getElementById('durDelta');var diff=jam-base;if(base===0)dl.textContent='dari Open';else if(diff>0)dl.textContent='+'+diff+' jam';else if(diff<0)dl.textContent=diff+' jam';else dl.textContent='tetap';dl.className='dur-delta'+(diff>0?' up':(diff<0?' down':''));var st=window._durStart||Date.now();document.getElementById('durPrice').textContent='Rp '+tarifSplit(st,st+jam*3600000,window._durTs||0,window._durTm||0).toLocaleString('id-ID');}"
     + "function fnbRowHtml(){return document.getElementById('fnbTpl').innerHTML;}"
     + "function fnbBlock(el){return el?el.closest('.fnb-block'):null;}"
     + "function fnbRowsOf(scope){return scope?scope.querySelector('.fnb-rows'):null;}"
@@ -4082,8 +4084,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "var warn=document.getElementById('tutWarn');var sewaWrap=document.getElementById('tutSewaWrap');"
     + "if(d.fnbUnpaid>0){warn.style.display='';warn.textContent='Masih ada '+d.fnbUnpaid+' item F&B belum dibayar. Bayar dulu sebelum tutup.';document.getElementById('tutSubmit').disabled=true;}else{warn.style.display='none';document.getElementById('tutSubmit').disabled=false;}"
     + "sewaWrap.style.display=d.sewaUnpaid?'':'none';"
-    + "var sewaInp=document.querySelector('#tutSewaWrap input[name=sewa_harga]');if(sewaInp)sewaInp.value=(d.sewaJumlah>0)?Number(d.sewaJumlah).toLocaleString('id-ID'):'';"
-    + "var hint=document.getElementById('tutOpenHint');if(hint){var oRate=(d.w==='malam'?(d.tm||0):(d.ts||0));hint.textContent=((d.sewaJumlah||0)===0&&oRate>0)?('Acuan tarif Open '+(d.w==='malam'?'Malam':'Siang')+': Rp '+Number(oRate).toLocaleString('id-ID')+'/jam'):'';}"
+    + "var sewaInp=document.querySelector('#tutSewaWrap input[name=sewa_harga]');if(sewaInp){var amt=(d.sewaJumlah>0)?d.sewaJumlah:tarifSplit(d.start?new Date(d.start).getTime():Date.now(),Date.now(),d.ts||0,d.tm||0);sewaInp.value=amt>0?Number(amt).toLocaleString('id-ID'):'';}"
+    + "var hint=document.getElementById('tutOpenHint');if(hint){hint.textContent=((d.sewaJumlah||0)===0)?('Tarif ikut jam main (Siang Rp '+Number(d.ts||0).toLocaleString('id-ID')+' / Malam Rp '+Number(d.tm||0).toLocaleString('id-ID')+'/jam) — terisi otomatis, bisa diedit.'):'';}"
     + "_show('mTutup');}function closeTutup(){_hide('mTutup');}"
     + "function openBayar(d){document.getElementById('bySesiId').value=d.sid;document.getElementById('byItemId').value=d.id;document.getElementById('byBayar').value=(d.m==='qris'?'qris':'cash');document.getElementById('byAmt').textContent=d.amt||'';document.getElementById('byNama').textContent=d.nama||'';var cash=d.m!=='qris';document.getElementById('byIcon').className='by-icon '+(cash?'cash':'qris');document.getElementById('byIconI').className='ti '+(cash?'ti-cash':'ti-qrcode');document.getElementById('byMethod').innerHTML='<i class=\"ti '+(cash?'ti-cash':'ti-qrcode')+'\"></i> Bayar via '+(cash?'Cash':'QRIS');document.getElementById('bySubmit').className='btn-primary mj-submit'+(cash?'':' qris');_show('mBayar');}function closeBayar(){_hide('mBayar');}"
     + "document.querySelectorAll('[data-time]').forEach(function(el){var v=el.getAttribute('data-time');if(!v)return;var d=new Date(v);if(!isNaN(d))el.textContent=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});});"
@@ -4129,9 +4131,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         ? "<div class=\"mj-form\"><div class=\"sesi-empty\" style=\"border:none;padding:8px\"><i class=\"ti ti-mood-empty\"></i><div>Semua meja aktif sedang dipakai (punya sesi terbuka), atau belum ada meja. Atur di <b>Manajemen Meja</b>.</div></div></div>"
         : "<form method=\"post\" action=\"/operasional/sesi/buka\" class=\"mj-form\" onsubmit=\"return bukaSubmit(this)\">"
           + "<div class=\"mj-fg\"><label>Pilih Meja</label><select name=\"meja_id\" id=\"bukaMeja\" onchange=\"bukaCalc()\" required><option value=\"\" disabled selected>— pilih meja —</option>" + mejaOpts + "</select></div>"
-          + "<div class=\"mj-row2\"><div class=\"mj-fg\"><label>Durasi</label><select name=\"durasi\" id=\"bukaDurasi\" onchange=\"bukaCalc()\">"
+          + "<div class=\"mj-fg\"><label>Durasi</label><select name=\"durasi\" id=\"bukaDurasi\" onchange=\"bukaCalc()\">"
           +   durasiOpts + "</select></div>"
-          + "<div class=\"mj-fg\"><label>Sesi</label><select name=\"waktu\" id=\"bukaWaktu\" onchange=\"bukaCalc()\"><option value=\"siang\">Siang</option><option value=\"malam\">Malam</option></select></div></div>"
           + "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Harga sewa</span><b id=\"bukaPrice\">—</b></div></div>"
           + "<div class=\"mj-fg\"><label>Pesanan F&amp;B <span style=\"font-weight:400;color:var(--txt3)\">(opsional — makanan / minuman)</span></label>"
           +   "<div class=\"fnb-block\"><input type=\"hidden\" name=\"items\" class=\"fnb-items\">"
@@ -4139,7 +4140,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +     "<button type=\"button\" class=\"fnb-add\" onclick=\"fnbAddRow(this)\"><i class=\"ti ti-plus\"></i> Tambah makanan / minuman</button>"
           +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total F&amp;B</span><b class=\"fnb-total\">Rp 0</b></div></div>"
           +   "</div></div>"
-          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Durasi <b>fixed</b> → harga sewa otomatis dari tarif meja (bisa diedit saat tutup). <b>Open</b> → diisi saat tutup. Sewa dibayar saat tutup. F&amp;B di sini masuk sebagai <b>belum bayar</b> &amp; bisa ditambah lagi kapan saja.</span></div>"
+          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b>: 08.00–18.00 = Siang, sisanya Malam (otomatis; sesi yang lewat batas dihitung terpisah). Durasi <b>Open</b> → harga diisi saat tutup. F&amp;B masuk sebagai <b>belum bayar</b> &amp; bisa ditambah lagi kapan saja.</span></div>"
           + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button></form>")
     + "</div></div>"
     // Modal Ubah Durasi Sewa
@@ -4153,9 +4154,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +       "<input type=\"text\" class=\"fnb-qty dur-qty\" id=\"durHours\" readonly value=\"1\">"
     +       "<button type=\"button\" class=\"fnb-step\" onclick=\"durStep(1)\" aria-label=\"Tambah 1 jam\"><i class=\"ti ti-plus\"></i></button>"
     +     "</div><span class=\"dur-unit\">Jam</span><span class=\"dur-delta\" id=\"durDelta\"></span></div></div>"
-    +     "<div class=\"mj-fg\"><label>Sesi (tarif)</label><select name=\"waktu\" id=\"durWaktu\" onchange=\"durCalc()\"><option value=\"siang\">Siang</option><option value=\"malam\">Malam</option></select></div>"
     +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Harga sewa baru</span><b id=\"durPrice\">—</b></div></div>"
-    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tap <b>+</b> untuk perpanjang 1 jam (mis. 2 → 3 Jam). Harga dihitung ulang dari tarif meja, total sesi langsung update.</span></div>"
+    +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tap <b>+</b> untuk perpanjang 1 jam (mis. 2 → 3 Jam). Tarif <b>ikut jam main</b> dihitung dari jam buka sesi (Siang/Malam otomatis), total sesi langsung update.</span></div>"
     +     "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-device-floppy\"></i> Simpan Durasi</button>"
     +   "</form></div></div>"
     // Modal Tambah F&B
