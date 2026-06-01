@@ -1502,6 +1502,7 @@ router.get("/sesi", async (req, res) => {
       displayName: res.locals.financeDisplay || "",
       sesiList, mejaTersedia, menuItems,
       msg: req.query.msg || "",
+      durBaru: (req.query.d || "").toString().slice(0, 20),
     }));
   } catch (err) {
     console.error("[FINANCE] sesi GET error:", err.message);
@@ -1621,7 +1622,7 @@ router.post("/sesi/sewa/durasi", async (req, res) => {
       ket    = "Sewa " + (sesi.nama_meja || "Meja") + " · " + durasi;
     }
     await updateSesiSewa(sesiId, jumlah, ket);
-    res.redirect("/operasional/sesi?msg=durasi");
+    res.redirect("/operasional/sesi?msg=durasi&d=" + encodeURIComponent(durasi));
   } catch (err) {
     console.error("[FINANCE] sesi sewa durasi error:", err.message);
     res.redirect("/operasional/sesi?msg=err");

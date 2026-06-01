@@ -3770,11 +3770,11 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
 // baris `transaksi` ber-sesi_id, status bayar per-item (lunas). Saldo otomatis
 // ngikut lunas (engine lama). Harga sewa diisi manual saat tutup.
 const KAT_SEWA_SESI = "Sewa Meja";
-export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "" }) {
+export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "", durBaru = "" }) {
   const toastMsg = msg === "dibuka"  ? "Sesi meja dibuka"
     : msg === "ditambah"  ? "Item ditambahkan ke sesi"
     : msg === "dibayar"   ? "Item ditandai sudah bayar"
-    : msg === "durasi"    ? "Durasi sewa diperbarui"
+    : msg === "durasi"    ? (durBaru ? ("Durasi sewa jadi " + durBaru) : "Durasi sewa diperbarui")
     : msg === "item_hapus" ? "Item dihapus dari sesi"
     : msg === "ditutup"   ? "Sesi ditutup — semua item tercatat di Riwayat"
     : "";
@@ -3839,9 +3839,17 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     const price    = sewa.jumlah || 0;
     const pl = escHtml(JSON.stringify({ sid: s.id, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, dur: durLabel, start: s.opened_at || "", w: sewa.waktu === "malam" ? "malam" : "siang" }));
     const sewaTitle = sewa.keterangan || ("Sewa " + (s.nama_meja || "Meja") + " · " + durLabel);
+    // Tombol cepat "+1 Jam": perpanjang 1 jam & langsung simpan (1 klik, tanpa
+    // modal). Hanya utk durasi fixed (rh>0); Open tak punya total utk diperpanjang.
+    const plus1 = rh > 0
+      ? "<form method=\"post\" action=\"/operasional/sesi/sewa/durasi\" style=\"display:contents\">"
+        + "<input type=\"hidden\" name=\"sesi_id\" value=\"" + s.id + "\"><input type=\"hidden\" name=\"durasi\" value=\"" + (rh + 1) + " Jam\">"
+        + "<button type=\"submit\" class=\"chip-btn\" title=\"Perpanjang 1 jam — langsung tersimpan\"><i class=\"ti ti-plus\"></i> 1 Jam</button></form>"
+      : "";
     return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
       + "<div class=\"line-sub\">Siang " + rp(s.tarif_siang || 0) + " · Malam " + rp(s.tarif_malam || 0) + " · " + durLabel + "</div></div>"
       + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
+      + plus1
       + "<button type=\"button\" class=\"chip-btn\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Ubah durasi</button>"
       + "<span class=\"tag-amber\">Bayar saat tutup</span></div></div>";
   };
