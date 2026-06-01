@@ -4163,13 +4163,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +   "</div></div>"
           + "<div class=\"mj-fg\"><label>Status Bayar</label><div class=\"mj-tog\">"
           +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"0\" checked onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-clock\"></i> Bayar saat tutup</span></label>"
-          +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"1\" onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-cash\"></i> Bayar di depan</span></label>"
+          +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"1\" onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-cash\"></i> Bayar sekarang</span></label>"
           + "</div></div>"
           + "<div class=\"mj-fg\" id=\"bukaMetodeWrap\" style=\"display:none\"><label>Metode bayar</label><div class=\"mj-tog\">"
           +   "<label><input type=\"radio\" name=\"metode\" value=\"cash\" checked><span><i class=\"ti ti-cash\"></i> Cash</span></label>"
           +   "<label><input type=\"radio\" name=\"metode\" value=\"qris\"><span><i class=\"ti ti-qrcode\"></i> QRIS</span></label>"
           + "</div></div>"
-          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b> (08.00–18.00 Siang, sisanya Malam). <b>Jam mulai</b> bisa dimundurkan kalau telat dicatat. <b>Bayar di depan</b> → sewa &amp; F&amp;B langsung lunas (durasi <b>Open</b>: sewa tetap saat tutup). Default: bayar saat tutup, F&amp;B belum bayar.</span></div>"
+          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Tarif <b>ikut jam main</b> (08.00–18.00 Siang, sisanya Malam). <b>Jam mulai</b> bisa dimundurkan kalau telat dicatat. <b>Bayar sekarang</b> → sewa &amp; F&amp;B langsung lunas (durasi <b>Open</b>: sewa tetap saat tutup). Default: bayar saat tutup, F&amp;B belum bayar.</span></div>"
           + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-player-play\"></i> Buka Sesi</button></form>")
     + "</div></div>"
     // Modal Ubah Durasi Sewa
