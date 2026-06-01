@@ -3629,8 +3629,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     /* ── Modal ─────────────────────────────────────────── */
     .mj-modal{position:fixed;inset:0;background:rgba(20,30,18,.5);display:none;align-items:center;justify-content:center;z-index:9998;padding:16px}
     .mj-modal.show{display:flex}
-    .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow:hidden}
-    .mj-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--txt)}
+    .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:460px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);-webkit-overflow-scrolling:touch}
+    .mj-modal-hd{position:sticky;top:0;z-index:2;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--txt)}
     .mj-modal-hd i{color:var(--accent)}
     .mj-modal-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;display:flex}
     .mj-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;padding:18px}
@@ -4121,8 +4121,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .mj-pfx input{flex:1;min-width:0;border:none;background:transparent;padding:9px 11px 9px 4px;font-size:13px;font-family:var(--ff-mono);color:var(--txt);outline:none}
     .mj-modal{position:fixed;inset:0;background:rgba(20,30,18,.5);display:none;align-items:center;justify-content:center;z-index:9998;padding:16px}
     .mj-modal.show{display:flex}
-    .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow:hidden}
-    .mj-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--txt)}
+    .mj-modal-card{background:var(--surface);border-radius:14px;width:100%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);-webkit-overflow-scrolling:touch}
+    .mj-modal-hd{position:sticky;top:0;z-index:2;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--txt)}
     .mj-modal-hd i{color:var(--accent)}
     .mj-modal-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;display:flex}
     .mj-form{display:flex;flex-direction:column;gap:12px;padding:18px}
