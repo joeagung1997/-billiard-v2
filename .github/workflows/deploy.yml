@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write   # job sync-branches butuh push ke staging/development
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,3 +27,19 @@ jobs:
         working-directory: billiard-v2
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # Setiap rilis ke main, samakan branch staging & development (fast-forward)
+  # agar environment dev/staging ikut kode terbaru. Tidak memicu loop: workflow
+  # ini hanya trigger pada push ke `main`, bukan staging/development.
+  sync-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward staging & development ke main
+        run: |
+          git push origin HEAD:staging
+          git push origin HEAD:development
