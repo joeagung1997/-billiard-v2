@@ -1503,6 +1503,7 @@ router.get("/sesi", async (req, res) => {
       sesiList, mejaTersedia, menuItems,
       msg: req.query.msg || "",
       durBaru: (req.query.d || "").toString().slice(0, 20),
+      shift: res.locals.financeShift || "siang",
     }));
   } catch (err) {
     console.error("[FINANCE] sesi GET error:", err.message);
@@ -1549,7 +1550,10 @@ router.post("/sesi/buka", async (req, res) => {
     const nowMs   = Date.now();
     const mulaiMs = parseInt(req.body.mulai) || 0;
     const startMs = (mulaiMs > 0 && mulaiMs <= nowMs && mulaiMs >= nowMs - 86400000) ? mulaiMs : nowMs;
-    const waktu   = wibSiang(startMs) ? "siang" : "malam";
+    // Shift (waktu) dipilih operator saat buka -> jadi bucket laporan utk sewa &
+    // F&B sesi ini. Default ikut jam mulai kalau tak dikirim. (Tarif tetap
+    // dihitung per jam main via tarifSplit, terpisah dari shift ini.)
+    const waktu   = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : (wibSiang(startMs) ? "siang" : "malam");
     // Bayar di depan: tandai sewa (durasi fix) & F&B langsung lunas dgn metode
     // dipilih. Durasi Open: sewa nominal belum tahu → tetap dibayar saat tutup.
     const bayarDidepan = req.body.bayar_didepan === "1";
@@ -1590,7 +1594,7 @@ router.post("/sesi/buka", async (req, res) => {
       if (parts.length && total > 0) {
         await appendTransaksi({
           id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
-          jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
+          jenis: "pemasukan", waktu,
           kategori: "Kopi / Snack", keterangan: parts.join(", "),
           jumlah: total, lunas: bayarDidepan, bayar: bayarDidepan ? metode : "",
           dicatatOleh: res.locals.financeUser || "", sesiId,

@@ -3794,7 +3794,7 @@ function _tarifSplitV(aMs, bMs, siang, malam) {
   const tot = (bMs - aMs) / 1000, ss = _siangSecV(aMs, bMs);
   return Math.round((ss / 3600) * siang + ((tot - ss) / 3600) * malam);
 }
-export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "", durBaru = "" }) {
+export function financeSesiPage({ role = "owner", displayName = "", sesiList = [], mejaTersedia = [], menuItems = [], msg = "", durBaru = "", shift = "siang" }) {
   const toastMsg = msg === "dibuka"  ? "Sesi meja dibuka"
     : msg === "ditambah"  ? "Item ditambahkan ke sesi (belum bayar)"
     : msg === "ditambah_lunas" ? "Item ditambahkan & ditandai lunas"
@@ -4308,6 +4308,10 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           +     "<div class=\"sesi-totals\" style=\"border:none;background:var(--surface2);border-radius:8px\"><div class=\"sesi-tot\"><span>Total F&amp;B</span><b class=\"fnb-total\">Rp 0</b></div></div>"
           +   "</div></div>"
           + "<div class=\"sesi-totals\" style=\"border:none;background:var(--green-bg);border-radius:8px\"><div class=\"sesi-tot\"><span>Total (sewa + F&amp;B)</span><b id=\"bukaGrandTotal\" style=\"color:var(--green-dark)\">Rp 0</b><small id=\"bukaTotalHint\" style=\"font-size:10px;color:var(--txt3);font-weight:500\"></small></div></div>"
+          + "<div class=\"mj-fg\"><label>Shift <span style=\"font-weight:400;color:var(--txt3)\">(untuk laporan / serah terima — tarif tetap ikut jam main)</span></label><div class=\"mj-tog\">"
+          +   "<label><input type=\"radio\" name=\"shift\" value=\"siang\"" + (shift === "malam" ? "" : " checked") + "><span><i class=\"ti ti-sun\"></i> Siang</span></label>"
+          +   "<label><input type=\"radio\" name=\"shift\" value=\"malam\"" + (shift === "malam" ? " checked" : "") + "><span><i class=\"ti ti-moon\"></i> Malam</span></label>"
+          + "</div></div>"
           + "<div class=\"mj-fg\"><label>Status Bayar</label><div class=\"mj-tog\">"
           +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"1\" checked onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-cash\"></i> Bayar sekarang</span></label>"
           +   "<label><input type=\"radio\" name=\"bayar_didepan\" value=\"0\" onchange=\"bukaBayarToggle()\"><span><i class=\"ti ti-clock\"></i> Bayar saat selesai</span></label>"
