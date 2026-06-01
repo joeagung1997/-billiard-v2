@@ -4012,7 +4012,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .mj-modal-x{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px;display:flex}
     .mj-form{display:flex;flex-direction:column;gap:12px;padding:18px}
     .mj-row2{display:grid;grid-template-columns:1fr 110px;gap:10px}
-    .fnb-row{display:grid;grid-template-columns:1fr 64px 34px;gap:7px;align-items:center;margin-bottom:8px}
+    .fnb-row{display:grid;grid-template-columns:1fr auto 34px;gap:7px;align-items:center;margin-bottom:8px}
     .fnb-sel,.fnb-qty{padding:9px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;min-width:0;box-sizing:border-box}
     .fnb-sel:focus,.fnb-qty:focus{border-color:var(--accent);background:var(--surface)}
     .fnb-rm{height:38px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -4021,6 +4021,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .fnb-add:hover{border-color:var(--accent);color:var(--accent)}
     .fnb-block{display:flex;flex-direction:column;gap:12px}
     .fnb-rows:empty{display:none}
+    .fnb-stepper{display:flex;align-items:stretch;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2)}
+    .fnb-stepper:focus-within{border-color:var(--accent);background:var(--surface)}
+    .fnb-step{width:30px;border:none;background:transparent;color:var(--txt2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ff)}
+    .fnb-step:hover{background:var(--surface);color:var(--accent)}
+    .fnb-stepper .fnb-qty,.fnb-stepper .fnb-qty:focus{border:none;border-radius:0;background:transparent;width:42px;text-align:center;padding:9px 2px}
+    .fnb-qty::-webkit-outer-spin-button,.fnb-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .fnb-qty{-moz-appearance:textfield}
     .mj-submit{height:42px;justify-content:center;width:100%}
     .mj-tog{display:flex;gap:8px}
     .mj-tog label{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--txt2);cursor:pointer}
@@ -4055,6 +4062,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function openAddFnb(sid){document.getElementById('fnbSesiId').value=sid;var rows=document.getElementById('fnbRows');rows.innerHTML=fnbRowHtml();fnbCalc(rows);_show('mFnb');}function closeFnb(){_hide('mFnb');}"
     + "function fnbAddRow(btn){var rows=fnbRowsOf(fnbBlock(btn));if(!rows)return;var d=document.createElement('div');d.innerHTML=fnbRowHtml();rows.appendChild(d.firstElementChild);fnbCalc(rows);}"
     + "function fnbRmRow(b){var r=b.closest('.fnb-row');var rows=r?r.parentNode:null;if(r)r.remove();fnbCalc(rows);}"
+    + "function fnbStep(btn,d){var r=btn.closest('.fnb-row');if(!r)return;var q=r.querySelector('.fnb-qty');var v=(parseInt(q.value)||1)+d;if(v<1)v=1;q.value=v;fnbCalc(q);}"
     + "function fnbCalc(elInScope){var scope=fnbBlock(elInScope);if(!scope)return;var tot=0;scope.querySelectorAll('.fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');var o=s.options[s.selectedIndex];var h=(o&&s.value)?(parseInt(o.dataset.harga||'0')||0):0;var q=parseInt(r.querySelector('.fnb-qty').value)||1;tot+=h*q;});var el=scope.querySelector('.fnb-total');if(el)el.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "function fnbSerialize(scope){var items=[];if(!scope)return items;scope.querySelectorAll('.fnb-row').forEach(function(r){var s=r.querySelector('.fnb-sel');if(!s.value)return;var o=s.options[s.selectedIndex];items.push({nama:s.value,qty:parseInt(r.querySelector('.fnb-qty').value)||1,harga:parseInt(o.dataset.harga||'0')||0});});var inp=scope.querySelector('.fnb-items');if(inp)inp.value=JSON.stringify(items);return items;}"
     + "function fnbSubmit(form){var items=fnbSerialize(form.querySelector('.fnb-block'));if(items.length===0){alert('Pilih minimal 1 item.');return false;}return true;}"
@@ -4146,7 +4154,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Beberapa item di sini jadi <b>1 transaksi gabungan</b> (dibayar bareng). Mau bayar terpisah? Tambah lewat tombol F&amp;B berulang.</span></div>"
     +     "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-plus\"></i> Tambah ke bill (belum bayar)</button>"
     +   "</form>"
-    +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><select class=\"fnb-sel\" onchange=\"fnbCalc(this)\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc(this)\"><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
+    +   "<div id=\"fnbTpl\" style=\"display:none\"><div class=\"fnb-row\"><select class=\"fnb-sel\" onchange=\"fnbCalc(this)\"><option value=\"\">— pilih item —</option>" + menuOpts + "</select><div class=\"fnb-stepper\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,-1)\" aria-label=\"Kurangi jumlah\"><i class=\"ti ti-minus\"></i></button><input type=\"number\" class=\"fnb-qty\" value=\"1\" min=\"1\" inputmode=\"numeric\" oninput=\"fnbCalc(this)\"><button type=\"button\" class=\"fnb-step\" onclick=\"fnbStep(this,1)\" aria-label=\"Tambah jumlah\"><i class=\"ti ti-plus\"></i></button></div><button type=\"button\" class=\"fnb-rm\" onclick=\"fnbRmRow(this)\" aria-label=\"Hapus\"><i class=\"ti ti-x\"></i></button></div></div>"
     + "</div></div>"
     // Modal Tutup Sesi
     + "<div class=\"mj-modal\" id=\"mTutup\" onclick=\"if(event.target===this)closeTutup()\"><div class=\"mj-modal-card\">"
