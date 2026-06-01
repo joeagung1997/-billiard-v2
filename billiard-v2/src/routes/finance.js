@@ -1642,6 +1642,34 @@ router.post("/sesi/sewa/durasi", async (req, res) => {
   }
 });
 
+// Batalkan perpanjangan TERAKHIR (kalau salah tap). Buang segmen terakhir dari
+// rincian, lalu hitung ulang harga sewa dari jam buka (split Siang/Malam).
+router.post("/sesi/sewa/undo", async (req, res) => {
+  const sesiId = parseInt(req.body.sesi_id) || 0;
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    const meja = (await readMejas()).find((m) => m.id === sesi.meja_id);
+    const items  = await readSesiItems(sesiId);
+    const sewaIt = items.find((t) => t.kategori === "Sewa Meja" && !t.voidedAt);
+    if (!sewaIt || !meja) return res.redirect("/operasional/sesi?msg=err");
+    const bm    = String(sewaIt.keterangan || "").match(/\(([^)]+)\)/);
+    let parts   = bm ? bm[1].split("+").map((x) => parseInt(x)).filter((n) => n > 0) : [];
+    if (parts.length < 2) return res.redirect("/operasional/sesi?msg=err"); // tak ada perpanjangan utk dibatalkan
+    parts.pop(); // buang segmen terakhir
+    const newTot  = parts.reduce((a, b) => a + b, 0);
+    const startMs = new Date(sesi.opened_at).getTime() || Date.now();
+    const jumlah  = tarifSplit(startMs, startMs + newTot * 3600000, meja.tarif_siang || 0, meja.tarif_malam || 0);
+    const rinci   = parts.length > 1 ? " (" + parts.map((h) => h + " Jam").join(" + ") + ")" : "";
+    const ket     = "Sewa " + (sesi.nama_meja || "Meja") + " · " + newTot + " Jam" + rinci;
+    await updateSesiSewa(sesiId, jumlah, ket);
+    res.redirect("/operasional/sesi?msg=undo&d=" + encodeURIComponent(newTot + " Jam"));
+  } catch (err) {
+    console.error("[FINANCE] sesi sewa undo error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
 router.post("/sesi/item/tambah", async (req, res) => {
   const sesiId = parseInt(req.body.sesi_id) || 0;
   // Keranjang: beberapa item -> 1 transaksi gabungan (keterangan + total).
