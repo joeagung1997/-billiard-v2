@@ -125,6 +125,12 @@ export function buildFinanceSidebar(ftk, page = "keuangan", role = "owner", disp
     // ── Nav scroll ─────────────────────────────────
     + "<div class=\"nav-scroll\">"
 
+    // GROUP: UTAMA — Dashboard (member/overview di /admin)
+    + "<div class=\"nav-group\">"
+    + "<div class=\"nav-group-label\">Utama</div>"
+    + navLink("/admin", "ti ti-layout-dashboard", "Dashboard", false)
+    + "</div>"
+
     // GROUP: OPERASIONAL — Dashboard Keuangan + Transaksi (Transaksi: filter
     // dikunci hari ini di server; aksi lain bebas).
     + "<div class=\"nav-group\">"

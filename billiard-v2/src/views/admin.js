@@ -611,6 +611,7 @@ function buildSidebar(token, activePage, user = {}) {
 
   const dashCls    = 'nav-item' + (activePage === 'dashboard' ? ' active' : '');
   const membersCls = 'nav-item' + (activePage === 'members'   ? ' active' : '');
+  const rkCls      = 'nav-item' + (activePage === 'riwayat-kunjungan' ? ' active' : '');
   // Persist token onclick (untuk navigate ke /operasional yg gak butuh tk param)
   const tkOnclick  = 'try{localStorage.setItem(\'warpat_atk\',\'' + token + '\');}catch(_){}';
 
@@ -646,38 +647,27 @@ function buildSidebar(token, activePage, user = {}) {
     + '<div class="nav-item-icon"><i class="ti ti-layout-dashboard"></i></div>'
     + '<span class="nav-item-text">Dashboard</span>'
     + '</a>'
-    + '<a href="/admin/members?tk=' + token + '" class="' + membersCls + '">'
-    + '<div class="nav-item-icon"><i class="ti ti-users"></i></div>'
-    + '<span class="nav-item-text">Kelola Member</span>'
-    + '</a>'
     + '</div>'
 
-    // GROUP: OPERASIONAL (expandable submenu)
+    // GROUP: OPERASIONAL — Dashboard Keuangan + Transaksi
     + '<div class="nav-group">'
     + '<div class="nav-group-label">Operasional</div>'
-    + '<div class="nav-item" onclick="toggleSubmenu(\'ops\', this)">'
-    + '<div class="nav-item-icon"><i class="ti ti-briefcase"></i></div>'
-    + '<span class="nav-item-text">Operasional</span>'
-    + '<i class="ti ti-chevron-down nav-chevron"></i>'
+    + '<a href="/operasional" class="nav-item" onclick="' + tkOnclick + '"><div class="nav-item-icon"><i class="ti ti-chart-pie"></i></div><span class="nav-item-text">Dashboard Keuangan</span></a>'
+    + '<a href="/operasional/transaksi" class="nav-item" onclick="' + tkOnclick + '"><div class="nav-item-icon"><i class="ti ti-receipt"></i></div><span class="nav-item-text">Transaksi</span></a>'
     + '</div>'
-    + '<div class="submenu-wrap">'
-    + '<div class="submenu" id="sub-ops">'
-    + '<a href="/operasional" class="submenu-item" onclick="' + tkOnclick + '">'
-    + '<div class="sub-dot"></div>Dashboard Keuangan</a>'
-    + (isOwner
-      ? '<a href="/operasional/analisis" class="submenu-item" onclick="' + tkOnclick + '">'
-        + '<div class="sub-dot"></div>Analisis Target</a>'
-        + '<a href="/operasional/kategori" class="submenu-item" onclick="' + tkOnclick + '">'
-        + '<div class="sub-dot"></div>Kelola Kategori</a>'
-        + '<a href="/operasional/menu" class="submenu-item" onclick="' + tkOnclick + '">'
-        + '<div class="sub-dot"></div>Kelola Menu</a>'
-        + '<a href="/operasional/sdm" class="submenu-item" onclick="' + tkOnclick + '">'
-        + '<div class="sub-dot"></div>SDM &amp; Penggajian</a>'
-        + '<a href="/operasional/monitoring/aktivitas" class="submenu-item" onclick="' + tkOnclick + '">'
-        + '<div class="sub-dot"></div>Monitoring Karyawan</a>'
-      : '')
+
+    // GROUP: MEMBER — akses penuh
+    + '<div class="nav-group">'
+    + '<div class="nav-group-label">Member</div>'
+    + '<a href="/admin/members?tk=' + token + '" class="' + membersCls + '"><div class="nav-item-icon"><i class="ti ti-user-circle"></i></div><span class="nav-item-text">Kelola Member</span></a>'
+    + '<a href="/admin/riwayat-kunjungan?tk=' + token + '" class="' + rkCls + '"><div class="nav-item-icon"><i class="ti ti-history"></i></div><span class="nav-item-text">Riwayat Kunjungan</span></a>'
     + '</div>'
-    + '</div>'
+
+    // GROUP: BILLIARD — Sesi Meja + Manajemen Meja (read-only utk karyawan)
+    + '<div class="nav-group">'
+    + '<div class="nav-group-label">Billiard</div>'
+    + '<a href="/operasional/sesi" class="nav-item" onclick="' + tkOnclick + '"><div class="nav-item-icon"><i class="ti ti-receipt"></i></div><span class="nav-item-text">Sesi Meja (Bill)</span></a>'
+    + '<a href="/operasional/meja" class="nav-item" onclick="' + tkOnclick + '"><div class="nav-item-icon"><i class="ti ti-grid-dots"></i></div><span class="nav-item-text">Manajemen Meja</span></a>'
     + '</div>'
 
     + '</div>'
