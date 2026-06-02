@@ -40,7 +40,7 @@ import { CONFIG } from "../config.js";
 import { setRequestWarung } from "../utils/tenant.js";
 import { subscriptionGate } from "../middleware/subscription.js";
 import { requireModule } from "../middleware/module.js";
-import { applyBusinessDay, todayBusinessDayISO, KAT_TUKAR_UANG } from "../utils/format.js";
+import { applyBusinessDay, todayBusinessDayISO, isFutureWIB, KAT_TUKAR_UANG } from "../utils/format.js";
 import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan, SETTING_DANA_CADANGAN } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost, writeSetting } from "../utils/db.js";
@@ -478,8 +478,9 @@ router.post("/transaksi/manual", requireOwner, async (req, res) => {
     return res.redirect("/operasional?msg=err");
   }
   // Tanggal/jam tidak boleh di masa depan (toleransi 1 menit utk skew jam).
-  const picked = new Date(datetime);
-  if (isNaN(picked.getTime()) || picked.getTime() > Date.now() + 60000) {
+  // Bandingkan dalam WIB (wall-clock), bukan TZ server — supaya jam lokal user
+  // (WIB) tidak salah dianggap masa depan saat server jalan di UTC.
+  if (isFutureWIB(datetime)) {
     return res.redirect("/operasional?msg=manual_future");
   }
   try {

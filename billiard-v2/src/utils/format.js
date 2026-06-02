@@ -54,6 +54,19 @@ export const todayBusinessDayISO = (cutoffHour = CONFIG.BUSINESS_DAY_CUTOFF_HOUR
   return applyBusinessDay(tgl, jam, cutoffHour);
 };
 
+// Cek apakah datetime-local user ("YYYY-MM-DDTHH:MM", wall-clock WIB) ada di masa
+// depan dibandingkan "sekarang" WIB. Bandingkan sbg wall-clock (kedua sisi di-parse
+// sbg UTC) supaya hasilnya KONSISTEN lintas timezone server (mis. server UTC tidak
+// salah anggap jam lokal user sbg masa depan). toleransi default 60 dtk utk skew jam.
+export const isFutureWIB = (datetimeLocal, toleranceMs = 60000) => {
+  if (!datetimeLocal) return false;
+  const pickedMs = new Date(datetimeLocal.slice(0, 16) + ":00Z").getTime();
+  if (isNaN(pickedMs)) return true; // datetime tidak valid → tolak
+  const nowWib = new Date().toLocaleString("sv-SE", { timeZone: ID_TZ }).replace(" ", "T");
+  const nowMs  = new Date(nowWib.slice(0, 19) + "Z").getTime();
+  return pickedMs > nowMs + toleranceMs;
+};
+
 export const formatTanggal = (date) =>
   new Date(date).toLocaleString("id-ID", {
     weekday: "long", day: "numeric", month: "long",
