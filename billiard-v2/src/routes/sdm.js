@@ -7,6 +7,7 @@ import jwt             from "jsonwebtoken";
 import { CONFIG }      from "../config.js";
 import {
   readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan,
+  readKenaikanGaji, readAllKenaikanGaji, replaceKenaikanGaji,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
   appendTransaksi, readAdminAccounts, updateAdminAccount,
 } from "../utils/db.js";
@@ -68,6 +69,42 @@ function requireSdmPin(req, res, next) {
 
 const router = Router();
 const bulanSekarang = () => new Date().toISOString().slice(0, 7);
+
+// Sanitasi field baru form kru (dipakai handler tambah & edit).
+function parseKruExtra(body) {
+  let foto = (body.foto ?? "").toString();
+  if (foto && !foto.startsWith("data:image/")) foto = "";   // hanya terima data URL gambar
+  if (foto.length > 2_000_000) foto = "";                   // guard: tolak base64 kegedean (~1.5MB biner)
+  let tanggalGajian = (body.tanggal_gajian ?? "").toString().trim();
+  if (tanggalGajian !== "akhir") {
+    const d = parseInt(tanggalGajian);
+    tanggalGajian = (d >= 1 && d <= 28) ? String(d) : "";
+  }
+  return {
+    foto,
+    statusKaryawan: ["tetap", "kontrak", "parttime", "magang"].includes(body.status_karyawan) ? body.status_karyawan : "tetap",
+    tipeGaji:       ["bulanan", "harian"].includes(body.tipe_gaji) ? body.tipe_gaji : "bulanan",
+    tanggalGajian,
+    metodeBayar:    ["tunai", "transfer", "ewallet"].includes(body.metode_bayar) ? body.metode_bayar : "tunai",
+    rekening:       (body.rekening ?? "").toString().trim().slice(0, 80),
+  };
+}
+
+// Parse baris jadwal kenaikan gaji (field array paralel dari form).
+function parseKenaikan(body) {
+  const toArr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
+  const bulans = toArr(body.kenaikan_bulan);
+  const gajis  = toArr(body.kenaikan_gaji);
+  const notes  = toArr(body.kenaikan_catatan);
+  const out = [];
+  for (let i = 0; i < bulans.length; i++) {
+    const mulaiBulan = String(bulans[i] ?? "").trim();
+    const gaji       = parseInt(String(gajis[i] ?? "").replace(/\D/g, "")) || 0;
+    const catatan    = String(notes[i] ?? "").trim();
+    if (mulaiBulan || gaji) out.push({ mulaiBulan, gaji, catatan });
+  }
+  return out;
+}
 
 // ── Finance role guard — SDM hanya untuk owner ────────────────
 // Cek cookie _frt sebelum masuk halaman SDM apapun.
@@ -136,11 +173,16 @@ router.use(requireSdmPin);
 router.get("/sdm", async (req, res) => {
   try {
     const bulan = req.query.bulan || bulanSekarang();
-    const [karyawan, sdmTrx, adminAccounts] = await Promise.all([
+    const [karyawan, sdmTrx, adminAccounts, allKenaikan] = await Promise.all([
       readKaryawan(),
       readSdmTransaksi(bulan),
       readAdminAccounts().catch(() => []),
+      readAllKenaikanGaji().catch(() => []),
     ]);
+    // Lampirkan jadwal kenaikan ke tiap kru → hitungRingkasan pakai gaji aktif/bulan.
+    const kenaikanByK = {};
+    for (const row of allKenaikan) (kenaikanByK[row.karyawan_id] ||= []).push(row);
+    for (const k of karyawan) k.kenaikanGaji = kenaikanByK[k.id] || [];
     res.send(sdmDashboard(karyawan, sdmTrx, bulan, adminAccounts, req.query.msg));
   } catch (err) {
     console.error("[SDM] dashboard error:", err.message);
@@ -163,11 +205,14 @@ router.post("/sdm/karyawan/tambah", async (req, res) => {
   const tglMulai  = req.body.tgl_mulai || null;
   const telepon   = (req.body.telepon  ?? "").trim();
   const shift     = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
+  const extra      = parseKruExtra(req.body);
+  const kenaikan   = parseKenaikan(req.body);
   const redirectTo = (req.body.redirect_to ?? "").trim();
   const backUrl    = redirectTo.startsWith("/operasional/sdm") ? redirectTo : "/operasional/sdm";
   if (!nama || gajiPokok <= 0) return res.redirect(backUrl + (backUrl.includes("?") ? "&" : "?") + "msg=err_tambah");
   try {
-    await addKaryawan({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
+    const newId = await addKaryawan({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift, ...extra });
+    await replaceKenaikanGaji(newId, kenaikan);
     res.redirect(backUrl + (backUrl.includes("?") ? "&" : "?") + "msg=tambah_ok");
   } catch (err) {
     console.error("[SDM] tambah karyawan error:", err.message);
@@ -182,6 +227,7 @@ router.get("/sdm/karyawan/:id/edit", async (req, res) => {
   try {
     const k = await getKaryawanById(id);
     if (!k) return res.redirect("/operasional/sdm");
+    k.kenaikanGaji = await readKenaikanGaji(id).catch(() => []);
     res.send(sdmFormKaryawan(k, !!req.query.err));
   } catch (err) {
     console.error("[SDM] edit form error:", err.message);
@@ -200,9 +246,13 @@ router.post("/sdm/karyawan/:id/edit", async (req, res) => {
   const tglMulai  = req.body.tgl_mulai || null;
   const telepon   = (req.body.telepon  ?? "").trim();
   const shift     = ["siang", "malam"].includes(req.body.shift) ? req.body.shift : "siang";
+  const extra     = parseKruExtra(req.body);
+  const kenaikan  = parseKenaikan(req.body);
+  const status    = req.body.status_aktif === "0" ? "nonaktif" : "aktif";
   if (!id || !nama || gajiPokok <= 0) return res.redirect(`/operasional/sdm/karyawan/${id}/edit?err=1`);
   try {
-    await updateKaryawan(id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift });
+    await updateKaryawan(id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift, ...extra, status });
+    await replaceKenaikanGaji(id, kenaikan);
     res.redirect("/operasional/sdm?msg=edit_ok");
   } catch (err) {
     console.error("[SDM] update karyawan error:", err.message);
@@ -346,6 +396,7 @@ router.get("/sdm/:id", async (req, res) => {
   try {
     const k    = await getKaryawanById(id);
     if (!k) return res.redirect("/operasional/sdm");
+    k.kenaikanGaji = await readKenaikanGaji(id).catch(() => []);
     const bulan = req.query.bulan || bulanSekarang();
     const trx   = await readSdmTransaksiByKaryawan(id);
     res.send(sdmDetailPage(k, trx, bulan, req.query.msg || ""));

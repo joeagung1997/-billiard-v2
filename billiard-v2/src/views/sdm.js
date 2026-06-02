@@ -30,9 +30,26 @@ const TIPE_COLOR = {
   makan_harian:  "malam",
 };
 
+// Gaji pokok yang BERLAKU pada `bulan` (YYYY-MM): ambil jadwal kenaikan dgn
+// mulai_bulan terbesar yang <= bulan; kalau belum ada (atau kru lama tanpa
+// jadwal / bulan tak valid), pakai gaji_pokok awal. Pure — tidak menyentuh DB.
+// `karyawan.kenaikanGaji` di-attach oleh route SDM dari tabel karyawan_kenaikan_gaji.
+export function getGajiAktif(karyawan, bulan = "") {
+  const base = Number(karyawan?.gaji_pokok) || 0;
+  const list = Array.isArray(karyawan?.kenaikanGaji) ? karyawan.kenaikanGaji : [];
+  if (!list.length || !/^\d{4}-\d{2}$/.test(String(bulan))) return base;
+  let best = null;
+  for (const k of list) {
+    const mb = String(k.mulai_bulan ?? k.mulaiBulan ?? "");
+    if (!/^\d{4}-\d{2}$/.test(mb) || mb > bulan) continue;
+    if (!best || mb > best.mb) best = { mb, gaji: Number(k.gaji) || 0 };
+  }
+  return best ? best.gaji : base;
+}
+
 // Hitung ringkasan gaji satu karyawan untuk satu bulan
-function hitungRingkasan(karyawan, trxBulanIni) {
-  const gajiPokok     = Number(karyawan.gaji_pokok) || 0;
+function hitungRingkasan(karyawan, trxBulanIni, bulan = "") {
+  const gajiPokok     = getGajiAktif(karyawan, bulan);
   const uangMakanHari = Number(karyawan.uang_makan)  || 0;
   const hariKerja     = Number(karyawan.hari_kerja)  || 26;
   const totalMakanEst = uangMakanHari * hariKerja;           // estimasi, bukan bagian gaji
@@ -206,14 +223,14 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
   ].join("");
 
   // ── Summary strip ─────────────────────────────────────────────
-  const totalGaji    = karyawan.reduce((s, k) => s + (Number(k.gaji_pokok) || 0), 0);
+  const totalGaji    = karyawan.reduce((s, k) => s + getGajiAktif(k, bulan), 0);
   const totalKasbon  = karyawan.reduce((s, k) => {
     const trxK = trxByK[k.id] || [];
     return s + trxK.filter((t) => t.tipe === "kasbon").reduce((a, t) => a + Number(t.jumlah), 0)
              - trxK.filter((t) => t.tipe === "kembali_kasbon").reduce((a, t) => a + Number(t.jumlah), 0);
   }, 0);
   const totalSisa    = karyawan.reduce((s, k) => {
-    const r = hitungRingkasan(k, trxByK[k.id] || []);
+    const r = hitungRingkasan(k, trxByK[k.id] || [], bulan);
     return s + r.sisa;
   }, 0);
   const summaryStrip = karyawan.length > 0
@@ -234,7 +251,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
   const cards = karyawan.length > 0
     ? karyawan.map((k) => {
         const trxK  = trxByK[k.id] || [];
-        const r     = hitungRingkasan(k, trxK);
+        const r     = hitungRingkasan(k, trxK, bulan);
         const nama  = escHtml(k.nama);
         const shift = k.shift || "siang";
         const _words = k.nama.trim().split(/\s+/);
@@ -453,7 +470,7 @@ function renderSdmToast(msg) {
 // ── Detail karyawan ───────────────────────────────────────────
 export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
   const trxBulan = allTrx.filter((t) => t.bulan === bulan);
-  const r        = hitungRingkasan(karyawan, trxBulan);
+  const r        = hitungRingkasan(karyawan, trxBulan, bulan);
 
   // ── Riwayat bulanan dgn cutoff & carry-forward kasbon ─────────
   // (1) Cutoff: bulan paling awal = max(tgl_mulai, earliest_trx_bulan). Sebelum itu di-skip.
@@ -482,7 +499,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
       const m2 = mo % 12;
       const bk = y2 + "-" + String(m2 + 1).padStart(2, "0");
       const trxB = allTrx.filter((t) => t.bulan === bk);
-      const rB = hitungRingkasan(karyawan, trxB);
+      const rB = hitungRingkasan(karyawan, trxB, bk);
       const effectiveTarget = Math.max(0, rB.gajiPokok - runningCarry);
       const excess = rB.totalDibayarkan - effectiveTarget;
       let statusE;
@@ -509,7 +526,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
       const m2 = extMo % 12;
       const bk = y2 + "-" + String(m2 + 1).padStart(2, "0");
       const trxB = allTrx.filter((t) => t.bulan === bk); // future biasanya kosong
-      const rB = hitungRingkasan(karyawan, trxB);
+      const rB = hitungRingkasan(karyawan, trxB, bk);
       const effectiveTarget = Math.max(0, rB.gajiPokok - runningCarry);
       const excess = rB.totalDibayarkan - effectiveTarget;
       let statusE;
@@ -536,7 +553,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     const m = targetMo % 12;
     const bulanKey = y + "-" + String(m + 1).padStart(2, "0");
     const trxMo = allTrx.filter((t) => t.bulan === bulanKey);
-    const sum = hitungRingkasan(karyawan, trxMo);
+    const sum = hitungRingkasan(karyawan, trxMo, bulanKey);
     const cInfo = carryByBulan[bulanKey] || { carryIn: 0, excess: 0, effectiveTarget: sum.gajiPokok, statusEffective: sum.status };
     const isFuture = targetMo > nowMo;
     historyData.push({ bulan: bulanKey, summary: sum, carryInfo: cInfo, isFuture });
@@ -865,52 +882,228 @@ export function sdmFormKaryawan(existing = null, showErr = false) {
     ? "<div style=\"background:var(--red-bg);color:var(--red);border:1px solid rgba(184,48,48,.25);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:16px\">Nama dan gaji pokok wajib diisi.</div>"
     : "";
 
+  // Nilai field baru (default aman utk kru lama)
+  const fotoVal    = existing?.foto || "";
+  const statusKar  = existing?.status_karyawan || "tetap";
+  const tipeGaji   = existing?.tipe_gaji || "bulanan";
+  const tglGajian  = existing?.tanggal_gajian || "";
+  const metode     = existing?.metode_bayar || "tunai";
+  const shiftVal   = existing?.shift || "siang";
+  const aktif      = existing ? (existing.status !== "nonaktif") : true;
+  const perLabel   = tipeGaji === "harian" ? "per hari" : "per bulan";
+  const unitLabel  = tipeGaji === "harian" ? "/hari" : "/bln";
+  const initials   = (function (nm) {
+    nm = (nm || "").trim(); if (!nm) return "?";
+    const p = nm.split(/\s+/);
+    return (p.length === 1 ? p[0].slice(0, 2) : (p[0][0] + p[1][0])).toUpperCase();
+  })(existing?.nama);
+  const knData = (existing?.kenaikanGaji || []).map((k) => ({
+    bulan: k.mulai_bulan, gaji: Number(k.gaji) || 0, catatan: k.catatan || "",
+  }));
+  let tglGajianOpts = "<option value=\"\">— pilih —</option>";
+  for (let d = 1; d <= 28; d++) tglGajianOpts += "<option value=\"" + d + "\"" + (String(tglGajian) === String(d) ? " selected" : "") + ">Tanggal " + d + "</option>";
+  tglGajianOpts += "<option value=\"akhir\"" + (tglGajian === "akhir" ? " selected" : "") + ">Akhir bulan</option>";
+
+  // Segmented control (tombol + hidden input)
+  const seg = (name, cur, opts) =>
+    "<input type=\"hidden\" name=\"" + name + "\" value=\"" + cur + "\">"
+    + "<div class=\"kf-seg\">"
+    + opts.map((o) => "<button type=\"button\" class=\"" + (o.v === cur ? "is-active" : "") + "\" onclick=\"kfSeg(this,'" + name + "','" + o.v + "')\">"
+        + (o.icon ? "<i class=\"ti " + o.icon + "\"></i> " : "") + o.label + "</button>").join("")
+    + "</div>";
+
+  const secHd = (icon, tt, ds) =>
+    "<div class=\"kf-sec-hd\"><div class=\"kf-sec-ic\"><i class=\"ti " + icon + "\"></i></div>"
+    + "<div><div class=\"kf-sec-tt\">" + tt + "</div><div class=\"kf-sec-ds\">" + ds + "</div></div></div>";
+
+  const FORM_CSS =
+    ".kf-wrap{max-width:680px;display:flex;flex-direction:column;gap:16px;padding-bottom:90px}"
+    + ".kf-sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}"
+    + ".kf-sec-hd{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding-bottom:13px;border-bottom:1px solid var(--border)}"
+    + ".kf-sec-ic{width:34px;height:34px;border-radius:9px;background:var(--green-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}"
+    + ".kf-sec-tt{font-size:14px;font-weight:700;color:var(--txt);line-height:1.2}"
+    + ".kf-sec-ds{font-size:11px;color:var(--txt3);margin-top:2px}"
+    + ".kf-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 14px}"
+    + ".kf-full{grid-column:1/-1}"
+    + ".kf-fg{display:flex;flex-direction:column;gap:6px;min-width:0}"
+    + ".kf-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}"
+    + ".kf-lbl .opt{font-weight:500;text-transform:none;letter-spacing:0}"
+    + ".kf-inp{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-md);font-size:13px;font-family:var(--ff);color:var(--txt);background:var(--surface2);outline:none;box-sizing:border-box}"
+    + ".kf-inp:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--green-bg)}"
+    + ".kf-rp{display:flex;align-items:center;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--surface2);overflow:hidden}"
+    + ".kf-rp:focus-within{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--green-bg)}"
+    + ".kf-rp-px{padding:0 2px 0 11px;font-size:12px;font-weight:700;color:var(--txt3)}"
+    + ".kf-rp input{flex:1;min-width:0;border:none;background:transparent;padding:9px 11px 9px 5px;font-size:13px;font-family:var(--ff-mono);font-variant-numeric:tabular-nums;color:var(--txt);outline:none}"
+    + ".kf-seg{display:flex;gap:3px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:3px}"
+    + ".kf-seg button{flex:1;border:none;background:transparent;padding:8px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:var(--ff);display:flex;align-items:center;justify-content:center;gap:5px;transition:background .12s,color .12s;white-space:nowrap}"
+    + ".kf-seg button.is-active{background:var(--surface);color:var(--accent);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.1)}"
+    + ".kf-toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}"
+    + ".kf-tg-track{width:42px;height:24px;border-radius:99px;background:var(--border2);position:relative;transition:background .18s;flex-shrink:0}"
+    + ".kf-tg-track::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}"
+    + ".kf-toggle.on .kf-tg-track{background:var(--green)}"
+    + ".kf-toggle.on .kf-tg-track::after{transform:translateX(18px)}"
+    + ".kf-tg-lbl{font-size:13px;font-weight:600;color:var(--txt)}"
+    + ".kf-photo{display:flex;align-items:center;gap:15px}"
+    + ".kf-av{width:66px;height:66px;border-radius:50%;background:linear-gradient(135deg,#3a7d2c,#255519);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0;overflow:hidden}"
+    + ".kf-av img{width:100%;height:100%;object-fit:cover}"
+    + ".kf-photo-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-start}"
+    + ".kf-photo-rm{background:none;border:none;color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--ff);padding:2px 0}"
+    + ".kf-photo-hint{font-size:10.5px;color:var(--txt3)}"
+    + ".kf-active{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--green-bg);border:1px solid #b4d4a0;border-radius:var(--r-md);padding:12px 15px;margin-top:13px}"
+    + ".kf-active-lbl{font-size:12px;font-weight:700;color:var(--green-dark)}"
+    + ".kf-active-hint{font-size:10.5px;color:var(--txt3);margin-top:1px}"
+    + ".kf-active-val{font-size:18px;font-weight:800;color:var(--green-dark);font-family:var(--ff-mono);font-variant-numeric:tabular-nums;white-space:nowrap}"
+    + ".kf-active-val span:last-child{font-size:11px;font-weight:600;color:var(--txt3)}"
+    + ".kf-tl{display:flex;flex-direction:column;margin:2px 0 16px}"
+    + ".kf-tl:empty{display:none}"
+    + ".kf-tl-node{display:flex;gap:12px;position:relative;padding-bottom:14px}"
+    + ".kf-tl-node:not(:last-child)::before{content:'';position:absolute;left:6px;top:14px;bottom:0;width:2px;background:var(--border2)}"
+    + ".kf-tl-dot{width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--border2);flex-shrink:0;margin-top:1px;z-index:1}"
+    + ".kf-tl-node.is-now .kf-tl-dot{border-color:var(--green);background:var(--green)}"
+    + ".kf-tl-body{flex:1;min-width:0}"
+    + ".kf-tl-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}"
+    + ".kf-tl-bulan{font-size:12px;font-weight:700;color:var(--txt)}"
+    + ".kf-tl-val{font-size:13px;font-weight:700;color:var(--txt);font-family:var(--ff-mono);font-variant-numeric:tabular-nums;margin-top:2px}"
+    + ".kf-tl-delta{font-size:11px;font-weight:700}"
+    + ".kf-tl-delta.up{color:var(--green)}.kf-tl-delta.down{color:var(--amber)}"
+    + ".kf-tl-note{font-size:11px;color:var(--txt3);margin-top:2px}"
+    + ".kf-bdg{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:99px}"
+    + ".kf-bdg.awal{background:var(--surface2);color:var(--txt3);border:1px solid var(--border2)}"
+    + ".kf-bdg.now{background:var(--green);color:#fff}"
+    + ".kf-bdg.soon{background:var(--gold-bg);color:var(--gold)}"
+    + ".kf-kn-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:9px}"
+    + ".kf-kn-row .kf-fg{flex:1;min-width:130px}"
+    + ".kf-kn-bulan{flex:0 0 150px}"
+    + ".kf-kn-del{height:38px;width:38px;flex-shrink:0;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--surface);color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center}"
+    + ".kf-kn-del:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}"
+    + ".kf-add{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px dashed var(--border2);border-radius:var(--r-md);background:var(--surface);color:var(--txt2);font-size:12.5px;font-weight:600;font-family:var(--ff);cursor:pointer}"
+    + ".kf-add:hover{border-color:var(--accent);color:var(--accent)}"
+    + ".kf-empty{padding:16px;text-align:center;font-size:12px;color:var(--txt3);background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r-md);margin-bottom:10px}"
+    + ".kf-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:2px}"
+    + "@media(max-width:560px){.kf-grid{grid-template-columns:1fr}.kf-kn-bulan{flex:1 1 100%}}";
+
   return docHeadV4(title)
-    + "<style>" + SDM_CSS
-    + ".sdm-form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;max-width:480px}"
-    + "</style>"
+    + "<style>" + SDM_CSS + FORM_CSS + "</style>"
     + "</head><body>"
     + "<div class=\"layout\">"
     + buildFinanceSidebar("", "sdm")
     + "<div class=\"main-wrap\"><header class=\"topbar\">"
     + "<div class=\"topbar-brand\">"
     + "<a href=\"/operasional/sdm\" style=\"color:var(--accent);font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px;text-decoration:none;margin-right:10px\"><i class=\"ti ti-arrow-left\"></i> SDM</a>"
-    + "<div><div class=\"topbar-name\">" + title + "</div><div class=\"topbar-label\">SDM</div></div>"
+    + "<div><div class=\"topbar-name\">" + title + "</div><div class=\"topbar-label\">Kelola Kru</div></div>"
     + "</div></header>"
     + "<div class=\"page\">"
     + errHtml
-    + "<div class=\"sdm-form-card\">"
-    + "<form method=\"post\" action=\"" + action + "\">"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nama Lengkap *</label>"
-    + "<input class=\"sdm-inp\" type=\"text\" name=\"nama\" value=\"" + v("nama") + "\" placeholder=\"Nama karyawan\" required></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Jabatan</label>"
-    + "<input class=\"sdm-inp\" type=\"text\" name=\"jabatan\" value=\"" + v("jabatan") + "\" placeholder=\"Kasir, Barista, Jaga Malam, dll\"></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Gaji Pokok (Rp) *</label>"
-    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" value=\"" + gajiVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this)\" required></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Uang Makan per Hari (Rp) <span style=\"font-weight:400;text-transform:none\">(opsional — khusus shift malam)</span></label>"
-    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" id=\"inpMakan\" value=\"" + makanVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this);toggleHariKerja()\"></div>"
-    + "<div class=\"sdm-fmg\" id=\"wrapHariKerja\" style=\"" + (Number(existing?.uang_makan) > 0 ? "" : "display:none") + "\"><label class=\"sdm-lbl\">Hari Kerja per Bulan</label>"
-    + "<input class=\"sdm-inp\" type=\"number\" name=\"hari_kerja\" value=\"" + hariKerjaV + "\" min=\"1\" max=\"31\" placeholder=\"26\"></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Nomor HP</label>"
-    + "<input class=\"sdm-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" value=\"" + v("telepon") + "\" placeholder=\"08xxxxxxxxxx\"></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Shift</label>"
-    + "<select class=\"sdm-sel\" name=\"shift\">"
-    + "<option value=\"siang\"" + ((!existing || existing.shift === "siang") ? " selected" : "") + ">☀ Shift Siang</option>"
-    + "<option value=\"malam\"" + (existing?.shift === "malam" ? " selected" : "") + ">☽ Shift Malam</option>"
-    + "</select></div>"
-    + "<div class=\"sdm-fmg\"><label class=\"sdm-lbl\">Tanggal Mulai Kerja</label>"
-    + "<input class=\"sdm-inp\" type=\"date\" name=\"tgl_mulai\" value=\"" + tglVal + "\"></div>"
-    + "<div style=\"display:flex;gap:8px;margin-top:6px\">"
-    + "<a href=\"/operasional/sdm\" class=\"sdm-btn sdm-btn-secondary\" style=\"flex:1;justify-content:center;padding:10px\">Batal</a>"
-    + "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" style=\"flex:2;justify-content:center;padding:10px\">"
-    + "<i class=\"ti ti-check\"></i> " + (isEdit ? "Simpan Perubahan" : "Tambah Karyawan") + "</button>"
-    + "</div></form></div>"
+    + "<form method=\"post\" action=\"" + action + "\" class=\"kf-wrap\" onsubmit=\"return kfSubmit()\">"
+    // ── Section 1: Data Diri ──
+    + "<div class=\"kf-sec\">"
+    +   secHd("ti-user", "Data Diri", "Identitas & status kepegawaian")
+    +   "<div class=\"kf-photo\">"
+    +     "<div class=\"kf-av\" id=\"kfAv\">" + (fotoVal ? "<img id=\"kfAvImg\" alt=\"foto\" src=\"" + fotoVal + "\">" : "<span id=\"kfAvTxt\">" + initials + "</span>") + "</div>"
+    +     "<div class=\"kf-photo-actions\">"
+    +       "<button type=\"button\" class=\"sdm-btn sdm-btn-secondary\" onclick=\"kfPhotoPick()\"><i class=\"ti ti-camera\"></i> " + (fotoVal ? "Ganti foto" : "Tambah foto") + "</button>"
+    +       "<button type=\"button\" class=\"kf-photo-rm\" id=\"kfRmPhoto\" onclick=\"kfRemovePhoto()\" style=\"" + (fotoVal ? "" : "display:none") + "\">Hapus foto</button>"
+    +       "<div class=\"kf-photo-hint\">JPG/PNG — dikompres otomatis di perangkat.</div>"
+    +     "</div>"
+    +   "</div>"
+    +   "<input type=\"file\" id=\"kfFile\" accept=\"image/*\" style=\"display:none\" onchange=\"kfPhoto(this)\">"
+    +   "<input type=\"hidden\" name=\"foto\" value=\"" + fotoVal + "\">"
+    +   "<div class=\"kf-grid\" style=\"margin-top:15px\">"
+    +     "<div class=\"kf-fg kf-full\"><label class=\"kf-lbl\">Nama Lengkap *</label><input class=\"kf-inp\" type=\"text\" name=\"nama\" value=\"" + v("nama") + "\" placeholder=\"Nama karyawan\" oninput=\"kfNama(this)\" required></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Nomor HP</label><input class=\"kf-inp\" type=\"text\" inputmode=\"tel\" name=\"telepon\" value=\"" + v("telepon") + "\" placeholder=\"08xxxxxxxxxx\"></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Status Kerja</label><div style=\"display:flex;align-items:center;gap:10px;margin-top:3px\"><div class=\"kf-toggle" + (aktif ? " on" : "") + "\" onclick=\"kfToggle(this)\"><span class=\"kf-tg-track\"></span><span class=\"kf-tg-lbl\" id=\"kfAktifTxt\">" + (aktif ? "Aktif" : "Nonaktif") + "</span></div></div><input type=\"hidden\" name=\"status_aktif\" value=\"" + (aktif ? "1" : "0") + "\"></div>"
+    +     "<div class=\"kf-fg kf-full\"><label class=\"kf-lbl\">Status Karyawan</label>" + seg("status_karyawan", statusKar, [{ v: "tetap", label: "Tetap" }, { v: "kontrak", label: "Kontrak" }, { v: "parttime", label: "Part-time" }, { v: "magang", label: "Magang" }]) + "</div>"
+    +   "</div>"
+    + "</div>"
+    // ── Section 2: Penempatan ──
+    + "<div class=\"kf-sec\">"
+    +   secHd("ti-briefcase", "Penempatan", "Posisi, shift & mulai kerja")
+    +   "<div class=\"kf-grid\">"
+    +     "<div class=\"kf-fg kf-full\"><label class=\"kf-lbl\">Jabatan</label><input class=\"kf-inp\" type=\"text\" name=\"jabatan\" value=\"" + v("jabatan") + "\" placeholder=\"Kasir, Barista, Jaga Malam, dll\"></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Shift</label>" + seg("shift", shiftVal, [{ v: "siang", label: "Siang", icon: "ti-sun" }, { v: "malam", label: "Malam", icon: "ti-moon" }]) + "</div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Tanggal Mulai Kerja</label><input class=\"kf-inp\" type=\"date\" name=\"tgl_mulai\" value=\"" + tglVal + "\" oninput=\"kfRenderTimeline()\"></div>"
+    +   "</div>"
+    + "</div>"
+    // ── Section 3: Gaji & Tunjangan ──
+    + "<div class=\"kf-sec\">"
+    +   secHd("ti-wallet", "Gaji &amp; Tunjangan", "Tipe gaji, nominal & pembayaran")
+    +   "<div class=\"kf-grid\">"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Tipe Gaji</label>" + seg("tipe_gaji", tipeGaji, [{ v: "bulanan", label: "Bulanan" }, { v: "harian", label: "Harian" }]) + "</div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Gaji Pokok <span class=\"opt\" id=\"lblGajiPer\">" + perLabel + "</span> *</label><div class=\"kf-rp\"><span class=\"kf-rp-px\">Rp</span><input type=\"text\" inputmode=\"numeric\" name=\"gaji_pokok\" value=\"" + gajiVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this);kfRenderTimeline()\" required></div></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Uang Makan / Hari <span class=\"opt\">(opsional)</span></label><div class=\"kf-rp\"><span class=\"kf-rp-px\">Rp</span><input type=\"text\" inputmode=\"numeric\" name=\"uang_makan\" id=\"inpMakan\" value=\"" + makanVal + "\" placeholder=\"0\" oninput=\"sdmFmtJ(this);toggleHariKerja()\"></div></div>"
+    +     "<div class=\"kf-fg\" id=\"wrapHariKerja\" style=\"" + (Number(existing?.uang_makan) > 0 ? "" : "display:none") + "\"><label class=\"kf-lbl\">Hari Kerja / Bulan</label><input class=\"kf-inp\" type=\"number\" name=\"hari_kerja\" value=\"" + hariKerjaV + "\" min=\"1\" max=\"31\" placeholder=\"26\"></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Tanggal Gajian</label><select class=\"kf-inp\" name=\"tanggal_gajian\">" + tglGajianOpts + "</select></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Metode Bayar</label>" + seg("metode_bayar", metode, [{ v: "tunai", label: "Tunai" }, { v: "transfer", label: "Transfer" }, { v: "ewallet", label: "E-wallet" }]) + "</div>"
+    +     "<div class=\"kf-fg kf-full\" id=\"wrapRek\" style=\"" + (metode === "tunai" ? "display:none" : "") + "\"><label class=\"kf-lbl\">No. Rekening / E-wallet <span class=\"opt\">(opsional)</span></label><input class=\"kf-inp\" type=\"text\" name=\"rekening\" value=\"" + v("rekening") + "\" placeholder=\"No. rekening / nomor e-wallet\"></div>"
+    +   "</div>"
+    +   "<div class=\"kf-active\"><div><div class=\"kf-active-lbl\">Gaji pokok aktif bulan ini</div><div class=\"kf-active-hint\">Otomatis dari jadwal kenaikan di bawah</div></div><div class=\"kf-active-val\"><span id=\"gajiAktif\">Rp 0</span> <span id=\"unitAktif\">" + unitLabel + "</span></div></div>"
+    + "</div>"
+    // ── Section 4: Kenaikan Gaji Terjadwal ──
+    + "<div class=\"kf-sec\">"
+    +   secHd("ti-trending-up", "Kenaikan Gaji Terjadwal", "Atur gaji naik otomatis mulai bulan tertentu")
+    +   "<div id=\"gajiTimeline\" class=\"kf-tl\"></div>"
+    +   "<div id=\"knRows\"></div>"
+    +   "<div id=\"knEmpty\" class=\"kf-empty\">Belum ada jadwal kenaikan gaji.</div>"
+    +   "<button type=\"button\" class=\"kf-add\" onclick=\"kfAddRow()\"><i class=\"ti ti-plus\"></i> Tambah jadwal kenaikan</button>"
+    +   "<template id=\"knTpl\"><div class=\"kf-kn-row\">"
+    +     "<div class=\"kf-fg kf-kn-bulan\"><label class=\"kf-lbl\">Mulai Bulan</label><input class=\"kf-inp\" type=\"month\" name=\"kenaikan_bulan\" oninput=\"kfRenderTimeline()\"></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Gaji Pokok Baru</label><div class=\"kf-rp\"><span class=\"kf-rp-px\">Rp</span><input type=\"text\" inputmode=\"numeric\" name=\"kenaikan_gaji\" placeholder=\"0\" oninput=\"sdmFmtJ(this);kfRenderTimeline()\"></div></div>"
+    +     "<div class=\"kf-fg\"><label class=\"kf-lbl\">Catatan <span class=\"opt\">(opsional)</span></label><input class=\"kf-inp\" type=\"text\" name=\"kenaikan_catatan\" placeholder=\"mis. Promosi\"></div>"
+    +     "<button type=\"button\" class=\"kf-kn-del\" onclick=\"kfDelRow(this)\" title=\"Hapus\"><i class=\"ti ti-trash\"></i></button>"
+    +   "</div></template>"
+    + "</div>"
+    // ── Footer ──
+    + "<div class=\"kf-foot\">"
+    +   "<a href=\"/operasional/sdm\" class=\"sdm-btn sdm-btn-secondary\" style=\"padding:11px 20px\">Batal</a>"
+    +   "<button type=\"submit\" class=\"sdm-btn sdm-btn-primary\" id=\"kfSave\" style=\"padding:11px 22px\"><i class=\"ti ti-check\"></i> " + (isEdit ? "Simpan Perubahan" : "Tambah Karyawan") + "</button>"
+    + "</div>"
+    + "</form>"
     + "</div></div></div>"
     + "<script>"
-    + "function sdmFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?Number(raw).toLocaleString('id-ID'):''}"
+    + "function sdmFmtJ(el){var raw=el.value.replace(/\\D/g,'');el.value=raw?Number(raw).toLocaleString('id-ID'):'';}"
+    + "function kfNum(el){return parseInt(String((el&&el.value)||'').replace(/\\D/g,''))||0;}"
+    + "function kfRupiah(n){return 'Rp '+(Number(n)||0).toLocaleString('id-ID');}"
+    + "function kfCurBulan(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}"
+    + "function kfBulanLabel(b){if(!/^\\d{4}-\\d{2}$/.test(b))return '\\u2014';var nm=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];var p=b.split('-');return nm[parseInt(p[1])-1]+' '+p[0];}"
+    + "function kfInitials(nm){nm=(nm||'').trim();if(!nm)return '?';var p=nm.split(/\\s+/);return (p.length===1?p[0].slice(0,2):(p[0][0]+p[1][0])).toUpperCase();}"
+    + "function kfSeg(btn,name,val){var g=btn.parentNode,bs=g.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('is-active',bs[i]===btn);var inp=document.querySelector('input[name=\"'+name+'\"]');if(inp)inp.value=val;if(name==='tipe_gaji')kfTipeGaji();if(name==='metode_bayar')kfMetode();}"
+    + "function kfTipeGaji(){var t=(document.querySelector('input[name=tipe_gaji]')||{}).value||'bulanan';document.getElementById('lblGajiPer').textContent=(t==='harian'?'per hari':'per bulan');document.getElementById('unitAktif').textContent=(t==='harian'?'/hari':'/bln');}"
+    + "function kfMetode(){var m=(document.querySelector('input[name=metode_bayar]')||{}).value||'tunai';document.getElementById('wrapRek').style.display=(m==='tunai')?'none':'';}"
+    + "function kfToggle(el){var on=el.classList.toggle('on');document.querySelector('input[name=status_aktif]').value=on?'1':'0';var t=document.getElementById('kfAktifTxt');if(t)t.textContent=on?'Aktif':'Nonaktif';}"
+    + "function kfNama(el){if(document.getElementById('kfAvImg'))return;var t=document.getElementById('kfAvTxt');if(t)t.textContent=kfInitials(el.value);}"
     + "function toggleHariKerja(){var v=document.getElementById('inpMakan').value.replace(/\\D/g,'');document.getElementById('wrapHariKerja').style.display=parseInt(v)>0?'':'none';}"
+    + "function kfPhotoPick(){document.getElementById('kfFile').click();}"
+    + "function kfPhoto(input){var f=input.files&&input.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(e){var img=new Image();img.onload=function(){var max=256,s=Math.min(1,max/Math.max(img.width,img.height));var w=Math.round(img.width*s),h=Math.round(img.height*s);var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);var d=c.toDataURL('image/jpeg',0.82);document.querySelector('input[name=foto]').value=d;kfShowPhoto(d);};img.src=e.target.result;};rd.readAsDataURL(f);}"
+    + "function kfShowPhoto(d){document.getElementById('kfAv').innerHTML='<img id=\"kfAvImg\" alt=\"foto\" src=\"'+d+'\">';var r=document.getElementById('kfRmPhoto');if(r)r.style.display='';}"
+    + "function kfRemovePhoto(){document.querySelector('input[name=foto]').value='';var nm=(document.querySelector('input[name=nama]')||{}).value||'';document.getElementById('kfAv').innerHTML='<span id=\"kfAvTxt\">'+kfInitials(nm)+'</span>';var r=document.getElementById('kfRmPhoto');if(r)r.style.display='none';}"
+    + "function kfAddRow(bulan,gaji,catatan){var tpl=document.getElementById('knTpl');var node=tpl.content.firstElementChild.cloneNode(true);if(bulan)node.querySelector('input[name=kenaikan_bulan]').value=bulan;if(gaji)node.querySelector('input[name=kenaikan_gaji]').value=Number(gaji).toLocaleString('id-ID');if(catatan)node.querySelector('input[name=kenaikan_catatan]').value=catatan;document.getElementById('knRows').appendChild(node);kfEmptyState();kfRenderTimeline();}"
+    + "function kfDelRow(btn){var r=btn.closest('.kf-kn-row');if(r)r.remove();kfEmptyState();kfRenderTimeline();}"
+    + "function kfEmptyState(){var n=document.getElementById('knRows').children.length;document.getElementById('knEmpty').style.display=n?'none':'';}"
+    + "function kfRenderTimeline(){"
+    +   "var base=kfNum(document.querySelector('input[name=gaji_pokok]'));"
+    +   "var startB=(document.querySelector('input[name=tgl_mulai]').value||'').slice(0,7);"
+    +   "var items=[{bulan:startB,gaji:base,awal:true,catatan:''}];"
+    +   "var rows=document.querySelectorAll('#knRows .kf-kn-row');"
+    +   "for(var i=0;i<rows.length;i++){var b=rows[i].querySelector('input[name=kenaikan_bulan]').value;var g=kfNum(rows[i].querySelector('input[name=kenaikan_gaji]'));var c=rows[i].querySelector('input[name=kenaikan_catatan]').value;if(/^\\d{4}-\\d{2}$/.test(b)&&g>0)items.push({bulan:b,gaji:g,awal:false,catatan:c});}"
+    +   "items.sort(function(a,b){return (a.bulan||'0000-00')<(b.bulan||'0000-00')?-1:1;});"
+    +   "var cur=kfCurBulan(),act=0;"
+    +   "for(var i=0;i<items.length;i++){var bb=items[i].bulan;if(items[i].awal||(/^\\d{4}-\\d{2}$/.test(bb)&&bb<=cur))act=i;}"
+    +   "var html='';"
+    +   "for(var i=0;i<items.length;i++){var it=items[i];var prev=i>0?items[i-1].gaji:null;var delta=prev!=null?it.gaji-prev:0;"
+    +     "var badge='';if(it.awal)badge='<span class=\"kf-bdg awal\">Gaji awal</span>';else if(i===act)badge='<span class=\"kf-bdg now\">Berlaku sekarang</span>';else if(/^\\d{4}-\\d{2}$/.test(it.bulan)&&it.bulan>cur)badge='<span class=\"kf-bdg soon\">Akan datang</span>';"
+    +     "var lbl=it.awal?(it.bulan?kfBulanLabel(it.bulan):'Sejak mulai kerja'):kfBulanLabel(it.bulan);"
+    +     "var dHtml=delta>0?(' <span class=\"kf-tl-delta up\">+'+kfRupiah(delta)+'</span>'):(delta<0?(' <span class=\"kf-tl-delta down\">'+kfRupiah(delta)+'</span>'):'');"
+    +     "var note=it.catatan?('<div class=\"kf-tl-note\">'+String(it.catatan).replace(/</g,'&lt;')+'</div>'):'';"
+    +     "html+='<div class=\"kf-tl-node'+(i===act?' is-now':'')+'\"><div class=\"kf-tl-dot\"></div><div class=\"kf-tl-body\"><div class=\"kf-tl-top\"><span class=\"kf-tl-bulan\">'+lbl+'</span>'+badge+'</div><div class=\"kf-tl-val\">'+kfRupiah(it.gaji)+dHtml+'</div>'+note+'</div></div>';"
+    +   "}"
+    +   "document.getElementById('gajiTimeline').innerHTML=html;"
+    +   "document.getElementById('gajiAktif').textContent=kfRupiah(items[act]?items[act].gaji:base);"
+    + "}"
+    + "function kfSubmit(){var b=document.getElementById('kfSave');if(b){b.style.pointerEvents='none';b.style.opacity='0.75';b.innerHTML='<i class=\"ti ti-loader-2\"></i> Menyimpan\\u2026';}return true;}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
+    + "var KN_INIT=" + JSON.stringify(knData).replace(/</g, "\\u003c") + ";"
+    + "(function(){for(var i=0;i<KN_INIT.length;i++){kfAddRow(KN_INIT[i].bulan,KN_INIT[i].gaji,KN_INIT[i].catatan);}kfEmptyState();kfTipeGaji();kfMetode();kfRenderTimeline();})();"
     + "</script>"
     + buildFinanceBottomNav()
     + "</body></html>";

@@ -1510,24 +1510,65 @@ export const getKaryawanById = async (id, warungId = currentWarungId()) => {
   return res.rows[0] ?? null;
 };
 
-export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = currentWarungId()) => {
+export const addKaryawan = async ({ nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift,
+  foto, statusKaryawan, tipeGaji, tanggalGajian, metodeBayar, rekening }, warungId = currentWarungId()) => {
   const res = await query(
-    `INSERT INTO karyawan (nama, jabatan, gaji_pokok, uang_makan, hari_kerja, tgl_mulai, telepon, shift, warung_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang", warungId]
+    `INSERT INTO karyawan (nama, jabatan, gaji_pokok, uang_makan, hari_kerja, tgl_mulai, telepon, shift,
+       foto, status_karyawan, tipe_gaji, tanggal_gajian, metode_bayar, rekening, warung_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang",
+     foto || "", statusKaryawan || "tetap", tipeGaji || "bulanan", tanggalGajian || "", metodeBayar || "tunai", rekening || "", warungId]
   );
   return res.rows[0].id;
 };
 
-export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift }, warungId = currentWarungId()) => {
+export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, hariKerja, tglMulai, telepon, shift,
+  foto, statusKaryawan, tipeGaji, tanggalGajian, metodeBayar, rekening, status }, warungId = currentWarungId()) => {
   await query(
-    `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, uang_makan=$4, hari_kerja=$5, tgl_mulai=$6, telepon=$7, shift=$8 WHERE id=$9 AND warung_id=$10`,
-    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang", id, warungId]
+    `UPDATE karyawan SET nama=$1, jabatan=$2, gaji_pokok=$3, uang_makan=$4, hari_kerja=$5, tgl_mulai=$6, telepon=$7, shift=$8,
+       foto=$9, status_karyawan=$10, tipe_gaji=$11, tanggal_gajian=$12, metode_bayar=$13, rekening=$14, status=$15
+     WHERE id=$16 AND warung_id=$17`,
+    [nama.trim(), jabatan.trim(), gajiPokok, uangMakan || 0, hariKerja || 26, tglMulai || null, telepon.trim(), shift || "siang",
+     foto || "", statusKaryawan || "tetap", tipeGaji || "bulanan", tanggalGajian || "", metodeBayar || "tunai", rekening || "",
+     (status === "nonaktif" ? "nonaktif" : "aktif"), id, warungId]
   );
 };
 
 export const nonaktifkanKaryawan = async (id, warungId = currentWarungId()) => {
   await query(`UPDATE karyawan SET status = 'nonaktif' WHERE id = $1 AND warung_id = $2`, [id, warungId]);
+};
+
+// ── Kenaikan gaji terjadwal (banyak per karyawan) ─────────────
+export const readKenaikanGaji = async (karyawanId, warungId = currentWarungId()) => {
+  const res = await query(
+    "SELECT * FROM karyawan_kenaikan_gaji WHERE karyawan_id = $1 AND warung_id = $2 ORDER BY mulai_bulan ASC",
+    [karyawanId, warungId]
+  );
+  return res.rows;
+};
+
+export const readAllKenaikanGaji = async (warungId = currentWarungId()) => {
+  const res = await query(
+    "SELECT * FROM karyawan_kenaikan_gaji WHERE warung_id = $1 ORDER BY mulai_bulan ASC",
+    [warungId]
+  );
+  return res.rows;
+};
+
+// Ganti seluruh jadwal kenaikan satu karyawan (dipakai saat tambah/edit form).
+// Baris invalid (bulan bukan YYYY-MM atau gaji <= 0) di-skip.
+export const replaceKenaikanGaji = async (karyawanId, items = [], warungId = currentWarungId()) => {
+  await query("DELETE FROM karyawan_kenaikan_gaji WHERE karyawan_id = $1 AND warung_id = $2", [karyawanId, warungId]);
+  for (const it of items) {
+    const bulan = String(it.mulaiBulan ?? "").trim();
+    const gaji  = parseInt(it.gaji) || 0;
+    if (!/^\d{4}-\d{2}$/.test(bulan) || gaji <= 0) continue;
+    await query(
+      `INSERT INTO karyawan_kenaikan_gaji (karyawan_id, mulai_bulan, gaji, catatan, warung_id)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [karyawanId, bulan, gaji, String(it.catatan ?? "").trim().slice(0, 200), warungId]
+    );
+  }
 };
 
 // ── SDM Transaksi ─────────────────────────────────────────────

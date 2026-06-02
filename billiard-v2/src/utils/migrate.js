@@ -547,6 +547,29 @@ export const runMigrations = async () => {
   await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS uang_makan      INTEGER DEFAULT 0`);
   await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS hari_kerja      INTEGER DEFAULT 26`);
   await query(`ALTER TABLE sdm_transaksi ADD COLUMN IF NOT EXISTS metode TEXT DEFAULT 'cash'`);
+  // Kolom kru tambahan (upgrade form Kelola Kru). Idempotent + default aman utk
+  // kru lama: foto base64, status kepegawaian, tipe gaji, tgl gajian, metode bayar.
+  // (Status aktif/nonaktif tetap pakai kolom `status` yang sudah ada.)
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS foto            TEXT    DEFAULT ''`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS status_karyawan TEXT    DEFAULT 'tetap'`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS tipe_gaji       TEXT    DEFAULT 'bulanan'`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS tanggal_gajian  TEXT    DEFAULT ''`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS metode_bayar    TEXT    DEFAULT 'tunai'`);
+  await query(`ALTER TABLE karyawan ADD COLUMN IF NOT EXISTS rekening        TEXT    DEFAULT ''`);
+  // Jadwal kenaikan gaji terjadwal — banyak baris per karyawan. mulai_bulan='YYYY-MM'.
+  // warung_id ditambah + di-index oleh loop TENANT_TABLES di bawah.
+  await query(`
+    CREATE TABLE IF NOT EXISTS karyawan_kenaikan_gaji (
+      id          SERIAL PRIMARY KEY,
+      karyawan_id INTEGER NOT NULL,
+      mulai_bulan TEXT    NOT NULL,
+      gaji        INTEGER NOT NULL DEFAULT 0,
+      catatan     TEXT    DEFAULT '',
+      warung_id   INTEGER NOT NULL DEFAULT 1,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kenaikan_karyawan ON karyawan_kenaikan_gaji (karyawan_id)`);
 
   // ── Index untuk performa query ──────────────────────────────
   await query(`CREATE INDEX IF NOT EXISTS idx_logs_ts           ON logs      (ts DESC)`);
@@ -724,7 +747,7 @@ export const runMigrations = async () => {
     "members", "transaksi", "logs", "kategori", "menu_items", "meja", "sesi", "sub_kategori",
     "menu_toppings", "bahan_baku", "supplier", "stok_movement",
     "bahan_harga_history", "menu_resep", "feature_notes", "notifikasi",
-    "karyawan", "sdm_transaksi", "admin_accounts", "setoran", "fixed_costs",
+    "karyawan", "karyawan_kenaikan_gaji", "sdm_transaksi", "admin_accounts", "setoran", "fixed_costs",
     "planning_items", "planning_payments", "planning_goals", "app_settings",
   ];
   for (const t of TENANT_TABLES) {
