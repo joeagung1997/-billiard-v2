@@ -21,7 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja, updateMejaTarifMassal,
   createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds, readMejaOpenSesiInfo,
-  hasOpenSesi, closeSesi, moveSesiMeja, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
+  hasOpenSesi, closeSesi, moveSesiMeja, cancelSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -1880,6 +1880,24 @@ router.post("/sesi/pindah", async (req, res) => {
     res.redirect("/operasional/sesi?msg=pindah&d=" + encodeURIComponent(tujuan.nama));
   } catch (err) {
     console.error("[FINANCE] sesi pindah error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
+// Batal Sesi: sesi terlanjur dibuka (salah meja/durasi/klik) → batalkan total.
+// Semua item (sewa + F&B, termasuk yang sudah lunas) di-void sehingga keluar dari
+// Riwayat & pemasukan; sesi jadi 'batal' & meja kembali kosong. Akses owner &
+// karyawan (tanpa requireOwner). Konfirmasi destruktif ditangani di klien.
+router.post("/sesi/batal", async (req, res) => {
+  const sesiId = parseInt(req.body.sesi_id) || 0;
+  if (!sesiId) return res.redirect("/operasional/sesi?msg=err");
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    const ok = await cancelSesi(sesiId);
+    res.redirect("/operasional/sesi?msg=" + (ok ? "batal" : "err"));
+  } catch (err) {
+    console.error("[FINANCE] sesi batal error:", err.message);
     res.redirect("/operasional/sesi?msg=err");
   }
 });

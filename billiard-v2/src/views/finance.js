@@ -4116,6 +4116,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     : msg === "undo"      ? (durBaru ? ("Perpanjangan dibatalkan — durasi jadi " + durBaru) : "Perpanjangan terakhir dibatalkan")
     : msg === "item_hapus" ? "Item dihapus dari sesi"
     : msg === "pindah"    ? (durBaru ? ("Sesi dipindah ke " + durBaru) : "Sesi dipindah ke meja lain")
+    : msg === "batal"     ? "Sesi dibatalkan — meja kembali kosong, tidak ada yang tercatat"
     : msg === "ditutup"   ? "Sesi ditutup — semua item tercatat di Riwayat"
     : "";
   const errMsg = msg === "sudah_ada"  ? "Meja itu sudah punya sesi terbuka."
@@ -4269,6 +4270,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         const endISO   = (d.rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + d.rh * 3600000).toISOString() : "";
         const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, start: s.opened_at || "", w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
         const pindahPayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja || "Meja" }));
+        const batalPayload  = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja || "Meja", paid: d.dibayar }));
         const fnbHtml = d.fnb.length ? d.fnb.map((t) => renderFnbRow(s, t)).join("") : "<div class=\"line line-none\">Belum ada pesanan F&amp;B. Klik <b>Tambah</b>.</div>";
         return "<div class=\"bsesi\" data-detail=\"" + s.id + "\"" + (i > 0 ? " style=\"display:none\"" : "") + ">"
           + "<div class=\"bhead\"><div class=\"bnum\">" + escHtml(tableNo(s)) + "</div>"
@@ -4287,6 +4289,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           + "<p class=\"bhint\"><i class=\"ti ti-info-circle\"></i> Sewa meja ditagih saat sesi ditutup; durasi bisa diubah kapan saja. Item belum bayar belum menambah saldo.</p>"
           + "<div class=\"bfoot\"><button type=\"button\" class=\"bact\" onclick=\"mjSoon()\"><i class=\"ti ti-printer\"></i> Cetak Struk</button>"
           + "<button type=\"button\" class=\"bact\" onclick='openPindah(" + pindahPayload + ")'><i class=\"ti ti-arrows-exchange\"></i> Pindah Meja</button>"
+          + "<button type=\"button\" class=\"bact danger\" onclick='openBatal(" + batalPayload + ")'><i class=\"ti ti-circle-x\"></i> Batal Sesi</button>"
           + "<button type=\"button\" class=\"bact close\" onclick='openTutup(" + closePayload + ")'><i class=\"ti ti-logout\"></i> Tutup &amp; Bayar Sisa " + rp(d.sisa) + "</button></div></div>";
       }).join("");
 
@@ -4412,6 +4415,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .bact i{font-size:16px}
     .bact.close{flex:1;min-width:200px;background:var(--accent);border:none;color:#fff;font-size:13.5px;font-weight:800}
     .bact.close:hover{background:var(--green-dark);color:#fff}
+    .bact.danger{color:#b91c1c;border-color:#f1c7c7}
+    .bact.danger:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
     @media(max-width:880px){.bsesi-layout{grid-template-columns:minmax(0,1fr)}.brail{position:relative;min-width:0}.brail-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scroll-snap-type:x proximity}.brail-item{min-width:172px;flex-shrink:0;scroll-snap-align:start}.brail-hint{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;letter-spacing:.02em;text-transform:none;color:var(--green-dark);background:var(--green-bg);border:1px solid #cce8b8;padding:2px 7px;border-radius:20px;margin-left:7px;animation:brailNudge 1.6s ease-in-out infinite}.brail.scroll-end .brail-hint{display:none}.brail-scroll::after{content:'';position:absolute;top:0;right:0;bottom:7px;width:40px;background:linear-gradient(to right,rgba(255,255,255,0),var(--surface));pointer-events:none;opacity:1;transition:opacity .2s}.brail.scroll-end .brail-scroll::after{opacity:0}.btotals{grid-template-columns:1fr}.btot{border-right:none;border-bottom:1px solid var(--line)}.btot:last-child{border-bottom:none}.bact{flex:1}.bact.close{flex:1 1 100%}}
     @media(max-width:560px){.bhead{padding:16px;gap:11px}.bnum{width:40px;height:40px;border-radius:11px;font-size:16px}.bhead-meta h2{font-size:17px}.btimer{font-size:25px}.bbody{padding:4px 16px}.bfoot{padding:16px}.line{flex-wrap:wrap;gap:8px}.line-right{width:100%;justify-content:space-between;flex-wrap:wrap}.sec-row{flex-wrap:wrap;gap:8px}}
 
@@ -4600,6 +4605,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
     + "function openPindah(d){var si=document.getElementById('pdSesiId');if(si)si.value=d.id;var f=document.getElementById('pdFrom');if(f)f.textContent=d.meja||'meja';var s=document.getElementById('pdMeja');if(s){s.selectedIndex=0;mipSync(s);}_show('mPindah');}function closePindah(){_hide('mPindah');}"
     + "function pindahSubmit(form){var s=document.getElementById('pdMeja');if(s&&!s.value){alert('Pilih meja tujuan dulu.');return false;}return true;}"
+    + "function openBatal(d){var paid=d.paid||0;var msg=paid>0?('Batalkan sesi '+d.meja+'?\\n\\nSudah ada pembayaran Rp '+Number(paid).toLocaleString('id-ID')+' yang akan DIHAPUS dari pemasukan. Meja kembali kosong & tidak ada yang tercatat.\\n\\nLanjutkan?'):('Batalkan sesi '+d.meja+'?\\n\\nSesi dianggap tidak jadi \\u2014 semua item dihapus, meja kembali kosong, dan tidak ada yang tercatat di Riwayat.\\n\\nLanjutkan?');if(confirm(msg)){document.getElementById('batalSesiId').value=d.id;document.getElementById('batalForm').submit();}}"
     + "(function(){var mq=new URLSearchParams(location.search).get('meja');var pick=mq?document.querySelector('.brail-item[data-meja=\"'+mq+'\"]'):null;if(!pick)pick=document.querySelector('[data-sel]');if(pick){bSelect(pick.dataset.sel);if(mq)pick.scrollIntoView({block:'nearest',inline:'nearest'});}bTick();setInterval(bTick,1000);})();"
     + "(function(){var br=document.querySelector('.brail');var bl=document.querySelector('.brail-list');if(!br||!bl)return;function upd(){var more=(bl.scrollWidth-bl.clientWidth-bl.scrollLeft)>4;br.classList.toggle('scroll-end',!more);}bl.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();})();"
     // Loading state pada setiap submit form (POST): kasih spinner + 'Menyimpan…',
@@ -4781,6 +4787,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +   "</form></div></div>"
     + (toastMsg ? "<div class=\"mj-toast\" id=\"sToast\"><i class=\"ti ti-circle-check\"></i> " + escHtml(toastMsg) + "</div>" : "")
     + "<div class=\"mj-toast\" id=\"soonToast\"><i class=\"ti ti-tools\"></i> Fitur ini segera hadir</div>"
+    + "<form method=\"post\" action=\"/operasional/sesi/batal\" id=\"batalForm\" style=\"display:none\"><input type=\"hidden\" name=\"sesi_id\" id=\"batalSesiId\"></form>"
     + "<script>" + js + "</script>"
     + buildFinanceBottomNav(role)
     + "</body></html>";

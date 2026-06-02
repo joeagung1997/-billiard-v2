@@ -820,6 +820,39 @@ export const moveSesiMeja = async (sesiId, newMejaId, newNama, warungId = curren
   return res.rowCount > 0;
 };
 
+// Batalkan sesi 'open' (terlanjur dibuka: salah meja/durasi/klik). Void SEMUA item
+// (sewa + F&B, baik belum maupun sudah bayar) lalu set status 'batal' (meja kembali
+// kosong). Item ter-void otomatis hilang dari Riwayat & pemasukan (read filter
+// voided_at IS NULL). Atomik: void + ubah status dalam 1 transaksi — kalau ada yg
+// gagal, ROLLBACK (tak ada perubahan separuh). FOR UPDATE cegah balapan dgn tutup.
+export const cancelSesi = async (id, warungId = currentWarungId()) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const s = await client.query(
+      "SELECT id FROM sesi WHERE id = $1 AND warung_id = $2 AND status = 'open' FOR UPDATE",
+      [id, warungId]
+    );
+    if (s.rowCount === 0) { await client.query("ROLLBACK"); return false; }
+    await client.query(
+      `UPDATE transaksi SET voided_at = NOW(), void_reason = 'Sesi dibatalkan'
+        WHERE sesi_id = $1 AND warung_id = $2 AND voided_at IS NULL`,
+      [id, warungId]
+    );
+    await client.query(
+      "UPDATE sesi SET status = 'batal', closed_at = NOW() WHERE id = $1 AND warung_id = $2",
+      [id, warungId]
+    );
+    await client.query("COMMIT");
+    return true;
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
 // Tandai item sesi lunas + set metode bayar. Dibatasi ke item sesi (sesi_id NOT
 // NULL) & belum void — tidak bisa mengenai transaksi biasa (aman by design).
 export const setSesiItemPaid = async (id, bayar = "cash", warungId = currentWarungId()) => {
