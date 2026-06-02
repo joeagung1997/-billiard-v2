@@ -1129,6 +1129,20 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     ".mm-sub{font-size:12px;color:var(--txt2);background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 11px;margin-bottom:12px;line-height:1.5}",
     ".mm-sub b{color:var(--txt)}",
     ".mm-err{font-size:11px;color:#a32d2d;margin:-6px 0 10px}",
+    // Kartu item F&B di modal manual — beri jarak & pembatas biar tidak mepet
+    "#mmKopiWrap .fin-menu-items{gap:9px;margin-bottom:10px}",
+    "#mmKopiWrap .fin-menu-row{padding:9px 10px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2)}",
+    "#mmKopiWrap .wiz-extras{margin-top:7px;padding-top:8px;border-top:1px dashed var(--border2)}",
+    "#mmKopiWrap .fin-btn-add-item{margin-top:2px}",
+    "#mmKopiWrap .mm-sub{margin-top:8px}",
+    // Kotak Total Bayar — total keseluruhan (rincian sewa + F&B) yang menonjol
+    ".mm-total-box{background:var(--green-bg);border:1px solid var(--green);border-radius:10px;padding:10px 13px;margin-bottom:12px}",
+    ".mm-total-brk{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--txt2);margin-bottom:4px}",
+    ".mm-total-brk span:first-child{display:inline-flex;align-items:center;gap:5px}",
+    ".mm-total-brk span:last-child{font-family:var(--ff-mono);color:var(--txt)}",
+    ".mm-total-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;padding-top:8px;border-top:1px dashed var(--green)}",
+    ".mm-total-lbl{font-size:13px;font-weight:800;color:var(--green)}",
+    ".mm-total-val{font-size:18px;font-weight:800;color:var(--green);font-family:var(--ff-mono)}",
     ".mm-info{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;line-height:1.5;color:var(--txt2);background:var(--green-bg);border-radius:9px;padding:9px 11px;margin:2px 0 14px}",
     ".mm-info i{color:var(--green);font-size:14px;margin-top:1px;flex-shrink:0}",
     ".mm-foot{display:flex;gap:10px}",
@@ -1998,6 +2012,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         // Nominal — pembawa tunggal (name=jumlah); otomatis utk sewa/kopi, manual lainnya
         +   "<div id=\"mmJumlahRow\"><label class=\"mm-lbl\" id=\"mmJumlahLbl\">Nominal</label>"
         +     "<input type=\"text\" name=\"jumlah\" id=\"mmJumlah\" class=\"mm-inp\" inputmode=\"numeric\" placeholder=\"Rp 0\" oninput=\"manualRupiah(this);manualInfo()\"></div>"
+        // Kotak Total Bayar — rincian sewa + F&B (muncul saat Sewa Meja + ada F&B)
+        +   "<div id=\"mmTotalBox\" class=\"mm-total-box\" style=\"display:none\"></div>"
         +   "<label class=\"mm-lbl\">Metode bayar</label>"
         +   "<div class=\"mm-tog\" id=\"mmBayarTog\">"
         +     "<button type=\"button\" class=\"mm-tog-btn active\" data-b=\"cash\" onclick=\"manualSetBayar('cash')\"><i class=\"ti ti-cash\"></i> Cash</button>"
@@ -2657,15 +2673,19 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "manualInfo();}"
     + "function manualSetBayar(b){var h=document.getElementById('mmBayar');if(h)h.value=b;document.querySelectorAll('#mmBayarTog .mm-tog-btn').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-b')===b);});}"
     + "function manualRupiah(el){var v=el.value.replace(/\\D/g,'');el.value=v?Number(v).toLocaleString('id-ID'):'';}"
-    + "function manualInfo(){var info=document.getElementById('mmInfo');if(!info)return;var dt=(document.getElementById('mmDatetime')||{}).value||'';var jenis=(document.getElementById('mmJenis')||{}).value||'pemasukan';"
+    + "function manualInfo(){var info=document.getElementById('mmInfo');var dt=(document.getElementById('mmDatetime')||{}).value||'';var jenis=(document.getElementById('mmJenis')||{}).value||'pemasukan';"
     +   "var base=parseInt(((document.getElementById('mmJumlah')||{}).value||'').replace(/\\D/g,''))||0;"
     +   "var addonOn=(document.getElementById('mmKopiAddonCb')||{}).checked;"
-    +   "var addon=(jenis==='pemasukan'&&mmAct==='sewa'&&addonOn)?(mmAddonTotal||0):0;"
+    +   "var isSewa=(jenis==='pemasukan'&&mmAct==='sewa');"
+    +   "var addon=(isSewa&&addonOn)?(mmAddonTotal||0):0;"
     +   "var grand=base+addon;"
+    +   "var jlbl=document.getElementById('mmJumlahLbl');if(jlbl&&isSewa){jlbl.textContent=(addon>0)?'Harga sewa meja (otomatis dari tarif)':'Nominal (otomatis dari tarif)';}"
+    +   "var box=document.getElementById('mmTotalBox');"
+    +   "if(box){if(isSewa&&addon>0){box.innerHTML='<div class=\"mm-total-brk\"><span><i class=\"ti ti-device-gamepad-2\"></i> Sewa meja</span><span>Rp '+base.toLocaleString('id-ID')+'</span></div>'+'<div class=\"mm-total-brk\"><span><i class=\"ti ti-coffee\"></i> Minum/Makan</span><span>Rp '+addon.toLocaleString('id-ID')+'</span></div>'+'<div class=\"mm-total-row\"><span class=\"mm-total-lbl\">Total Bayar</span><span class=\"mm-total-val\">Rp '+grand.toLocaleString('id-ID')+'</span></div>';box.style.display='';}else{box.style.display='none';box.innerHTML='';}}"
+    +   "if(!info)return;"
     +   "var tgl=dt?new Date(dt).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'\\u2014';"
-    +   "var shiftTxt='';if(dt&&jenis==='pemasukan'&&mmAct==='sewa'){var hr=parseInt(dt.slice(11,13))||0;shiftTxt=(hr>=8&&hr<18)?' \\u00b7 tarif Siang':' \\u00b7 tarif Malam';}"
-    +   "var addTxt=addon>0?(' (meja Rp '+base.toLocaleString('id-ID')+' + F&B Rp '+addon.toLocaleString('id-ID')+')'):'';"
-    +   "info.innerHTML='<i class=\"ti ti-info-circle\"></i> <span>Tercatat di <b>'+tgl+'</b>'+shiftTxt+' \\u00b7 <b>Rp '+grand.toLocaleString('id-ID')+'</b>'+addTxt+'. Ditandai <b>manual</b> oleh kamu (Owner). Total tanggal tsb akan ikut berubah.</span>';}"
+    +   "var shiftTxt='';if(dt&&isSewa){var hr=parseInt(dt.slice(11,13))||0;shiftTxt=(hr>=8&&hr<18)?' \\u00b7 tarif Siang':' \\u00b7 tarif Malam';}"
+    +   "info.innerHTML='<i class=\"ti ti-info-circle\"></i> <span>Tercatat di <b>'+tgl+'</b>'+shiftTxt+' \\u00b7 <b>Rp '+grand.toLocaleString('id-ID')+'</b>. Ditandai <b>manual</b> oleh kamu (Owner). Total tanggal tsb akan ikut berubah.</span>';}"
     + "function mmHideErr(id){var el=document.getElementById(id);if(el)el.style.display='none';}"
     + "function mmShowErr(id){var el=document.getElementById(id);if(el){el.style.display='';el.scrollIntoView({block:'nearest'});}}"
     + "function mmAddItem(){var c=document.getElementById('mmMenuItems');if(!c)return;var r=document.createElement('div');r.className='fin-menu-row';"
