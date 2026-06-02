@@ -559,6 +559,10 @@ export function financeLoginPage(showErr) {
 export function financeDashboard({ transaksi, token, role = "owner", displayName = "", shift = "siang", bulanFilter, jenisFilter, tglDari, tglSampai, kategoriList = [], subKategoriList = [], menuItems = [], toppings = [], mejaList = [], accountsAll = [], karyawanAll = [], analisis = null, msg = "", transaksiOnly = false }) {
   const defaultShift = shift === "malam" ? "malam" : "siang";
   const isOwner = role === "owner";
+  // Jam tampil transaksi: pakai field `jam` (input manual); kalau kosong (mis.
+  // transaksi dari Sesi Meja yang jam-nya ""), turunkan dari created_at dalam WIB
+  // ("HH:MM"). WIB-explicit (timeZone) → konsisten walau server UTC.
+  const jamOf = (t) => t.jam || (t.createdAt ? new Date(t.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "");
   const toastMsg  = msg === "created"   ? "Transaksi berhasil dicatat! Cek tabel di bawah untuk detail."
     : msg === "voided"    ? "Transaksi dibatalkan. Saldo sudah diperbarui."
     : msg === "lunas"     ? "Transaksi ditandai lunas. Sekarang dihitung di total Pemasukan/Pengeluaran."
@@ -817,7 +821,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     chartIn  = SLOTS.map(() => 0);
     chartOut = SLOTS.map(() => 0);
     revenueSortedTbl.forEach(function(t) {
-      const h   = parseInt((t.jam || "00:00").split(":")[0]) || 0;
+      const h   = parseInt((jamOf(t) || "00:00").split(":")[0]) || 0;
       const idx = SLOTS.findIndex((s) => h >= s.h0 && h < s.h1);
       const i   = idx < 0 ? 0 : idx;
       if (t.jenis === "pemasukan") chartIn[i]  += t.jumlah;
@@ -911,7 +915,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
     if (t.jenis === "pemasukan") byDayInp[dow] += t.jumlah;
     else                         byDayOut[dow] += t.jumlah;
-    const h = parseInt((t.jam || "00:00").split(":")[0], 10) || 0;
+    const h = parseInt((jamOf(t) || "00:00").split(":")[0], 10) || 0;
     if (t.jenis === "pemasukan") byHourInp[h] += t.jumlah;
     else                         byHourOut[h] += t.jumlah;
   });
@@ -965,7 +969,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     const d = new Date(t.tanggal + "T00:00:00");
     const tglMain = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
     const tglDisp = "<div class=\"fr-tgl-main\">" + tglMain + "</div>"
-                  + (t.jam ? "<div class=\"fr-tgl-sub\">" + escHtml(t.jam) + "</div>" : "");
+                  + (jamOf(t) ? "<div class=\"fr-tgl-sub\">" + escHtml(jamOf(t)) + "</div>" : "");
     const rowCls   = "fin-row "
       + (isVoid ? "trx-voided" : (isIn ? "fin-row-in" : "fin-row-out"))
       + (isBelum ? " trx-belum-lunas" : "");
@@ -2894,7 +2898,8 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var shiftIc=pencatatShift==='malam'?'🌙 Malam':pencatatShift==='siang'?'☀️ Siang':'';"
     +   "var bayarLbl=t.bayar==='cash'?'💵 Cash':t.bayar==='qris'?'⚡ QRIS':'—';"
     +   "var rows=[];"
-    +   "rows.push({l:'Tanggal',v:tglFmt+(t.jam?' · '+t.jam:'')});"
+    +   "var _jam=t.jam||(t.createdAt?new Date(t.createdAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'}):'');"
+    +   "rows.push({l:'Tanggal',v:tglFmt+(_jam?' · '+_jam:'')});"
     +   "rows.push({l:'Tipe',v:'<span class=\"t-badge '+(isIn?'in':'out')+'\">'+(isIn?'↑ Masuk':'↓ Keluar')+'</span>'});"
     +   "rows.push({l:'Kategori',v:t.kategori||'—'});"
     +   "if(t.subKategori)rows.push({l:'Sub Kategori',v:t.subKategori});"
