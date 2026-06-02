@@ -40,7 +40,7 @@ import { CONFIG } from "../config.js";
 import { setRequestWarung } from "../utils/tenant.js";
 import { subscriptionGate } from "../middleware/subscription.js";
 import { requireModule } from "../middleware/module.js";
-import { applyBusinessDay, todayBusinessDayISO, isFutureWIB, KAT_TUKAR_UANG } from "../utils/format.js";
+import { applyBusinessDay, todayBusinessDayISO, nowJamWib, isFutureWIB, KAT_TUKAR_UANG } from "../utils/format.js";
 import { checkAndNotifyTarget, createDailySummaryNotif, notifyNewTransaksi } from "../utils/notifTrigger.js";
 import { loadAnalisisData, computeStatus, evaluateAddKaryawan, SETTING_DANA_CADANGAN } from "../utils/analisis.js";
 import { addFixedCost, updateFixedCost, deleteFixedCost, writeSetting } from "../utils/db.js";
@@ -1669,7 +1669,7 @@ router.post("/sesi/buka", async (req, res) => {
       "", undefined, startMs === nowMs ? null : new Date(startMs)
     );
     await appendTransaksi({
-      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: nowJamWib(),
       jenis: "pemasukan", waktu,
       kategori: "Sewa Meja", keterangan: sewaKet,
       jumlah: sewaJumlah, lunas: sewaPaid, bayar: sewaPaid ? metode : "",
@@ -1691,7 +1691,7 @@ router.post("/sesi/buka", async (req, res) => {
       }
       if (parts.length && total > 0) {
         await appendTransaksi({
-          id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+          id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: nowJamWib(),
           jenis: "pemasukan", waktu,
           kategori: "Kopi / Snack", keterangan: parts.join(", "),
           jumlah: total, lunas: bayarDidepan, bayar: bayarDidepan ? metode : "",
@@ -1806,7 +1806,7 @@ router.post("/sesi/item/tambah", async (req, res) => {
     }
     if (parts.length === 0 || total <= 0) return res.redirect("/operasional/sesi?msg=err");
     await appendTransaksi({
-      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: "",
+      id: _genTrxId(), tanggal: todayBusinessDayISO(), jam: nowJamWib(),
       jenis: "pemasukan", waktu: res.locals.financeShift || "siang",
       kategori: "Kopi / Snack", keterangan: parts.join(", "),
       jumlah: total, lunas: bayarNow, bayar: bayarNow ? metode : "",

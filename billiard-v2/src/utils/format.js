@@ -54,6 +54,10 @@ export const todayBusinessDayISO = (cutoffHour = CONFIG.BUSINESS_DAY_CUTOFF_HOUR
   return applyBusinessDay(tgl, jam, cutoffHour);
 };
 
+// Jam saat ini (WIB) sebagai "HH:MM" — utk stempel otomatis jam transaksi Sesi
+// Meja (sewa & F&B) yang dibuat saat ditambah. WIB-explicit → konsisten di server UTC.
+export const nowJamWib = () => new Date().toLocaleString("sv-SE", { timeZone: ID_TZ }).slice(11, 16);
+
 // Cek apakah datetime-local user ("YYYY-MM-DDTHH:MM", wall-clock WIB) ada di masa
 // depan dibandingkan "sekarang" WIB. Bandingkan sbg wall-clock (kedua sisi di-parse
 // sbg UTC) supaya hasilnya KONSISTEN lintas timezone server (mis. server UTC tidak
