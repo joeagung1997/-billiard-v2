@@ -37,8 +37,16 @@ app.use(express.static(join(__dirname, "../public"), {
   extensions: ["html"],
   setHeaders(res, filePath) {
     if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
-      // no-cache: browser selalu revalidate, tapi pakai cache (304) jika file tidak berubah
-      res.setHeader("Cache-Control", "no-cache");
+      // Aset ber-versi (?v=) → cache permanen (immutable): di-fetch sekali, load
+      // berikutnya instan TANPA revalidasi. Bump ?v= saat file berubah.
+      // Tanpa ?v= → no-cache (selalu revalidate). Tujuan: hilangkan revalidasi
+      // 190KB admin.css tiap page-load yang bikin sidebar "mentah sesaat" (FOUC)
+      // di jaringan lambat. (res.req tersedia di setHeaders saat lewat Express.)
+      const versioned = res.req && res.req.query && res.req.query.v;
+      res.setHeader(
+        "Cache-Control",
+        versioned ? "public, max-age=31536000, immutable" : "no-cache",
+      );
     }
   },
 }));

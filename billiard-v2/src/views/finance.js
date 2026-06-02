@@ -47,6 +47,21 @@ function docHead(title) {
     + "<link rel=\"stylesheet\" href=\"/finance.css?v=3\">";
 }
 
+// CSS layout KRITIS — di-inline SEBELUM admin.css. admin.css (190KB, render-blocking)
+// kadang telat/gagal ke-load di jaringan lambat → sidebar pernah tampil "mentah"
+// (full-width, link biru bergaris bawah). Aturan minimal ini menjaga layout tetap
+// waras; saat admin.css ter-load ia meng-override nilai yang sama (tanpa lonjakan
+// visual). margin-left di-scope ke ".sidebar ~ .main-wrap" supaya halaman tanpa
+// sidebar tidak ikut ter-indent.
+const CRITICAL_LAYOUT_CSS =
+  ".layout{display:flex;min-height:100vh}"
+  + ".sidebar{position:fixed;top:0;left:0;bottom:0;width:240px;background:#0a1a0c;overflow-y:auto;z-index:60;display:flex;flex-direction:column;color:#cdd7d0}"
+  + ".sidebar ~ .main-wrap{margin-left:240px}"
+  + ".main-wrap{flex:1;min-width:0}"
+  + ".own-item,.own-quick-btn{color:#cdd7d0;text-decoration:none}"
+  + ".notif-sheet-overlay,.sidebar-backdrop{display:none}"
+  + "@media(max-width:768px){.sidebar.own-sidebar{transform:translateX(-100%);width:88vw;max-width:320px}.sidebar ~ .main-wrap{margin-left:0}}";
+
 export function docHeadV4(title) {
   return "<!DOCTYPE html><html lang=\"id\"><head>"
     + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
@@ -54,6 +69,7 @@ export function docHeadV4(title) {
     + "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">"
     + "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css\">"
     + "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">"
+    + "<style>" + CRITICAL_LAYOUT_CSS + "</style>"
     + "<link rel=\"stylesheet\" href=\"/admin.css?v=83\">";
 }
 
