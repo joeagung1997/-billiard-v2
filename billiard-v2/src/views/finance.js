@@ -3743,7 +3743,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     const sewaMethod = info.bayar === "qris" ? "QRIS" : (info.bayar === "cash" ? "Cash" : "");
     const sewaBadge = info.paid
       ? "<span class=\"mjc-sewa-badge paid\"><i class=\"ti ti-circle-check\"></i> Sewa lunas" + (sewaMethod ? " · " + sewaMethod : "") + "</span>"
-      : "<span class=\"mjc-sewa-badge unpaid\"><i class=\"ti ti-clock\"></i> Sewa belum bayar</span>";
+      : "<span class=\"mjc-sewa-badge unpaid\"><i class=\"ti ti-alert-circle\"></i> Sewa belum bayar</span>";
     return "<div class=\"mjc-session\"><div class=\"mjc-session-r1\">"
       + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-siang=\"" + si + "\" data-malam=\"" + ma + "\"" + fixAttr + ">00:00:00</span>"
       + "<div class=\"mjc-session-cost\"><small>Estimasi</small><b data-cost>" + rp(rh > 0 ? (info.jumlah || 0) : 0) + "</b></div></div>"
@@ -4257,14 +4257,19 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     // "saat tutup" sudah cukup jelas (badge "Bayar saat tutup" jadi redundan).
     const sewaRight = rh > 0
       ? "<button type=\"button\" class=\"chip-btn add\" onclick='openUbahDurasi(" + pl + ")'><i class=\"ti ti-clock-edit\"></i> Perpanjang</button>"
-        + (paid ? "" : "<span class=\"tag-calm\">Bayar saat tutup</span>")
       : "";
+    // Status bayar SEWA → badge menonjol. Lunas (hijau) / Belum Bayar (amber, hanya
+    // saat harga sudah pasti yakni durasi tetap price>0; Open pakai "saat tutup").
     const paidSub = paid
       ? "<div class=\"line-sub\"><span class=\"paid-badge\"><i class=\"ti ti-circle-check\"></i> Lunas" + (method ? " · " + method : "") + "</span></div>"
-      : "";
-    return "<div class=\"line line-sewa" + (paid ? " is-paid" : "") + "\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
+      : (price > 0
+        ? "<div class=\"line-sub\"><span class=\"unpaid-badge\"><i class=\"ti ti-alert-circle\"></i> Belum Bayar</span></div>"
+        : "");
+    const sewaState = paid ? " is-paid" : (price > 0 ? " is-unpaid" : "");
+    const amtState  = paid ? " paid" : (price > 0 ? " unpaid" : "");
+    return "<div class=\"line line-sewa" + sewaState + "\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
       + "<div class=\"line-sub\">" + tarifLine + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>" + paidSub + "</div>"
-      + "<div class=\"line-right\"><span class=\"line-amt" + (paid ? " paid" : "") + "\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
+      + "<div class=\"line-right\"><span class=\"line-amt" + amtState + "\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
       + sewaRight + "</div></div>"
       + rincian;
   };
@@ -4412,6 +4417,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .paid-badge{display:inline-flex;align-items:center;gap:5px;background:var(--green);color:#fff;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:800;box-shadow:0 2px 6px rgba(45,102,36,.25)}
     .paid-badge i{font-size:14px}
     .line-amt.paid{color:var(--green-dark)}
+    /* Belum bayar (harga sudah pasti) → baris di-highlight amber + badge + nominal amber. */
+    .line-sewa.is-unpaid{background:#fff7ec;border:1px solid #f5d9a6;border-radius:11px;padding:12px 14px}
+    .unpaid-badge{display:inline-flex;align-items:center;gap:5px;background:#d97706;color:#fff;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:800;box-shadow:0 2px 6px rgba(180,83,9,.22)}
+    .unpaid-badge i{font-size:14px}
+    .line-amt.unpaid{color:#b45309}
 
     .chip-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--surface);color:var(--txt2);padding:7px 11px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:.15s;white-space:nowrap}
     .chip-btn:hover{border-color:var(--accent);color:var(--accent)}
