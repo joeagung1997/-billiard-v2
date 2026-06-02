@@ -1953,7 +1953,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         +     "</div>"
         +   "</div>"
         +   "<label class=\"mm-lbl\">Tanggal &amp; jam transaksi <span class=\"mm-opt\">(boleh tanggal lampau)</span></label>"
-        +   "<input type=\"datetime-local\" name=\"datetime\" id=\"mmDatetime\" class=\"mm-inp\" onchange=\"mmComputeBilliardPrice();manualInfo()\">"
+        +   "<input type=\"datetime-local\" name=\"datetime\" id=\"mmDatetime\" class=\"mm-inp\" onchange=\"mmComputeBilliardPrice();manualInfo();mmRememberDate()\">"
         // ── Pemasukan / Sewa Meja: pilih meja + jam main → harga otomatis ──
         +   "<div id=\"mmSewaWrap\">"
         +     "<div class=\"mm-row\">"
@@ -2621,7 +2621,11 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
         + '<div class="wiz-tops" style="display:none;flex-direction:column;gap:4px"></div>'
         + '</div>'
       ) + ";"
-    + "function openManual(){var ov=document.getElementById('mManual');if(!ov)return;var dt=document.getElementById('mmDatetime');if(dt){var lz=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);dt.value=lz;dt.max=lz;}"
+    // Prefill tanggal: pakai tanggal terakhir yg dipakai di sesi ini (kalau ada &
+    // tidak di masa depan) supaya input backdate beruntun tidak reset ke "sekarang".
+    // sessionStorage → persist selama tab dibuka, reset fresh saat buka tab baru.
+    + "function mmRememberDate(){var v=(document.getElementById('mmDatetime')||{}).value||'';if(v){try{sessionStorage.setItem('mmLastDatetime',v);}catch(e){}}}"
+    + "function openManual(){var ov=document.getElementById('mManual');if(!ov)return;var dt=document.getElementById('mmDatetime');if(dt){var lz=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);dt.max=lz;var last='';try{last=sessionStorage.getItem('mmLastDatetime')||'';}catch(e){}dt.value=(last&&last.length>=16&&last.slice(0,16)<=lz)?last.slice(0,16):lz;}"
     +   "mmAct='sewa';mmAddonTotal=0;mmAddonKet='';"
     +   "var cb=document.getElementById('mmKopiAddonCb');if(cb)cb.checked=false;"
     +   "var lbl=document.getElementById('mmKopiAddonLbl');if(lbl)lbl.classList.remove('on');"
@@ -2744,6 +2748,7 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     +   "var tgl=new Date(dt).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});"
     +   "var addonAmt=(kopiJ&&kopiJ.value)?parseInt(kopiJ.value)||0:0;var grand=amt+addonAmt;"
     +   "if(!confirm('Simpan transaksi manual?\\n\\nTercatat di '+tgl+' \\u00b7 Rp '+grand.toLocaleString('id-ID')+'\\nDitandai manual oleh kamu (Owner). Total tanggal tsb akan berubah.'))return false;"
+    +   "mmRememberDate();"
     +   "var btn=document.getElementById('mmSubmit');if(btn){btn.disabled=true;btn.textContent='Menyimpan\\u2026';}return true;}"
     // ── Tukar Uang modal (Cash → QRIS shortcut) ─────────────────
     + "function openTukarModal(){"
