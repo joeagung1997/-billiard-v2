@@ -759,14 +759,17 @@ export const readMejaOpenSesiIds = async (warungId = currentWarungId()) => {
 };
 
 // Info sesi terbuka per meja (utk live block Manajemen Meja): kapan dibuka +
-// waktu (siang/malam) dari item sewa-nya. 1 baris per meja (sesi terbaru).
+// waktu (siang/malam) + keterangan & harga item sewa-nya. keterangan dipakai utk
+// ambil durasi ("N Jam") → timer hitung mundur seperti Sesi Meja. 1 baris/meja.
 export const readMejaOpenSesiInfo = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT DISTINCT ON (s.meja_id) s.meja_id, s.opened_at,
-            COALESCE(t.waktu, 'siang') AS waktu
+            COALESCE(t.waktu, 'siang') AS waktu,
+            t.keterangan AS sewa_ket, COALESCE(t.jumlah, 0) AS sewa_jumlah
        FROM sesi s
        LEFT JOIN transaksi t
-         ON t.sesi_id = s.id AND t.warung_id = s.warung_id AND t.kategori = 'Sewa Meja'
+         ON t.sesi_id = s.id AND t.warung_id = s.warung_id
+        AND t.kategori = 'Sewa Meja' AND t.voided_at IS NULL
       WHERE s.warung_id = $1 AND s.status = 'open' AND s.meja_id IS NOT NULL
       ORDER BY s.meja_id, s.opened_at DESC`,
     [warungId]
@@ -799,6 +802,20 @@ export const closeSesi = async (id, warungId = currentWarungId()) => {
     `UPDATE sesi SET status = 'closed', closed_at = NOW()
       WHERE id = $1 AND warung_id = $2 AND status = 'open'`,
     [id, warungId]
+  );
+  return res.rowCount > 0;
+};
+
+// Pindahkan sesi 'open' ke meja lain (customer pindah meja). Cuma meja_id +
+// nama_meja sesi yang diubah di sini; harga & keterangan item sewa diurus di
+// route (hitung ulang tarif ikut meja tujuan). Guard status='open' agar sesi
+// yang sudah ditutup tak bisa dipindah. uq_sesi_meja_open menjamin meja tujuan
+// tak bisa diisi 2 sesi open sekaligus (race → INSERT/UPDATE gagal).
+export const moveSesiMeja = async (sesiId, newMejaId, newNama, warungId = currentWarungId()) => {
+  const res = await query(
+    `UPDATE sesi SET meja_id = $1, nama_meja = $2
+      WHERE id = $3 AND warung_id = $4 AND status = 'open'`,
+    [newMejaId ?? null, (newNama ?? "").trim(), sesiId, warungId]
   );
   return res.rowCount > 0;
 };

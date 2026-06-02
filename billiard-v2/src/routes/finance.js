@@ -21,7 +21,7 @@ import {
   addMenuTopping, deleteMenuTopping,
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja, updateMejaTarifMassal,
   createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds, readMejaOpenSesiInfo,
-  hasOpenSesi, closeSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
+  hasOpenSesi, closeSesi, moveSesiMeja, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -1491,7 +1491,16 @@ router.get("/meja", async (req, res) => {
     const [mejaList, sesiInfo] = await Promise.all([readMejas(), readMejaOpenSesiInfo()]);
     const occupiedIds = sesiInfo.map((s) => s.meja_id);
     const openSesiByMeja = {};
-    for (const s of sesiInfo) openSesiByMeja[s.meja_id] = { opened_at: s.opened_at, waktu: s.waktu };
+    // rh = total jam sewa dari keterangan ("N Jam"); 0 = Open (tanpa durasi tetap).
+    // Dipakai utk timer hitung mundur + harga terkunci di kartu Manajemen Meja.
+    for (const s of sesiInfo) {
+      const km = String(s.sewa_ket || "").match(/(\d+)\s*Jam/);
+      openSesiByMeja[s.meja_id] = {
+        opened_at: s.opened_at, waktu: s.waktu,
+        rh: km ? parseInt(km[1]) : 0,
+        jumlah: parseInt(s.sewa_jumlah) || 0,
+      };
+    }
     res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || "", occupiedIds, openSesiByMeja));
   } catch (err) {
     console.error("[FINANCE] meja GET error:", err.message);
@@ -1827,6 +1836,52 @@ router.post("/sesi/item/hapus", async (req, res) => {
     console.error("[FINANCE] sesi item hapus error:", err.message);
   }
   res.redirect("/operasional/sesi?msg=item_hapus");
+});
+
+// Pindah Meja: pindahkan sesi 'open' ke meja lain yang sedang KOSONG. Bill (sewa
+// + F&B) ikut pindah. Harga sewa dihitung ulang ikut tarif meja tujuan (durasi &
+// jam mulai tetap) — durasi Open tetap dihitung saat tutup (otomatis ikut tarif
+// baru). Akses: semua user finance (owner & karyawan) — tanpa requireOwner,
+// konsisten dgn route /sesi/* lain.
+router.post("/sesi/pindah", async (req, res) => {
+  const sesiId   = parseInt(req.body.sesi_id) || 0;
+  const tujuanId = parseInt(req.body.meja_id) || 0;
+  if (!sesiId || !tujuanId) return res.redirect("/operasional/sesi?msg=err");
+  try {
+    const sesi = await readSesiById(sesiId);
+    if (!sesi || sesi.status !== "open") return res.redirect("/operasional/sesi?msg=err");
+    if (tujuanId === sesi.meja_id)       return res.redirect("/operasional/sesi?msg=err"); // pindah ke meja sendiri = no-op
+    const tujuan = (await readMejas()).find((m) => m.id === tujuanId);
+    if (!tujuan || tujuan.status !== "aktif") return res.redirect("/operasional/sesi?msg=err");
+    if (await hasOpenSesi(tujuanId))     return res.redirect("/operasional/sesi?msg=meja_dipakai");
+
+    // 1) Pindahkan sesi ke meja tujuan.
+    const moved = await moveSesiMeja(sesiId, tujuanId, tujuan.nama);
+    if (!moved) return res.redirect("/operasional/sesi?msg=err");
+
+    // 2) Perbarui item Sewa: ganti nama meja di keterangan + hitung ulang harga
+    //    pakai tarif meja tujuan. Durasi Open (jam=0): harga tetap dihitung saat
+    //    tutup. Status bayar TIDAK diubah (paid arg = undefined).
+    const items = await readSesiItems(sesiId);
+    const sewa  = items.find((t) => t.kategori === "Sewa Meja");
+    if (sewa) {
+      const oldPrefix = "Sewa " + (sesi.nama_meja || "Meja");
+      const rawKet    = String(sewa.keterangan || "");
+      const tailKet   = rawKet.startsWith(oldPrefix) ? rawKet.slice(oldPrefix.length) : "";
+      const newKet    = "Sewa " + tujuan.nama + tailKet;
+      const jam       = parseInt((rawKet.match(/(\d+)\s*Jam/) || [])[1]) || 0; // total durasi; 0 = Open
+      let jumlah      = sewa.jumlah || 0;
+      if (jam > 0) {
+        const startMs = new Date(sesi.opened_at).getTime() || Date.now();
+        jumlah = tarifSplit(startMs, startMs + jam * 3600000, tujuan.tarif_siang || 0, tujuan.tarif_malam || 0);
+      }
+      await updateSesiSewa(sesiId, jumlah, newKet);
+    }
+    res.redirect("/operasional/sesi?msg=pindah&d=" + encodeURIComponent(tujuan.nama));
+  } catch (err) {
+    console.error("[FINANCE] sesi pindah error:", err.message);
+    res.redirect("/operasional/sesi?msg=err");
+  }
 });
 
 router.post("/sesi/tutup", async (req, res) => {

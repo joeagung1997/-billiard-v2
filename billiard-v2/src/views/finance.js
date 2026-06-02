@@ -3732,9 +3732,15 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     const info = openSesiByMeja[m.id];
     if (!info) return "";
     const si = m.tarif_siang || 0, ma = m.tarif_malam || 0;
+    // Durasi tetap (rh>0): timer hitung MUNDUR (Sisa/Lewat) + harga terkunci
+    // (data-fixedcost) — selaras dgn Sesi Meja. Open (rh=0): hitung maju + akrual.
+    const rh = info.rh || 0;
+    const fixAttr = rh > 0
+      ? " data-over=\"" + (rh * 3600) + "\" data-fixedcost=\"" + (info.jumlah || 0) + "\""
+      : "";
     return "<div class=\"mjc-session\"><div class=\"mjc-session-r1\">"
-      + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-siang=\"" + si + "\" data-malam=\"" + ma + "\">00:00:00</span>"
-      + "<div class=\"mjc-session-cost\"><small>Estimasi</small><b data-cost>" + rp(0) + "</b></div></div>"
+      + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-siang=\"" + si + "\" data-malam=\"" + ma + "\"" + fixAttr + ">00:00:00</span>"
+      + "<div class=\"mjc-session-cost\"><small>Estimasi</small><b data-cost>" + rp(rh > 0 ? (info.jumlah || 0) : 0) + "</b></div></div>"
       + "<div class=\"mjc-session-note\"><i class=\"ti ti-clock-play\"></i> Tarif ikut jam · Siang " + rp(si) + " / Malam " + rp(ma) + "</div></div>";
   };
 
@@ -3864,6 +3870,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .mjc-session{margin:14px 16px;padding:13px 14px;background:var(--green-bg);border:1px solid #cce8b8;border-radius:11px}
     .mjc-session-r1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
     .mjc-timer{font-family:var(--ff-mono);font-size:23px;font-weight:500;letter-spacing:-.01em;color:var(--txt)}
+    .mjc-card.is-soon .mjc-timer{color:#d97706}
+    .mjc-card.is-over .mjc-timer{color:#dc2626}
     .mjc-session-cost{text-align:right}
     .mjc-session-cost small{display:block;font-size:9px;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
     .mjc-session-cost b{font-size:16px;font-weight:800;color:var(--green-dark);font-family:var(--ff-mono)}
@@ -3985,7 +3993,8 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "function mjView(el){document.querySelectorAll('.mjc-vt').forEach(function(x){x.classList.remove('active');});el.classList.add('active');var g=document.querySelector('.mjc-grid');if(g)g.classList.toggle('list',el.dataset.v==='list');}"
     + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
-    + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var sec=Math.max(0,Math.floor((Date.now()-start)/1000));var h=String(Math.floor(sec/3600)).padStart(2,'0');var m=String(Math.floor(sec%3600/60)).padStart(2,'0');var s=String(sec%60).padStart(2,'0');el.textContent=h+':'+m+':'+s;var cost=tarifSplit(start,Date.now(),+el.dataset.siang||0,+el.dataset.malam||0);tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
+    + "function mjPad2(n){return String(n).padStart(2,'0');}"
+    + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var now=Date.now();var elapsed=Math.max(0,Math.floor((now-start)/1000));var over=el.dataset.over?parseInt(el.dataset.over):0;var card=el.closest('.mjc-card');var cost;if(over>0){var sisa=over-elapsed;var isOver=sisa<0;var a=isOver?-sisa:sisa;el.textContent=(isOver?'Lewat ':'Sisa ')+Math.floor(a/3600)+':'+mjPad2(Math.floor(a%3600/60))+':'+mjPad2(a%60);cost=+el.dataset.fixedcost||0;if(card){card.classList.toggle('is-over',isOver);card.classList.toggle('is-soon',!isOver&&sisa<=600);}}else{el.textContent=mjPad2(Math.floor(elapsed/3600))+':'+mjPad2(Math.floor(elapsed%3600/60))+':'+mjPad2(elapsed%60);cost=tarifSplit(start,now,+el.dataset.siang||0,+el.dataset.malam||0);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "mjTick();setInterval(mjTick,1000);"
     + "function openBulk(){document.getElementById('mjBulkModal').classList.add('show');}function closeBulk(){document.getElementById('mjBulkModal').classList.remove('show');}"
     // Loading state pada submit form (POST) — spinner + 'Menyimpan…' & cegah
@@ -4106,11 +4115,13 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     : msg === "durasi"    ? (durBaru ? ("Durasi sewa jadi " + durBaru) : "Durasi sewa diperbarui")
     : msg === "undo"      ? (durBaru ? ("Perpanjangan dibatalkan — durasi jadi " + durBaru) : "Perpanjangan terakhir dibatalkan")
     : msg === "item_hapus" ? "Item dihapus dari sesi"
+    : msg === "pindah"    ? (durBaru ? ("Sesi dipindah ke " + durBaru) : "Sesi dipindah ke meja lain")
     : msg === "ditutup"   ? "Sesi ditutup — semua item tercatat di Riwayat"
     : "";
   const errMsg = msg === "sudah_ada"  ? "Meja itu sudah punya sesi terbuka."
     : msg === "belum_lunas" ? "Tidak bisa tutup: masih ada item F&B yang belum dibayar."
     : msg === "sewa_kosong" ? "Isi harga sewa dulu sebelum menutup sesi."
+    : msg === "meja_dipakai" ? "Meja tujuan sudah dipakai sesi lain. Pilih meja kosong lain."
     : msg === "err"         ? "Gagal memproses. Coba lagi."
     : "";
 
@@ -4257,6 +4268,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         const overAttr = d.rh ? (" data-tmr-over=\"" + (d.rh * 3600) + "\"") : "";
         const endISO   = (d.rh && s.opened_at) ? new Date(new Date(s.opened_at).getTime() + d.rh * 3600000).toISOString() : "";
         const closePayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja, sewaUnpaid: d.sewaUnpaid, fnbUnpaid: d.fnbUnpaid, ts: s.tarif_siang || 0, tm: s.tarif_malam || 0, start: s.opened_at || "", w: (d.sewa && d.sewa.waktu === "malam") ? "malam" : "siang", sewaJumlah: d.sewa ? (d.sewa.jumlah || 0) : 0 }));
+        const pindahPayload = escHtml(JSON.stringify({ id: s.id, meja: s.nama_meja || "Meja" }));
         const fnbHtml = d.fnb.length ? d.fnb.map((t) => renderFnbRow(s, t)).join("") : "<div class=\"line line-none\">Belum ada pesanan F&amp;B. Klik <b>Tambah</b>.</div>";
         return "<div class=\"bsesi\" data-detail=\"" + s.id + "\"" + (i > 0 ? " style=\"display:none\"" : "") + ">"
           + "<div class=\"bhead\"><div class=\"bnum\">" + escHtml(tableNo(s)) + "</div>"
@@ -4274,7 +4286,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
           + "<div class=\"btot due\"><small>Sisa</small><b>" + rp(d.sisa) + "</b></div></div>"
           + "<p class=\"bhint\"><i class=\"ti ti-info-circle\"></i> Sewa meja ditagih saat sesi ditutup; durasi bisa diubah kapan saja. Item belum bayar belum menambah saldo.</p>"
           + "<div class=\"bfoot\"><button type=\"button\" class=\"bact\" onclick=\"mjSoon()\"><i class=\"ti ti-printer\"></i> Cetak Struk</button>"
-          + "<button type=\"button\" class=\"bact\" onclick=\"mjSoon()\"><i class=\"ti ti-arrows-exchange\"></i> Pindah Meja</button>"
+          + "<button type=\"button\" class=\"bact\" onclick='openPindah(" + pindahPayload + ")'><i class=\"ti ti-arrows-exchange\"></i> Pindah Meja</button>"
           + "<button type=\"button\" class=\"bact close\" onclick='openTutup(" + closePayload + ")'><i class=\"ti ti-logout\"></i> Tutup &amp; Bayar Sisa " + rp(d.sisa) + "</button></div></div>";
       }).join("");
 
@@ -4474,15 +4486,22 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .fnb-block{display:flex;flex-direction:column;gap:12px}
     .fnb-rows:empty{display:none}
     .fnb-temp{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:2px 0 1px;flex-wrap:wrap}
+    /* HP sempit: dropdown ambil 1 baris penuh, stepper +/- & tombol hapus turun
+       ke baris bawah — cegah stepper kolaps & tombol ketutup di layar kecil. */
+    @media(max-width:480px){
+      .fnb-row{grid-template-columns:1fr auto;row-gap:9px}
+      .fnb-row>.mip-wrap{grid-column:1/-1}
+      .fnb-row>.fnb-stepper{justify-self:start}
+    }
     .fnb-temp-lbl{font-size:11px;color:var(--txt2);font-weight:600}
     .fnb-temp-btn{padding:4px 11px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);font-family:var(--ff);transition:.12s}
     .fnb-temp-btn.is-cold{border-color:#3b82f6;background:rgba(59,130,246,.12);color:#3b82f6}
     .fnb-temp-btn.is-hot{border-color:#ef4444;background:rgba(239,68,68,.1);color:#ef4444}
     .fnb-stepper{display:flex;align-items:stretch;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2)}
     .fnb-stepper:focus-within{border-color:var(--accent);background:var(--surface)}
-    .fnb-step{width:30px;border:none;background:transparent;color:var(--txt2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ff)}
+    .fnb-step{width:30px;flex-shrink:0;border:none;background:transparent;color:var(--txt2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ff)}
     .fnb-step:hover{background:var(--surface);color:var(--accent)}
-    .fnb-stepper .fnb-qty,.fnb-stepper .fnb-qty:focus{border:none;border-radius:0;background:transparent;width:42px;text-align:center;padding:9px 2px}
+    .fnb-stepper .fnb-qty,.fnb-stepper .fnb-qty:focus{border:none;border-radius:0;background:transparent;width:42px;flex-shrink:0;text-align:center;padding:9px 2px}
     .fnb-qty::-webkit-outer-spin-button,.fnb-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     .fnb-qty{-moz-appearance:textfield}
     .dur-now{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2)}
@@ -4579,6 +4598,8 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function bOverTxt(min){var h=Math.floor(min/60),m=min%60;if(h<=0)return m+' menit';return h+' jam'+(m>0?(' '+m+' menit'):'');}"
     + "function bTick(){var now=Date.now();document.querySelectorAll('[data-tmr-start]').forEach(function(el){var st=new Date(el.dataset.tmrStart).getTime();if(isNaN(st))return;var elapsed=Math.max(0,Math.floor((now-st)/1000));var ov=el.dataset.tmrOver?parseInt(el.dataset.tmrOver):0;var card=el.closest('[data-detail]')||el.closest('[data-sel]');if(ov>0){var sisa=ov-elapsed;var over=sisa<0;el.textContent=(over?'Lewat ':'Sisa ')+bHmsH(over?-sisa:sisa);if(card){card.classList.toggle('is-over',over);card.classList.toggle('is-soon',!over&&sisa<=600);}}else{el.textContent=bHms(elapsed);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}});}"
     + "function mjSoon(){var t=document.getElementById('soonToast');if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}}"
+    + "function openPindah(d){var si=document.getElementById('pdSesiId');if(si)si.value=d.id;var f=document.getElementById('pdFrom');if(f)f.textContent=d.meja||'meja';var s=document.getElementById('pdMeja');if(s){s.selectedIndex=0;mipSync(s);}_show('mPindah');}function closePindah(){_hide('mPindah');}"
+    + "function pindahSubmit(form){var s=document.getElementById('pdMeja');if(s&&!s.value){alert('Pilih meja tujuan dulu.');return false;}return true;}"
     + "(function(){var mq=new URLSearchParams(location.search).get('meja');var pick=mq?document.querySelector('.brail-item[data-meja=\"'+mq+'\"]'):null;if(!pick)pick=document.querySelector('[data-sel]');if(pick){bSelect(pick.dataset.sel);if(mq)pick.scrollIntoView({block:'nearest',inline:'nearest'});}bTick();setInterval(bTick,1000);})();"
     + "(function(){var br=document.querySelector('.brail');var bl=document.querySelector('.brail-list');if(!br||!bl)return;function upd(){var more=(bl.scrollWidth-bl.clientWidth-bl.scrollLeft)>4;br.classList.toggle('scroll-end',!more);}bl.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);upd();})();"
     // Loading state pada setiap submit form (POST): kasih spinner + 'Menyimpan…',
@@ -4731,6 +4752,18 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     +     "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Sesi hanya bisa ditutup kalau semua F&amp;B sudah dibayar. Setelah tutup, item tetap tercatat di Riwayat Transaksi.</span></div>"
     +     "<button type=\"submit\" class=\"btn-primary mj-submit\" id=\"tutSubmit\"><i class=\"ti ti-check\"></i> Tutup Sesi</button>"
     +   "</form></div></div>"
+    // Modal Pindah Meja — pindahkan sesi ke meja kosong lain (owner & karyawan)
+    + "<div class=\"mj-modal\" id=\"mPindah\" onclick=\"if(event.target===this)closePindah()\"><div class=\"mj-modal-card\">"
+    +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-arrows-exchange\"></i> Pindah Meja — <span id=\"pdFrom\"></span></span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closePindah()\"><i class=\"ti ti-x\"></i></button></div>"
+    +   (mejaTersedia.length === 0
+        ? "<div class=\"mj-form\"><div class=\"sesi-empty\" style=\"border:none;padding:8px\"><i class=\"ti ti-mood-empty\"></i><div>Tidak ada meja kosong untuk tujuan pindah — semua meja aktif sedang dipakai. Tutup salah satu sesi dulu, atau tambah meja di <b>Manajemen Meja</b>.</div></div></div>"
+        : "<form method=\"post\" action=\"/operasional/sesi/pindah\" class=\"mj-form\" onsubmit=\"return pindahSubmit(this)\">"
+          + "<input type=\"hidden\" name=\"sesi_id\" id=\"pdSesiId\">"
+          + "<div class=\"mj-fg\"><label>Pindah ke meja <span style=\"font-weight:400;color:var(--txt3)\">(hanya meja kosong)</span></label><div class=\"mip-wrap\"><select name=\"meja_id\" id=\"pdMeja\" class=\"mip-sel\"><option value=\"\" disabled selected>— pilih meja tujuan —</option>" + mejaOpts + "</select><button type=\"button\" class=\"mip-btn\" onclick=\"openItemPicker(this,'Pilih Meja Tujuan',true)\"><span class=\"mip-text\">— pilih meja tujuan —</span><i class=\"ti ti-chevron-down\" style=\"font-size:14px;color:var(--txt3);flex-shrink:0\"></i></button></div></div>"
+          + "<div class=\"sesi-note\" style=\"margin:0\"><i class=\"ti ti-info-circle\"></i> <span>Semua pesanan (<b>sewa &amp; F&amp;B</b>) ikut pindah. Harga sewa <b>mengikuti tarif meja tujuan</b> (durasi &amp; jam mulai tetap sama). Status bayar tak berubah.</span></div>"
+          + "<button type=\"submit\" class=\"btn-primary mj-submit\"><i class=\"ti ti-arrows-exchange\"></i> Pindahkan Sesi</button>"
+        + "</form>")
+    + "</div></div>"
     // Modal Konfirmasi Bayar Item
     + "<div class=\"mj-modal\" id=\"mBayar\" onclick=\"if(event.target===this)closeBayar()\"><div class=\"mj-modal-card\">"
     +   "<div class=\"mj-modal-hd\"><span><i class=\"ti ti-circle-check\"></i> Konfirmasi Pembayaran</span><button type=\"button\" class=\"mj-modal-x\" onclick=\"closeBayar()\"><i class=\"ti ti-x\"></i></button></div>"
