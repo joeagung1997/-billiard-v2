@@ -6,6 +6,7 @@ import { query, pool } from "./postgres.js";
 import { runMigrations, seedWarungDefaults } from "./migrate.js";
 import { currentWarungId, DEFAULT_WARUNG_ID, OPTIONAL_MODULES } from "./tenant.js";
 import { wibEndOfDayISO } from "./format.js";
+import { CONFIG } from "../config.js";
 
 // ── Multi-tenant: konvensi warung_id ───────────────────────────
 // Setiap fungsi yg menyentuh tabel data menerima `warungId` dan menyertakannya
@@ -23,8 +24,30 @@ import { wibEndOfDayISO } from "./format.js";
 
 // ── Init ──────────────────────────────────────────────────────
 
+// Migrasi HANYA perlu jalan sekali per deploy. Sebelumnya runMigrations() (~50
+// DDL: ALTER/CREATE) dipanggil tiap cold start serverless (api/index.js) → saat
+// app idle lalu dibuka & beberapa cold start barengan, terjadi kontensi lock DDL /
+// init lambat → respons gagal → ERR_HTTP2_PROTOCOL_ERROR intermiten saat pindah
+// menu. Guard: simpan DEPLOY_ID di _schema_meta; kalau skema sudah versi deploy
+// ini, skip migrasi (cukup 2 query murah). DEPLOY_ID stabil per-deploy (env
+// Railway/Vercel), jadi migrasi tetap jalan sekali tiap deploy baru.
 export const initDB = async () => {
+  const deployId = CONFIG.DEPLOY_ID;
+  try {
+    await query("CREATE TABLE IF NOT EXISTS _schema_meta (version TEXT)");
+    const cur = await query("SELECT version FROM _schema_meta LIMIT 1");
+    if (cur.rows[0]?.version === deployId) return;  // sudah migrasi utk deploy ini → skip
+  } catch (e) {
+    console.warn("[DB] cek versi skema gagal, lanjut migrasi penuh:", e.message);
+  }
   await runMigrations();
+  try {
+    await query("CREATE TABLE IF NOT EXISTS _schema_meta (version TEXT)");
+    await query("DELETE FROM _schema_meta");
+    await query("INSERT INTO _schema_meta (version) VALUES ($1)", [deployId]);
+  } catch (e) {
+    console.warn("[DB] gagal mencatat versi skema:", e.message);
+  }
 };
 
 // Daftar id warung yg masih aktif/trial — utk cron yg loop per-warung
@@ -1536,6 +1559,10 @@ export const updateKaryawan = async (id, { nama, jabatan, gajiPokok, uangMakan, 
 
 export const nonaktifkanKaryawan = async (id, warungId = currentWarungId()) => {
   await query(`UPDATE karyawan SET status = 'nonaktif' WHERE id = $1 AND warung_id = $2`, [id, warungId]);
+};
+
+export const aktifkanKaryawan = async (id, warungId = currentWarungId()) => {
+  await query(`UPDATE karyawan SET status = 'aktif' WHERE id = $1 AND warung_id = $2`, [id, warungId]);
 };
 
 // ── Kenaikan gaji terjadwal (banyak per karyawan) ─────────────

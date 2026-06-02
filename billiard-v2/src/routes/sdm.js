@@ -6,7 +6,7 @@ import { createHmac }  from "crypto";
 import jwt             from "jsonwebtoken";
 import { CONFIG }      from "../config.js";
 import {
-  readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan,
+  readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan, aktifkanKaryawan,
   readKenaikanGaji, readAllKenaikanGaji, replaceKenaikanGaji,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
   appendTransaksi, readAdminAccounts, updateAdminAccount,
@@ -172,9 +172,10 @@ router.use(requireSdmPin);
 // ── GET /operasional/sdm ─────────────────────────────────────
 router.get("/sdm", async (req, res) => {
   try {
-    const bulan = req.query.bulan || bulanSekarang();
+    const bulan   = req.query.bulan || bulanSekarang();
+    const showAll = req.query.show === "all";   // ?show=all → sertakan kru nonaktif
     const [karyawan, sdmTrx, adminAccounts, allKenaikan] = await Promise.all([
-      readKaryawan(),
+      readKaryawan(showAll),
       readSdmTransaksi(bulan),
       readAdminAccounts().catch(() => []),
       readAllKenaikanGaji().catch(() => []),
@@ -183,7 +184,7 @@ router.get("/sdm", async (req, res) => {
     const kenaikanByK = {};
     for (const row of allKenaikan) (kenaikanByK[row.karyawan_id] ||= []).push(row);
     for (const k of karyawan) k.kenaikanGaji = kenaikanByK[k.id] || [];
-    res.send(sdmDashboard(karyawan, sdmTrx, bulan, adminAccounts, req.query.msg));
+    res.send(sdmDashboard(karyawan, sdmTrx, bulan, adminAccounts, req.query.msg, showAll));
   } catch (err) {
     console.error("[SDM] dashboard error:", err.message);
     res.status(500).send("Kesalahan server.");
@@ -270,6 +271,18 @@ router.get("/sdm/karyawan/:id/nonaktif", async (req, res) => {
     }
   }
   res.redirect("/operasional/sdm?msg=" + (ok ? "nonaktif_ok" : "err"));
+});
+
+// ── GET /operasional/sdm/karyawan/:id/aktifkan ───────────────
+router.get("/sdm/karyawan/:id/aktifkan", async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  let ok = false;
+  if (id) {
+    try { await aktifkanKaryawan(id); ok = true; } catch (err) {
+      console.error("[SDM] aktifkan error:", err.message);
+    }
+  }
+  res.redirect("/operasional/sdm?msg=" + (ok ? "aktif_ok" : "err"));
 });
 
 // ── POST /operasional/sdm/transaksi ──────────────────────────

@@ -104,6 +104,7 @@ const SDM_CSS = [
   ".sdm-badge-purple{background:#e8d5f5;color:#6f42c1}",
   ".sdm-badge-siang{background:#fff8e1;color:#e65100}",
   ".sdm-badge-malam{background:#e8eaf6;color:#3949ab}",
+  ".sdm-badge-gray{background:var(--surface2);color:var(--txt3);border:1px solid var(--border)}",
   // Tabel utama
   ".sdm-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}",
   ".sdm-table{width:100%;border-collapse:collapse}",
@@ -174,7 +175,12 @@ const SDM_CSS = [
 ].join("");
 
 // ── Dashboard SDM ─────────────────────────────────────────────
-export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccounts = [], msg = "") {
+export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccounts = [], msg = "", showAll = false) {
+  // Pisahkan kru aktif vs nonaktif. Ringkasan + kartu utama hanya pakai yang aktif;
+  // kru nonaktif tampil di section terpisah (route hanya kirim nonaktif saat ?show=all).
+  const aktifList    = karyawan.filter((k) => k.status !== "nonaktif");
+  const nonaktifList = karyawan.filter((k) => k.status === "nonaktif");
+
   // Group sdmTrx by karyawan_id
   const trxByK = {};
   sdmTrx.forEach((t) => {
@@ -219,21 +225,28 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     // actions
     ".sdm-card-actions{display:flex;gap:6px;padding:12px 18px;margin-top:auto}",
     ".sdm-card-actions .sdm-btn{flex:1;justify-content:center;font-size:11px;padding:7px 4px}",
+    // kartu nonaktif — redup, kembali jelas saat hover
+    ".sdm-card-off{opacity:.6;transition:opacity .15s}",
+    ".sdm-card-off:hover{opacity:1}",
+    ".sdm-card-off .sdm-av{filter:grayscale(.85)}",
+    // section heading kru nonaktif
+    ".sdm-off-head{display:flex;align-items:center;gap:8px;margin:26px 0 12px;font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}",
+    ".sdm-off-head::after{content:'';flex:1;height:1px;background:var(--border)}",
     "@media(max-width:600px){.sdm-cards-grid{grid-template-columns:1fr}}",
   ].join("");
 
   // ── Summary strip ─────────────────────────────────────────────
-  const totalGaji    = karyawan.reduce((s, k) => s + getGajiAktif(k, bulan), 0);
-  const totalKasbon  = karyawan.reduce((s, k) => {
+  const totalGaji    = aktifList.reduce((s, k) => s + getGajiAktif(k, bulan), 0);
+  const totalKasbon  = aktifList.reduce((s, k) => {
     const trxK = trxByK[k.id] || [];
     return s + trxK.filter((t) => t.tipe === "kasbon").reduce((a, t) => a + Number(t.jumlah), 0)
              - trxK.filter((t) => t.tipe === "kembali_kasbon").reduce((a, t) => a + Number(t.jumlah), 0);
   }, 0);
-  const totalSisa    = karyawan.reduce((s, k) => {
+  const totalSisa    = aktifList.reduce((s, k) => {
     const r = hitungRingkasan(k, trxByK[k.id] || [], bulan);
     return s + r.sisa;
   }, 0);
-  const summaryStrip = karyawan.length > 0
+  const summaryStrip = aktifList.length > 0
     ? "<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px\">"
       + "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px\">"
       + "<div style=\"font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em\">Total Gaji Bulan Ini</div>"
@@ -248,8 +261,8 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     : "";
 
   // ── Cards ─────────────────────────────────────────────────────
-  const cards = karyawan.length > 0
-    ? karyawan.map((k) => {
+  const cards = aktifList.length > 0
+    ? aktifList.map((k) => {
         const trxK  = trxByK[k.id] || [];
         const r     = hitungRingkasan(k, trxK, bulan);
         const nama  = escHtml(k.nama);
@@ -309,6 +322,46 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
       + "<i class=\"ti ti-users\" style=\"font-size:32px;display:block;margin-bottom:10px;opacity:.3\"></i>"
       + "Belum ada karyawan. <a href=\"/operasional/sdm/karyawan/tambah\" style=\"color:var(--accent)\">Tambah sekarang</a></div>";
 
+  // ── Kartu kru nonaktif (redup + tombol "Aktifkan kembali") ───
+  const nonaktifCards = nonaktifList.map((k) => {
+    const nama   = escHtml(k.nama);
+    const shift  = k.shift || "siang";
+    const _words = k.nama.trim().split(/\s+/);
+    const inits  = _words.length > 1
+      ? _words.slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+      : k.nama.trim().slice(0, 2).toUpperCase();
+    const shiftBadge = "<span class=\"sdm-badge sdm-badge-" + shift + "\" style=\"font-size:10px\">"
+      + (shift === "malam" ? "☽ Malam" : "☀ Siang") + "</span>";
+    return "<div class=\"sdm-card sdm-card-off\">"
+      + "<div class=\"sdm-card-head\">"
+      + "<div class=\"sdm-av sdm-av-" + shift + "\">" + inits + "</div>"
+      + "<div class=\"sdm-card-info\">"
+      + "<div class=\"sdm-card-nama\">" + nama + "</div>"
+      + "<div class=\"sdm-card-meta\">" + escHtml(k.jabatan || "—") + " " + shiftBadge + "</div>"
+      + "</div>"
+      + "<span class=\"sdm-badge sdm-badge-gray\">Nonaktif</span>"
+      + "</div>"
+      + "<div class=\"sdm-card-actions\" style=\"border-top:1px solid var(--border)\">"
+      + "<a href=\"/operasional/sdm/" + k.id + "?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\"><i class=\"ti ti-eye\"></i> Detail</a>"
+      + "<a href=\"/operasional/sdm/karyawan/" + k.id + "/aktifkan\" class=\"sdm-btn sdm-btn-primary\" onclick=\"return confirm('Aktifkan kembali karyawan ini?')\"><i class=\"ti ti-user-check\"></i> Aktifkan kembali</a>"
+      + "</div>"
+      + "</div>";
+  }).join("");
+
+  // Section kru nonaktif — hanya tampil saat ?show=all
+  const nonaktifSection = showAll
+    ? "<div class=\"sdm-off-head\"><i class=\"ti ti-user-off\"></i> Karyawan Nonaktif"
+        + (nonaktifList.length ? " (" + nonaktifList.length + ")" : "") + "</div>"
+      + (nonaktifList.length > 0
+          ? "<div class=\"sdm-cards-grid\">" + nonaktifCards + "</div>"
+          : "<div style=\"background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;text-align:center;color:var(--txt3);font-size:13px\">Tidak ada karyawan nonaktif.</div>")
+    : "";
+
+  // Toggle tampil/sembunyikan kru nonaktif (jaga konteks bulan)
+  const nonaktifToggle = showAll
+    ? "<a href=\"/operasional/sdm?bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\"><i class=\"ti ti-eye-off\"></i> Sembunyikan nonaktif</a>"
+    : "<a href=\"/operasional/sdm?show=all&bulan=" + bulan + "\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\"><i class=\"ti ti-user-off\"></i> Tampilkan nonaktif</a>";
+
   // Bulan selector — 12 bulan terakhir
   const now    = new Date();
   const months = [];
@@ -332,11 +385,13 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
 
     + "<div class=\"sdm-header\">"
     + "<div><div class=\"sdm-title\">Manajemen SDM</div>"
-    + "<div class=\"sdm-sub\">Karyawan aktif: " + karyawan.length + " orang · " + bulanLabel(bulan) + "</div></div>"
+    + "<div class=\"sdm-sub\">Karyawan aktif: " + aktifList.length + " orang · " + bulanLabel(bulan) + "</div></div>"
     + "<div class=\"sdm-hactions\">"
     + "<form method=\"get\" action=\"/operasional/sdm\" style=\"display:inline\">"
     + "<select name=\"bulan\" class=\"sdm-bulan-sel\" onchange=\"this.form.submit()\">" + months.join("") + "</select>"
+    + (showAll ? "<input type=\"hidden\" name=\"show\" value=\"all\">" : "")
     + "</form>"
+    + nonaktifToggle
     + "<button type=\"button\" class=\"sdm-btn-add\" onclick=\"openAddKaryawan()\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</button>"
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
     + "</div></div>"
@@ -346,6 +401,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
 
     + summaryStrip
     + "<div class=\"sdm-cards-grid\">" + cards + "</div>"
+    + nonaktifSection
     + "</div></div></div></div>"
 
     // Modal tambah karyawan
@@ -443,6 +499,7 @@ function renderSdmToast(msg) {
     tambah_ok:      { kind: "ok",  text: "Karyawan berhasil ditambahkan." },
     edit_ok:        { kind: "ok",  text: "Data karyawan berhasil disimpan." },
     nonaktif_ok:    { kind: "ok",  text: "Karyawan berhasil dinonaktifkan." },
+    aktif_ok:       { kind: "ok",  text: "Karyawan berhasil diaktifkan kembali." },
     trx_gaji:       { kind: "ok",  text: "Pembayaran gaji berhasil dicatat." },
     trx_kasbon:     { kind: "ok",  text: "Kasbon berhasil dicatat." },
     trx_kembali:    { kind: "ok",  text: "Pengembalian kasbon berhasil dicatat." },
