@@ -3837,7 +3837,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .mjc-vt+.mjc-vt{border-left:1px solid var(--border2)}
 
     /* ── Grid ──────────────────────────────────────────── */
-    .mjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:16px}
+    .mjc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:16px;align-items:start}
     .mjc-grid.list{grid-template-columns:1fr}
 
     /* ── Card ──────────────────────────────────────────── */
@@ -3848,12 +3848,13 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .is-loading{opacity:.75;cursor:progress!important}
     .mjc-card:hover{transform:translateY(-3px);border-color:#cdd8ca;box-shadow:0 2px 4px rgba(20,40,28,.05),0 16px 32px -16px rgba(20,40,28,.22)}
     .mjc-card.dim{opacity:.72}
-    .mjc-card.s-use{border-color:#bcdfa6;box-shadow:0 1px 2px rgba(45,102,36,.05),0 12px 26px -14px rgba(45,102,36,.3)}
-    .mjc-card.s-use .mjc-top{background:var(--green-bg);border-bottom-color:#cce8b8}
-    /* Kosong (siap dipakai) → highlight biru, beda jelas dari hijau "Dipakai". */
-    .mjc-card.s-ok{border-color:#bcd4ef;box-shadow:0 1px 2px rgba(38,96,164,.05),0 12px 26px -14px rgba(38,96,164,.25)}
-    .mjc-card.s-ok .mjc-top{background:#eef5fc;border-bottom-color:#d3e6f8}
-    .mjc-card.s-ok .mjc-chip{background:#2660a4;color:#fff;box-shadow:0 3px 8px rgba(38,96,164,.28)}
+    /* Dipakai → hijau lebih menonjol (border lebih tegas + glow + bayangan kuat). */
+    .mjc-card.s-use{border-color:#86c563;box-shadow:0 0 0 1px rgba(124,178,86,.35),0 2px 5px rgba(45,102,36,.1),0 16px 32px -14px rgba(45,102,36,.5)}
+    .mjc-card.s-use .mjc-top{background:#e4f1d6;border-bottom-color:#c4e1ab}
+    /* Kosong → abu-abu netral (mundur ke belakang) biar yang Dipakai makin kontras. */
+    .mjc-card.s-ok{border-color:#dde0dd}
+    .mjc-card.s-ok .mjc-top{background:#f3f5f3;border-bottom-color:#e6e9e6}
+    .mjc-card.s-ok .mjc-chip{background:#9aa39a;color:#fff;box-shadow:none}
 
     .mjc-top{display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border)}
     .mjc-chip{width:40px;height:40px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center;font-size:16px;font-weight:800;font-family:var(--ff-mono);background:#0f2010;color:#fff}
@@ -3863,7 +3864,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .mjc-spec{font-size:11px;color:var(--txt3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mjc-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;flex:0 0 auto;text-transform:uppercase;letter-spacing:.02em}
     .mjc-status .d{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
-    .mjc-status.ok{color:#2660a4}
+    .mjc-status.ok{color:#8a948a}
     .mjc-status.use{color:var(--green)}
     .mjc-status.use .d{box-shadow:0 0 0 3px var(--green-bg);animation:mjcPulse 1.6s infinite}
     .mjc-status.mt{color:var(--amber)}
