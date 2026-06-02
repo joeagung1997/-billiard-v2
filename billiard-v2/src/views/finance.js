@@ -3779,10 +3779,10 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
             + "<button type=\"button\" class=\"mjc-iconbtn\" onclick=\"mjcMenu(this)\" aria-label=\"Menu lainnya\"><i class=\"ti ti-dots-vertical\"></i></button>"
             + "<div class=\"mjc-menu\">" + menu + "</div></div>"
           : "";
-        return "<div class=\"mjc-card s-" + st.cls + (m.status !== "aktif" ? " dim" : "") + "\" data-status=\"" + fkey + "\" data-name=\"" + escHtml(String(m.nama || "").toLowerCase()) + "\" style=\"animation-delay:" + (i * 40) + "ms\">"
+        return "<div class=\"mjc-card s-" + st.cls + (m.status !== "aktif" ? " dim" : "") + (m.jenis === "9ft" ? " j-9ft" : "") + "\" data-status=\"" + fkey + "\" data-name=\"" + escHtml(String(m.nama || "").toLowerCase()) + "\" style=\"animation-delay:" + (i * 40) + "ms\">"
           + "<div class=\"mjc-top\">"
           + "<div class=\"mjc-chip\">" + escHtml(ballTxt(m)) + "</div>"
-          + "<div class=\"mjc-meta\"><h3>" + escHtml(m.nama) + "</h3>"
+          + "<div class=\"mjc-meta\"><h3>" + escHtml(m.nama) + (m.jenis === "9ft" ? " <span class=\"mjc-big\"><i class=\"ti ti-diamond\"></i> Besar</span>" : "") + "</h3>"
           + "<div class=\"mjc-spec\">" + escHtml(jm.short) + " · " + escHtml(jm.ball) + "</div></div>"
           + "<span class=\"mjc-status " + st.cls + "\"><span class=\"d\"></span>" + st.label + "</span></div>"
           + liveBlockFor(m)
@@ -3870,6 +3870,13 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .mjc-status.mt{color:var(--amber)}
     .mjc-status.off{color:var(--txt3)}
     @keyframes mjcPulse{0%,100%{box-shadow:0 0 0 3px var(--green-bg)}50%{box-shadow:0 0 0 5px transparent}}
+
+    /* Meja 9ft (bola besar) → aksen ungu (beda dari meja lain). Status (hijau/abu)
+       tetap di border/header; ungu hanya penanda jenis: pill, ring chip, teks spec. */
+    .mjc-big{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:7px;font-size:9.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:#9333ea;padding:2px 7px;border-radius:6px;text-transform:uppercase}
+    .mjc-big i{font-size:10px}
+    .mjc-card.j-9ft .mjc-chip{box-shadow:0 0 0 2px #fff,0 0 0 4px #c084fc}
+    .mjc-card.j-9ft .mjc-spec{color:#7e22ce;font-weight:600}
 
     /* ── Session block (dipakai) ───────────────────────── */
     .mjc-session{margin:14px 16px;padding:13px 14px;background:var(--green-bg);border:1px solid #cce8b8;border-radius:11px}
@@ -4002,7 +4009,7 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     // Tarif Open = per blok 10 menit (dibulatkan ke atas), <10mnt=Rp0 (bisa batal).
     // Tiap blok ikut jam dindingnya (split 18.00). Siang: ramp kumulatif [.2,.4,.5,.7,1,1]
     // × tarif (berulang tiap jam). Malam: linear tarif/6 per blok. Naik terus.
-    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=Math.round((sc[pos]-prev)*si);}else{tot+=Math.round(ma/6);}}return tot;}"
+    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=(sc[pos]-prev)*si;}else{tot+=ma/6;}}return Math.round(tot);}"
     + "function mjPad2(n){return String(n).padStart(2,'0');}"
     + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var now=Date.now();var elapsed=Math.max(0,Math.floor((now-start)/1000));var over=el.dataset.over?parseInt(el.dataset.over):0;var card=el.closest('.mjc-card');var cost;if(over>0){var sisa=over-elapsed;var isOver=sisa<0;var a=isOver?-sisa:sisa;el.textContent=(isOver?'Lewat ':'Sisa ')+Math.floor(a/3600)+':'+mjPad2(Math.floor(a%3600/60))+':'+mjPad2(a%60);cost=+el.dataset.fixedcost||0;if(card){card.classList.toggle('is-over',isOver);card.classList.toggle('is-soon',!isOver&&sisa<=600);}}else{el.textContent=mjPad2(Math.floor(elapsed/3600))+':'+mjPad2(Math.floor(elapsed%3600/60))+':'+mjPad2(elapsed%60);cost=openTarif(start,now,+el.dataset.siang||0,+el.dataset.malam||0);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "mjTick();setInterval(mjTick,1000);"
@@ -4562,7 +4569,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
     // Tarif Open per blok 10 menit (lihat penjelasan di script Manajemen Meja).
     + "function wibSiangAt(ms){var mod=Math.floor(((Math.floor(ms/1000)+25200)%86400)/60);return mod>=480&&mod<1080;}"
-    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=Math.round((sc[pos]-prev)*si);}else{tot+=Math.round(ma/6);}}return tot;}"
+    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=(sc[pos]-prev)*si;}else{tot+=ma/6;}}return Math.round(tot);}"
     + "function bukaStartMs(){var t=document.getElementById('bukaMulai');"
     + "if(!t||!t.value||!window._bukaMulaiEdited)return Date.now();"  // default (tak diubah) -> waktu persis sekarang (ada detik), unik per meja
     + "var p=t.value.split(':');var d=new Date();d.setHours(parseInt(p[0])||0,parseInt(p[1])||0,0,0);var ms=d.getTime();if(ms>Date.now())ms-=86400000;return ms;}"
