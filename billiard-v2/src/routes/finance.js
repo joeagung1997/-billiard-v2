@@ -374,7 +374,7 @@ router.post("/tambah", async (req, res) => {
   // hari sebelumnya, biar transaksi dini hari tdk pisah dari closing shift.
   const tanggalBiz = applyBusinessDay(tanggal.slice(0, 10), (jam ?? "").slice(0, 5));
 
-  // Kopi/Snack add-on (hanya untuk pemasukan Main Billiard) — simpan sbg
+  // Tambahan Kopi/Snack (hanya untuk pemasukan Main Billiard) — simpan sbg
   // transaksi terpisah supaya Analisis Target & laporan per-kategori akurat.
   const kopiJumlahRaw = (req.body.kopi_jumlah ?? "").replace(/\./g, "");
   const kopiJumlahNum = parseInt(kopiJumlahRaw) || 0;
@@ -385,7 +385,7 @@ router.post("/tambah", async (req, res) => {
     && (kategori ?? "").trim() === "Sewa Meja";
 
   // Status lunas: form kirim "lunas=0" untuk belum bayar, otherwise default true.
-  // Kopi add-on ikut status lunas dari transaksi parent (one-shot wizard).
+  // Tambahan Kopi ikut status lunas dari transaksi induk (wizard sekali-jalan).
   const lunas = req.body.lunas !== "0";
 
   try {
@@ -411,7 +411,7 @@ router.post("/tambah", async (req, res) => {
     };
     await appendTransaksi(trxMain);
 
-    // Transaksi ke-2: Kopi/Snack add-on (kalau ada). Share waktu/bayar/bukti/lunas.
+    // Transaksi ke-2: tambahan Kopi/Snack (kalau ada). Ikut waktu/bayar/bukti/lunas.
     let trxKopi = null;
     if (hasKopiAddon) {
       trxKopi = {
@@ -468,6 +468,11 @@ router.post("/transaksi/manual", requireOwner, async (req, res) => {
   const jam       = datetime.slice(11, 16);
   const bayar     = ["cash", "qris"].includes(req.body.bayar) ? req.body.bayar : "";
   const jumlahNum = parseInt((req.body.jumlah ?? "").replace(/\D/g, "")) || 0;
+  // Tambahan F&B (Sewa Meja + minum/makan) — disimpan sbg transaksi ke-2, sama
+  // seperti /tambah. Hanya berlaku utk pemasukan kategori "Sewa Meja".
+  const kopiJumlahNum  = parseInt((req.body.kopi_jumlah ?? "").replace(/\D/g, "")) || 0;
+  const kopiKeterangan = (req.body.kopi_keterangan ?? "").trim().slice(0, 200);
+  const hasKopiAddon   = jenis === "pemasukan" && kopiJumlahNum > 0 && kopiKeterangan && kategori === "Sewa Meja";
   // Validasi: jenis valid, field wajib, nominal > 0.
   if (!["pemasukan", "pengeluaran"].includes(jenis) || !tanggal || !kategori || jumlahNum <= 0) {
     return res.redirect("/operasional?msg=err");
@@ -500,6 +505,32 @@ router.post("/transaksi/manual", requireOwner, async (req, res) => {
     await appendTransaksi(trx);
     notifyNewTransaksi(trx).catch((err) =>
       console.error("[FINANCE] notifyNewTransaksi manual error:", err.message));
+
+    // Transaksi ke-2: tambahan F&B (Kopi / Snack). Ikut tanggal/jam/waktu/bayar,
+    // ditandai manual juga. Hanya saat Sewa Meja + ada item minum/makan.
+    let trxKopi = null;
+    if (hasKopiAddon) {
+      trxKopi = {
+        id:          Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        tanggal:     tanggalBiz,
+        jam:         jam,
+        jenis:       "pemasukan",
+        waktu:       waktuSafe,
+        kategori:    "Kopi / Snack",
+        subKategori: "",
+        keterangan:  kopiKeterangan,
+        jumlah:      kopiJumlahNum,
+        createdAt:   new Date().toISOString(),
+        bayar,
+        dicatatOleh: res.locals.financeUser || "",
+        lunas:       true,
+        isManual:    true,
+      };
+      await appendTransaksi(trxKopi);
+      notifyNewTransaksi(trxKopi).catch((err) =>
+        console.error("[FINANCE] notifyNewTransaksi manual kopi error:", err.message));
+    }
+
     if (jenis === "pemasukan") {
       checkAndNotifyTarget(tanggalBiz).catch((err) =>
         console.error("[FINANCE] manual target notif error:", err.message));
