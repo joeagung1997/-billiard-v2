@@ -3738,9 +3738,16 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     const fixAttr = rh > 0
       ? " data-over=\"" + (rh * 3600) + "\" data-fixedcost=\"" + (info.jumlah || 0) + "\""
       : "";
+    // Status bayar SEWA meja → badge (lunas hijau / belum amber) biar kelihatan
+    // dari kartu tanpa buka Sesi Meja.
+    const sewaMethod = info.bayar === "qris" ? "QRIS" : (info.bayar === "cash" ? "Cash" : "");
+    const sewaBadge = info.paid
+      ? "<span class=\"mjc-sewa-badge paid\"><i class=\"ti ti-circle-check\"></i> Sewa lunas" + (sewaMethod ? " · " + sewaMethod : "") + "</span>"
+      : "<span class=\"mjc-sewa-badge unpaid\"><i class=\"ti ti-clock\"></i> Sewa belum bayar</span>";
     return "<div class=\"mjc-session\"><div class=\"mjc-session-r1\">"
       + "<span class=\"mjc-timer\" data-start=\"" + escHtml(String(info.opened_at || "")) + "\" data-siang=\"" + si + "\" data-malam=\"" + ma + "\"" + fixAttr + ">00:00:00</span>"
       + "<div class=\"mjc-session-cost\"><small>Estimasi</small><b data-cost>" + rp(rh > 0 ? (info.jumlah || 0) : 0) + "</b></div></div>"
+      + "<div class=\"mjc-session-badges\">" + sewaBadge + "</div>"
       + "<div class=\"mjc-session-note\"><i class=\"ti ti-clock-play\"></i> Tarif ikut jam · Siang " + rp(si) + " / Malam " + rp(ma) + "</div></div>";
   };
 
@@ -3889,6 +3896,11 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     .mjc-session-cost b{font-size:16px;font-weight:800;color:var(--green-dark);font-family:var(--ff-mono)}
     .mjc-session-note{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt2);margin-top:9px}
     .mjc-session-note i{font-size:13px;color:var(--green)}
+    .mjc-session-badges{margin-top:10px}
+    .mjc-sewa-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.01em}
+    .mjc-sewa-badge i{font-size:12px}
+    .mjc-sewa-badge.paid{background:var(--green);color:#fff}
+    .mjc-sewa-badge.unpaid{background:#fff5e9;color:#b45309;border:1px solid #f3d39a}
 
     /* ── Tarif rows ────────────────────────────────────── */
     .mjc-tarif{padding:4px 8px 8px}
@@ -4247,11 +4259,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
         + (paid ? "" : "<span class=\"tag-calm\">Bayar saat tutup</span>")
       : "";
     const paidSub = paid
-      ? "<div class=\"line-sub paid\"><i class=\"ti ti-circle-check\"></i> Dibayar" + (method ? " · " + method : "") + "</div>"
+      ? "<div class=\"line-sub\"><span class=\"paid-badge\"><i class=\"ti ti-circle-check\"></i> Lunas" + (method ? " · " + method : "") + "</span></div>"
       : "";
-    return "<div class=\"line line-sewa\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
+    return "<div class=\"line line-sewa" + (paid ? " is-paid" : "") + "\"><div class=\"line-main\"><div class=\"line-title\"><i class=\"ti ti-clock\"></i> " + escHtml(sewaTitle) + "</div>"
       + "<div class=\"line-sub\">" + tarifLine + (endISO ? " · selesai <b data-time=\"" + endISO + "\" style=\"font-weight:700;color:var(--txt2)\">—</b>" : "") + "</div>" + paidSub + "</div>"
-      + "<div class=\"line-right\"><span class=\"line-amt\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
+      + "<div class=\"line-right\"><span class=\"line-amt" + (paid ? " paid" : "") + "\">" + (price > 0 ? rp(price) : "<span class=\"line-pending\">saat tutup</span>") + "</span>"
       + sewaRight + "</div></div>"
       + rincian;
   };
@@ -4394,6 +4406,11 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     .line-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
     .line-amt{font-size:15px;font-weight:800;color:var(--txt);font-family:var(--ff-mono);margin-right:2px}
     .line-pending{font-size:12px;font-style:italic;color:var(--txt3);font-family:var(--ff);font-weight:500}
+    /* Sewa sudah dibayar → baris di-highlight hijau + badge "Lunas" + nominal hijau. */
+    .line-sewa.is-paid{background:var(--green-bg);border:1px solid #cfe8bd;border-radius:11px;padding:12px 14px}
+    .paid-badge{display:inline-flex;align-items:center;gap:5px;background:var(--green);color:#fff;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:800;box-shadow:0 2px 6px rgba(45,102,36,.25)}
+    .paid-badge i{font-size:14px}
+    .line-amt.paid{color:var(--green-dark)}
 
     .chip-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--surface);color:var(--txt2);padding:7px 11px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:.15s;white-space:nowrap}
     .chip-btn:hover{border-color:var(--accent);color:var(--accent)}

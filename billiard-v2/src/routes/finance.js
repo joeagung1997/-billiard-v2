@@ -1499,6 +1499,7 @@ router.get("/meja", async (req, res) => {
         opened_at: s.opened_at, waktu: s.waktu,
         rh: km ? parseInt(km[1]) : 0,
         jumlah: parseInt(s.sewa_jumlah) || 0,
+        paid: s.sewa_lunas === true, bayar: s.sewa_bayar || "",
       };
     }
     res.send(financeMejaPage(res.locals.financeRole, mejaList, !!req.query.err, req.query.msg || "", occupiedIds, openSesiByMeja));

@@ -765,7 +765,8 @@ export const readMejaOpenSesiInfo = async (warungId = currentWarungId()) => {
   const res = await query(
     `SELECT DISTINCT ON (s.meja_id) s.meja_id, s.opened_at,
             COALESCE(t.waktu, 'siang') AS waktu,
-            t.keterangan AS sewa_ket, COALESCE(t.jumlah, 0) AS sewa_jumlah
+            t.keterangan AS sewa_ket, COALESCE(t.jumlah, 0) AS sewa_jumlah,
+            COALESCE(t.lunas, FALSE) AS sewa_lunas, COALESCE(t.bayar, '') AS sewa_bayar
        FROM sesi s
        LEFT JOIN transaksi t
          ON t.sesi_id = s.id AND t.warung_id = s.warung_id
