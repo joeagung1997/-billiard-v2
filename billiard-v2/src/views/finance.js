@@ -4023,11 +4023,13 @@ export function financeMejaPage(role = "owner", mejaList = [], showErr = false, 
     + "function _siangSec(a,b){var off=25200;var s=Math.floor(a/1000)+off,e=Math.floor(b/1000)+off;var t=0;for(var d=Math.floor(s/86400)*86400;d<e;d+=86400){var lo=Math.max(s,d+28800),hi=Math.min(e,d+64800);if(hi>lo)t+=hi-lo;}return t;}"
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
     + "function wibSiangAt(ms){var mod=Math.floor(((Math.floor(ms/1000)+25200)%86400)/60);return mod>=480&&mod<1080;}"
-    // Tarif Open = per blok 10 menit (dibulatkan ke atas), <10mnt=Rp0 (bisa batal).
-    // Tiap blok ikut jam dindingnya (split 18.00). Siang: ramp kumulatif [.2,.4,.5,.7,1,1]
-    // × tarif (berulang tiap jam). Malam: linear tarif/6 per blok. Naik terus.
-    // Total akhir dibulatkan ke kelipatan Rp 1.000 (tak ada ratusan).
-    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=(sc[pos]-prev)*si;}else{tot+=ma/6;}}return Math.round(tot/1000)*1000;}"
+    // Tarif Open: ladder per bracket waktu [0-10,10-20,20-30,30-45,45-60] menit/jam,
+    // <10mnt=Rp0 (bisa batal). Tiap bracket ikut jam dindingnya (split 18.00) & berulang
+    // tiap jam (naik terus). Increment per bracket (kelipatan tarif):
+    //   SIANG /10 -> [2,3,0,3,2]  (kumulatif 2,5,5,8,10 utk 7ft 10rb)
+    //   MALAM /6  -> [1,1,1,1,2]  (kumulatif 2,4,6,8,12 utk 7ft 12rb)
+    // 9ft skala ke tarifnya. Total akhir dibulatkan ke kelipatan Rp 1.000 (tak ada ratusan).
+    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var tMin=s/60;var bs=[0,10,20,30,45];var incS=[2,3,0,3,2],incM=[1,1,1,1,2];var tot=0;for(var g=0;;g++){var p=g%5,hr=Math.floor(g/5);var startG=hr*60+bs[p];if(g>0&&startG>=tMin)break;var bms=startMs+startG*60000;if(wibSiangAt(bms))tot+=incS[p]*si/10;else tot+=incM[p]*ma/6;}return Math.round(tot/1000)*1000;}"
     + "function mjPad2(n){return String(n).padStart(2,'0');}"
     + "function mjTick(){var tot=0;document.querySelectorAll('.mjc-timer').forEach(function(el){var start=new Date(el.dataset.start).getTime();if(isNaN(start))return;var now=Date.now();var elapsed=Math.max(0,Math.floor((now-start)/1000));var over=el.dataset.over?parseInt(el.dataset.over):0;var card=el.closest('.mjc-card');var cost;if(over>0){var sisa=over-elapsed;var isOver=sisa<0;var a=isOver?-sisa:sisa;el.textContent=(isOver?'Lewat ':'Sisa ')+Math.floor(a/3600)+':'+mjPad2(Math.floor(a%3600/60))+':'+mjPad2(a%60);cost=+el.dataset.fixedcost||0;if(card){card.classList.toggle('is-over',isOver);card.classList.toggle('is-soon',!isOver&&sisa<=600);}}else{el.textContent=mjPad2(Math.floor(elapsed/3600))+':'+mjPad2(Math.floor(elapsed%3600/60))+':'+mjPad2(elapsed%60);cost=openTarif(start,now,+el.dataset.siang||0,+el.dataset.malam||0);if(card){card.classList.remove('is-over');card.classList.remove('is-soon');}}tot+=cost;var live=el.closest('.mjc-session');if(live){var c=live.querySelector('[data-cost]');if(c)c.textContent='Rp '+cost.toLocaleString('id-ID');}});var rev=document.getElementById('mjLiveRev');if(rev)rev.textContent='Rp '+tot.toLocaleString('id-ID');}"
     + "mjTick();setInterval(mjTick,1000);"
@@ -4602,7 +4604,7 @@ export function financeSesiPage({ role = "owner", displayName = "", sesiList = [
     + "function tarifSplit(a,b,si,ma){if(b<=a)return 0;var tot=(b-a)/1000,ss=_siangSec(a,b);return Math.round(ss/3600*si+(tot-ss)/3600*ma);}"
     // Tarif Open per blok 10 menit (lihat penjelasan di script Manajemen Meja).
     + "function wibSiangAt(ms){var mod=Math.floor(((Math.floor(ms/1000)+25200)%86400)/60);return mod>=480&&mod<1080;}"
-    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var K=Math.ceil(s/600);var sc=[0.2,0.4,0.5,0.7,1,1];var tot=0;for(var k=1;k<=K;k++){var pos=(k-1)%6;var bms=startMs+(k-1)*600000;if(wibSiangAt(bms)){var prev=pos===0?0:sc[pos-1];tot+=(sc[pos]-prev)*si;}else{tot+=ma/6;}}return Math.round(tot/1000)*1000;}"
+    + "function openTarif(startMs,endMs,si,ma){var s=Math.floor((endMs-startMs)/1000);if(s<600)return 0;var tMin=s/60;var bs=[0,10,20,30,45];var incS=[2,3,0,3,2],incM=[1,1,1,1,2];var tot=0;for(var g=0;;g++){var p=g%5,hr=Math.floor(g/5);var startG=hr*60+bs[p];if(g>0&&startG>=tMin)break;var bms=startMs+startG*60000;if(wibSiangAt(bms))tot+=incS[p]*si/10;else tot+=incM[p]*ma/6;}return Math.round(tot/1000)*1000;}"
     + "function bukaStartMs(){var t=document.getElementById('bukaMulai');"
     + "if(!t||!t.value||!window._bukaMulaiEdited)return Date.now();"  // default (tak diubah) -> waktu persis sekarang (ada detik), unik per meja
     + "var p=t.value.split(':');var d=new Date();d.setHours(parseInt(p[0])||0,parseInt(p[1])||0,0,0);var ms=d.getTime();if(ms>Date.now())ms-=86400000;return ms;}"
