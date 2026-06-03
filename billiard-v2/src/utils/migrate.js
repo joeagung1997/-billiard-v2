@@ -192,6 +192,65 @@ export const runMigrations = async () => {
     )
   `);
 
+  // ── Tabel turnamen billiard (master + peserta + bagan/match) ─
+  // turnamen  = event (nama, cabang/game, tanggal, biaya daftar, hadiah, status).
+  //   status: 'draft' (pendaftaran dibuka) | 'berjalan' (bagan dibuat) | 'selesai'.
+  //   juara_id = id peserta juara (diisi saat final selesai).
+  // turnamen_peserta = peserta per turnamen (nama + kontak opsional + seed).
+  // turnamen_match   = satu pertandingan di bagan single-elimination.
+  //   ronde 1 = babak pertama; urutan = indeks match dalam ronde (0-based).
+  //   peserta1/2_id NULL = slot bye / belum terisi (menunggu pemenang ronde sblm).
+  //   pemenang_id diisi saat skor dicatat → dipropagasi ke match ronde berikutnya.
+  // Semua scoped per warung_id (multi-tenant). Item-nya ringan, tak ikut transaksi.
+  await query(`
+    CREATE TABLE IF NOT EXISTS turnamen (
+      id           SERIAL PRIMARY KEY,
+      nama         TEXT        NOT NULL,
+      cabang       TEXT        NOT NULL DEFAULT '8-ball',
+      tanggal      DATE,
+      biaya_daftar INTEGER     NOT NULL DEFAULT 0,
+      hadiah       TEXT        NOT NULL DEFAULT '',
+      format       TEXT        NOT NULL DEFAULT 'single_elim',
+      status       TEXT        NOT NULL DEFAULT 'draft',
+      juara_id     INTEGER,
+      catatan      TEXT        NOT NULL DEFAULT '',
+      warung_id    INTEGER     NOT NULL DEFAULT 1,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS turnamen_peserta (
+      id          SERIAL PRIMARY KEY,
+      turnamen_id INTEGER     NOT NULL,
+      nama        TEXT        NOT NULL,
+      kontak      TEXT        NOT NULL DEFAULT '',
+      seed        INTEGER     NOT NULL DEFAULT 0,
+      warung_id   INTEGER     NOT NULL DEFAULT 1,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS turnamen_match (
+      id          SERIAL PRIMARY KEY,
+      turnamen_id INTEGER     NOT NULL,
+      ronde       INTEGER     NOT NULL,
+      urutan      INTEGER     NOT NULL,
+      peserta1_id INTEGER,
+      peserta2_id INTEGER,
+      skor1       INTEGER     NOT NULL DEFAULT 0,
+      skor2       INTEGER     NOT NULL DEFAULT 0,
+      pemenang_id INTEGER,
+      status      TEXT        NOT NULL DEFAULT 'pending',
+      warung_id   INTEGER     NOT NULL DEFAULT 1,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_turnamen_warung         ON turnamen (warung_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_turnamen_peserta_tur    ON turnamen_peserta (turnamen_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_turnamen_peserta_warung ON turnamen_peserta (warung_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_turnamen_match_tur      ON turnamen_match (turnamen_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_turnamen_match_warung   ON turnamen_match (warung_id)`);
+
   // ── Kolom tambahan (idempotent) ─────────────────────────────
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS waktu TEXT DEFAULT 'siang'`);
   await query(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam   TEXT DEFAULT ''`);

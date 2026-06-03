@@ -926,6 +926,311 @@ export const updateSesiSewa = async (sesiId, jumlah, keterangan, paid = undefine
   return res.rowCount > 0;
 };
 
+// ── Riwayat Sewa — sesi billiard yang sudah SELESAI (status 'closed') ──
+// Item sesi = baris transaksi ber-sesi_id; total & status bayar dihitung dari
+// item (di JS, via readSesiItemsForIds). Filter tanggal pakai opened_at dalam
+// WIB (AT TIME ZONE 'Asia/Jakarta') — eksplisit, tidak bergantung TZ server.
+export const readSesiClosed = async ({ dari = "", sampai = "", mejaId = 0 } = {}, warungId = currentWarungId()) => {
+  const params = [warungId];
+  let sql =
+    `SELECT id, meja_id, nama_meja, status, dibuka_oleh, catatan, opened_at, closed_at
+       FROM sesi WHERE warung_id = $1 AND status = 'closed'`;
+  if (dari)   { params.push(dari);   sql += ` AND (opened_at AT TIME ZONE 'Asia/Jakarta')::date >= $${params.length}`; }
+  if (sampai) { params.push(sampai); sql += ` AND (opened_at AT TIME ZONE 'Asia/Jakarta')::date <= $${params.length}`; }
+  if (mejaId) { params.push(mejaId); sql += ` AND meja_id = $${params.length}`; }
+  sql += ` ORDER BY closed_at DESC NULLS LAST, id DESC`;
+  const res = await query(sql, params);
+  return res.rows;
+};
+
+// Item (transaksi non-void) untuk banyak sesi sekaligus → map { sesiId: [items] }.
+// Satu query (ANY array) supaya tidak N+1 saat me-list riwayat.
+export const readSesiItemsForIds = async (sesiIds = [], warungId = currentWarungId()) => {
+  if (!Array.isArray(sesiIds) || sesiIds.length === 0) return {};
+  const res = await query(
+    `SELECT * FROM transaksi
+       WHERE sesi_id = ANY($1::int[]) AND warung_id = $2 AND voided_at IS NULL
+       ORDER BY created_at ASC`,
+    [sesiIds, warungId]
+  );
+  const map = {};
+  for (const row of res.rows) {
+    (map[row.sesi_id] = map[row.sesi_id] || []).push(rowToTransaksi(row));
+  }
+  return map;
+};
+
+// ── Turnamen billiard (event + peserta + bagan single-elimination) ────
+const rowToTurnamen = (row) => ({
+  id:           row.id,
+  nama:         row.nama,
+  cabang:       row.cabang ?? "8-ball",
+  tanggal:      row.tanggal ?? null,
+  biayaDaftar:  Number(row.biaya_daftar) || 0,
+  hadiah:       row.hadiah ?? "",
+  format:       row.format ?? "single_elim",
+  status:       row.status ?? "draft",
+  juaraId:      row.juara_id ?? null,
+  catatan:      row.catatan ?? "",
+  createdAt:    row.created_at ?? null,
+  pesertaCount: row.peserta_count != null ? Number(row.peserta_count) : undefined,
+});
+
+export const readTurnamenList = async (warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT t.*,
+            (SELECT COUNT(*) FROM turnamen_peserta p
+              WHERE p.turnamen_id = t.id AND p.warung_id = t.warung_id)::int AS peserta_count
+       FROM turnamen t
+      WHERE t.warung_id = $1
+      ORDER BY t.tanggal DESC NULLS LAST, t.id DESC`,
+    [warungId]
+  );
+  return res.rows.map(rowToTurnamen);
+};
+
+export const readTurnamenById = async (id, warungId = currentWarungId()) => {
+  const res = await query(`SELECT * FROM turnamen WHERE id = $1 AND warung_id = $2`, [id, warungId]);
+  return res.rows[0] ? rowToTurnamen(res.rows[0]) : null;
+};
+
+export const createTurnamen = async ({ nama, cabang = "8-ball", tanggal = null, biayaDaftar = 0, hadiah = "", catatan = "" }, warungId = currentWarungId()) => {
+  const res = await query(
+    `INSERT INTO turnamen (nama, cabang, tanggal, biaya_daftar, hadiah, catatan, warung_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [
+      (nama   || "").trim().slice(0, 120),
+      (cabang || "8-ball").toString().trim().slice(0, 40),
+      tanggal || null,
+      Math.max(0, parseInt(biayaDaftar) || 0),
+      (hadiah  || "").toString().trim().slice(0, 200),
+      (catatan || "").toString().trim().slice(0, 500),
+      warungId,
+    ]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const updateTurnamen = async (id, { nama, cabang = "8-ball", tanggal = null, biayaDaftar = 0, hadiah = "", catatan = "" }, warungId = currentWarungId()) => {
+  await query(
+    `UPDATE turnamen SET nama=$1, cabang=$2, tanggal=$3, biaya_daftar=$4, hadiah=$5, catatan=$6
+      WHERE id=$7 AND warung_id=$8`,
+    [
+      (nama   || "").trim().slice(0, 120),
+      (cabang || "8-ball").toString().trim().slice(0, 40),
+      tanggal || null,
+      Math.max(0, parseInt(biayaDaftar) || 0),
+      (hadiah  || "").toString().trim().slice(0, 200),
+      (catatan || "").toString().trim().slice(0, 500),
+      id, warungId,
+    ]
+  );
+};
+
+// Hapus turnamen + cascade manual (tak ada FK): match → peserta → turnamen.
+export const deleteTurnamen = async (id, warungId = currentWarungId()) => {
+  await query(`DELETE FROM turnamen_match   WHERE turnamen_id=$1 AND warung_id=$2`, [id, warungId]);
+  await query(`DELETE FROM turnamen_peserta WHERE turnamen_id=$1 AND warung_id=$2`, [id, warungId]);
+  await query(`DELETE FROM turnamen         WHERE id=$1          AND warung_id=$2`, [id, warungId]);
+};
+
+export const readPeserta = async (turnamenId, warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT id, turnamen_id, nama, kontak, seed FROM turnamen_peserta
+      WHERE turnamen_id=$1 AND warung_id=$2 ORDER BY seed ASC, id ASC`,
+    [turnamenId, warungId]
+  );
+  return res.rows;
+};
+
+// seed = urutan daftar berikutnya (registrasi). Guard status 'draft' di route.
+export const addPeserta = async (turnamenId, { nama, kontak = "" }, warungId = currentWarungId()) => {
+  const res = await query(
+    `INSERT INTO turnamen_peserta (turnamen_id, nama, kontak, seed, warung_id)
+     VALUES ($1, $2, $3,
+       COALESCE((SELECT MAX(seed) FROM turnamen_peserta WHERE turnamen_id=$1 AND warung_id=$4),0)+1, $4)
+     RETURNING id`,
+    [turnamenId, (nama || "").trim().slice(0, 80), (kontak || "").toString().trim().slice(0, 40), warungId]
+  );
+  return res.rows[0]?.id ?? null;
+};
+
+export const deletePeserta = async (turnamenId, pesertaId, warungId = currentWarungId()) => {
+  await query(
+    `DELETE FROM turnamen_peserta WHERE id=$1 AND turnamen_id=$2 AND warung_id=$3`,
+    [pesertaId, turnamenId, warungId]
+  );
+};
+
+export const readMatches = async (turnamenId, warungId = currentWarungId()) => {
+  const res = await query(
+    `SELECT * FROM turnamen_match WHERE turnamen_id=$1 AND warung_id=$2 ORDER BY ronde ASC, urutan ASC`,
+    [turnamenId, warungId]
+  );
+  return res.rows.map((r) => ({
+    id:         r.id,
+    turnamenId: r.turnamen_id,
+    ronde:      r.ronde,
+    urutan:     r.urutan,
+    peserta1Id: r.peserta1_id ?? null,
+    peserta2Id: r.peserta2_id ?? null,
+    skor1:      Number(r.skor1) || 0,
+    skor2:      Number(r.skor2) || 0,
+    pemenangId: r.pemenang_id ?? null,
+    status:     r.status ?? "pending",
+  }));
+};
+
+// Urutan seeding standar single-elimination utk bracket berukuran `size` (pow2).
+// Menghasilkan array seed (1..size) terurut posisi bracket, mis. size=8 →
+// [1,8,5,4,3,6,7,2] sehingga seed teratas vs terbawah & bye jatuh ke seed atas.
+function seedSlots(size) {
+  const rounds = Math.log2(size);
+  let arr = [1, 2];
+  for (let r = 1; r < rounds; r++) {
+    const sum = arr.length * 2 + 1;
+    const next = [];
+    for (const s of arr) { next.push(s); next.push(sum - s); }
+    arr = next;
+  }
+  return arr;
+}
+
+// Bangun bagan single-elimination dari peserta turnamen (urut seed/registrasi).
+// Atomik: hapus bagan lama → buat semua match (ronde 1 berisi pasangan, ronde
+// lanjutan kosong) → auto-resolve bye ronde-1 & propagasi pemenangnya ke ronde 2
+// → set status turnamen 'berjalan'. Return {ok,err}.
+export const createBracket = async (turnamenId, warungId = currentWarungId()) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const tRes = await client.query(
+      `SELECT id FROM turnamen WHERE id=$1 AND warung_id=$2 FOR UPDATE`, [turnamenId, warungId]
+    );
+    if (tRes.rowCount === 0) { await client.query("ROLLBACK"); return { ok: false, err: "not_found" }; }
+    const pRes = await client.query(
+      `SELECT id FROM turnamen_peserta WHERE turnamen_id=$1 AND warung_id=$2 ORDER BY seed ASC, id ASC`,
+      [turnamenId, warungId]
+    );
+    const peserta = pRes.rows.map((r) => r.id);
+    const n = peserta.length;
+    if (n < 2) { await client.query("ROLLBACK"); return { ok: false, err: "too_few" }; }
+
+    await client.query(`DELETE FROM turnamen_match WHERE turnamen_id=$1 AND warung_id=$2`, [turnamenId, warungId]);
+
+    let size = 1; while (size < n) size *= 2;       // bracket pow2 >= n
+    const rounds = Math.log2(size);
+    const slots = seedSlots(size);
+    // posisi bracket → pesertaId (atau null = bye bila seed > jumlah peserta)
+    const positions = slots.map((seedNo) => (seedNo <= n ? peserta[seedNo - 1] : null));
+
+    // Buat semua match per ronde; simpan id untuk propagasi bye.
+    const matchIds = [];
+    for (let r = 1; r <= rounds; r++) {
+      const cnt = size / Math.pow(2, r);
+      const rowIds = [];
+      for (let u = 0; u < cnt; u++) {
+        const p1 = r === 1 ? (positions[2 * u]     ?? null) : null;
+        const p2 = r === 1 ? (positions[2 * u + 1] ?? null) : null;
+        const ins = await client.query(
+          `INSERT INTO turnamen_match (turnamen_id, ronde, urutan, peserta1_id, peserta2_id, warung_id)
+           VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+          [turnamenId, r, u, p1, p2, warungId]
+        );
+        rowIds.push(ins.rows[0].id);
+      }
+      matchIds.push(rowIds);
+    }
+
+    // Bye ronde-1: match dgn satu peserta saja → menang otomatis, naik ke ronde 2.
+    for (let u = 0; u < matchIds[0].length; u++) {
+      const p1 = positions[2 * u] ?? null, p2 = positions[2 * u + 1] ?? null;
+      const lone = (p1 && !p2) ? p1 : (p2 && !p1) ? p2 : null;
+      if (lone) {
+        await client.query(
+          `UPDATE turnamen_match SET pemenang_id=$1, status='selesai' WHERE id=$2`,
+          [lone, matchIds[0][u]]
+        );
+        if (rounds >= 2) {
+          const slot = (u % 2 === 0) ? "peserta1_id" : "peserta2_id";
+          await client.query(
+            `UPDATE turnamen_match SET ${slot}=$1 WHERE id=$2`,
+            [lone, matchIds[1][Math.floor(u / 2)]]
+          );
+        }
+      }
+    }
+
+    await client.query(
+      `UPDATE turnamen SET status='berjalan', juara_id=NULL WHERE id=$1 AND warung_id=$2`,
+      [turnamenId, warungId]
+    );
+    await client.query("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
+// Catat skor satu match → tentukan pemenang, propagasi ke ronde berikutnya.
+// Final (ronde terakhir) → set juara turnamen + status 'selesai'. Re-score boleh:
+// slot ronde berikutnya ditimpa pemenang baru (hasil hilir jadi tanggung jawab
+// owner untuk diperbarui). Return {ok,err}.
+export const recordMatchResult = async (turnamenId, matchId, skor1, skor2, warungId = currentWarungId()) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const mRes = await client.query(
+      `SELECT * FROM turnamen_match WHERE id=$1 AND turnamen_id=$2 AND warung_id=$3 FOR UPDATE`,
+      [matchId, turnamenId, warungId]
+    );
+    if (mRes.rowCount === 0) { await client.query("ROLLBACK"); return { ok: false, err: "not_found" }; }
+    const m = mRes.rows[0];
+    if (!m.peserta1_id || !m.peserta2_id) { await client.query("ROLLBACK"); return { ok: false, err: "incomplete" }; }
+    const s1 = Math.max(0, parseInt(skor1) || 0), s2 = Math.max(0, parseInt(skor2) || 0);
+    if (s1 === s2) { await client.query("ROLLBACK"); return { ok: false, err: "draw" }; }
+    const winner = s1 > s2 ? m.peserta1_id : m.peserta2_id;
+    await client.query(
+      `UPDATE turnamen_match SET skor1=$1, skor2=$2, pemenang_id=$3, status='selesai' WHERE id=$4`,
+      [s1, s2, winner, matchId]
+    );
+    const rRes = await client.query(
+      `SELECT MAX(ronde)::int AS maxr FROM turnamen_match WHERE turnamen_id=$1 AND warung_id=$2`,
+      [turnamenId, warungId]
+    );
+    const maxR = rRes.rows[0]?.maxr || m.ronde;
+    if (m.ronde >= maxR) {
+      await client.query(
+        `UPDATE turnamen SET juara_id=$1, status='selesai' WHERE id=$2 AND warung_id=$3`,
+        [winner, turnamenId, warungId]
+      );
+    } else {
+      const slot = (m.urutan % 2 === 0) ? "peserta1_id" : "peserta2_id";
+      await client.query(
+        `UPDATE turnamen_match SET ${slot}=$1
+          WHERE turnamen_id=$2 AND warung_id=$3 AND ronde=$4 AND urutan=$5`,
+        [winner, turnamenId, warungId, m.ronde + 1, Math.floor(m.urutan / 2)]
+      );
+    }
+    await client.query("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
+// Bongkar bagan → kembali ke 'draft' (mis. mau ubah peserta). Hapus semua match.
+export const resetBracket = async (turnamenId, warungId = currentWarungId()) => {
+  await query(`DELETE FROM turnamen_match WHERE turnamen_id=$1 AND warung_id=$2`, [turnamenId, warungId]);
+  await query(`UPDATE turnamen SET status='draft', juara_id=NULL WHERE id=$1 AND warung_id=$2`, [turnamenId, warungId]);
+};
+
 export const addMenuTopping = async (itemId, nama, harga, warungId = currentWarungId()) => {
   await query(
     "INSERT INTO menu_toppings (item_id, nama, harga, warung_id) VALUES ($1, $2, $3, $4)",

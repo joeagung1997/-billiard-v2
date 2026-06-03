@@ -22,6 +22,9 @@ import {
   readMejas, readMejaAktif, addMeja, updateMeja, setMejaStatus, deleteMeja, updateMejaTarifMassal,
   createSesi, readSesiOpen, readSesiById, readSesiItems, readMejaOpenSesiIds, readMejaOpenSesiInfo,
   hasOpenSesi, closeSesi, moveSesiMeja, cancelSesi, setSesiItemPaid, setSesiItemJumlah, updateSesiSewa, voidSesiItem,
+  readSesiClosed, readSesiItemsForIds,
+  readTurnamenList, readTurnamenById, createTurnamen, updateTurnamen, deleteTurnamen,
+  readPeserta, addPeserta, deletePeserta, readMatches, createBracket, recordMatchResult, resetBracket,
   readBahan, addBahan, updateBahan, deleteBahan, readBahanHistory,
   readResepAll, setResep, computeHppMap,
   readFeatureNotes, addFeatureNote, updateFeatureNote, deleteFeatureNote, setFeatureNoteStatus,
@@ -50,6 +53,8 @@ import {
   financeKategoriPage, financeMenuPage, financeMejaPage, financeSesiPage,
   financeAnalisisPage,
 } from "../views/finance.js";
+import { financeRiwayatSewaPage } from "../views/riwayatSewa.js";
+import { financeTurnamenPage, financeTurnamenDetailPage } from "../views/turnamen.js";
 import { planningPage } from "../views/planning.js";
 import { catatanFiturPage } from "../views/catatan.js";
 import { stokPage } from "../views/stok.js";
@@ -1927,6 +1932,216 @@ router.post("/sesi/tutup", async (req, res) => {
   } catch (err) {
     console.error("[FINANCE] sesi tutup error:", err.message);
     res.redirect("/operasional/sesi?msg=err");
+  }
+});
+
+// ════ /operasional/riwayat-sewa — sesi billiard yang sudah selesai (owner) ════
+router.get("/riwayat-sewa", requireOwner, async (req, res) => {
+  try {
+    let dari   = (req.query.dari   ?? "").toString().slice(0, 10);
+    let sampai = (req.query.sampai ?? "").toString().slice(0, 10);
+    const mejaId = parseInt(req.query.meja) || 0;
+    // Default tampilan awal: bulan berjalan (WIB) bila belum ada filter apa pun.
+    if (!req.query.dari && !req.query.sampai && !req.query.meja) {
+      const today = todayBusinessDayISO();
+      dari   = today.slice(0, 8) + "01";   // YYYY-MM-01
+      sampai = today;
+    }
+    const [closed, mejaList] = await Promise.all([
+      readSesiClosed({ dari, sampai, mejaId }),
+      readMejas(),
+    ]);
+    const itemsMap = await readSesiItemsForIds(closed.map((s) => s.id));
+    const sesiList = closed.map((s) => {
+      const items      = itemsMap[s.id] || [];
+      const total      = items.reduce((a, t) => a + (t.jumlah || 0), 0);
+      const totalLunas = items.filter((t) => t.lunas).reduce((a, t) => a + (t.jumlah || 0), 0);
+      const op = s.opened_at ? new Date(s.opened_at).getTime() : 0;
+      const cl = s.closed_at ? new Date(s.closed_at).getTime() : 0;
+      const durasiMs = (op && cl && cl > op) ? cl - op : 0;
+      return {
+        id: s.id, mejaId: s.meja_id, namaMeja: s.nama_meja,
+        dibukaOleh: s.dibuka_oleh, catatan: s.catatan,
+        openedAt: s.opened_at, closedAt: s.closed_at,
+        durasiMs, total, totalLunas, belum: total - totalLunas, items,
+      };
+    });
+    const stats = {
+      count:    sesiList.length,
+      revenue:  sesiList.reduce((a, s) => a + s.totalLunas, 0),
+      durasiMs: sesiList.reduce((a, s) => a + s.durasiMs, 0),
+      belum:    sesiList.reduce((a, s) => a + s.belum, 0),
+    };
+    res.send(financeRiwayatSewaPage({
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      sesiList, mejaList, stats,
+      filter: { dari, sampai, mejaId },
+      msg: req.query.msg || "",
+    }));
+  } catch (err) {
+    console.error("[FINANCE] riwayat-sewa GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+// ════ /operasional/turnamen — daftar + kelola turnamen billiard (owner) ════
+router.get("/turnamen", requireOwner, async (req, res) => {
+  try {
+    const list = await readTurnamenList();
+    // Lengkapi nama juara utk turnamen selesai (dipakai badge di kartu).
+    const finished = list.filter((t) => t.status === "selesai" && t.juaraId);
+    if (finished.length) {
+      await Promise.all(finished.map(async (t) => {
+        const ps = await readPeserta(t.id);
+        t.juaraNama = (ps.find((p) => p.id === t.juaraId) || {}).nama || "";
+      }));
+    }
+    res.send(financeTurnamenPage({
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      list, msg: req.query.msg || "",
+    }));
+  } catch (err) {
+    console.error("[FINANCE] turnamen GET error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+// Parse body form turnamen (buat/edit) → objek bersih.
+function _parseTurnamenBody(b) {
+  return {
+    nama:        (b.nama ?? "").toString().trim(),
+    cabang:      (b.cabang ?? "").toString().trim() || "8-ball",
+    tanggal:     (b.tanggal ?? "").toString().slice(0, 10) || null,
+    biayaDaftar: parseInt((b.biaya_daftar ?? "").toString().replace(/\D/g, "")) || 0,
+    hadiah:      (b.hadiah ?? "").toString().trim(),
+    catatan:     (b.catatan ?? "").toString().trim(),
+  };
+}
+
+router.post("/turnamen/buat", requireOwner, async (req, res) => {
+  const data = _parseTurnamenBody(req.body);
+  if (!data.nama) return res.redirect("/operasional/turnamen?msg=err");
+  try {
+    const id = await createTurnamen(data);
+    res.redirect("/operasional/turnamen/" + id + "?msg=created");
+  } catch (err) {
+    console.error("[FINANCE] turnamen buat error:", err.message);
+    res.redirect("/operasional/turnamen?msg=err");
+  }
+});
+
+router.get("/turnamen/:id", requireOwner, async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  try {
+    const turnamen = await readTurnamenById(id);
+    if (!turnamen) return res.redirect("/operasional/turnamen?msg=err");
+    const [peserta, matches] = await Promise.all([readPeserta(id), readMatches(id)]);
+    res.send(financeTurnamenDetailPage({
+      role:        res.locals.financeRole,
+      displayName: res.locals.financeDisplay || "",
+      turnamen, peserta, matches,
+      msg: req.query.msg || "",
+    }));
+  } catch (err) {
+    console.error("[FINANCE] turnamen detail error:", err.message);
+    res.status(500).send("Kesalahan server.");
+  }
+});
+
+router.post("/turnamen/:id/edit", requireOwner, async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  const data = _parseTurnamenBody(req.body);
+  if (!id || !data.nama) return res.redirect("/operasional/turnamen/" + id);
+  try {
+    await updateTurnamen(id, data);
+    res.redirect("/operasional/turnamen/" + id + "?msg=edited");
+  } catch (err) {
+    console.error("[FINANCE] turnamen edit error:", err.message);
+    res.redirect("/operasional/turnamen/" + id);
+  }
+});
+
+router.get("/turnamen/:id/hapus", requireOwner, async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  if (id) {
+    try { await deleteTurnamen(id); } catch (err) {
+      console.error("[FINANCE] turnamen hapus error:", err.message);
+    }
+  }
+  res.redirect("/operasional/turnamen?msg=deleted");
+});
+
+router.post("/turnamen/:id/peserta/tambah", requireOwner, async (req, res) => {
+  const id   = parseInt(req.params.id) || 0;
+  const nama = (req.body.nama ?? "").toString().trim();
+  try {
+    const t = await readTurnamenById(id);
+    if (!t) return res.redirect("/operasional/turnamen?msg=err");
+    // Hanya boleh saat pendaftaran (draft) — setelah bagan dibuat, peserta terkunci.
+    if (t.status !== "draft" || !nama) return res.redirect("/operasional/turnamen/" + id);
+    await addPeserta(id, { nama, kontak: (req.body.kontak ?? "").toString().trim() });
+    res.redirect("/operasional/turnamen/" + id + "?msg=peserta_add");
+  } catch (err) {
+    console.error("[FINANCE] turnamen peserta tambah error:", err.message);
+    res.redirect("/operasional/turnamen/" + id);
+  }
+});
+
+router.get("/turnamen/:id/peserta/hapus", requireOwner, async (req, res) => {
+  const id  = parseInt(req.params.id) || 0;
+  const pid = parseInt(req.query.pid) || 0;
+  try {
+    const t = await readTurnamenById(id);
+    if (t && t.status === "draft" && pid) await deletePeserta(id, pid);
+  } catch (err) {
+    console.error("[FINANCE] turnamen peserta hapus error:", err.message);
+  }
+  res.redirect("/operasional/turnamen/" + id + "?msg=peserta_del");
+});
+
+router.post("/turnamen/:id/bagan", requireOwner, async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  try {
+    const t = await readTurnamenById(id);
+    if (!t) return res.redirect("/operasional/turnamen?msg=err");
+    if (t.status !== "draft") return res.redirect("/operasional/turnamen/" + id);
+    const r = await createBracket(id);
+    if (!r.ok) return res.redirect("/operasional/turnamen/" + id + "?msg=err_few");
+    res.redirect("/operasional/turnamen/" + id + "?msg=bagan");
+  } catch (err) {
+    console.error("[FINANCE] turnamen bagan error:", err.message);
+    res.redirect("/operasional/turnamen/" + id);
+  }
+});
+
+router.post("/turnamen/:id/match/skor", requireOwner, async (req, res) => {
+  const id      = parseInt(req.params.id) || 0;
+  const matchId = parseInt(req.body.match_id) || 0;
+  try {
+    const t = await readTurnamenById(id);
+    if (!t) return res.redirect("/operasional/turnamen?msg=err");
+    if (t.status !== "berjalan") return res.redirect("/operasional/turnamen/" + id);
+    const r = await recordMatchResult(id, matchId, req.body.skor1, req.body.skor2);
+    if (!r.ok) return res.redirect("/operasional/turnamen/" + id + "?msg=" + (r.err === "draw" ? "err_draw" : "err"));
+    res.redirect("/operasional/turnamen/" + id + "?msg=skor");
+  } catch (err) {
+    console.error("[FINANCE] turnamen skor error:", err.message);
+    res.redirect("/operasional/turnamen/" + id);
+  }
+});
+
+router.post("/turnamen/:id/reset", requireOwner, async (req, res) => {
+  const id = parseInt(req.params.id) || 0;
+  try {
+    const t = await readTurnamenById(id);
+    if (!t) return res.redirect("/operasional/turnamen?msg=err");
+    await resetBracket(id);
+    res.redirect("/operasional/turnamen/" + id + "?msg=reset");
+  } catch (err) {
+    console.error("[FINANCE] turnamen reset error:", err.message);
+    res.redirect("/operasional/turnamen/" + id);
   }
 });
 
