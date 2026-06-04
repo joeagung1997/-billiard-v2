@@ -394,10 +394,17 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + nonaktifToggle
     + "<button type=\"button\" class=\"sdm-btn-add\" onclick=\"openAddKaryawan()\"><i class=\"ti ti-plus\" style=\"font-size:15px\"></i> Tambah Karyawan</button>"
     + "<a href=\"/operasional/sdm/akun\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" title=\"Kelola Akun Admin\"><i class=\"ti ti-key\"></i> Akun</a>"
+    + "<button type=\"button\" class=\"sdm-btn sdm-btn-secondary\" style=\"font-size:11px\" onclick=\"resetGajiSemua()\" title=\"Reset gaji pokok SEMUA karyawan ke Rp 0\"><i class=\"ti ti-refresh\"></i> Reset Gaji</button>"
     + "</div></div>"
 
     // Toast — sukses & gagal
     + renderSdmToast(msg)
+
+    // Form tersembunyi: reset gaji pokok semua kru (disubmit via resetGajiSemua())
+    + "<form method=\"post\" action=\"/operasional/sdm/gaji/reset-semua\" id=\"resetGajiForm\" style=\"display:none\">"
+    + "<input type=\"hidden\" name=\"redirect_to\" value=\"/operasional/sdm?bulan=" + bulan + "\">"
+    + "<input type=\"hidden\" name=\"konfirmasi\" id=\"resetGajiKonfirm\">"
+    + "</form>"
 
     + summaryStrip
     + "<div class=\"sdm-cards-grid\">" + cards + "</div>"
@@ -486,6 +493,7 @@ export function sdmDashboard(karyawan = [], sdmTrx = [], bulan = "", adminAccoun
     + "function openAddKaryawan(){document.getElementById('addKaryawanOv').classList.add('open');setTimeout(function(){document.querySelector('#addKaryawanForm [name=nama]').focus();},80);}"
     + "function closeAddKaryawan(){document.getElementById('addKaryawanOv').classList.remove('open');document.getElementById('addKaryawanForm').reset();document.getElementById('addMakanWrap').style.display='none';}"
     + "function toggleMakanWrap(){var s=document.getElementById('addShiftSel').value;document.getElementById('addMakanWrap').style.display=s==='malam'?'grid':'none';}"
+    + "function resetGajiSemua(){var t=prompt('PERINGATAN: Gaji Pokok SEMUA karyawan akan di-NOL-kan menjadi Rp 0. Tindakan ini tidak bisa dibatalkan (jadwal kenaikan gaji tidak ikut terhapus).\\n\\nKetik RESET (huruf besar) untuk melanjutkan:');if(t===null)return;if(t.trim().toUpperCase()!=='RESET'){alert('Dibatalkan — teks konfirmasi tidak cocok.');return;}document.getElementById('resetGajiKonfirm').value='RESET';document.getElementById('resetGajiForm').submit();}"
     + "function goAdmin(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin?tk='+t:'/admin';}"
     + "function goMembers(){var t=localStorage.getItem('warpat_atk');window.location.href=t?'/admin/members?tk='+t:'/admin';}"
     + "</script>"
@@ -508,6 +516,7 @@ function renderSdmToast(msg) {
     trx_makan:      { kind: "ok",  text: "Jatah makan berhasil dicatat." },
     trx_ok:         { kind: "ok",  text: "Transaksi berhasil dicatat." },
     trx_hapus_ok:   { kind: "ok",  text: "Transaksi berhasil dihapus." },
+    reset_gaji_ok:  { kind: "ok",  text: "Gaji pokok semua karyawan berhasil di-reset ke Rp 0." },
     err_tambah:     { kind: "err", text: "Gagal — nama dan gaji pokok wajib diisi." },
     err_edit:       { kind: "err", text: "Gagal menyimpan data karyawan." },
     err_trx:        { kind: "err", text: "Gagal mencatat transaksi — cek isian." },

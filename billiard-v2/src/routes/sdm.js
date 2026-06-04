@@ -6,7 +6,7 @@ import { createHmac }  from "crypto";
 import jwt             from "jsonwebtoken";
 import { CONFIG }      from "../config.js";
 import {
-  readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan, aktifkanKaryawan,
+  readKaryawan, getKaryawanById, addKaryawan, updateKaryawan, nonaktifkanKaryawan, aktifkanKaryawan, resetSemuaGajiPokok,
   readKenaikanGaji, readAllKenaikanGaji, replaceKenaikanGaji,
   readSdmTransaksi, readSdmTransaksiByKaryawan, appendSdmTransaksi, deleteSdmTransaksi,
   appendTransaksi, readAdminAccounts, updateAdminAccount,
@@ -283,6 +283,28 @@ router.get("/sdm/karyawan/:id/aktifkan", async (req, res) => {
     }
   }
   res.redirect("/operasional/sdm?msg=" + (ok ? "aktif_ok" : "err"));
+});
+
+// ── POST /operasional/sdm/gaji/reset-semua — nol-kan gaji pokok SEMUA kru ──
+// Destruktif & bulk. Sudah dijaga owner+PIN (guard di atas) & ter-scope warung
+// dari _frt. Lapis tambahan: WAJIB field konfirmasi "RESET" (frontend minta user
+// mengetiknya) supaya tak terpicu tak sengaja / prefetch. Hanya gaji_pokok yg
+// di-nol-kan; jadwal kenaikan gaji tidak disentuh.
+router.post("/sdm/gaji/reset-semua", async (req, res) => {
+  const redirect = (req.body.redirect_to || "/operasional/sdm").toString();
+  const back     = redirect.startsWith("/operasional/sdm") ? redirect : "/operasional/sdm";
+  const withMsg  = (m) => back + (back.includes("?") ? "&" : "?") + "msg=" + m;
+  if ((req.body.konfirmasi || "").toString().trim().toUpperCase() !== "RESET") {
+    return res.redirect(withMsg("err"));
+  }
+  try {
+    const n = await resetSemuaGajiPokok();
+    console.log("[SDM] reset gaji pokok semua kru:", n, "baris");
+    res.redirect(withMsg("reset_gaji_ok"));
+  } catch (err) {
+    console.error("[SDM] reset gaji semua error:", err.message);
+    res.redirect(withMsg("err"));
+  }
 });
 
 // ── POST /operasional/sdm/transaksi ──────────────────────────

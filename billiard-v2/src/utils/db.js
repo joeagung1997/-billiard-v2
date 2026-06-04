@@ -1870,6 +1870,15 @@ export const aktifkanKaryawan = async (id, warungId = currentWarungId()) => {
   await query(`UPDATE karyawan SET status = 'aktif' WHERE id = $1 AND warung_id = $2`, [id, warungId]);
 };
 
+// Reset (nol-kan) gaji pokok SEMUA karyawan warung ini — aksi bulk dari panel SDM.
+// Ter-scope warung_id (tidak menyentuh warung lain). Mengembalikan jumlah baris yg
+// diubah. Jadwal kenaikan gaji (karyawan_kenaikan_gaji) SENGAJA tidak disentuh —
+// itu reset terpisah, sesuai pilihan "hanya gaji pokok".
+export const resetSemuaGajiPokok = async (warungId = currentWarungId()) => {
+  const res = await query(`UPDATE karyawan SET gaji_pokok = 0 WHERE warung_id = $1`, [warungId]);
+  return res.rowCount;
+};
+
 // ── Kenaikan gaji terjadwal (banyak per karyawan) ─────────────
 export const readKenaikanGaji = async (karyawanId, warungId = currentWarungId()) => {
   const res = await query(
