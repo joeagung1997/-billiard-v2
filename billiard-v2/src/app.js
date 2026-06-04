@@ -27,6 +27,23 @@ import { resultPage } from "./views/member.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const app = express();
 
+// ── Jaring pengaman proses (cegah 1 error meruntuhkan seluruh server) ──────
+// Sejak Node 15, unhandledRejection DEFAULT-nya MEMATIKAN proses. Di Railway
+// (1 instance long-running), satu promise reject tak tertangkap → proses mati →
+// container restart → SEMUA request in-flight putus → browser dapat
+// ERR_HTTP2_PROTOCOL_ERROR + "site can't be reached" sampai container hidup lagi.
+// Log LOUD (stack muncul di log Railway untuk ditindak) + JANGAN exit: server
+// tetap hidup, satu request bermasalah tak menjatuhkan semua user.
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] unhandledRejection:", reason instanceof Error ? reason.stack : reason);
+});
+// uncaughtException: state bisa korup → log stack lalu exit (Railway restart
+// bersih). Tujuan utama: stack-nya terekam supaya bug akarnya bisa diperbaiki.
+process.on("uncaughtException", (err) => {
+  console.error("[FATAL] uncaughtException:", err?.stack || err);
+  process.exit(1);
+});
+
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json({ limit: "60mb" })); // 60mb buat upload base64 (planning attachments)
 app.use(express.urlencoded({ extended: true, limit: "8mb" }));
@@ -91,6 +108,20 @@ app.use((req, res) => {
   res.status(404).send(resultPage("error", {
     judul: "Halaman Tidak Ditemukan",
     pesan: "URL yang kamu akses tidak ada.",
+  }));
+});
+
+// ── Error handler (4 arg) — HARUS terakhir ────────────────────
+// Tanpa ini, error yg di-propagate (next(err) / throw di middleware async)
+// bisa meninggalkan respons MENGGANTUNG → edge Railway reset stream HTTP/2 →
+// browser dapat ERR_HTTP2_PROTOCOL_ERROR. Di sini: log + balas 500 bersih
+// (atau lepas ke default kalau header sudah terkirim, agar tak crash).
+app.use((err, req, res, next) => {
+  console.error("[ERR]", req.method, req.originalUrl, "→", err?.stack || err);
+  if (res.headersSent) return next(err);
+  res.status(500).send(resultPage("error", {
+    judul: "Kesalahan Server",
+    pesan: "Terjadi gangguan sementara. Silakan muat ulang halaman.",
   }));
 });
 
