@@ -132,7 +132,7 @@ if (!process.env.VERCEL) {
 
   initDB()
     .then(() => {
-      app.listen(CONFIG.PORT, () => {
+      const server = app.listen(CONFIG.PORT, () => {
         console.log(`\n${"=".repeat(44)}`);
         console.log(` ${CONFIG.NAMA_ARENA}`);
         console.log(`${"=".repeat(44)}`);
@@ -142,6 +142,19 @@ if (!process.env.VERCEL) {
         console.log(` Deploy  : ${CONFIG.DEPLOY_ID.slice(0, 16)}${CONFIG.DEPLOY_ID.length > 16 ? "…" : ""}`);
         console.log(`${"=".repeat(44)}\n`);
       });
+
+      // ── Keep-alive vs edge proxy (cegah ERR_HTTP2_PROTOCOL_ERROR) ──────
+      // Edge Railway ("railway-hikari") & proxy sejenis menahan koneksi upstream
+      // (keep-alive) JAUH lebih lama dari default Node (keepAliveTimeout = 5 detik).
+      // Saat user diam >5 dtk membaca satu halaman lalu pindah menu, origin SUDAH
+      // menutup socket keep-alive yang masih dianggap hidup oleh edge → edge memakai
+      // socket mati → koneksi reset di tengah → browser dapat ERR_HTTP2_PROTOCOL_ERROR
+      // (intermiten, khas "setelah idle", di semua role/menu — transport-level, bukan
+      // bug halaman). Fix standar (sama spt anjuran AWS ALB/Heroku): origin menahan
+      // keep-alive lebih lama dari jeda baca antar-klik, jadi edge yang menutup duluan.
+      // Syarat Node: headersTimeout HARUS > keepAliveTimeout agar keep-alive dihormati.
+      server.keepAliveTimeout = 65_000; // ms (default 5_000) — lewati jeda baca antar-menu
+      server.headersTimeout   = 70_000; // ms — wajib > keepAliveTimeout
     })
     .catch((err) => {
       console.error("[FATAL] Gagal koneksi database:", err.message);
