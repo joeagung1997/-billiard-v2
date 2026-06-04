@@ -14,7 +14,7 @@ export function segeraHadirPage({ title = "Fitur Ini", token = "", user = {} }) 
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <title>${title} — ${arenaName()}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/admin.css?v=83">
     <style>
