@@ -555,6 +555,12 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
   }
   // (2) Carry-forward: kelebihan bayar di bulan X jadi kasbon (advance) bulan X+1.
   //     Hitung running carry dari cutoff sampai bulan ini.
+  //
+  // CARRY_FORWARD=false → fitur dimatikan: tiap bulan dihitung INDEPENDEN.
+  // Kelebihan bayar TIDAK jadi advance bulan depan & tidak ada "kasbon bulan
+  // lalu". Sisa Harus Dibayar = gajiPokok − totalDibayarkan (mis. Jun = 600rb,
+  // bukan 450rb). Permintaan owner: clear per-bulan dulu. Set true utk balikin.
+  const CARRY_FORWARD = false;
   const nowD = new Date();
   const nowMo = nowD.getFullYear() * 12 + nowD.getMonth();
   const carryByBulan = {};
@@ -575,10 +581,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
       carryByBulan[bk] = {
         carryIn: runningCarry,
         effectiveTarget,
-        excess: Math.max(0, excess),
+        excess: CARRY_FORWARD ? Math.max(0, excess) : 0,
         statusEffective: statusE,
       };
-      runningCarry = Math.max(0, excess);
+      runningCarry = CARRY_FORWARD ? Math.max(0, excess) : 0;
     }
   }
   // (2b) Kalau ada carry-out dari bulan ini, propagate ke bulan2 future
@@ -602,10 +608,10 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
       carryByBulan[bk] = {
         carryIn: runningCarry,
         effectiveTarget,
-        excess: Math.max(0, excess),
+        excess: CARRY_FORWARD ? Math.max(0, excess) : 0,
         statusEffective: statusE,
       };
-      runningCarry = Math.max(0, excess);
+      runningCarry = CARRY_FORWARD ? Math.max(0, excess) : 0;
       endMo = extMo;
       extMo++;
     }
