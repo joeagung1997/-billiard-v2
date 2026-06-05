@@ -644,8 +644,14 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     ? new Date(karyawan.tgl_mulai).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
     : "—";
 
-  // Progress
-  const pct      = r.gajiPokok > 0 ? Math.min(100, Math.round(r.totalDibayarkan / r.gajiPokok * 100)) : 0;
+  // Progress — KONSISTEN dgn kartu "Riwayat Bulanan": ikutkan carry-in (kasbon/
+  // kelebihan bayar bulan lalu) supaya "Sisa Harus Dibayar" & persen di Ringkasan
+  // sama dgn yg ditampilkan di riwayat. Tanpa ini, Ringkasan pakai sisa "polos"
+  // (gajiPokok − totalDibayarkan) sehingga beda dgn riwayat yg potong carry-in.
+  const ciNow      = carryByBulan[bulan] || { carryIn: 0, excess: 0, effectiveTarget: r.gajiPokok, statusEffective: r.status };
+  const dibayarEff = r.totalDibayarkan + ciNow.carryIn;      // termasuk carry-in bulan lalu
+  const sisaEff    = Math.max(0, r.gajiPokok - dibayarEff);
+  const pct      = r.gajiPokok > 0 ? Math.min(100, Math.round(dibayarEff / r.gajiPokok * 100)) : 0;
   const progColor = pct >= 100 ? "var(--accent)" : pct > 0 ? "#f59e0b" : "var(--border)";
 
   // ── Riwayat timeline ────────────────────────────────────────
@@ -779,7 +785,7 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     + "<div class=\"det-card\">"
     + "<div class=\"det-card-title\"><i class=\"ti ti-report-money\"></i> Ringkasan Gaji</div>"
     + "<div style=\"margin-bottom:12px\">"
-    + "<div style=\"display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);margin-bottom:5px\"><span>" + pct + "% dibayar</span><span>" + statusBadge(r.status) + "</span></div>"
+    + "<div style=\"display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);margin-bottom:5px\"><span>" + pct + "% dibayar</span><span>" + statusBadge(ciNow.statusEffective) + "</span></div>"
     + "<div style=\"height:6px;background:var(--border);border-radius:99px;overflow:hidden\"><div style=\"height:100%;width:" + pct + "%;background:" + progColor + ";border-radius:99px\"></div></div>"
     + "</div>"
     + "<div class=\"det-row\"><span>Gaji Pokok</span><span>" + rp(r.gajiPokok) + "</span></div>"
@@ -788,7 +794,8 @@ export function sdmDetailPage(karyawan, allTrx = [], bulan = "", msg = "") {
     + (r.dibayar > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Gaji Dibayar</span><span style=\"color:var(--red)\">" + rp(r.dibayar) + "</span></div>" : "")
     + (r.thr > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− THR</span><span style=\"color:var(--red)\">" + rp(r.thr) + "</span></div>" : "")
     + (r.bonus > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Bonus</span><span style=\"color:var(--red)\">" + rp(r.bonus) + "</span></div>" : "")
-    + "<div class=\"det-row\"><span>Sisa Harus Dibayar</span><span style=\"color:" + (r.sisa > 0 ? "var(--red)" : "var(--green)") + ";font-size:14px\">" + (r.sisa > 0 ? rp(r.sisa) : "✓ Lunas") + "</span></div>"
+    + (ciNow.carryIn > 0 ? "<div class=\"det-row\"><span style=\"color:var(--red)\">− Kasbon Bulan Lalu</span><span style=\"color:var(--red)\">" + rp(ciNow.carryIn) + "</span></div>" : "")
+    + "<div class=\"det-row\"><span>Sisa Harus Dibayar</span><span style=\"color:" + (sisaEff > 0 ? "var(--red)" : "var(--green)") + ";font-size:14px\">" + (sisaEff > 0 ? rp(sisaEff) : "✓ Lunas") + "</span></div>"
     + "</div>"
 
     // Catat transaksi
