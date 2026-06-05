@@ -10,6 +10,7 @@ import swaggerUi      from "swagger-ui-express";
 import { CONFIG }     from "./config.js";
 import { initDB, resetScanHarian, cleanupOldNotifikasi, getActiveWarungIds } from "./utils/db.js";
 import { createDailySummaryNotif } from "./utils/notifTrigger.js";
+import { autoCloseExpiredSesi } from "./utils/autoClose.js";
 import { tenantContext, runWithTenant } from "./utils/tenant.js";
 import scanRouter     from "./routes/scan.js";
 import adminRouter    from "./routes/admin.js";
@@ -150,6 +151,24 @@ if (!process.env.VERCEL) {
       console.error("[CRON] Daily summary gagal:", err.message);
     }
   }, { timezone: "Asia/Jakarta" });
+
+  // Auto-close sesi meja durasi-tetap yg lewat 10 menit: cek tiap menit.
+  // Sesi "Open" (tanpa durasi) di-skip. Per-warung via runWithTenant → semua
+  // call db.js auto-scope. Interval-based, jadi timezone tidak relevan.
+  cron.schedule("* * * * *", async () => {
+    try {
+      const ids = await getActiveWarungIds();
+      let total = 0;
+      for (const wid of ids) {
+        total += await runWithTenant(wid, () => autoCloseExpiredSesi());
+      }
+      if (total > 0) {
+        console.log(`[CRON] ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} — Auto-close sesi meja: ${total} sesi ditutup.`);
+      }
+    } catch (err) {
+      console.error("[CRON] Auto-close sesi gagal:", err.message);
+    }
+  });
 
   // Cleanup notif lama (> 30 hari): jam 03:00 WIB tiap hari.
   cron.schedule("0 3 * * *", async () => {

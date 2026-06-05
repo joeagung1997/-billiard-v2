@@ -1565,6 +1565,7 @@ const VALID_NOTIF_TIPE = [
   "target_harian", "target_mingguan", "target_bulanan",
   "daily_summary",
   "transaksi_in", "transaksi_out",
+  "sesi_auto_close",
 ];
 const VALID_PRIORITAS = ["info", "warning", "danger"];
 

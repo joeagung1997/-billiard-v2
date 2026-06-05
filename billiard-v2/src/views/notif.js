@@ -37,6 +37,10 @@ const TIPE_CONF = {
     label: "Pengeluaran", icon: "ti-arrow-up-circle",
     color: "#a32d2d", bg: "#fef5f5",
   },
+  sesi_auto_close: {
+    label: "Meja Auto-Tutup", icon: "ti-player-stop",
+    color: "#2660a4", bg: "#e6f1fb",
+  },
 };
 
 // Filter pills order — tampil semua tipe yg punya entry + "Semua".
@@ -46,6 +50,7 @@ const FILTER_GROUPS = [
   { key: "stok",        label: "Stok",      match: ["stok_low", "stok_out"] },
   { key: "target",      label: "Target",    match: ["target_harian", "target_mingguan", "target_bulanan"] },
   { key: "daily",       label: "Ringkasan", match: ["daily_summary"] },
+  { key: "meja",        label: "Meja",      match: ["sesi_auto_close"] },
 ];
 
 function relTime(iso) {
@@ -113,7 +118,8 @@ export function renderNotifSheetBody({ notifs = [], unreadCount = 0 } = {}) {
     const filterKey = n.tipe.startsWith("stok_")      ? "stok"
                     : n.tipe.startsWith("target_")    ? "target"
                     : n.tipe.startsWith("transaksi_") ? "transaksi"
-                    : n.tipe === "daily_summary"     ? "daily" : "";
+                    : n.tipe === "daily_summary"     ? "daily"
+                    : n.tipe === "sesi_auto_close"   ? "meja" : "";
     return ""
       + "<div class=\"ns-item" + (isRead ? " is-read" : "") + "\""
       +    " data-id=\"" + n.id + "\" data-tipe=\"" + filterKey + "\">"
