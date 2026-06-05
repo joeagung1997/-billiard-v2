@@ -23,6 +23,24 @@ const rpSigned = (n, plusForPos = true) => {
   return (plusForPos ? "+" : "") + rp(v);
 };
 
+// Bagi PEMASUKAN jadi Cash vs QRIS (GROSS, per metode bayar) — utk kartu
+// "CASH (LACI)" & "QRIS" di Dashboard. Definisi owner: "Pemasukan = total cash
+// + QRIS", "Cash/laci = berapa yg dibayar customer pakai tunai". Maka:
+//   • hanya baris jenis 'pemasukan' (penjualan) — TIDAK dikurangi pengeluaran,
+//   • 'qris' → QRIS; selain itu (termasuk bayar kosong) → Cash, supaya tidak
+//     ada transaksi yg hilang → cash + qris === total pemasukan.
+// Pemanggil tanggung jawab nyaring tukar/void/belum-lunas (mis. revenueSortedTbl).
+// Pure — bisa diuji tanpa DB.
+export function bagiPemasukanMetode(rows = []) {
+  let cash = 0, qris = 0;
+  for (const t of (rows || [])) {
+    if (!t || t.jenis !== "pemasukan") continue;
+    if (t.bayar === "qris") qris += (t.jumlah || 0);
+    else                    cash += (t.jumlah || 0);
+  }
+  return { cash, qris };
+}
+
 // Format tanggal ISO (YYYY-MM-DD) → "29 Mei 2026"
 const fmtTglID = (iso) => {
   if (!iso) return "—";
@@ -757,18 +775,13 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
   // Hitung jumlah Tukar Uang dalam scope, biar bisa ditampilkan sbg info terpisah.
   const tukarCount = activeSortedTbl.filter((t) => t.kategori === KAT_TUKAR_UANG).length;
 
-  // Posisi kas BERSIH per metode = uang riil di laci (cash) / rekening (QRIS).
-  // Per-metode = pemasukan-lunas − pengeluaran-lunas metode itu. Pengeluaran
-  // mencakup operasional + Tukar Uang (dua-duanya benar2 mengurangi kas).
-  // Pengeluaran belum lunas (hutang) belum keluar dari laci → tidak dikurangi.
-  // Cash = semua yg BUKAN QRIS (form default jg cash) biar tidak ada transaksi
-  // yg "hilang"; efeknya totalCash + totalQris == Saldo Bersih (tukar net nol).
-  const _masukLunas  = activeSortedTbl.filter((t) => t.jenis === "pemasukan"   && t.lunas !== false);
-  const _keluarLunas = activeSortedTbl.filter((t) => t.jenis === "pengeluaran" && t.lunas !== false);
-  const _sumCash = (arr) => arr.filter((t) => t.bayar !== "qris").reduce((s, t) => s + t.jumlah, 0);
-  const _sumQris = (arr) => arr.filter((t) => t.bayar === "qris").reduce((s, t) => s + t.jumlah, 0);
-  const totalCash = _sumCash(_masukLunas) - _sumCash(_keluarLunas);
-  const totalQris = _sumQris(_masukLunas) - _sumQris(_keluarLunas);
+  // CASH (LACI) & QRIS = PEMASUKAN (penjualan) per metode bayar — GROSS, bukan
+  // saldo bersih. Owner: "Pemasukan = total cash + QRIS", "Cash/laci = berapa
+  // yg dibayar customer pakai tunai". Basis = revenueSortedTbl (non-tukar,
+  // lunas, ikut scope tgl) — sama dgn kartu Pemasukan (chartTotalIn), jadi
+  // totalCash + totalQris === chartTotalIn dan konsisten dgn POSISI KAS di
+  // halaman Transaksi. TIDAK dikurangi pengeluaran (itu ada di Saldo Bersih).
+  const { cash: totalCash, qris: totalQris } = bagiPemasukanMetode(revenueSortedTbl);
 
   // Summary (exclude voided + Tukar Uang)
   const pemasukan   = revenueFiltered.filter((t) => t.jenis === "pemasukan");
@@ -1573,12 +1586,12 @@ export function financeDashboard({ transaksi, token, role = "owner", displayName
     + "<div class=\"fin-bayar-item\">"
     + "<div class=\"fin-bayar-lbl\"><i class=\"ti ti-cash\" style=\"font-size:14px\"></i> Cash (laci)</div>"
     + "<div class=\"fin-bayar-val cash\">" + rp(totalCash) + "</div>"
-    + "<div class=\"fin-bayar-sub\">Bersih · masuk − keluar</div>"
+    + "<div class=\"fin-bayar-sub\">Dibayar tunai oleh customer</div>"
     + "</div>"
     + "<div class=\"fin-bayar-item\">"
     + "<div class=\"fin-bayar-lbl\"><i class=\"ti ti-qrcode\" style=\"font-size:14px\"></i> QRIS</div>"
     + "<div class=\"fin-bayar-val qris\">" + rp(totalQris) + "</div>"
-    + "<div class=\"fin-bayar-sub\">Bersih · masuk − keluar</div>"
+    + "<div class=\"fin-bayar-sub\">Dibayar via QRIS oleh customer</div>"
     + "</div>"
     + "</div>"
 
